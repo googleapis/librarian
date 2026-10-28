@@ -17,12 +17,19 @@
 package testhelper
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
+	"runtime"
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
@@ -30,14 +37,166 @@ import (
 )
 
 // RequireCommand skips the test if the specified command is not found in PATH.
+// For protoc, it also checks the librarian-managed install directory
+// (see [cache.BinDirectory]) and adds its directory to PATH for the test.
+// Because this may call t.Setenv, tests that call RequireCommand(t, "protoc")
+// must not call t.Parallel.
+//
 // Use this to skip tests that depend on external tools like protoc, cargo, or
 // taplo, so that `go test ./...` will always pass on a fresh clone of the
 // repo.
 func RequireCommand(t *testing.T, cmd string) {
 	t.Helper()
 	if _, err := exec.LookPath(cmd); err != nil {
+		if cmd == "protoc" {
+			if protocPath, ok := findManagedProtoc(); ok {
+				newPath := filepath.Dir(protocPath)
+				if existing := os.Getenv("PATH"); existing != "" {
+					newPath += string(filepath.ListSeparator) + existing
+				}
+				t.Setenv("PATH", newPath)
+				return
+			}
+		}
 		t.Skipf("skipping test because %s is not installed", cmd)
 	}
+}
+
+// findManagedProtoc finds an executable librarian-managed protoc binary under
+// the cache bin directory, returning its path and true if found. When multiple
+// versions are installed it returns the newest one.
+func findManagedProtoc() (string, bool) {
+	binDir, err := cache.BinDirectory()
+	if err != nil {
+		return "", false
+	}
+	absBinDir, err := filepath.Abs(binDir)
+	if err != nil {
+		return "", false
+	}
+	protocDir := filepath.Join(absBinDir, "protoc")
+	entries, err := os.ReadDir(protocDir)
+	if err != nil {
+		return "", false
+	}
+	protocBin := "protoc"
+	if runtime.GOOS == "windows" {
+		protocBin = "protoc.exe"
+	}
+	// Collect valid version directories in descending order so the first
+	// match is the newest installed version.
+	var versions []protocVersion
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		if v, ok := parseProtocVersion(e.Name()); ok {
+			versions = append(versions, v)
+		}
+	}
+	slices.SortFunc(versions, func(a, b protocVersion) int { return compareProtocVersions(b, a) })
+	for _, v := range versions {
+		p := filepath.Join(protocDir, v.name, "bin", protocBin)
+		fi, err := os.Stat(p)
+		if err != nil || fi.IsDir() {
+			continue
+		}
+		if runtime.GOOS != "windows" && fi.Mode()&0o111 == 0 {
+			continue
+		}
+		return p, true
+	}
+	return "", false
+}
+
+type protocVersion struct {
+	name  string // original directory name, e.g. "v33.2"
+	major int
+	minor int
+	patch int
+	pre   string // prerelease suffix, e.g. "-rc1"; empty for stable
+}
+
+// parseProtocVersion parses a version directory name like "v33.2",
+// "v3.20.3", or "v26.0-rc1", returning the parsed version and true on
+// success.
+func parseProtocVersion(name string) (protocVersion, bool) {
+	s, ok := strings.CutPrefix(name, "v")
+	if !ok {
+		return protocVersion{}, false
+	}
+	// Split off any prerelease suffix (e.g. "26.0-rc1" → "26.0", "rc1").
+	numeric, pre, _ := strings.Cut(s, "-")
+	parts := strings.Split(numeric, ".")
+	if len(parts) < 2 || len(parts) > 3 {
+		return protocVersion{}, false
+	}
+	maj, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return protocVersion{}, false
+	}
+	min, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return protocVersion{}, false
+	}
+	var pat int
+	if len(parts) == 3 {
+		pat, err = strconv.Atoi(parts[2])
+		if err != nil {
+			return protocVersion{}, false
+		}
+	}
+	if pre != "" {
+		pre = "-" + pre
+	}
+	return protocVersion{name: name, major: maj, minor: min, patch: pat, pre: pre}, true
+}
+
+func compareProtocVersions(a, b protocVersion) int {
+	if c := cmp.Compare(a.major, b.major); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.minor, b.minor); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.patch, b.patch); c != 0 {
+		return c
+	}
+	// Stable (empty pre) is newer than any prerelease.
+	if a.pre == "" && b.pre != "" {
+		return 1
+	}
+	if a.pre != "" && b.pre == "" {
+		return -1
+	}
+	return comparePrereleases(a.pre, b.pre)
+}
+
+func comparePrereleases(a, b string) int {
+	if a == b {
+		return 0
+	}
+	aPrefix, aNum := splitNumericSuffix(a)
+	bPrefix, bNum := splitNumericSuffix(b)
+	if aPrefix == bPrefix {
+		return cmp.Compare(aNum, bNum)
+	}
+	return cmp.Compare(a, b)
+}
+
+func splitNumericSuffix(s string) (string, int) {
+	i := len(s)
+	for i > 0 && s[i-1] >= '0' && s[i-1] <= '9' {
+		i--
+	}
+	if i == len(s) {
+		return s, 0
+	}
+	n, err := strconv.Atoi(s[i:])
+	if err != nil {
+		return s, 0
+	}
+	return s[:i], n
 }
 
 const (
