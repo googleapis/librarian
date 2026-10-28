@@ -445,10 +445,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 			slices.Sort(annotation.FeatureGates)
 			annotation.FeatureGatesOp = "any"
 			for _, one := range msg.OneOfs {
-				if one.Codec == nil {
+				if one.Codec() == nil {
 					continue
 				}
-				annotation := one.Codec.(*oneOfAnnotation)
+				annotation := one.Codec().(*oneOfAnnotation)
 				annotation.FeatureGates = append(annotation.FeatureGates, svcAnn.FeatureName())
 				slices.Sort(annotation.FeatureGates)
 				annotation.FeatureGatesOp = "any"

@@ -673,13 +673,12 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		e := processEnum(model, e, eFQN, packagez, message, comments, append(pathPrefix, messageDescriptorEnum, int32(i)))
 		message.Enums = append(message.Enums, e)
 	}
+	oneOfBuilders := make([]*api.OneOfBuilder, len(m.OneofDecl))
 	for i, oneof := range m.OneofDecl {
-		oneOfs := &api.OneOf{
-			Name:          oneof.GetName(),
-			ID:            mFQN + "." + oneof.GetName(),
-			Documentation: lookupComment(comments, append(pathPrefix, messageDescriptorOneOf, int32(i))),
-		}
-		message.OneOfs = append(message.OneOfs, oneOfs)
+		oneOfBuilders[i] = api.NewOneOfBuilder().
+			WithName(oneof.GetName()).
+			WithID(mFQN + "." + oneof.GetName()).
+			WithDocumentation(lookupComment(comments, append(pathPrefix, messageDescriptorOneOf, int32(i))))
 	}
 	for i, mf := range m.Field {
 		field, err := processField(model, mf, mFQN, proto2, lookupComment(comments, append(pathPrefix, messageDescriptorField, int32(i))))
@@ -688,22 +687,16 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		}
 		message.Fields = append(message.Fields, field)
 		if field.IsOneOf() {
-			message.OneOfs[*mf.OneofIndex].Fields = append(message.OneOfs[*mf.OneofIndex].Fields, field)
+			oneOfBuilders[*mf.OneofIndex].AddField(field)
 		}
 	}
 
 	// Remove proto3 optionals from one-of
-	var oneOfIdx int
-	for _, oneof := range message.OneOfs {
-		if len(oneof.Fields) > 0 {
-			message.OneOfs[oneOfIdx] = oneof
-			oneOfIdx++
+	for _, ob := range oneOfBuilders {
+		oneof := ob.Build()
+		if len(oneof.Fields()) > 0 {
+			message.OneOfs = append(message.OneOfs, oneof)
 		}
-	}
-	if oneOfIdx == 0 {
-		message.OneOfs = nil
-	} else {
-		message.OneOfs = message.OneOfs[:oneOfIdx]
 	}
 
 	return message, nil

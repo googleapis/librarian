@@ -146,8 +146,8 @@ func TestMessage_WithDocumentation(t *testing.T) {
 
 func TestOneOf_WithDocumentation(t *testing.T) {
 	o := api.NewTestOneOf("choice").WithDocumentation("A test oneof.")
-	if o.Documentation != "A test oneof." {
-		t.Errorf("expected Documentation 'A test oneof.', got %q", o.Documentation)
+	if o.Documentation() != "A test oneof." {
+		t.Errorf("expected Documentation 'A test oneof.', got %q", o.Documentation())
 	}
 }
 
@@ -225,8 +225,8 @@ func TestMessage_WithMessages_UpdatesOneOfIDs(t *testing.T) {
 	child := api.NewTestMessage("Child").WithOneOfs(oneof)
 	_ = api.NewTestMessage("Parent").WithMessages(child)
 
-	if got, want := child.OneOfs[0].ID, ".test.Parent.Child.choice"; got != want {
-		t.Errorf("child.OneOfs[0].ID = %q, want %q", got, want)
+	if got, want := child.OneOfs[0].ID(), ".test.Parent.Child.choice"; got != want {
+		t.Errorf("child.OneOfs[0].ID() = %q, want %q", got, want)
 	}
 }
 

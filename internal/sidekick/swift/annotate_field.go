@@ -229,7 +229,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		annotations.Decoding = DecodingOptional
 	}
 	if field.IsOneOf() && field.Group() != nil {
-		if oneofAnn, ok := field.Group().Codec.(*oneOfAnnotations); ok {
+		if oneofAnn, ok := field.Group().Codec().(*oneOfAnnotations); ok {
 			annotations.OneOfChecker = oneofAnn.Checker
 		}
 	}

@@ -103,17 +103,17 @@ func (c *codec) tryFieldDocLink(id string) (string, error) {
 			if f.Group() == nil {
 				return c.docLink(m.Package, fmt.Sprintf("%s/%s", messageName, swiftName)), nil
 			}
-			groupName := OneOfName(f.Group().Name)
+			groupName := OneOfName(f.Group().Name())
 			return c.docLink(m.Package, fmt.Sprintf("%s/%s/%s(_:)", messageName, groupName, swiftName)), nil
 		}
 	}
 	for _, o := range m.OneOfs {
-		if o.Name == fieldName {
+		if o.Name() == fieldName {
 			p, err := c.messageTypeName(m)
 			if err != nil {
 				return "", err
 			}
-			return c.docLink(m.Package, fmt.Sprintf("%s/%s", p, OneOfName(o.Name))), nil
+			return c.docLink(m.Package, fmt.Sprintf("%s/%s", p, OneOfName(o.Name()))), nil
 		}
 	}
 	return "", nil

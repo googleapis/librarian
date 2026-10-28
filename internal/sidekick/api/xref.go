@@ -54,7 +54,7 @@ func CrossReference(model *API) error {
 			}
 		}
 		for _, o := range m.OneOfs {
-			for _, f := range o.Fields {
+			for _, f := range o.fields {
 				f.group = o
 				f.parent = m
 			}
@@ -112,8 +112,8 @@ func enrichSamples(model *API) {
 
 	for m := range model.AllMessages() {
 		for _, o := range m.OneOfs {
-			if len(o.Fields) > 0 {
-				o.ExampleField = slices.MaxFunc(o.Fields, sortOneOfFieldForExamples)
+			if len(o.fields) > 0 {
+				o.exampleField = slices.MaxFunc(o.fields, sortOneOfFieldForExamples)
 			}
 		}
 		for _, f := range m.Fields {
