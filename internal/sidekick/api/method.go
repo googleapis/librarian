@@ -164,11 +164,11 @@ func (m *Method) RoutingCombos() []*RoutingInfoCombo {
 	for _, info := range m.Routing {
 		next := []*RoutingInfoCombo{}
 		for _, c := range combos {
-			for _, v := range info.Variants {
+			for _, v := range info.Variants() {
 				next = append(next, &RoutingInfoCombo{
-					Items: append(c.Items, &RoutingInfoComboItem{
-						Name:    info.Name,
-						Variant: v,
+					items: append(c.items, &RoutingInfoComboItem{
+						name:    info.Name(),
+						variant: v,
 					}),
 				})
 			}
@@ -180,13 +180,38 @@ func (m *Method) RoutingCombos() []*RoutingInfoCombo {
 
 // RoutingInfoCombo represents a single combination of routing parameters.
 type RoutingInfoCombo struct {
-	Items []*RoutingInfoComboItem
+	items []*RoutingInfoComboItem
+}
+
+// NewRoutingInfoCombo creates a new RoutingInfoCombo with the given items.
+func NewRoutingInfoCombo(items ...*RoutingInfoComboItem) *RoutingInfoCombo {
+	return &RoutingInfoCombo{items: items}
+}
+
+// Items returns the items in the routing info combination.
+func (c *RoutingInfoCombo) Items() []*RoutingInfoComboItem {
+	return c.items
 }
 
 // RoutingInfoComboItem represents a single item in a RoutingInfoCombo.
 type RoutingInfoComboItem struct {
-	Name    string
-	Variant *RoutingInfoVariant
+	name    string
+	variant *RoutingInfoVariant
+}
+
+// NewRoutingInfoComboItem creates a new RoutingInfoComboItem with the given name and variant.
+func NewRoutingInfoComboItem(name string, variant *RoutingInfoVariant) *RoutingInfoComboItem {
+	return &RoutingInfoComboItem{name: name, variant: variant}
+}
+
+// Name returns the routing parameter name.
+func (i *RoutingInfoComboItem) Name() string {
+	return i.name
+}
+
+// Variant returns the routing parameter variant.
+func (i *RoutingInfoComboItem) Variant() *RoutingInfoVariant {
+	return i.variant
 }
 
 // HasRouting returns true if the method has routing information.

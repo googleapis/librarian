@@ -229,14 +229,14 @@ func annotateSegments(segments []string, isPrefix bool, isSuffix bool) []string 
 func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*routingParam {
 	var params []*routingParam
 	for _, info := range routingInfos {
-		if info.Name == "" && len(info.Variants) > 0 && len(info.Variants[0].FieldPath()) == 0 {
+		if info.Name() == "" && len(info.Variants()) > 0 && len(info.Variants()[0].FieldPath()) == 0 {
 			// Explicit empty routing annotation disables routing headers per AIP-4222.
 			continue
 		}
-		routingKey := info.Name
+		routingKey := info.Name()
 
 		var variants []*routingParamVariant
-		for _, variant := range info.Variants {
+		for _, variant := range info.Variants() {
 			if len(variant.FieldPath()) == 0 {
 				continue
 			}
