@@ -737,9 +737,7 @@ func TestAIPStandardListInfo(t *testing.T) {
 	plainParentField := NewTestField("parent") // No child_type
 
 	pageableItem := NewTestField("secrets").WithMessageType(secretMessage)
-	paginationInfo := NewTestPaginationInfo(nil, pageableItem)
-	listOutput := NewTestMessage("ListSecretsResponse")
-	listOutput.Pagination = paginationInfo
+	listOutput := NewTestMessage("ListSecretsResponse").WithPagination(nil, pageableItem)
 
 	testCases := []struct {
 		name   string
@@ -818,8 +816,7 @@ func TestAIPStandardListInfo(t *testing.T) {
 		{
 			name: "output type name mismatch",
 			method: func() *Method {
-				out := NewTestMessage("EnumerateSecretsResponse")
-				out.Pagination = paginationInfo
+				out := NewTestMessage("EnumerateSecretsResponse").WithPagination(nil, pageableItem)
 				return newAIPTestMethod(
 					"ListSecrets",
 					NewTestMessage("ListSecretsRequest").WithFields(parentField),

@@ -232,18 +232,18 @@ func (c *codec) annotateModel() error {
 		allTraitNames = append(allTraitNames, t.Name)
 	}
 	for msg := range c.Model.AllMessages() {
-		if msg.Codec == nil {
+		if msg.Codec() == nil {
 			continue
 		}
-		annotation := msg.Codec.(*messageAnnotations)
+		annotation := msg.Codec().(*messageAnnotations)
 		if len(annotation.GatedBy) > 0 {
 			continue
 		}
-		if msg.ServicePlaceholder {
+		if msg.ServicePlaceholder() {
 			// Messages that are placeholders for services just get the same
 			// gating traits as the service.
 			annotation.GatedOp = " || "
-			annotation.GatedBy = []string{pascalCase(msg.Name)}
+			annotation.GatedBy = []string{pascalCase(msg.Name())}
 		} else {
 			annotation.GatedOp = " && "
 			annotation.GatedBy = allTraitNames

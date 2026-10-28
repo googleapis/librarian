@@ -47,13 +47,13 @@ func CrossReference(model *API) error {
 		}
 	}
 	for m := range model.AllMessages() {
-		for _, f := range m.Fields {
+		for _, f := range m.fields {
 			f.parent = m
 			if err := crossReferenceField(model, f); err != nil {
 				return err
 			}
 		}
-		for _, o := range m.OneOfs {
+		for _, o := range m.oneOfs {
 			for _, f := range o.fields {
 				f.group = o
 				f.parent = m
@@ -77,11 +77,11 @@ func CrossReference(model *API) error {
 		for _, signature := range m.Signatures {
 			signature.method = m
 			for _, name := range signature.names {
-				idx := slices.IndexFunc(input.Fields, func(f *Field) bool { return f.name == name })
+				idx := slices.IndexFunc(input.fields, func(f *Field) bool { return f.name == name })
 				if idx == -1 {
 					return fmt.Errorf("cannot find field %s in method signature for method %s", name, m.ID)
 				}
-				signature.fields = append(signature.fields, input.Fields[idx])
+				signature.fields = append(signature.fields, input.fields[idx])
 			}
 		}
 	}
@@ -111,12 +111,12 @@ func enrichSamples(model *API) {
 	}
 
 	for m := range model.AllMessages() {
-		for _, o := range m.OneOfs {
+		for _, o := range m.oneOfs {
 			if len(o.fields) > 0 {
 				o.exampleField = slices.MaxFunc(o.fields, sortOneOfFieldForExamples)
 			}
 		}
-		for _, f := range m.Fields {
+		for _, f := range m.fields {
 			enrichWithResourceNamePattern(f, m, model)
 		}
 	}
@@ -378,9 +378,9 @@ func enrichMethodSamples(m *Method) {
 		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID())
 	}
 
-	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"
+	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.id == ".google.protobuf.Empty"
 
-	m.IsList = m.OutputType != nil && m.OutputType.Pagination != nil
+	m.IsList = m.OutputType != nil && m.OutputType.pagination != nil
 
 	if m.SampleInfo = aipStandardGetInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardGet = true
@@ -413,7 +413,7 @@ func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
 		}
 	} else if f.name == StandardFieldNameForResourceRef {
 		// The field is the `name` field.
-		resource = m.Resource
+		resource = m.resource
 	}
 
 	if resource != nil && len(resource.Patterns()) > 0 {
@@ -474,7 +474,7 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 	if !found || maybeSingular == "" {
 		return nil
 	}
-	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("get%srequest", maybeSingular) {
+	if strings.ToLower(m.InputType.name) != fmt.Sprintf("get%srequest", maybeSingular) {
 		return nil
 	}
 
@@ -505,7 +505,7 @@ func aipStandardDeleteInfo(m *Method) *SampleInfo {
 		return nil
 	}
 	if m.InputType == nil ||
-		strings.ToLower(m.InputType.Name) != fmt.Sprintf("delete%srequest", maybeSingular) {
+		strings.ToLower(m.InputType.name) != fmt.Sprintf("delete%srequest", maybeSingular) {
 		return nil
 	}
 
@@ -530,7 +530,7 @@ func aipStandardUndeleteInfo(m *Method) *SampleInfo {
 		return nil
 	}
 	if m.InputType == nil ||
-		strings.ToLower(m.InputType.Name) != fmt.Sprintf("undelete%srequest", maybeSingular) {
+		strings.ToLower(m.InputType.name) != fmt.Sprintf("undelete%srequest", maybeSingular) {
 		return nil
 	}
 
@@ -559,7 +559,7 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("create%srequest", maybeSingular) {
+	if strings.ToLower(m.InputType.name) != fmt.Sprintf("create%srequest", maybeSingular) {
 		return nil
 	}
 
@@ -575,7 +575,7 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 
 	var targetTypeID string
 	if outputResource.Self() != nil {
-		targetTypeID = outputResource.Self().ID
+		targetTypeID = outputResource.Self().id
 	}
 	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
 	if resourceField == nil {
@@ -608,7 +608,7 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 	if !found || maybeSingular == "" {
 		return nil
 	}
-	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("update%srequest", maybeSingular) {
+	if strings.ToLower(m.InputType.name) != fmt.Sprintf("update%srequest", maybeSingular) {
 		return nil
 	}
 	if outputResource.Singular() != "" &&
@@ -618,14 +618,14 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 
 	var targetTypeID string
 	if outputResource.Self() != nil {
-		targetTypeID = outputResource.Self().ID
+		targetTypeID = outputResource.Self().id
 	}
 	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
 	var updateMaskField *Field
-	for _, f := range m.InputType.Fields {
+	for _, f := range m.InputType.fields {
 		if f.name == StandardFieldNameForUpdateMask && f.typezID == ".google.protobuf.FieldMask" {
 			updateMaskField = f
 			break
@@ -634,7 +634,7 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 
 	var resourceNameField *Field
 	if resourceField.messageType != nil {
-		for _, f := range resourceField.messageType.Fields {
+		for _, f := range resourceField.messageType.fields {
 			if f.name == StandardFieldNameForResourceRef {
 				resourceNameField = f
 				break
@@ -660,19 +660,19 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("list%srequest", maybePlural) {
+	if strings.ToLower(m.InputType.name) != fmt.Sprintf("list%srequest", maybePlural) {
 		return nil
 	}
 
-	if strings.ToLower(m.OutputType.Name) != fmt.Sprintf("list%sresponse", maybePlural) {
+	if strings.ToLower(m.OutputType.name) != fmt.Sprintf("list%sresponse", maybePlural) {
 		return nil
 	}
 
-	pageableItem := m.OutputType.Pagination.PageableItem
-	if pageableItem == nil || pageableItem.messageType == nil || pageableItem.messageType.Resource == nil {
+	pageableItem := m.OutputType.pagination.pageableItem
+	if pageableItem == nil || pageableItem.messageType == nil || pageableItem.messageType.resource == nil {
 		return nil
 	}
-	resourceType := pageableItem.messageType.Resource.Type()
+	resourceType := pageableItem.messageType.resource.Type()
 
 	parentField := findBestParentFieldByType(m.InputType, resourceType)
 
@@ -688,7 +688,7 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 
 func findBestResourceFieldByType(message *Message, model *API, targetType string) *Field {
 	var bestField *Field
-	for _, field := range message.Fields {
+	for _, field := range message.fields {
 		if field.resourceReference == nil {
 			continue
 		}
@@ -711,7 +711,7 @@ func findBestResourceFieldByType(message *Message, model *API, targetType string
 
 func findBestResourceFieldBySingular(message *Message, model *API, targetSingular string) *Field {
 	var bestField *Field
-	for _, field := range message.Fields {
+	for _, field := range message.fields {
 		if field.resourceReference == nil {
 			continue
 		}
@@ -736,7 +736,7 @@ func findBestResourceFieldBySingular(message *Message, model *API, targetSingula
 
 func findBestParentFieldByType(message *Message, childType string) *Field {
 	var bestField *Field
-	for _, field := range message.Fields {
+	for _, field := range message.fields {
 		if field.name == StandardFieldNameForParentResourceRef {
 			return field
 		}
@@ -754,7 +754,7 @@ func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, si
 		bodyFieldPath = pathInfo.BodyFieldPath()
 	}
 
-	for _, f := range message.Fields {
+	for _, f := range message.fields {
 		if f.name == bodyFieldPath {
 			return f
 		}
@@ -769,7 +769,7 @@ func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, si
 
 func findResourceIDField(message *Message, singular string) *Field {
 	expectedIDName := fmt.Sprintf("%s_id", singular)
-	for _, f := range message.Fields {
+	for _, f := range message.fields {
 		if f.name == expectedIDName && f.typez == TypezString {
 			return f
 		}
@@ -778,12 +778,12 @@ func findResourceIDField(message *Message, singular string) *Field {
 }
 
 func standardMethodOutputResource(m *Method) *Resource {
-	if m.OutputType != nil && m.OutputType.Resource != nil {
-		return m.OutputType.Resource
+	if m.OutputType != nil && m.OutputType.resource != nil {
+		return m.OutputType.resource
 	}
 	if m.OperationInfo != nil {
 		if lroResponse := m.LongRunningResponseType; lroResponse != nil {
-			return lroResponse.Resource
+			return lroResponse.resource
 		}
 	}
 	return nil

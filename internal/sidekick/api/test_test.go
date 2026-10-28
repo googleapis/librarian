@@ -139,8 +139,8 @@ func TestField_WithJSONName(t *testing.T) {
 
 func TestMessage_WithDocumentation(t *testing.T) {
 	m := api.NewTestMessage("Test").WithDocumentation("A test message.")
-	if m.Documentation != "A test message." {
-		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation)
+	if m.Documentation() != "A test message." {
+		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation())
 	}
 }
 
@@ -163,21 +163,20 @@ func TestNewTestAPI_IndexesNestedMessages(t *testing.T) {
 	parent := api.NewTestMessage("Parent").WithMessages(child)
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
-	if got := model.Message(child.ID); got != child {
-		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	if got := model.Message(child.ID()); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID(), got, child)
 	}
-	if child.Parent != parent {
-		t.Errorf("child.Parent = %v, want %v", child.Parent, parent)
+	if child.Parent() != parent {
+		t.Errorf("child.Parent() = %v, want %v", child.Parent(), parent)
 	}
 }
 
 func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
 	val := api.NewTestEnumValue("VAL", 0)
 	nestedEnum := api.NewTestEnum("NestedEnum").WithValues(val)
-	parent := api.NewTestMessage("Parent")
 	// Bypassing WithEnums() deliberately leaves Parent and Value.Parent unwired,
 	// verifying that NewTestAPI properly initializes them during indexing.
-	parent.Enums = []*api.Enum{nestedEnum}
+	parent := api.NewMessageBuilderFrom(api.NewTestMessage("Parent")).AddEnum(nestedEnum).Build()
 
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
@@ -198,8 +197,8 @@ func TestNewTestAPI_DeduplicatesNestedEnums(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, nil)
 
-	if got := len(parent.Enums); got != 1 {
-		t.Errorf("len(parent.Enums) = %d, want 1", got)
+	if got := len(parent.Enums()); got != 1 {
+		t.Errorf("len(parent.Enums()) = %d, want 1", got)
 	}
 	if got := model.Enum(enum.ID()); got != enum {
 		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID(), got, enum)
@@ -212,11 +211,11 @@ func TestNewTestAPI_DeduplicatesNestedMessages(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent, child}, nil, nil)
 
-	if got := len(parent.Messages); got != 1 {
-		t.Errorf("len(parent.Messages) = %d, want 1", got)
+	if got := len(parent.Messages()); got != 1 {
+		t.Errorf("len(parent.Messages()) = %d, want 1", got)
 	}
-	if got := model.Message(child.ID); got != child {
-		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	if got := model.Message(child.ID()); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID(), got, child)
 	}
 }
 
@@ -225,8 +224,8 @@ func TestMessage_WithMessages_UpdatesOneOfIDs(t *testing.T) {
 	child := api.NewTestMessage("Child").WithOneOfs(oneof)
 	_ = api.NewTestMessage("Parent").WithMessages(child)
 
-	if got, want := child.OneOfs[0].ID(), ".test.Parent.Child.choice"; got != want {
-		t.Errorf("child.OneOfs[0].ID() = %q, want %q", got, want)
+	if got, want := child.OneOfs()[0].ID(), ".test.Parent.Child.choice"; got != want {
+		t.Errorf("child.OneOfs()[0].ID() = %q, want %q", got, want)
 	}
 }
 
@@ -283,7 +282,7 @@ func TestNewTestMapWithFields(t *testing.T) {
 			WithJSONName("customVal").
 			WithID(".custom.package.MyMap.custom_val").
 			WithTypez(api.TypezMessage).
-			WithTypezID(valMsg.ID).
+			WithTypezID(valMsg.ID()).
 			WithMessageType(valMsg).
 			Build()).
 		Build()
@@ -613,11 +612,11 @@ func TestPaginationInfo_Builder(t *testing.T) {
 	items := api.NewTestField("items")
 	p := api.NewTestPaginationInfo(token, items)
 
-	if p.NextPageToken != token {
-		t.Errorf("p.NextPageToken = %v, want %v", p.NextPageToken, token)
+	if p.NextPageToken() != token {
+		t.Errorf("p.NextPageToken() = %v, want %v", p.NextPageToken(), token)
 	}
-	if p.PageableItem != items {
-		t.Errorf("p.PageableItem = %v, want %v", p.PageableItem, items)
+	if p.PageableItem() != items {
+		t.Errorf("p.PageableItem() = %v, want %v", p.PageableItem(), items)
 	}
 }
 
@@ -950,5 +949,100 @@ func TestField_Builder(t *testing.T) {
 	}
 	if !f2.SkipProtoConversion() {
 		t.Errorf("f2.SkipProtoConversion() = false, want true")
+	}
+}
+
+func TestMessage_Builder(t *testing.T) {
+	parent := api.NewTestMessage("Parent")
+	f1 := api.NewFieldBuilder().WithName("f1").Build()
+	f2 := api.NewFieldBuilder().WithName("f2").Build()
+	fSkipped := api.NewFieldBuilder().WithName("skipped").Build()
+	e1 := api.NewEnumBuilder().WithName("E1").Build()
+	e2 := api.NewEnumBuilder().WithName("E2").Build()
+	m1 := api.NewMessageBuilder().WithName("M1").Build()
+	m2 := api.NewMessageBuilder().WithName("M2").Build()
+	o1 := api.NewOneOfBuilder().WithName("o1").Build()
+	o2 := api.NewOneOfBuilder().WithName("o2").Build()
+	res := api.NewResourceBuilder().WithType("test.googleapis.com/Book").Build()
+	pag := api.NewPaginationInfo(f1, f2)
+
+	msg := api.NewMessageBuilder().
+		WithName("Book").
+		WithID(".test.Parent.Book").
+		WithDocumentation("Book docs").
+		WithDeprecated(true).
+		WithFields(f1).
+		AddField(f2).
+		WithSkippedFields(fSkipped).
+		WithEnums(e1).
+		AddEnum(e2).
+		WithMessages(m1).
+		AddMessage(m2).
+		WithOneOfs(o1).
+		AddOneOf(o2).
+		WithParent(parent).
+		WithPackage("test").
+		WithSyntheticRequest(true).
+		WithServicePlaceholder(true).
+		WithPagination(pag).
+		WithResource(res).
+		Build()
+	msg.SetAnnotations("msg-codec")
+
+	if msg.Name() != "Book" {
+		t.Errorf("msg.Name() = %q, want Book", msg.Name())
+	}
+	if msg.ID() != ".test.Parent.Book" {
+		t.Errorf("msg.ID() = %q, want .test.Parent.Book", msg.ID())
+	}
+	if msg.Documentation() != "Book docs" {
+		t.Errorf("msg.Documentation() = %q, want Book docs", msg.Documentation())
+	}
+	if !msg.Deprecated() {
+		t.Errorf("msg.Deprecated() = false, want true")
+	}
+	if len(msg.Fields()) != 2 || msg.Fields()[0] != f1 || msg.Fields()[1] != f2 {
+		t.Errorf("msg.Fields() = %v, want [f1, f2]", msg.Fields())
+	}
+	if len(msg.SkippedFields()) != 1 || msg.SkippedFields()[0] != fSkipped {
+		t.Errorf("msg.SkippedFields() = %v, want [fSkipped]", msg.SkippedFields())
+	}
+	if len(msg.Enums()) != 2 || msg.Enums()[0] != e1 || msg.Enums()[1] != e2 {
+		t.Errorf("msg.Enums() = %v, want [e1, e2]", msg.Enums())
+	}
+	if len(msg.Messages()) != 2 || msg.Messages()[0] != m1 || msg.Messages()[1] != m2 {
+		t.Errorf("msg.Messages() = %v, want [m1, m2]", msg.Messages())
+	}
+	if len(msg.OneOfs()) != 2 || msg.OneOfs()[0] != o1 || msg.OneOfs()[1] != o2 {
+		t.Errorf("msg.OneOfs() = %v, want [o1, o2]", msg.OneOfs())
+	}
+	if msg.Parent() != parent {
+		t.Errorf("msg.Parent() = %v, want %v", msg.Parent(), parent)
+	}
+	if msg.Package() != "test" {
+		t.Errorf("msg.Package() = %q, want test", msg.Package())
+	}
+	if !msg.SyntheticRequest() {
+		t.Errorf("msg.SyntheticRequest() = false, want true")
+	}
+	if !msg.ServicePlaceholder() {
+		t.Errorf("msg.ServicePlaceholder() = false, want true")
+	}
+	if msg.Pagination() != pag {
+		t.Errorf("msg.Pagination() = %v, want %v", msg.Pagination(), pag)
+	}
+	if msg.Resource() != res {
+		t.Errorf("msg.Resource() = %v, want %v", msg.Resource(), res)
+	}
+	if msg.Codec() != "msg-codec" {
+		t.Errorf("msg.Codec() = %v, want msg-codec", msg.Codec())
+	}
+
+	cloned := api.NewMessageBuilderFrom(msg).WithName("ClonedBook").Build()
+	if cloned.Name() != "ClonedBook" {
+		t.Errorf("cloned.Name() = %q, want ClonedBook", cloned.Name())
+	}
+	if cloned.ID() != msg.ID() {
+		t.Errorf("cloned.ID() = %q, want %q", cloned.ID(), msg.ID())
 	}
 }

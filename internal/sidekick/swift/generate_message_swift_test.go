@@ -491,7 +491,7 @@ func TestGenerateMessage_FoundationImport(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.message.Name+".swift")
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.message.Name()+".swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)

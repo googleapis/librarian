@@ -65,7 +65,7 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *con
 		ownedPackages[s.Package] = true
 	}
 	for _, m := range model.Messages {
-		ownedPackages[m.Package] = true
+		ownedPackages[m.Package()] = true
 	}
 	for _, e := range model.Enums {
 		ownedPackages[e.Package()] = true
@@ -76,7 +76,7 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *con
 		targetIDs = append(targetIDs, s.ID)
 	}
 	for _, m := range model.Messages {
-		targetIDs = append(targetIDs, m.ID)
+		targetIDs = append(targetIDs, m.ID())
 	}
 	for _, e := range model.Enums {
 		targetIDs = append(targetIDs, e.ID())
@@ -92,7 +92,7 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *con
 		if s := model.Service(id); s != nil {
 			pkg = s.Package
 		} else if m := model.Message(id); m != nil {
-			pkg = m.Package
+			pkg = m.Package()
 		} else if e := model.Enum(id); e != nil {
 			pkg = e.Package()
 		}

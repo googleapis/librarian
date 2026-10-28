@@ -37,7 +37,7 @@ func findAutoPopulatedFields(serviceConfig *serviceconfig.Service, methodID stri
 			continue
 		}
 		for _, name := range m.GetAutoPopulatedFields() {
-			for _, field := range message.Fields {
+			for _, field := range message.Fields() {
 				if field.Name() != name {
 					continue
 				}

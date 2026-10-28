@@ -428,8 +428,8 @@ func TestFullyQualifiedMessageTypeName(t *testing.T) {
 
 	t.Run("nested inside service placeholder", func(t *testing.T) {
 		placeholder := api.NewTestMessage("Advice").
-			WithPackage("google.cloud.test.v1")
-		placeholder.ServicePlaceholder = true
+			WithPackage("google.cloud.test.v1").
+			WithServicePlaceholder()
 		nested := api.NewTestMessage("CapacityHistoryRequest")
 		placeholder.WithMessages(nested)
 
@@ -454,8 +454,8 @@ func TestMessageTypeName_DuplicateNameQualification(t *testing.T) {
 	nestedMsg := api.NewTestMessage("CapacityHistoryRequest")
 	servicePlaceholder := api.NewTestMessage("Advice").
 		WithPackage(pkg).
-		WithMessages(nestedMsg)
-	servicePlaceholder.ServicePlaceholder = true
+		WithMessages(nestedMsg).
+		WithServicePlaceholder()
 
 	topLevelMsg := api.NewTestMessage("CapacityHistoryRequest").
 		WithPackage(pkg)

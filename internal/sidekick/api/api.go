@@ -194,7 +194,7 @@ func (a *API) AddMessage(m *Message) {
 	if a.messageByID == nil {
 		a.messageByID = make(map[string]*Message)
 	}
-	a.messageByID[m.ID] = m
+	a.messageByID[m.id] = m
 }
 
 // Enum returns a message that is associated with the API.

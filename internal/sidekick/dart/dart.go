@@ -130,9 +130,9 @@ var reservedNames = map[string]string{
 }
 
 func messageName(m *api.Message) string {
-	name := strcase.ToCamel(m.Name)
+	name := strcase.ToCamel(m.Name())
 
-	if m.Parent == nil {
+	if m.Parent() == nil {
 		// For top-most symbols, check for conflicts with reserved names.
 		if _, hasConflict := reservedNames[name]; hasConflict {
 			return name + deconflictChar
@@ -140,13 +140,13 @@ func messageName(m *api.Message) string {
 			return name
 		}
 	} else {
-		return messageName(m.Parent) + nestedMessageChar + name
+		return messageName(m.Parent()) + nestedMessageChar + name
 	}
 }
 
 func qualifiedName(m *api.Message) string {
 	// Convert '.google.protobuf.Duration' to 'google.protobuf.Duration'.
-	return strings.TrimPrefix(m.ID, ".")
+	return strings.TrimPrefix(m.ID(), ".")
 }
 
 func fieldName(field *api.Field) string {

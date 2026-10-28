@@ -112,7 +112,7 @@ func TestLongRunningHelpers(t *testing.T) {
 		{
 			name: "LRO with empty response",
 			method: func() *Method {
-				m := NewTestMethod("test").WithOperationInfo(NewTestOperationInfo(emptyMsg.ID, ""))
+				m := NewTestMethod("test").WithOperationInfo(NewTestOperationInfo(emptyMsg.ID(), ""))
 				m.Model = model
 				return m
 			}(),
@@ -122,7 +122,7 @@ func TestLongRunningHelpers(t *testing.T) {
 		{
 			name: "LRO with non-empty response",
 			method: func() *Method {
-				m := NewTestMethod("test").WithOperationInfo(NewTestOperationInfo(responseMsg.ID, ""))
+				m := NewTestMethod("test").WithOperationInfo(NewTestOperationInfo(responseMsg.ID(), ""))
 				m.Model = model
 				return m
 			}(),

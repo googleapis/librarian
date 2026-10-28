@@ -185,12 +185,12 @@ type messageAnnotation struct {
 
 // HasFields returns true if the message has fields.
 func (m *messageAnnotation) HasFields() bool {
-	return len(m.Parent.Fields) > 0
+	return len(m.Parent.Fields()) > 0
 }
 
 // HasCustomEncoding returns true if the message has custom encoding.
 func (m *messageAnnotation) HasCustomEncoding() bool {
-	_, hasCustomEncoding := usesCustomEncoding[m.Parent.ID]
+	_, hasCustomEncoding := usesCustomEncoding[m.Parent.ID()]
 	return hasCustomEncoding
 }
 
@@ -713,29 +713,29 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 }
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
-	if _, omit := omitGeneration[m.ID]; omit {
+	if _, omit := omitGeneration[m.ID()]; omit {
 		// If the message is allowlisted as omitted, skip it completely.
-		m.Codec = &messageAnnotation{
+		m.SetAnnotations(&messageAnnotation{
 			OmitGeneration: true,
-		}
+		})
 		return
 	}
 
-	for _, f := range m.Fields {
+	for _, f := range m.Fields() {
 		annotate.annotateField(f)
 	}
-	for _, o := range m.OneOfs {
+	for _, o := range m.OneOfs() {
 		annotate.annotateOneOf(o)
 	}
-	for _, e := range m.Enums {
+	for _, e := range m.Enums() {
 		annotate.annotateEnum(e)
 	}
-	for _, m := range m.Messages {
+	for _, m := range m.Messages() {
 		annotate.annotateMessage(m)
 	}
 
 	constructorBody := ";"
-	_, needsValidation := needsCtorValidation[m.ID]
+	_, needsValidation := needsCtorValidation[m.ID()]
 	if needsValidation {
 		constructorBody = " {\n" +
 			"    _validate();\n" +
@@ -744,21 +744,21 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 
 	toStringLines := createToStringLines(m)
 
-	m.Codec = &messageAnnotation{
+	m.SetAnnotations(&messageAnnotation{
 		Parent:          m,
 		Name:            messageName(m),
 		QualifiedName:   qualifiedName(m),
-		DocLines:        formatDocComments(m.Documentation, annotate.model),
+		DocLines:        formatDocComments(m.Documentation(), annotate.model),
 		ConstructorBody: constructorBody,
 		ToStringLines:   toStringLines,
 		Model:           annotate.model,
-	}
+	})
 }
 
 func createToStringLines(message *api.Message) []string {
 	lines := []string{}
 
-	for _, field := range message.Fields {
+	for _, field := range message.Fields() {
 		codec := field.Codec().(*fieldAnnotation)
 		name := codec.Name
 
@@ -789,10 +789,10 @@ func createToStringLines(message *api.Message) []string {
 
 func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	// Ignore imports added from the input and output messages.
-	if method.InputType.Codec == nil {
+	if method.InputType.Codec() == nil {
 		annotate.annotateMessage(method.InputType)
 	}
-	if method.OutputType.Codec == nil {
+	if method.OutputType.Codec() == nil {
 		annotate.annotateMessage(method.OutputType)
 	}
 
@@ -1327,7 +1327,7 @@ func (annotate *annotateModel) buildQueryLines(
 
 		message := annotate.model.Message(field.TypezID())
 		// Unroll the fields for messages.
-		for _, field := range message.Fields {
+		for _, field := range message.Fields() {
 			result = annotate.buildQueryLines(
 				result, ref+deref, couldRefPrefixBeNull || codec.Nullable, param+".", field)
 		}
@@ -1485,14 +1485,14 @@ func (annotate *annotateModel) resolveMessageName(message *api.Message, returnVo
 		return ""
 	}
 
-	if message.ID == ".google.protobuf.Empty" && returnVoidForEmpty {
+	if message.ID() == ".google.protobuf.Empty" && returnVoidForEmpty {
 		return "void"
 	}
 
-	annotate.updateUsedPackages(message.Package)
+	annotate.updateUsedPackages(message.Package())
 
 	ref := messageName(message)
-	importPrefix, needsImportPrefix := annotate.packagePrefixes[message.Package]
+	importPrefix, needsImportPrefix := annotate.packagePrefixes[message.Package()]
 	if needsImportPrefix {
 		ref = importPrefix + "." + ref
 	}
@@ -1527,11 +1527,11 @@ func registerMissingWkt(model *api.API) {
 	} {
 		msg := model.Message(message.ID)
 		if msg == nil {
-			model.AddMessage(&api.Message{
-				ID:      message.ID,
-				Name:    message.Name,
-				Package: message.Package,
-			})
+			model.AddMessage(api.NewMessageBuilder().
+				WithID(message.ID).
+				WithName(message.Name).
+				WithPackage(message.Package).
+				Build())
 		}
 	}
 }
@@ -1551,7 +1551,7 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 		if m == nil {
 			return false
 		}
-		for _, f := range m.Fields {
+		for _, f := range m.Fields() {
 			if slices.Contains(f.Behavior(), api.FieldBehaviorRequired) {
 				return true
 			}
@@ -1574,7 +1574,7 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 			continue
 		}
 		inSamePackage := func(msg *api.Message) bool {
-			return msg != nil && msg.Package == s.Package
+			return msg != nil && msg.Package() == s.Package
 		}
 		sAnn := s.Codec.(*serviceAnnotations)
 		for _, m := range sAnn.Methods {

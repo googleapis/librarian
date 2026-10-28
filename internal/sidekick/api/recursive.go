@@ -17,9 +17,9 @@ package api
 // LabelRecursiveFields labels fields that recursively reference other messages.
 func LabelRecursiveFields(model *API) {
 	for message := range model.AllMessages() {
-		for _, field := range message.Fields {
-			visited := map[string]bool{message.ID: true}
-			field.recursive = field.recursivelyReferences(message.ID, model, visited)
+		for _, field := range message.fields {
+			visited := map[string]bool{message.id: true}
+			field.recursive = field.recursivelyReferences(message.id, model, visited)
 		}
 	}
 }
@@ -65,8 +65,8 @@ func (field *Field) recursivelyReferences(messageID string, model *API, visited 
 }
 
 func (message *Message) recursivelyReferences(messageID string, model *API, visited map[string]bool) bool {
-	visited[message.ID] = true
-	for _, field := range message.Fields {
+	visited[message.id] = true
+	for _, field := range message.fields {
 		if field.recursivelyReferences(messageID, model, visited) {
 			return true
 		}

@@ -637,18 +637,18 @@ func isProto2(f *descriptorpb.FileDescriptorProto) bool {
 }
 
 func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, proto2 bool, parent *api.Message, comments map[string]string, pathPrefix []int32) (*api.Message, error) {
-	message := &api.Message{
-		Name:          m.GetName(),
-		ID:            mFQN,
-		Parent:        parent,
-		Package:       packagez,
-		Documentation: lookupComment(comments, pathPrefix),
-		Deprecated:    m.GetOptions().GetDeprecated(),
-	}
+	mb := api.NewMessageBuilder().
+		WithName(m.GetName()).
+		WithID(mFQN).
+		WithParent(parent).
+		WithPackage(packagez).
+		WithDocumentation(lookupComment(comments, pathPrefix)).
+		WithDeprecated(m.GetOptions().GetDeprecated())
+	message := mb.Build()
 	model.AddMessage(message)
 
 	if opts := m.GetOptions(); opts != nil {
-		if err := processResourceAnnotation(opts, message, model); err != nil {
+		if err := processResourceAnnotation(opts, mb, model); err != nil {
 			return nil, err
 		}
 	}
@@ -665,13 +665,13 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 			if err != nil {
 				return nil, err
 			}
-			message.Messages = append(message.Messages, nmsg)
+			mb.AddMessage(nmsg)
 		}
 	}
 	for i, e := range m.GetEnumType() {
 		eFQN := mFQN + "." + e.GetName()
 		e := processEnum(model, e, eFQN, packagez, message, comments, append(pathPrefix, messageDescriptorEnum, int32(i)))
-		message.Enums = append(message.Enums, e)
+		mb.AddEnum(e)
 	}
 	oneOfBuilders := make([]*api.OneOfBuilder, len(m.OneofDecl))
 	for i, oneof := range m.OneofDecl {
@@ -685,7 +685,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		if err != nil {
 			return nil, err
 		}
-		message.Fields = append(message.Fields, field)
+		mb.AddField(field)
 		if field.IsOneOf() {
 			oneOfBuilders[*mf.OneofIndex].AddField(field)
 		}
@@ -695,7 +695,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	for _, ob := range oneOfBuilders {
 		oneof := ob.Build()
 		if len(oneof.Fields()) > 0 {
-			message.OneOfs = append(message.OneOfs, oneof)
+			mb.AddOneOf(oneof)
 		}
 	}
 
@@ -749,19 +749,20 @@ func processMapEntry(model *api.API, nm *descriptorpb.DescriptorProto, nmFQN str
 	return nil
 }
 
-func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message, model *api.API) error {
+func processResourceAnnotation(opts *descriptorpb.MessageOptions, mb *api.MessageBuilder, model *api.API) error {
 	if !proto.HasExtension(opts, eResource) {
 		return nil
 	}
+	message := mb.Build()
 	ext := proto.GetExtension(opts, eResource)
 	res, ok := ext.(*resourceDescriptor)
 	if !ok {
-		return fmt.Errorf("in message %q: unexpected type for eResource extension: %T", message.ID, ext)
+		return fmt.Errorf("in message %q: unexpected type for eResource extension: %T", message.ID(), ext)
 	}
 
 	patterns, err := parseResourcePatterns(res.GetPattern())
 	if err != nil {
-		return fmt.Errorf("in message %q: %w", message.ID, err)
+		return fmt.Errorf("in message %q: %w", message.ID(), err)
 	}
 
 	resource := api.NewResourceBuilder().
@@ -771,7 +772,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		WithSingular(res.GetSingular()).
 		WithSelf(message).
 		Build()
-	message.Resource = resource
+	mb.WithResource(resource)
 	model.AddResource(resource)
 	return nil
 }

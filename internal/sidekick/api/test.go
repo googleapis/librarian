@@ -39,29 +39,29 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 
 	var indexMessage func(m *Message)
 	indexMessage = func(m *Message) {
-		model.messageByID[m.ID] = m
-		if m.Resource != nil {
-			model.resourceByType[m.Resource.typez] = m.Resource
+		model.messageByID[m.id] = m
+		if m.resource != nil {
+			model.resourceByType[m.resource.typez] = m.resource
 		}
-		for _, f := range m.Fields {
+		for _, f := range m.fields {
 			if f.mapType != nil {
 				model.AddMap(f.mapType)
 			}
 		}
-		for _, e := range m.Enums {
+		for _, e := range m.enums {
 			model.enumByID[e.id] = e
 			e.parent = m
 			for _, ev := range e.values {
 				ev.parent = e
 			}
 		}
-		for _, child := range m.Messages {
-			child.Parent = m
+		for _, child := range m.messages {
+			child.parent = m
 			indexMessage(child)
 		}
 	}
 	for _, m := range messages {
-		model.PackageName = m.Package
+		model.PackageName = m.packagez
 		indexMessage(m)
 	}
 	for _, e := range enums {
@@ -76,12 +76,12 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 	}
 	for _, m := range messages {
-		parentID := parentName(m.ID)
+		parentID := parentName(m.id)
 		parent := model.messageByID[parentID]
 		if parent != nil {
-			m.Parent = parent
-			if !slices.Contains(parent.Messages, m) {
-				parent.Messages = append(parent.Messages, m)
+			m.parent = parent
+			if !slices.Contains(parent.messages, m) {
+				parent.messages = append(parent.messages, m)
 			}
 		}
 	}
@@ -89,8 +89,8 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		parent := model.messageByID[parentName(e.id)]
 		if parent != nil {
 			e.parent = parent
-			if !slices.Contains(parent.Enums, e) {
-				parent.Enums = append(parent.Enums, e)
+			if !slices.Contains(parent.enums, e) {
+				parent.enums = append(parent.enums, e)
 			}
 		}
 		for _, ev := range e.values {
@@ -169,19 +169,19 @@ func parentName(id string) string {
 // NewTestMessage creates a message with defaults for testing.
 // Default package is "test".
 func NewTestMessage(name string) *Message {
-	return (&Message{Name: name}).WithPackage("test")
+	return NewMessageBuilder().WithName(name).Build().WithPackage("test")
 }
 
 // WithPackage sets the package for the message and updates its ID.
 func (m *Message) WithPackage(pkg string) *Message {
-	m.Package = pkg
-	m.ID = fmt.Sprintf(".%s.%s", pkg, m.Name)
+	m.packagez = pkg
+	m.id = fmt.Sprintf(".%s.%s", pkg, m.name)
 	return m
 }
 
 // WithID overrides the message's ID.
 func (m *Message) WithID(id string) *Message {
-	m.ID = id
+	m.id = id
 	return m
 }
 
@@ -191,10 +191,10 @@ func (m *Message) WithFields(fields ...*Field) *Message {
 		f.parent = m
 		// If field ID is generic/default, re-scope it to the message.
 		if strings.HasPrefix(f.id, ".test.") || f.id == "" {
-			f.id = fmt.Sprintf("%s.%s", m.ID, f.name)
+			f.id = fmt.Sprintf("%s.%s", m.id, f.name)
 		}
 	}
-	m.Fields = append(m.Fields, fields...)
+	m.fields = append(m.fields, fields...)
 	return m
 }
 
@@ -203,37 +203,37 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	for _, o := range oneofs {
 		// If oneof ID is generic/default, re-scope it to the message.
 		if strings.HasPrefix(o.id, ".test.") || o.id == "" {
-			o.id = fmt.Sprintf("%s.%s", m.ID, o.name)
+			o.id = fmt.Sprintf("%s.%s", m.id, o.name)
 		}
-		m.OneOfs = append(m.OneOfs, o)
+		m.oneOfs = append(m.oneOfs, o)
 		m.WithFields(o.fields...)
 	}
 	return m
 }
 
 func (m *Message) withParentRecursive(parent *Message) {
-	m.Parent = parent
-	if m.Parent == nil {
+	m.parent = parent
+	if m.parent == nil {
 		return
 	}
-	m.Package = parent.Package
-	if strings.HasPrefix(m.ID, ".test.") || m.ID == "" {
-		m.ID = fmt.Sprintf("%s.%s", parent.ID, m.Name)
+	m.packagez = parent.packagez
+	if strings.HasPrefix(m.id, ".test.") || m.id == "" {
+		m.id = fmt.Sprintf("%s.%s", parent.id, m.name)
 	}
-	for _, f := range m.Fields {
+	for _, f := range m.fields {
 		if strings.HasPrefix(f.id, ".test.") || f.id == "" {
-			f.id = fmt.Sprintf("%s.%s", m.ID, f.name)
+			f.id = fmt.Sprintf("%s.%s", m.id, f.name)
 		}
 	}
-	for _, o := range m.OneOfs {
+	for _, o := range m.oneOfs {
 		if strings.HasPrefix(o.id, ".test.") || o.id == "" {
-			o.id = fmt.Sprintf("%s.%s", m.ID, o.name)
+			o.id = fmt.Sprintf("%s.%s", m.id, o.name)
 		}
 	}
-	for _, c := range m.Messages {
+	for _, c := range m.messages {
 		c.withParentRecursive(m)
 	}
-	for _, e := range m.Enums {
+	for _, e := range m.enums {
 		_ = e.WithParent(m)
 	}
 }
@@ -243,7 +243,7 @@ func (m *Message) WithMessages(messages ...*Message) *Message {
 	for _, child := range messages {
 		child.withParentRecursive(m)
 	}
-	m.Messages = append(m.Messages, messages...)
+	m.messages = append(m.messages, messages...)
 	return m
 }
 
@@ -252,28 +252,25 @@ func (m *Message) WithEnums(enums ...*Enum) *Message {
 	for _, e := range enums {
 		e.WithParent(m)
 	}
-	m.Enums = append(m.Enums, enums...)
+	m.enums = append(m.enums, enums...)
 	return m
 }
 
 // WithPagination items and page token fields for a pagination response.
 func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
-	if nextPageToken.parent != m {
+	if nextPageToken != nil && nextPageToken.parent != m {
 		m.WithFields(nextPageToken)
 	}
-	if items.parent != m {
+	if items != nil && items.parent != m {
 		m.WithFields(items)
 	}
-	m.Pagination = &PaginationInfo{
-		NextPageToken: nextPageToken,
-		PageableItem:  items,
-	}
+	m.pagination = NewPaginationInfo(nextPageToken, items)
 	return m
 }
 
 // WithResource sets the resource definition on the message.
 func (m *Message) WithResource(resource *Resource) *Message {
-	m.Resource = resource
+	m.resource = resource
 	if resource != nil {
 		resource.self = m
 	}
@@ -282,13 +279,37 @@ func (m *Message) WithResource(resource *Resource) *Message {
 
 // WithDeprecated sets whether the message is deprecated.
 func (m *Message) WithDeprecated(deprecated bool) *Message {
-	m.Deprecated = deprecated
+	m.deprecated = deprecated
 	return m
 }
 
 // WithDocumentation sets the documentation for the message.
 func (m *Message) WithDocumentation(doc string) *Message {
-	m.Documentation = doc
+	m.documentation = doc
+	return m
+}
+
+// WithParent sets the parent message directly without rewriting IDs.
+func (m *Message) WithParent(parent *Message) *Message {
+	m.parent = parent
+	return m
+}
+
+// WithSyntheticRequest marks the message as a synthetic request.
+func (m *Message) WithSyntheticRequest() *Message {
+	m.syntheticRequest = true
+	return m
+}
+
+// WithServicePlaceholder marks the message as a service placeholder.
+func (m *Message) WithServicePlaceholder() *Message {
+	m.servicePlaceholder = true
+	return m
+}
+
+// WithSkippedFields sets the skipped fields on the message.
+func (m *Message) WithSkippedFields(fields ...*Field) *Message {
+	m.skippedFields = fields
 	return m
 }
 
@@ -451,7 +472,7 @@ func (m *Method) WithVerb(verb string) *Method {
 func (m *Method) WithInput(msg *Message) *Method {
 	m.InputType = msg
 	if msg != nil {
-		m.InputTypeID = msg.ID
+		m.InputTypeID = msg.id
 	}
 	return m
 }
@@ -461,7 +482,7 @@ func (m *Method) WithInput(msg *Message) *Method {
 func (m *Method) WithOutput(msg *Message) *Method {
 	m.OutputType = msg
 	if msg != nil {
-		m.OutputTypeID = msg.ID
+		m.OutputTypeID = msg.id
 	}
 	return m
 }
@@ -586,7 +607,7 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 	for _, s := range signatures {
 		s.method = m
 		for _, name := range s.names {
-			for _, f := range m.InputType.Fields {
+			for _, f := range m.InputType.fields {
 				if name != f.name {
 					continue
 				}
@@ -741,7 +762,7 @@ func (f *Field) WithMessageType(msg *Message) *Field {
 	f.messageType = msg
 	f.typez = TypezMessage
 	if msg != nil {
-		f.typezID = msg.ID
+		f.typezID = msg.id
 	}
 	return f
 }
@@ -881,9 +902,9 @@ func (e *Enum) WithDeprecated(deprecated bool) *Enum {
 func (e *Enum) WithParent(parent *Message) *Enum {
 	e.parent = parent
 	if parent != nil {
-		e.packagez = parent.Package
+		e.packagez = parent.packagez
 		if strings.HasPrefix(e.id, ".test.") || e.id == "" {
-			e.id = fmt.Sprintf("%s.%s", parent.ID, e.name)
+			e.id = fmt.Sprintf("%s.%s", parent.id, e.name)
 		}
 		for _, v := range e.values {
 			v.parent = e
@@ -1021,8 +1042,5 @@ func NewTestSampleInfo(resourceNameField *Field) *SampleInfo {
 
 // NewTestPaginationInfo creates a PaginationInfo for pagination responses.
 func NewTestPaginationInfo(nextPageToken, pageableItem *Field) *PaginationInfo {
-	return &PaginationInfo{
-		NextPageToken: nextPageToken,
-		PageableItem:  pageableItem,
-	}
+	return NewPaginationInfo(nextPageToken, pageableItem)
 }

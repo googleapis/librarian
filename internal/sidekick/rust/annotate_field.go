@@ -107,11 +107,11 @@ func (a *fieldAnnotations) MessageNameInExamples() string {
 		return a.AliasInExamples
 	}
 	if a.MessageType != nil {
-		ma, _ := a.MessageType.Codec.(*messageAnnotation)
+		ma, _ := a.MessageType.Codec().(*messageAnnotation)
 		return ma.Name
 	}
 	if a.ValueField != nil && a.ValueField.MessageType() != nil {
-		ma, _ := a.ValueField.MessageType().Codec.(*messageAnnotation)
+		ma, _ := a.ValueField.MessageType().Codec().(*messageAnnotation)
 		return ma.Name
 	}
 	return ""
@@ -344,7 +344,7 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 		if msg == nil {
 			return false
 		}
-		for _, f := range msg.Fields {
+		for _, f := range msg.Fields() {
 			if f.Typez() != api.TypezMessage || f.Repeated() || f.Map() {
 				continue
 			}
@@ -356,7 +356,7 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 	}
 
 	visited := make(map[string]bool)
-	return check(field.TypezID(), message.ID, visited)
+	return check(field.TypezID(), message.ID(), visited)
 }
 
 func unqualifiedRustName(qualifiedName string) string {
