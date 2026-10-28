@@ -785,14 +785,14 @@ func (c *codec) fullyQualifiedEnumValueName(v *api.EnumValue, sourceSpecificatio
 }
 
 func bodyAccessor(m *api.Method) string {
-	if m.PathInfo.BodyFieldPath == "" {
+	if m.PathInfo.BodyFieldPath() == "" {
 		return "None::<gaxi::http::NoBody>"
 	}
-	if m.PathInfo.BodyFieldPath == "*" {
+	if m.PathInfo.BodyFieldPath() == "*" {
 		// use the whole request
 		return "Some(req)"
 	}
-	return "req." + toSnake(m.PathInfo.BodyFieldPath)
+	return "req." + toSnake(m.PathInfo.BodyFieldPath())
 }
 
 func httpPathFmt(t *api.PathTemplate) string {
@@ -1726,10 +1726,10 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	if c.includeGrpcOnlyMethods || c.defaultTransport == "grpc" {
 		return true
 	}
-	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+	if m.PathInfo == nil || len(m.PathInfo.Bindings()) == 0 {
 		return false
 	}
-	return m.PathInfo.Bindings[0].PathTemplate() != nil
+	return m.PathInfo.Bindings()[0].PathTemplate() != nil
 }
 
 func (c *codec) templateSupportsGrpc() bool {

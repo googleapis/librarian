@@ -319,7 +319,7 @@ func TestFindBodyField(t *testing.T) {
 		{
 			name:     "match by path info",
 			message:  NewTestMessage("Request").WithFields(bodyField, otherField),
-			pathInfo: &PathInfo{BodyFieldPath: "body_field"},
+			pathInfo: NewPathInfoBuilder().WithBodyFieldPath("body_field").Build(),
 			want:     bodyField,
 		},
 		{
@@ -346,7 +346,7 @@ func TestFindBodyField(t *testing.T) {
 		{
 			name:       "path info overrides type match",
 			message:    NewTestMessage("Request").WithFields(typeMatchField, bodyField),
-			pathInfo:   &PathInfo{BodyFieldPath: "body_field"},
+			pathInfo:   NewPathInfoBuilder().WithBodyFieldPath("body_field").Build(),
 			targetType: messageType.ID,
 			singular:   "type_match",
 			want:       bodyField,

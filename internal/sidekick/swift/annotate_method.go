@@ -269,8 +269,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	// - Fall back to extracting path parameters from the google.api.http path template.
 	if method.HasRouting() {
 		routingParams = c.routingParamsFromRouting(method.Routing)
-	} else if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
-		routingParams = c.routingParamsFromPathTemplate(method.PathInfo.Bindings[0].PathTemplate())
+	} else if method.PathInfo != nil && len(method.PathInfo.Bindings()) > 0 {
+		routingParams = c.routingParamsFromPathTemplate(method.PathInfo.Bindings()[0].PathTemplate())
 	}
 
 	// In Protobuf APIs (such as Storage Control or pure gRPC services), some RPC
@@ -280,16 +280,16 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	// - Pure gRPC methods (without HTTP annotations): Safely bypass the HTTP
 	//   extraction without crashing, leaving those fields as their default zero values.
 	var pathBindings []*pathBindingAnnotations
-	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
-		hasBody = method.PathInfo.BodyFieldPath != ""
-		isBodyWildcard = method.PathInfo.BodyFieldPath == "*"
+	if method.PathInfo != nil && len(method.PathInfo.Bindings()) > 0 {
+		hasBody = method.PathInfo.BodyFieldPath() != ""
+		isBodyWildcard = method.PathInfo.BodyFieldPath() == "*"
 		if hasBody && !isBodyWildcard {
-			bodyField = camelCase(method.PathInfo.BodyFieldPath)
+			bodyField = camelCase(method.PathInfo.BodyFieldPath())
 			// Wrapper requests (or body: "*" rules resolved by the protobuf parser)
 			// point BodyFieldPath at a top-level google.api.HttpBody field.
 			if method.InputType != nil {
 				isHTTPBodyRequest = slices.ContainsFunc(method.InputType.Fields, func(f *api.Field) bool {
-					return f.Name == method.PathInfo.BodyFieldPath && f.Typez == api.TypezMessage && f.TypezID == ".google.api.HttpBody"
+					return f.Name == method.PathInfo.BodyFieldPath() && f.Typez == api.TypezMessage && f.TypezID == ".google.api.HttpBody"
 				})
 			}
 		} else if isBodyWildcard && method.InputType != nil && method.InputType.ID == ".google.api.HttpBody" {
@@ -297,7 +297,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			// remains "*".
 			isHTTPBodyRequest = true
 		}
-		for _, binding := range method.PathInfo.Bindings {
+		for _, binding := range method.PathInfo.Bindings() {
 			pVars, err := c.pathVariables(method.InputType, binding.PathTemplate())
 			if err != nil {
 				return err

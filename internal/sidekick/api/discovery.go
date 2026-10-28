@@ -158,7 +158,7 @@ func findDiscoveryLroPoller(method *Method, model *API, discoveryConfig *Discove
 		return nil, nil
 	}
 	var flatPath []string
-	for _, binding := range method.PathInfo.Bindings {
+	for _, binding := range method.PathInfo.Bindings() {
 		if binding.PathTemplate() == nil {
 			continue
 		}
