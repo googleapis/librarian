@@ -154,12 +154,13 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 func TestPathTemplateBuilder(t *testing.T) {
 	got := (&PathTemplate{}).
 		WithLiteral("v1").
-		WithVariable(NewPathVariable("parent", "child").
+		WithVariable(NewPathVariableBuilder("parent", "child").
 			WithLiteral("projects").
 			WithMatch().
 			WithAllowReserved().
 			WithLiteral("locations").
-			WithMatchRecursive()).
+			WithMatchRecursive().
+			Build()).
 		WithVariableNamed("v2", "field").
 		WithVerb("verb")
 	verb := "verb"
@@ -170,22 +171,39 @@ func TestPathTemplateBuilder(t *testing.T) {
 			},
 			{
 				Variable: &PathVariable{
-					FieldPath:     []string{"parent", "child"},
-					Segments:      []string{"projects", "*", "locations", "**"},
-					AllowReserved: true,
+					fieldPath:     []string{"parent", "child"},
+					segments:      []string{"projects", "*", "locations", "**"},
+					allowReserved: true,
 				},
 			},
 			{
 				Variable: &PathVariable{
-					FieldPath: []string{"v2", "field"},
-					Segments:  []string{"*"},
+					fieldPath: []string{"v2", "field"},
+					segments:  []string{"*"},
 				},
 			},
 		},
 		Verb: verb,
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	v := got.Segments[1].Variable
+	if diff := cmp.Diff([]string{"parent", "child"}, v.FieldPath()); diff != "" {
+		t.Errorf("FieldPath() mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]string{"projects", "*", "locations", "**"}, v.Segments()); diff != "" {
+		t.Errorf("Segments() mismatch (-want +got):\n%s", diff)
+	}
+	if !v.AllowReserved() {
+		t.Errorf("AllowReserved() = false, want true")
+	}
+	vFromSegments := NewPathVariableBuilder().WithFieldPath("a", "b").WithSegments("x", "*").Build()
+	if diff := cmp.Diff([]string{"a", "b"}, vFromSegments.FieldPath()); diff != "" {
+		t.Errorf("FieldPath() mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]string{"x", "*"}, vFromSegments.Segments()); diff != "" {
+		t.Errorf("Segments() mismatch (-want +got):\n%s", diff)
 	}
 }
 

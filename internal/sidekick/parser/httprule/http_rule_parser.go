@@ -240,10 +240,9 @@ func parseVarSegment(varString string) (*api.PathSegment, int, error) {
 		segments = append(segments, api.SingleSegmentWildcard)
 	}
 	return &api.PathSegment{
-		Variable: &api.PathVariable{
-			FieldPath: fieldPath,
-			Segments:  segments,
-		},
+		Variable: api.NewPathVariableBuilder(fieldPath...).
+			WithSegments(segments...).
+			Build(),
 	}, pos, nil
 }
 

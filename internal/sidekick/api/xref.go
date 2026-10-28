@@ -435,20 +435,20 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 		seg := ResourceNameSegment{
 			Literal: s.Literal,
 		}
-		if s.Variable != nil && len(s.Variable.FieldPath) > 0 {
+		if s.Variable != nil && len(s.Variable.FieldPath()) > 0 {
 			// The parser used for parsing resource name patterns is the same used for
 			// parsing HTTP rules. Resource patterns do not have "field paths",
 			// instead they only have "placeholders" for each of the resource IDs of
 			// the resources that are part of the resource name hierarchy.
 			// These placeholders end up on the first, and only, field path
 			// that results when parsing a segment of a resource name pattern.
-			seg.Variable = s.Variable.FieldPath[0]
+			seg.Variable = s.Variable.FieldPath()[0]
 		}
 
 		// Try to combine with next segment if this is a literal and next is variable
 		if s.Literal != "" && i+1 < len(pattern) && pattern[i+1].Variable != nil {
-			if len(pattern[i+1].Variable.FieldPath) > 0 {
-				seg.Variable = pattern[i+1].Variable.FieldPath[0]
+			if len(pattern[i+1].Variable.FieldPath()) > 0 {
+				seg.Variable = pattern[i+1].Variable.FieldPath()[0]
 			}
 			i++
 		}

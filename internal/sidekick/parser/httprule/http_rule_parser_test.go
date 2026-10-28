@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestParseSegments(t *testing.T) {
@@ -36,17 +37,17 @@ func TestParseSegments(t *testing.T) {
 		{"/foo/{bar}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar"), ""},
 		{"/foo/{bar.baz}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar", "baz"), ""},
 		{"/foo/{bar=baz}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithLiteral("baz")), ""},
+			api.NewPathVariableBuilder("bar").WithLiteral("baz").Build()), ""},
 		{"/foo/{bar=*}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatch()), ""},
+			api.NewPathVariableBuilder("bar").WithMatch().Build()), ""},
 		{"/foo/{bar=*}/baz", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatch()).
+			api.NewPathVariableBuilder("bar").WithMatch().Build()).
 			WithLiteral("baz"), ""},
 		{"/foo/{bar=**}/baz:qux", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatchRecursive()).
+			api.NewPathVariableBuilder("bar").WithMatchRecursive().Build()).
 			WithLiteral("baz").WithVerb("qux"), ""},
 		{"/foo/{bar=baz/*/qux/*}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithLiteral("baz").WithMatch().WithLiteral("qux").WithMatch()), ""},
+			api.NewPathVariableBuilder("bar").WithLiteral("baz").WithMatch().WithLiteral("qux").WithMatch().Build()), ""},
 		{"/foo/{bar}/{baz}/{qux}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar").WithVariableNamed("baz").WithVariableNamed("qux"), ""},
 		{"foo", nil, "path must start with slash"},
 		{"/", nil, "path cannot end with slash"},
@@ -77,7 +78,7 @@ func TestParseSegments(t *testing.T) {
 				if got == nil {
 					t.Fatalf("expected path template for %s, got nil", test.path)
 				}
-				if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+				if diff := cmp.Diff(test.want, got, apitest.AllowUnexported(), cmpopts.EquateEmpty()); diff != "" {
 					t.Fatalf("failed parsing path [%s] (-want, +got):\n%s", test.path, diff)
 				}
 			} else {
@@ -183,7 +184,7 @@ func TestParseResourcePattern(t *testing.T) {
 				if err != nil {
 					t.Fatalf("ParseResourcePattern(%s) failed: %v", test.pattern, err)
 				}
-				if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+				if diff := cmp.Diff(test.want, got, apitest.AllowUnexported(), cmpopts.EquateEmpty()); diff != "" {
 					t.Fatalf("failed parsing resource pattern [\"%s\"] (-want, +got):\n%s", test.pattern, diff)
 				}
 			}

@@ -177,7 +177,7 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 			// Form '${request.foo!.bar!.baz}'.
 			builder.WriteString("/${request")
 			deref := "."
-			for _, f := range segment.Variable.FieldPath {
+			for _, f := range segment.Variable.FieldPath() {
 				builder.WriteString(deref)
 				builder.WriteString(strcase.ToLowerCamel(f))
 				deref = "!."

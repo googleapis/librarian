@@ -16,38 +16,24 @@ package api
 
 // PathVariable is a variable in a path.
 type PathVariable struct {
-	FieldPath []string
-	Segments  []string
+	fieldPath []string
+	segments  []string
 	// Allow characters defined as `reserved` by RFC-6570 1.5 to pass through without
 	// percent encoding. See RFC-6570 1.2 for examples.
-	AllowReserved bool
+	allowReserved bool
 }
 
-// NewPathVariable creates a new path variable.
-func NewPathVariable(fields ...string) *PathVariable {
-	return &PathVariable{FieldPath: fields}
+// FieldPath returns the sequence of field names leading to the variable.
+func (v *PathVariable) FieldPath() []string {
+	return v.fieldPath
 }
 
-// WithLiteral adds a literal to the path variable.
-func (v *PathVariable) WithLiteral(l string) *PathVariable {
-	v.Segments = append(v.Segments, l)
-	return v
+// Segments returns the matching segments of the path variable.
+func (v *PathVariable) Segments() []string {
+	return v.segments
 }
 
-// WithMatchRecursive adds a recursive match to the path variable.
-func (v *PathVariable) WithMatchRecursive() *PathVariable {
-	v.Segments = append(v.Segments, MultiSegmentWildcard)
-	return v
-}
-
-// WithMatch adds a match to the path variable.
-func (v *PathVariable) WithMatch() *PathVariable {
-	v.Segments = append(v.Segments, SingleSegmentWildcard)
-	return v
-}
-
-// WithAllowReserved marks the variable as allowing reserved characters to remain unescaped.
-func (v *PathVariable) WithAllowReserved() *PathVariable {
-	v.AllowReserved = true
-	return v
+// AllowReserved returns whether reserved characters are allowed to pass through without percent encoding.
+func (v *PathVariable) AllowReserved() bool {
+	return v.allowReserved
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestLroAnnotations(t *testing.T) {
@@ -62,7 +63,7 @@ func TestLroAnnotations(t *testing.T) {
 	if got == nil {
 		t.Fatalf("missing method %s in model", want.ID)
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Method{}, "Documentation")); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -89,7 +90,7 @@ func TestLroAnnotations(t *testing.T) {
 	if gotMixin == nil {
 		t.Fatalf("missing method %s in model", wantMixin.ID)
 	}
-	if diff := cmp.Diff(wantMixin, gotMixin, cmpopts.IgnoreFields(api.Method{}, "Documentation", "Service")); diff != "" {
+	if diff := cmp.Diff(wantMixin, gotMixin, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Documentation", "Service")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

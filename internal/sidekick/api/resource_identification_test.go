@@ -101,7 +101,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			serviceID: "any.service",
 			path: (&PathTemplate{}).
 				WithLiteral("v1").
-				WithVariable(NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch()),
+				WithVariable(NewPathVariableBuilder("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().Build()),
 			fields: []*Field{
 				NewTestField("name").
 					WithType(TypezString).
@@ -117,7 +117,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			serviceID: "apikeys.googleapis.com",
 			path: (&PathTemplate{}).
 				WithLiteral("v2").
-				WithVariable(NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("keys").WithMatch()).
+				WithVariable(NewPathVariableBuilder("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("keys").WithMatch().Build()).
 				WithLiteral("keyString"),
 			fields: []*Field{
 				NewTestField("name").
@@ -135,7 +135,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(PathVariable{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -463,7 +463,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(PathVariable{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

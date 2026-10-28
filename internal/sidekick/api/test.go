@@ -980,7 +980,7 @@ func ParseTemplateForTest(template string) []PathSegment {
 	for _, part := range parts[1:] {
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			fieldPath := strings.Split(part[1:len(part)-1], ".")
-			segments = append(segments, PathSegment{Variable: &PathVariable{FieldPath: fieldPath}})
+			segments = append(segments, PathSegment{Variable: NewPathVariableBuilder(fieldPath...).Build()})
 		} else {
 			segments = append(segments, PathSegment{Literal: part})
 		}
