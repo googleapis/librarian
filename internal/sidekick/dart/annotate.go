@@ -1090,9 +1090,11 @@ func lookupMap(model *api.API, f *api.Field) *api.Map {
 		return f.MapType
 	}
 	if model != nil {
-		return model.Map(f.TypezID)
+		if m := model.Map(f.TypezID); m != nil {
+			return m
+		}
 	}
-	return nil
+	panic(fmt.Sprintf("unable to lookup map type %q for field %q", f.TypezID, f.ID))
 }
 
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
@@ -1136,10 +1138,6 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
 		mapType := lookupMap(annotate.model, field)
-		if mapType == nil {
-			slog.Error("unable to lookup map type", "id", field.TypezID)
-			return ""
-		}
 		keyType := mapType.Key.Typez
 		keyDecoder := annotate.keyDecoder(keyType)
 		valueType := mapType.Value.Typez
@@ -1172,10 +1170,6 @@ func createNonNullableToJson(field *api.Field, model *api.API) string {
 		}
 	case field.Map:
 		mapType := lookupMap(model, field)
-		if mapType == nil {
-			slog.Error("unable to lookup map type", "id", field.TypezID)
-			return ""
-		}
 		keyType := mapType.Key.Typez
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
 		valueType := mapType.Value.Typez
@@ -1445,20 +1439,12 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 		out = "Uint8List"
 	case api.TypezMap:
 		mapType := lookupMap(annotate.model, f)
-		if mapType == nil {
-			slog.Error("unable to lookup type", "id", f.TypezID)
-			return ""
-		}
 		key := annotate.fieldType(mapType.Key)
 		val := annotate.fieldType(mapType.Value)
 		out = "Map<" + key + ", " + val + ">"
 	case api.TypezMessage:
 		if f.Map {
 			mapType := lookupMap(annotate.model, f)
-			if mapType == nil {
-				slog.Error("unable to lookup type", "id", f.TypezID)
-				return ""
-			}
 			key := annotate.fieldType(mapType.Key)
 			val := annotate.fieldType(mapType.Value)
 			out = "Map<" + key + ", " + val + ">"
