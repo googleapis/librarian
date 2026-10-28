@@ -94,16 +94,34 @@ type ResourceReference struct {
 // TargetResource contains the results of the resource name identification.
 // It provides the sequences of fields used by language-specific generators to inject tracing attributes.
 type TargetResource struct {
-	// FieldPaths is a list of field name sequences that, when joined, form a resource name.
+	// fieldPaths is a list of field name sequences that, when joined, form a resource name.
 	// For example, [["project"], ["zone"], ["instance"]] identifies a multi-part resource.
-	FieldPaths [][]string
+	fieldPaths [][]string
 
-	// Template is the canonical HTTP path template for the resource, derived from the PathBinding's PathTemplate by removing the API version prefix.
-	// For example, if the PathTemplate is "//compute.googleapis.com/projects/{project}/zones/{zone}", the Template will be a []PathSegment containing:
+	// template is the canonical HTTP path template for the resource, derived from the PathBinding's PathTemplate by removing the API version prefix.
+	// For example, if the PathTemplate is "//compute.googleapis.com/projects/{project}/zones/{zone}", the template will be a []PathSegment containing:
 	// - a Literal segment for "//compute.googleapis.com"
 	// - a Literal segment for "projects"
 	// - a Variable segment with FieldPath ["project"]
 	// - a Literal segment for "zones"
 	// - a Variable segment with FieldPath ["zone"]
-	Template []PathSegment
+	template []PathSegment
+}
+
+// NewTargetResource creates a new [TargetResource].
+func NewTargetResource(fieldPaths [][]string, template []PathSegment) *TargetResource {
+	return &TargetResource{
+		fieldPaths: fieldPaths,
+		template:   template,
+	}
+}
+
+// FieldPaths returns the list of field name sequences that form the resource name.
+func (r *TargetResource) FieldPaths() [][]string {
+	return r.fieldPaths
+}
+
+// Template returns the canonical HTTP path template for the resource.
+func (r *TargetResource) Template() []PathSegment {
+	return r.template
 }

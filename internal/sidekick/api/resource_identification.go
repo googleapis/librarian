@@ -48,7 +48,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
 func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
-	if binding.PathTemplate == nil {
+	if binding.pathTemplate == nil {
 		return nil
 	}
 
@@ -59,7 +59,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 			return err
 		}
 		if target != nil {
-			binding.TargetResource = target
+			binding.targetResource = target
 			return nil
 		}
 	}
@@ -69,7 +69,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		return err
 	}
 	if target != nil {
-		binding.TargetResource = target
+		binding.targetResource = target
 		return nil
 	}
 	return nil
@@ -77,7 +77,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 
 func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
 
-	tmpl := binding.PathTemplate
+	tmpl := binding.pathTemplate
 	if tmpl == nil {
 		return nil, nil
 	}
@@ -169,10 +169,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		if err != nil {
 			return nil, err
 		}
-		return &TargetResource{
-			FieldPaths: fieldPaths,
-			Template:   template,
-		}, nil
+		return NewTargetResource(fieldPaths, template), nil
 	}
 	return nil, nil
 }
@@ -185,7 +182,7 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 
 	var lastVarIndex = -1
 	// Collect field paths corresponding to variable segments in the path template
-	for i, segment := range binding.PathTemplate.Segments() {
+	for i, segment := range binding.pathTemplate.Segments() {
 		if segment.Variable() == nil {
 			continue
 		}
@@ -208,14 +205,11 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
-	template, err := constructTemplate(method, binding.PathTemplate.Segments()[:lastVarIndex+1])
+	template, err := constructTemplate(method, binding.pathTemplate.Segments()[:lastVarIndex+1])
 	if err != nil {
 		return nil, err
 	}
-	return &TargetResource{
-		FieldPaths: fieldPaths,
-		Template:   template,
-	}, nil
+	return NewTargetResource(fieldPaths, template), nil
 }
 
 // findField traverses the (nested) message structure to find a field by its field path.

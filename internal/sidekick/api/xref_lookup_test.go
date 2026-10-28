@@ -491,7 +491,7 @@ func TestFindQuickstartMethod(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartMethod(tc.service)
-			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(Method{}, "Service", "Model")); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported(), cmpopts.IgnoreFields(Method{}, "Service", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -539,7 +539,7 @@ func TestFindQuickstartService(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartService(tc.api)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

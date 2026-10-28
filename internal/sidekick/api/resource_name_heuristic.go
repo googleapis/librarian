@@ -82,7 +82,7 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 			}
 
 			// Parse the path template of the primary binding
-			tmpl := m.PathInfo.Bindings[0].PathTemplate
+			tmpl := m.PathInfo.Bindings[0].PathTemplate()
 			if tmpl == nil {
 				continue
 			}

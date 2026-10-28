@@ -159,10 +159,10 @@ func findDiscoveryLroPoller(method *Method, model *API, discoveryConfig *Discove
 	}
 	var flatPath []string
 	for _, binding := range method.PathInfo.Bindings {
-		if binding.PathTemplate == nil {
+		if binding.PathTemplate() == nil {
 			continue
 		}
-		flatPath = append(flatPath, binding.PathTemplate.FlatPath())
+		flatPath = append(flatPath, binding.PathTemplate().FlatPath())
 	}
 	for _, candidate := range discoveryConfig.Pollers {
 		for _, path := range flatPath {

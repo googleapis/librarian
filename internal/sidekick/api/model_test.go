@@ -215,20 +215,18 @@ func TestPathTemplateBuilder(t *testing.T) {
 }
 
 func TestPathBindingHeuristic(t *testing.T) {
-	heuristic := &TargetResource{
-		FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
-	}
-	binding := &PathBinding{
-		Verb:           "GET",
-		TargetResource: heuristic,
+	heuristic := NewTargetResource([][]string{{"project"}, {"zone"}, {"instance"}}, nil)
+	binding := NewPathBindingBuilder().
+		WithVerb("GET").
+		WithTargetResource(heuristic).
+		Build()
+
+	if binding.Verb() != "GET" {
+		t.Errorf("expected GET, got %s", binding.Verb())
 	}
 
-	if binding.Verb != "GET" {
-		t.Errorf("expected GET, got %s", binding.Verb)
-	}
-
-	if binding.TargetResource.FieldPaths[0][0] != "project" {
-		t.Errorf("expected project, got %s", binding.TargetResource.FieldPaths[0][0])
+	if binding.TargetResource().FieldPaths()[0][0] != "project" {
+		t.Errorf("expected project, got %s", binding.TargetResource().FieldPaths()[0][0])
 	}
 }
 
