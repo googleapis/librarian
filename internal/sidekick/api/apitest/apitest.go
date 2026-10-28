@@ -23,22 +23,73 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
+// AllowUnexported returns a [cmp.Option] that permits comparing unexported
+// fields on all read-only [api] AST and metadata structs.
+func AllowUnexported() cmp.Option {
+	return cmp.AllowUnexported(
+		api.API{},
+		api.Service{},
+		api.Method{},
+		api.Message{},
+		api.Field{},
+		api.Map{},
+		api.OneOf{},
+		api.Enum{},
+		api.EnumValue{},
+		api.PathVariable{},
+		api.PathSegment{},
+		api.PathTemplate{},
+		api.PathBinding{},
+		api.PathInfo{},
+		api.RoutingPathSpec{},
+		api.RoutingInfoVariant{},
+		api.RoutingInfo{},
+		api.RoutingInfoCombo{},
+		api.RoutingInfoComboItem{},
+		api.OperationInfo{},
+		api.DiscoveryLro{},
+		api.MethodSignature{},
+		api.Resource{},
+		api.ResourceReference{},
+		api.ResourceNamePattern{},
+		api.ResourceNameSegment{},
+		api.TargetResource{},
+		api.SampleInfo{},
+		api.SampleValue{},
+		api.PaginationInfo{},
+	)
+}
+
+// CmpOptions combines [AllowUnexported] with any additional [cmp.Option] values.
+func CmpOptions(extra ...cmp.Option) cmp.Option {
+	return cmp.Options(append([]cmp.Option{AllowUnexported()}, extra...))
+}
+
 // CheckMessage compares two `Message` instances ignoring the order of fields, and oneofs and ignoring child messages.
 func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 	t.Helper()
 	// Checking Parent, Messages, Fields, and OneOfs requires special handling.
 	if diff := cmp.Diff(want, got,
+		AllowUnexported(),
 		cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages", "Enums", "Resource"),
 		cmpopts.IgnoreFields(api.Field{}, "Parent"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Fields, got.Fields, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want.Fields, got.Fields,
+		AllowUnexported(),
+		cmpopts.SortSlices(less),
+		cmpopts.IgnoreFields(api.Field{}, "Parent"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Ignore parent because types are cyclic
-	if diff := cmp.Diff(want.OneOfs, got.OneOfs, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want.OneOfs, got.OneOfs,
+		AllowUnexported(),
+		cmpopts.SortSlices(less),
+		cmpopts.IgnoreFields(api.Field{}, "Parent"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -46,11 +97,18 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 // CheckEnum compares two `Enum` instances ignoring the enum value order.
 func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Enum{}, "Values", "UniqueNumberValues", "Parent")); diff != "" {
+	if diff := cmp.Diff(want, got,
+		AllowUnexported(),
+		cmpopts.IgnoreFields(api.Enum{}, "Values", "UniqueNumberValues", "Parent"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Values, got.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want.Values, got.Values,
+		AllowUnexported(),
+		cmpopts.SortSlices(less),
+		cmpopts.IgnoreFields(api.EnumValue{}, "Parent"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -58,11 +116,15 @@ func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 // CheckService compares two `Service` instances ignoring method order.
 func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
+	if diff := cmp.Diff(want, got,
+		AllowUnexported(),
+		cmpopts.IgnoreFields(api.Service{}, "Methods"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Method) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(want.Methods, got.Methods,
+		AllowUnexported(),
 		cmpopts.SortSlices(less),
 		cmpopts.IgnoreFields(api.Field{}, "Parent"),
 		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
@@ -87,6 +149,7 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 		t.Errorf("missing method %s", name)
 	}
 	if diff := cmp.Diff(want, got,
+		AllowUnexported(),
 		cmpopts.IgnoreFields(api.Field{}, "Parent"),
 		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
 	); diff != "" {
@@ -97,7 +160,7 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 // CheckMap compares two `Map` instances.
 func CheckMap(t *testing.T, got *api.Map, want *api.Map) {
 	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want, got, AllowUnexported(), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

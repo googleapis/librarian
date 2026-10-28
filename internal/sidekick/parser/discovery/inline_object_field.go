@@ -21,6 +21,10 @@ import (
 )
 
 func maybeInlineObjectField(model *api.API, parent *api.Message, name string, input *schema) (*api.Field, error) {
+	return makeInlineObjectField(model, parent, name, input, input.Description, true, false)
+}
+
+func makeInlineObjectField(model *api.API, parent *api.Message, name string, input *schema, description string, optional, repeated bool) (*api.Field, error) {
 	if input.Type != "object" || input.Properties == nil {
 		return nil, nil
 	}
@@ -43,9 +47,10 @@ func maybeInlineObjectField(model *api.API, parent *api.Message, name string, in
 		Name:          name,
 		JSONName:      name,
 		ID:            id,
-		Documentation: input.Description,
+		Documentation: description,
 		Deprecated:    input.Deprecated,
-		Optional:      true,
+		Optional:      optional,
+		Repeated:      repeated,
 		Typez:         api.TypezMessage,
 		TypezID:       id,
 	}

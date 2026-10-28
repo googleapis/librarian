@@ -158,7 +158,7 @@ func TestLroAnnotationsError(t *testing.T) {
 		)
 
 	model := api.NewTestAPI([]*api.Message{operation}, nil, []*api.Service{badService, pollerService})
-	if lroAnnotations(model, discoveryConfig) == nil {
+	if api.AddDiscoveryLroAnnotations(model, discoveryConfig) == nil {
 		t.Errorf("expected an error, got %v", badService)
 	}
 }
