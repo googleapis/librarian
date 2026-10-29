@@ -25,21 +25,21 @@ type modelAnnotations struct {
 }
 
 func (c *codec) annotateModel(model *api.API) error {
-	model.Codec = &modelAnnotations{
+	model.SetAnnotations(&modelAnnotations{
 		CopyrightYear: c.CopyrightYear,
 		BoilerPlate:   license.HeaderBulk(),
-	}
-	for _, m := range model.Messages {
+	})
+	for _, m := range model.Messages() {
 		if err := c.annotateMessage(m); err != nil {
 			return err
 		}
 	}
-	for _, e := range model.Enums {
+	for _, e := range model.Enums() {
 		if err := c.annotateEnum(e); err != nil {
 			return err
 		}
 	}
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		if err := c.annotateService(s); err != nil {
 			return err
 		}

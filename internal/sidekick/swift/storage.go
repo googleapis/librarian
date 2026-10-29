@@ -60,14 +60,14 @@ func GenerateStorage(
 	}
 
 	defaultHost := "storage.googleapis.com"
-	for _, s := range controlModel.Services {
+	for _, s := range controlModel.Services() {
 		if s.DefaultHost() != "" {
 			defaultHost = s.DefaultHost()
 			break
 		}
 	}
 	if defaultHost == "storage.googleapis.com" {
-		for _, s := range storageModel.Services {
+		for _, s := range storageModel.Services() {
 			if s.DefaultHost() != "" {
 				defaultHost = s.DefaultHost()
 				break
@@ -78,7 +78,7 @@ func GenerateStorage(
 	var serviceImports []string
 	importSet := make(map[string]bool)
 	for _, model := range []*api.API{storageModel, controlModel} {
-		for _, s := range model.Services {
+		for _, s := range model.Services() {
 			if sa, ok := s.Codec().(*serviceAnnotations); ok {
 				for _, imp := range sa.PublicServiceImports() {
 					// StorageControl only defines unified methods for bucket, folder, and IAM operations,
@@ -94,7 +94,7 @@ func GenerateStorage(
 	slices.Sort(serviceImports)
 
 	var boilerPlate []string
-	if ma, ok := controlModel.Codec.(*modelAnnotations); ok {
+	if ma, ok := controlModel.Codec().(*modelAnnotations); ok {
 		boilerPlate = ma.BoilerPlate
 	}
 
@@ -104,17 +104,15 @@ func GenerateStorage(
 		packageVersion = library.Version
 	}
 
-	mergedModel := &api.API{
-		Codec: &storageAnnotations{
-			Storage:        storageModel,
-			Control:        controlModel,
-			DefaultHost:    defaultHost,
-			ServiceImports: serviceImports,
-			CopyrightYear:  copyrightYear,
-			PackageVersion: packageVersion,
-			BoilerPlate:    boilerPlate,
-		},
-	}
+	mergedModel := api.NewAnnotatedAPI(&storageAnnotations{
+		Storage:        storageModel,
+		Control:        controlModel,
+		DefaultHost:    defaultHost,
+		ServiceImports: serviceImports,
+		CopyrightYear:  copyrightYear,
+		PackageVersion: packageVersion,
+		BoilerPlate:    boilerPlate,
+	})
 
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/storage")
 	generatedFiles = append(generatedFiles, language.GeneratedFile{

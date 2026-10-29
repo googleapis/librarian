@@ -226,7 +226,7 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		Methods:                   methods,
 		DefaultHost:               s.DefaultHost(),
 		LROTypes:                  lroTypes,
-		APITitle:                  s.Model().Title,
+		APITitle:                  s.Model().Title(),
 		PerServiceFeatures:        c.perServiceFeatures,
 		HasVeneer:                 c.serviceHasVeneer(s.ID()),
 		ExtendGrpcTransport:       c.extendGrpcTransport,

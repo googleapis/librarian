@@ -40,7 +40,7 @@ func TestModelAnnotations(t *testing.T) {
 		MonorepoRoot:    ".",
 		WktPackage:      "GoogleWKT",
 	}
-	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(want, model.Codec(), cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn", "QuickstartService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -71,7 +71,7 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			ann := test.model.Codec.(*modelAnnotations)
+			ann := test.model.Codec().(*modelAnnotations)
 			got := []string{}
 			for _, d := range ann.Dependencies() {
 				got = append(got, d.Name)
@@ -96,9 +96,10 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	service := api.NewTestService("TestService").
 		WithPackage("google.cloud.test.v1")
 
-	model := api.NewTestAPI(
-		[]*api.Message{message}, nil, []*api.Service{service})
-	model.AddMessage(externalMessage)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI(
+		[]*api.Message{message}, nil, []*api.Service{service})).
+		AddMessage(externalMessage).
+		BuildSyntaxTree()
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{ApiPackage: "google.cloud.external.v1", Name: "GoogleCloudExternalWithOverrideV1"},
@@ -110,9 +111,9 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ann, ok := model.Codec.(*modelAnnotations)
+	ann, ok := model.Codec().(*modelAnnotations)
 	if !ok {
-		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+		t.Fatalf("expected model.Codec() to be *modelAnnotations, got %T", model.Codec())
 	}
 
 	want := map[string]bool{
@@ -130,7 +131,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	msg := model.Messages[0]
+	msg := model.Messages()[0]
 	msgAnn, ok := msg.Codec().(*messageAnnotations)
 	if !ok {
 		t.Fatalf("expected message.Codec() to be *messageAnnotations, got %T", msg.Codec())
@@ -161,9 +162,9 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 		t.Errorf("expected to not set ignore self dependency, got %v", dep)
 	}
 
-	ann, ok := model.Codec.(*modelAnnotations)
+	ann, ok := model.Codec().(*modelAnnotations)
 	if !ok {
-		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+		t.Fatalf("expected model.Codec() to be *modelAnnotations, got %T", model.Codec())
 	}
 
 	// Self dependency should be ignored, other should be present.
@@ -225,9 +226,9 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ann, ok := model.Codec.(*modelAnnotations)
+	ann, ok := model.Codec().(*modelAnnotations)
 	if !ok {
-		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+		t.Fatalf("expected model.Codec() to be *modelAnnotations, got %T", model.Codec())
 	}
 
 	if _, ok := ann.DependsOn["GoogleGax"]; !ok {
@@ -248,9 +249,9 @@ func TestModelAnnotations_Gating(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ann, ok := model.Codec.(*modelAnnotations)
+	ann, ok := model.Codec().(*modelAnnotations)
 	if !ok {
-		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+		t.Fatalf("expected model.Codec() to be *modelAnnotations, got %T", model.Codec())
 	}
 
 	wantAllTraits := []*traitDefinition{
@@ -281,58 +282,53 @@ func TestQuickstartServiceOverride(t *testing.T) {
 		WithPackageName("test.pkg")
 
 	t.Run("defaults to first service when no override", func(t *testing.T) {
-		m := *model
-		m.Services = []*api.Service{service1, service2}
-		m.QuickstartService = nil
-		codec := newTestCodec(t, &m, nil)
+		m := api.NewAPIBuilderFrom(model).WithServices(service1, service2).WithQuickstartService(nil).BuildSyntaxTree()
+		codec := newTestCodec(t, m, nil)
 		if err := codec.annotateModel(); err != nil {
 			t.Fatal(err)
 		}
-		if m.QuickstartService != service1 {
-			t.Errorf("expected QuickstartService to default to service1, got %v", m.QuickstartService)
+		ann := m.Codec().(*modelAnnotations)
+		if ann.QuickstartService != service1 {
+			t.Errorf("expected QuickstartService to default to service1, got %v", ann.QuickstartService)
 		}
 	})
 
 	t.Run("overrides quickstart service by service name", func(t *testing.T) {
-		m := *model
-		m.Services = []*api.Service{service1, service2}
-		m.QuickstartService = nil
+		m := api.NewAPIBuilderFrom(model).WithServices(service1, service2).WithQuickstartService(nil).BuildSyntaxTree()
 		lib := &config.Library{
 			Swift: &config.SwiftPackage{QuickstartServiceOverride: "Service2"},
 		}
-		codec := newTestCodec(t, &m, lib)
+		codec := newTestCodec(t, m, lib)
 		if err := codec.annotateModel(); err != nil {
 			t.Fatal(err)
 		}
-		if m.QuickstartService != service2 {
-			t.Errorf("expected QuickstartService to be service2, got %v", m.QuickstartService)
+		ann := m.Codec().(*modelAnnotations)
+		if ann.QuickstartService != service2 {
+			t.Errorf("expected QuickstartService to be service2, got %v", ann.QuickstartService)
 		}
 	})
 
 	t.Run("overrides quickstart service by client name", func(t *testing.T) {
-		m := *model
-		m.Services = []*api.Service{service1, service2}
-		m.QuickstartService = nil
+		m := api.NewAPIBuilderFrom(model).WithServices(service1, service2).WithQuickstartService(nil).BuildSyntaxTree()
 		lib := &config.Library{
 			Swift: &config.SwiftPackage{QuickstartServiceOverride: "Service2Client"},
 		}
-		codec := newTestCodec(t, &m, lib)
+		codec := newTestCodec(t, m, lib)
 		if err := codec.annotateModel(); err != nil {
 			t.Fatal(err)
 		}
-		if m.QuickstartService != service2 {
-			t.Errorf("expected QuickstartService to be service2, got %v", m.QuickstartService)
+		ann := m.Codec().(*modelAnnotations)
+		if ann.QuickstartService != service2 {
+			t.Errorf("expected QuickstartService to be service2, got %v", ann.QuickstartService)
 		}
 	})
 
 	t.Run("returns error when override not found", func(t *testing.T) {
-		m := *model
-		m.Services = []*api.Service{service1, service2}
-		m.QuickstartService = nil
+		m := api.NewAPIBuilderFrom(model).WithServices(service1, service2).WithQuickstartService(nil).BuildSyntaxTree()
 		lib := &config.Library{
 			Swift: &config.SwiftPackage{QuickstartServiceOverride: "NonExistentService"},
 		}
-		codec := newTestCodec(t, &m, lib)
+		codec := newTestCodec(t, m, lib)
 		err := codec.annotateModel()
 		if !errors.Is(err, errQuickstartServiceNotFound) {
 			t.Errorf("expected errQuickstartServiceNotFound, got %v", err)

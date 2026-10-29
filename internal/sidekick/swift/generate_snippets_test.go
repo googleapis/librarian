@@ -115,9 +115,10 @@ func TestGenerateSnippets(t *testing.T) {
 				WithOutput(thing).
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("one").Build())
 			testService := api.NewTestService("TestService").WithMethods(getThing)
-			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
-				WithPackageName("test")
-			model.AddResource(thingResource)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
+				WithPackageName("test")).
+				AddResource(thingResource).
+				BuildSyntaxTree()
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -198,9 +199,10 @@ func TestGenerateSnippets_Diagnose(t *testing.T) {
 			testService := api.NewTestService("TestService").
 				WithDeprecated(test.serviceDeprecated).
 				WithMethods(getThing)
-			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
-				WithPackageName("test")
-			model.AddResource(thingResource)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
+				WithPackageName("test")).
+				AddResource(thingResource).
+				BuildSyntaxTree()
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -253,10 +255,11 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 		WithOutput(thing).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build())
 	testService := api.NewTestService("TestService").WithMethods(updateThing)
-	model := api.NewTestAPI([]*api.Message{thing, updateThingRequest}, nil, []*api.Service{testService}).
-		WithPackageName("test")
-	model.AddResource(thingResource)
-	model.LoadWellKnownTypes()
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{thing, updateThingRequest}, nil, []*api.Service{testService}).
+		WithPackageName("test")).
+		AddResource(thingResource).
+		LoadWellKnownTypes().
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

@@ -433,10 +433,11 @@ func makeRequiredServicesTestModel() *api.API {
 		WithPackage("test").
 		WithMethods(internalMixin, externalMixin)
 
-	model := api.NewTestAPI([]*api.Message{placeholder, inputType, outputType}, nil, []*api.Service{sourceService, targetService})
-	model.AddMessage(externalRequest)
-	model.AddMessage(externalResponse)
-	model.AddService(externalService)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{placeholder, inputType, outputType}, nil, []*api.Service{sourceService, targetService})).
+		AddMessage(externalRequest).
+		AddMessage(externalResponse).
+		AddService(externalService).
+		BuildSyntaxTree()
 	api.CrossReference(model)
 	return model
 }

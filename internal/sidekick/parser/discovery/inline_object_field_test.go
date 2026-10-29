@@ -23,8 +23,7 @@ import (
 )
 
 func TestMaybeInlineObject(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Type:        "object",
 		Description: "A field with an inline object.",
@@ -100,8 +99,7 @@ func TestMaybeInlineObject(t *testing.T) {
 }
 
 func TestArrayWithInlineObject(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &property{
 		Name: "arrayWithObject",
 		Schema: &schema{
@@ -181,8 +179,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 }
 
 func TestMaybeInlineObjectErrors(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Type:        "object",
 		Description: "A field with an inline object.",
@@ -203,8 +200,7 @@ func TestMaybeInlineObjectErrors(t *testing.T) {
 }
 
 func TestArrayWithInlineObjectError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &property{
 		Name: "arrayWithObject",
 		Schema: &schema{

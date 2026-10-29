@@ -23,8 +23,7 @@ import (
 )
 
 func TestMakeEnumFields(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -105,8 +104,7 @@ func TestMakeEnumFields(t *testing.T) {
 }
 
 func TestMakeEnumFieldsDeprecated(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -180,8 +178,7 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 }
 
 func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -270,8 +267,7 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 }
 
 func TestMakeEnumFieldsDescriptionError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -300,8 +296,7 @@ func TestMakeEnumFieldsDescriptionError(t *testing.T) {
 }
 
 func TestMakeEnumFieldsDeprecatedError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{

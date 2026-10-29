@@ -222,8 +222,9 @@ func TestGenerateService_WithImports(t *testing.T) {
 				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 		)
 
-	model := api.NewTestAPI([]*api.Message{inputMessage}, nil, []*api.Service{iam})
-	model.AddMessage(externalMessage)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputMessage}, nil, []*api.Service{iam})).
+		AddMessage(externalMessage).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -744,9 +745,10 @@ func TestGenerateService_LRO(t *testing.T) {
 		WithPackage("google.cloud.workflows.v1").
 		WithMethods(createWorkflow, getOperation)
 
-	model := api.NewTestAPI([]*api.Message{inputType, workflowType, metadataType}, nil, []*api.Service{workflows})
-	model.AddMessage(operationType)
-	model.AddMessage(getOperationInputType)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, workflowType, metadataType}, nil, []*api.Service{workflows})).
+		AddMessage(operationType).
+		AddMessage(getOperationInputType).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -854,9 +856,10 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		WithPackage("google.cloud.workflows.v1").
 		WithMethods(deleteWorkflow, getOperation)
 
-	model := api.NewTestAPI([]*api.Message{inputType, metadataType}, nil, []*api.Service{workflows})
-	model.AddMessage(operationType)
-	model.AddMessage(getOperationInputType)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, metadataType}, nil, []*api.Service{workflows})).
+		AddMessage(operationType).
+		AddMessage(getOperationInputType).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -1381,9 +1384,10 @@ func TestGenerateService_HTTPBody(t *testing.T) {
 		WithPackage("google.cloud.aiplatform.v1").
 		WithMethods(rawPredict, directBody)
 
-	model := api.NewTestAPI([]*api.Message{rawPredictReq}, nil, []*api.Service{service})
-	model.AddMessage(httpBodyMsg)
-	model.AddMessage(emptyResp)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{rawPredictReq}, nil, []*api.Service{service})).
+		AddMessage(httpBodyMsg).
+		AddMessage(emptyResp).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{

@@ -294,8 +294,10 @@ func TestGenerateConvertAcronyms(t *testing.T) {
 
 	outDir := t.TempDir()
 	model := api.NewTestAPI([]*api.Message{vertexAISearchMsg, retrievalMsg}, []*api.Enum{ipVersionEnum}, []*api.Service{dnsService})
-	model.ExternalMessages = []*api.Message{extDNSConfigMsg}
-	model.AddMessage(extDNSConfigMsg)
+	model = api.NewAPIBuilderFrom(model).
+		WithExternalMessages(extDNSConfigMsg).
+		AddMessage(extDNSConfigMsg).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
