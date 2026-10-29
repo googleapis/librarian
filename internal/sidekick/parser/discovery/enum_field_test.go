@@ -81,7 +81,7 @@ func TestMakeEnumFields(t *testing.T) {
 		t.Errorf("expected non-nil parent in enum: %v", gotEnum)
 	}
 	for _, value := range gotEnum.Values {
-		if value.Parent != gotEnum {
+		if value.Parent() != gotEnum {
 			t.Errorf("mismatched parent in enumValue: %v", value)
 		}
 	}
@@ -98,7 +98,8 @@ func TestMakeEnumFields(t *testing.T) {
 	want.Fields[0].Parent = nil
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
-	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Enum{}, "Parent"), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -153,7 +154,7 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 		t.Errorf("expected non-nil parent in enum: %v", gotEnum)
 	}
 	for _, value := range gotEnum.Values {
-		if value.Parent != gotEnum {
+		if value.Parent() != gotEnum {
 			t.Errorf("mismatched parent in enumValue: %v", value)
 		}
 	}
@@ -171,7 +172,8 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 	want.Fields[0].Parent = nil
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
-	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Enum{}, "Parent"), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -242,7 +244,7 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 		t.Errorf("expected non-nil parent in enum: %v", gotEnum)
 	}
 	for _, value := range gotEnum.Values {
-		if value.Parent != gotEnum {
+		if value.Parent() != gotEnum {
 			t.Errorf("mismatched parent in enumValue: %v", value)
 		}
 	}
@@ -259,7 +261,8 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 	want.Fields[0].Parent = nil
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
-	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Enum{}, "Parent"), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

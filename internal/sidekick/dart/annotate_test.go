@@ -1726,7 +1726,7 @@ func TestAnnotateEnum(t *testing.T) {
 				testName := fmt.Sprintf("TestAnnotateEnum(%q) [value annotation %d]", test.enum.Name, i)
 				t.Run(testName, func(t *testing.T) {
 					wantValueAnnotation := test.wantValueAnnotations[i]
-					gotValueAnnotation := value.Codec.(*enumValueAnnotation)
+					gotValueAnnotation := value.Codec().(*enumValueAnnotation)
 					if diff := cmp.Diff(wantValueAnnotation.wantValueName, gotValueAnnotation.Name); diff != "" {
 						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}

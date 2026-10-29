@@ -28,6 +28,7 @@ import (
 func AllowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
 		api.DiscoveryLro{},
+		api.EnumValue{},
 		api.MethodSignature{},
 		api.OperationInfo{},
 		api.PathBinding{},
@@ -44,6 +45,7 @@ func AllowUnexported() cmp.Option {
 		api.RoutingInfoComboItem{},
 		api.RoutingInfoVariant{},
 		api.RoutingPathSpec{},
+		api.SampleValue{},
 		api.TargetResource{},
 	)
 }
@@ -81,11 +83,15 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 // CheckEnum compares two `Enum` instances ignoring the enum value order.
 func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Enum{}, "Values", "UniqueNumberValues", "Parent")); diff != "" {
+	if diff := cmp.Diff(want, got, AllowUnexported(), cmpopts.IgnoreFields(api.Enum{}, "Values", "UniqueNumberValues", "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Values, got.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	less := func(a, b *api.EnumValue) bool { return a.Name() < b.Name() }
+	if diff := cmp.Diff(want.Values, got.Values,
+		AllowUnexported(),
+		cmpopts.SortSlices(less),
+		cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore()),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

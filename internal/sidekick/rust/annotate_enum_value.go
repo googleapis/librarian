@@ -29,17 +29,17 @@ type enumValueAnnotation struct {
 func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) error {
 	annotations := &enumValueAnnotation{
 		Name:              enumValueName(ev),
-		EnumType:          enumName(ev.Parent),
+		EnumType:          enumName(ev.Parent()),
 		VariantName:       enumValueVariantName(ev),
 		SerializeAsString: c.serializeEnumsAsStrings,
 	}
-	ev.Codec = annotations
+	ev.SetAnnotations(annotations)
 
 	if !full {
 		// We have basic annotations, we are done.
 		return nil
 	}
-	lines, err := c.formatDocComments(ev.Documentation, ev.ID, model, ev.Scopes())
+	lines, err := c.formatDocComments(ev.Documentation(), ev.ID(), model, ev.Scopes())
 	if err != nil {
 		return err
 	}

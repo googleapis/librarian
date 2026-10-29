@@ -123,13 +123,13 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		if err := c.annotateUniqueEnumValue(ev); err != nil {
 			return err
 		}
-		ann := ev.Codec.(*enumValueAnnotations)
+		ann := ev.Codec().(*enumValueAnnotations)
 		if ann == nil {
-			return fmt.Errorf("unknown annotation format for enum value: %s", ev.ID)
+			return fmt.Errorf("unknown annotation format for enum value: %s", ev.ID())
 		}
 		caseNames[ann.CaseName] = u{}
-		existing[ev.Number] = ann
-		if ev.Number == 0 {
+		existing[ev.Number()] = ann
+		if ev.Number() == 0 {
 			defaultCaseName = ann.CaseName
 			defaultValue = ev
 		}
@@ -137,7 +137,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 	// Fallback to first case if no 0 value found (should not happen in proto3)
 	if defaultCaseName == "" {
 		if len(enum.UniqueNumberValues) != 0 {
-			ann := enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations)
+			ann := enum.UniqueNumberValues[0].Codec().(*enumValueAnnotations)
 			if ann == nil {
 				panic("mismatched annotation, previously checked, must be a bug")
 			}
@@ -151,7 +151,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		if err := c.annotateEnumValue(ev, existing); err != nil {
 			return err
 		}
-		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
+		existing[ev.Number()] = ev.Codec().(*enumValueAnnotations)
 	}
 
 	docLines, err := c.formatDocumentation(enum.Documentation, enum.Scopes())
@@ -175,9 +175,9 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		UseStringEnums:     c.UseStringEnums,
 	}
 	if !enum.Deprecated {
-		annotations.DiagnoseDefault = defaultValue.Deprecated
+		annotations.DiagnoseDefault = defaultValue.Deprecated()
 		annotations.DiagnoseValues = slices.ContainsFunc(enum.Values, func(ev *api.EnumValue) bool {
-			return ev.Deprecated
+			return ev.Deprecated()
 		})
 	}
 

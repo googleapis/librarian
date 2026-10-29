@@ -1373,7 +1373,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	// If there is a conflict, it must mean that there are enum values that differ only by case.
 	// If there are values that differ only in case, use the original case for all enum values.
 	for _, ev := range enum.Values {
-		name := strcase.ToLowerCamel(ev.Name)
+		name := strcase.ToLowerCamel(ev.Name())
 		if _, hasConflict := reservedNames[name]; hasConflict {
 			name = name + deconflictChar
 		}
@@ -1387,7 +1387,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 
 	if useOriginalCase {
 		for _, ev := range enum.Values {
-			name := ev.Name
+			name := ev.Name()
 			if _, hasConflict := reservedNames[name]; hasConflict {
 				name = name + deconflictChar
 			}
@@ -1414,10 +1414,10 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 }
 
 func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumValueToName map[*api.EnumValue]string) {
-	ev.Codec = &enumValueAnnotation{
+	ev.SetAnnotations(&enumValueAnnotation{
 		Name:     enumValueToName[ev],
-		DocLines: formatDocComments(ev.Documentation, annotate.model),
-	}
+		DocLines: formatDocComments(ev.Documentation(), annotate.model),
+	})
 }
 
 func (annotate *annotateModel) fieldType(f *api.Field) string {
