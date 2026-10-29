@@ -201,6 +201,97 @@ func TestProtobuf_ScalarOptional(t *testing.T) {
 	))
 }
 
+func TestProtobuf_Proto2Optional(t *testing.T) {
+	requireProtoc(t)
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "proto2.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	message := test.Message(".test.Fake")
+	if message == nil {
+		t.Fatalf("Cannot find message %s in API", ".test.Fake")
+	}
+	choice := api.NewTestOneOf("choice").
+		WithFields(
+			api.NewTestField("f_oneof").
+				WithDocumentation("A oneof field.").
+				WithType(api.TypezString),
+		)
+	for _, f := range choice.Fields {
+		f.Group = nil
+	}
+	apitest.CheckMessage(t, message, newTestProtobufFakeMessage(
+		api.NewTestField("f_int32").
+			WithDocumentation("An optional scalar field.").
+			WithType(api.TypezInt32).
+			WithProto2Optional(),
+		api.NewTestField("f_string").
+			WithDocumentation("An optional string field.").
+			WithType(api.TypezString).
+			WithProto2Optional(),
+		api.NewTestField("f_enum").
+			WithDocumentation("An optional enum field.").
+			WithType(api.TypezEnum).
+			WithTypezID(".test.Fake.Kind").
+			WithProto2Optional(),
+		api.NewTestField("f_default").
+			WithDocumentation("An optional field with a non-zero default.").
+			WithType(api.TypezBool).
+			WithProto2Optional(),
+		api.NewTestField("f_required").
+			WithDocumentation("A required field.").
+			WithType(api.TypezString),
+		api.NewTestField("f_repeated").
+			WithDocumentation("A repeated field.").
+			WithType(api.TypezString).
+			WithRepeated(),
+		api.NewTestField("f_message").
+			WithDocumentation("An optional message field.").
+			WithType(api.TypezMessage).
+			WithTypezID(".test.Fake.Inner").
+			WithOptional(),
+		api.NewTestField("f_map").
+			WithDocumentation("A map field.").
+			WithMap().
+			WithType(api.TypezMessage).
+			WithTypezID(".test.Fake.FMapEntry"),
+		api.NewTestField("result").
+			WithType(api.TypezGroup).
+			WithTypezID(".test.Fake.Result"),
+	).WithOneOfs(choice))
+
+	message = test.Message(".test.Fake.Inner")
+	if message == nil {
+		t.Fatalf("Cannot find message %s in API", ".test.Fake.Inner")
+	}
+	apitest.CheckMessage(t, message, api.NewTestMessage("Inner").
+		WithPackage("test").
+		WithID(".test.Fake.Inner").
+		WithDocumentation("A nested message.").
+		WithFields(
+			api.NewTestField("f_inner").
+				WithDocumentation("An optional field in a nested message.").
+				WithType(api.TypezInt32).
+				WithProto2Optional(),
+		))
+
+	message = test.Message(".test.Fake.FMapEntry")
+	if message == nil {
+		t.Fatalf("Cannot find message %s in API", ".test.Fake.FMapEntry")
+	}
+	wantMapEntry := api.NewTestMessage("FMapEntry").
+		WithPackage("test").
+		WithID(".test.Fake.FMapEntry").
+		WithFields(
+			api.NewTestField("key").
+				WithType(api.TypezString),
+			api.NewTestField("value").
+				WithType(api.TypezInt32),
+		)
+	wantMapEntry.IsMap = true
+	apitest.CheckMessage(t, message, wantMapEntry)
+}
+
 func TestProtobuf_SkipExternalMessages(t *testing.T) {
 	requireProtoc(t)
 	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
