@@ -81,7 +81,7 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got := enum.ValuesForExamples
+			got := enum.ValuesForExamples()
 			ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
 			if diff := cmp.Diff(test.wantExamples, got, allowUnexported(), ignoreParent); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

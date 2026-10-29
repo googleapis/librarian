@@ -264,7 +264,7 @@ type enumAnnotation struct {
 }
 
 func (e *enumAnnotation) HasCustomEncoding() bool {
-	_, hasCustomEncoding := usesCustomEncoding[e.Parent.ID]
+	_, hasCustomEncoding := usesCustomEncoding[e.Parent.ID()]
 	return hasCustomEncoding
 }
 
@@ -1372,7 +1372,8 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	// Attempt to use Dart-style camelCase for enum values.
 	// If there is a conflict, it must mean that there are enum values that differ only by case.
 	// If there are values that differ only in case, use the original case for all enum values.
-	for _, ev := range enum.Values {
+	values := enum.Values()
+	for _, ev := range values {
 		name := strcase.ToLowerCamel(ev.Name())
 		if _, hasConflict := reservedNames[name]; hasConflict {
 			name = name + deconflictChar
@@ -1386,7 +1387,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 
 	if useOriginalCase {
-		for _, ev := range enum.Values {
+		for _, ev := range values {
 			name := ev.Name()
 			if _, hasConflict := reservedNames[name]; hasConflict {
 				name = name + deconflictChar
@@ -1396,21 +1397,21 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 
 	defaultValue := ""
-	if len(enum.Values) > 0 {
-		defaultValue = enumValueToName[enum.Values[0]]
+	if len(values) > 0 {
+		defaultValue = enumValueToName[values[0]]
 	}
 
-	for _, ev := range enum.Values {
+	for _, ev := range values {
 		annotate.annotateEnumValue(ev, enumValueToName)
 	}
 
-	enum.Codec = &enumAnnotation{
+	enum.SetAnnotations(&enumAnnotation{
 		Parent:       enum,
 		Name:         enumName(enum),
-		DocLines:     formatDocComments(enum.Documentation, annotate.model),
+		DocLines:     formatDocComments(enum.Documentation(), annotate.model),
 		DefaultValue: defaultValue,
 		Model:        annotate.model,
-	}
+	})
 }
 
 func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumValueToName map[*api.EnumValue]string) {
@@ -1470,10 +1471,10 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 }
 
 func (annotate *annotateModel) resolveEnumName(enum *api.Enum) string {
-	annotate.updateUsedPackages(enum.Package)
+	annotate.updateUsedPackages(enum.Package())
 
 	ref := enumName(enum)
-	importPrefix, needsImportPrefix := annotate.packagePrefixes[enum.Package]
+	importPrefix, needsImportPrefix := annotate.packagePrefixes[enum.Package()]
 	if needsImportPrefix {
 		ref = importPrefix + "." + ref
 	}

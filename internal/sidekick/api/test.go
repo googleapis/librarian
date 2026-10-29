@@ -49,9 +49,9 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 			}
 		}
 		for _, e := range m.Enums {
-			model.enumByID[e.ID] = e
-			e.Parent = m
-			for _, ev := range e.Values {
+			model.enumByID[e.ID()] = e
+			e.parent = m
+			for _, ev := range e.Values() {
 				ev.parent = e
 			}
 		}
@@ -65,8 +65,8 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		indexMessage(m)
 	}
 	for _, e := range enums {
-		model.PackageName = e.Package
-		model.enumByID[e.ID] = e
+		model.PackageName = e.Package()
+		model.enumByID[e.ID()] = e
 	}
 	for _, s := range services {
 		model.PackageName = s.Package
@@ -86,14 +86,14 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 	}
 	for _, e := range enums {
-		parent := model.messageByID[parentName(e.ID)]
+		parent := model.messageByID[parentName(e.ID())]
 		if parent != nil {
-			e.Parent = parent
+			e.parent = parent
 			if !slices.Contains(parent.Enums, e) {
 				parent.Enums = append(parent.Enums, e)
 			}
 		}
-		for _, ev := range e.Values {
+		for _, ev := range e.Values() {
 			ev.parent = e
 		}
 	}
@@ -746,7 +746,7 @@ func (f *Field) WithEnumType(enum *Enum) *Field {
 	f.EnumType = enum
 	f.Typez = TypezEnum
 	if enum != nil {
-		f.TypezID = enum.ID
+		f.TypezID = enum.ID()
 	}
 	return f
 }
@@ -837,46 +837,46 @@ func (r *Resource) WithSelf(self *Message) *Resource {
 // NewTestEnum creates an Enum with defaults for testing.
 // Default package is "test".
 func NewTestEnum(name string) *Enum {
-	return (&Enum{Name: name}).WithPackage("test")
+	return NewEnumBuilder().WithName(name).Build().WithPackage("test")
 }
 
 // WithPackage sets the package for the enum and updates its ID.
 func (e *Enum) WithPackage(pkg string) *Enum {
-	e.Package = pkg
-	e.ID = fmt.Sprintf(".%s.%s", pkg, e.Name)
+	e.packagez = pkg
+	e.id = fmt.Sprintf(".%s.%s", pkg, e.Name())
 	return e
 }
 
 // WithID overrides the enum's ID.
 func (e *Enum) WithID(id string) *Enum {
-	e.ID = id
+	e.id = id
 	return e
 }
 
 // WithDocumentation sets the documentation for the enum.
 func (e *Enum) WithDocumentation(doc string) *Enum {
-	e.Documentation = doc
+	e.documentation = doc
 	return e
 }
 
 // WithDeprecated sets whether the enum is deprecated.
 func (e *Enum) WithDeprecated(deprecated bool) *Enum {
-	e.Deprecated = deprecated
+	e.deprecated = deprecated
 	return e
 }
 
 // WithParent sets the parent message for the enum and updates its ID.
 func (e *Enum) WithParent(parent *Message) *Enum {
-	e.Parent = parent
+	e.parent = parent
 	if parent != nil {
-		e.Package = parent.Package
-		if strings.HasPrefix(e.ID, ".test.") || e.ID == "" {
-			e.ID = fmt.Sprintf("%s.%s", parent.ID, e.Name)
+		e.packagez = parent.Package
+		if strings.HasPrefix(e.ID(), ".test.") || e.ID() == "" {
+			e.id = fmt.Sprintf("%s.%s", parent.ID, e.Name())
 		}
-		for _, v := range e.Values {
+		for _, v := range e.Values() {
 			v.parent = e
 			if strings.HasPrefix(v.ID(), ".test.") || v.ID() == "" {
-				v.WithID(fmt.Sprintf("%s.%s", e.ID, v.Name()))
+				v.WithID(fmt.Sprintf("%s.%s", e.ID(), v.Name()))
 			}
 		}
 	}
@@ -888,17 +888,17 @@ func (e *Enum) WithValues(values ...*EnumValue) *Enum {
 	for _, v := range values {
 		v.parent = e
 		if strings.HasPrefix(v.ID(), ".test.") || v.ID() == "" {
-			v.WithID(fmt.Sprintf("%s.%s", e.ID, v.Name()))
+			v.WithID(fmt.Sprintf("%s.%s", e.ID(), v.Name()))
 		}
 	}
-	e.Values = append(e.Values, values...)
+	e.values = append(e.values, values...)
 	seen := make(map[int32]bool)
-	for _, v := range e.UniqueNumberValues {
+	for _, v := range e.UniqueNumberValues() {
 		seen[v.Number()] = true
 	}
 	for _, v := range values {
 		if !seen[v.Number()] {
-			e.UniqueNumberValues = append(e.UniqueNumberValues, v)
+			e.uniqueNumberValues = append(e.uniqueNumberValues, v)
 			seen[v.Number()] = true
 		}
 	}
@@ -907,7 +907,7 @@ func (e *Enum) WithValues(values ...*EnumValue) *Enum {
 
 // WithUniqueNumberValues overrides UniqueNumberValues on the enum.
 func (e *Enum) WithUniqueNumberValues(values ...*EnumValue) *Enum {
-	e.UniqueNumberValues = values
+	e.uniqueNumberValues = values
 	return e
 }
 

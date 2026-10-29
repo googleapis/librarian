@@ -32,14 +32,7 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 		return fmt.Errorf("mismatched enum value list vs. enum deprecated values list")
 	}
 	id := fmt.Sprintf("%s.%s", message.ID, name)
-	enum := &api.Enum{
-		Name:          name,
-		ID:            id,
-		Package:       message.Package,
-		Documentation: fmt.Sprintf("The enumerated type for the [%s][%s] field.", name, id[1:]),
-		Deprecated:    schema.Deprecated,
-		Parent:        message,
-	}
+	var values []*api.EnumValue
 	for number, name := range schema.Enums {
 		deprecated := false
 		if len(schema.EnumDeprecated) != 0 {
@@ -48,14 +41,22 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 		value := api.NewEnumValueBuilder().
 			WithName(name).
 			WithNumber(int32(number)).
-			WithID(fmt.Sprintf("%s.%s", enum.ID, name)).
+			WithID(fmt.Sprintf("%s.%s", id, name)).
 			WithDocumentation(schema.EnumDescriptions[number]).
-			WithParent(enum).
 			WithDeprecated(deprecated).
 			Build()
-		enum.Values = append(enum.Values, value)
-		enum.UniqueNumberValues = append(enum.UniqueNumberValues, value)
+		values = append(values, value)
 	}
+	enum := api.NewEnumBuilder().
+		WithName(name).
+		WithID(id).
+		WithPackage(message.Package).
+		WithDocumentation(fmt.Sprintf("The enumerated type for the [%s][%s] field.", name, id[1:])).
+		WithDeprecated(schema.Deprecated).
+		WithParent(message).
+		WithValues(values...).
+		WithUniqueNumberValues(values...).
+		Build()
 	model.AddEnum(enum)
 	message.Enums = append(message.Enums, enum)
 	return nil

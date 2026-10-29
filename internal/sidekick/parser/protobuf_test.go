@@ -349,7 +349,7 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 			api.NewTestEnumValue("WHITE", 1),
 			api.NewTestEnumValue("BLUE", 2),
 		)
-	for _, v := range wantEnum.Values {
+	for _, v := range wantEnum.Values() {
 		v.WithID("")
 	}
 	apitest.CheckEnum(t, *enum, *wantEnum)
@@ -410,7 +410,7 @@ func TestProtobuf_Comments(t *testing.T) {
 			api.NewTestEnumValue("READY", 1).
 				WithDocumentation("The second enum value description."),
 		)
-	for _, v := range wantStatus.Values {
+	for _, v := range wantStatus.Values() {
 		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantStatus)
@@ -473,10 +473,10 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 
 	less := func(a, b *api.EnumValue) bool { return a.Name() < b.Name() }
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(fullList, withAlias.Values, apitest.AllowUnexported(), cmpopts.SortSlices(less), ignoreParent); diff != "" {
+	if diff := cmp.Diff(fullList, withAlias.Values(), apitest.AllowUnexported(), cmpopts.SortSlices(less), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues, apitest.AllowUnexported(), cmpopts.SortSlices(less), ignoreParent); diff != "" {
+	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues(), apitest.AllowUnexported(), cmpopts.SortSlices(less), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -877,7 +877,7 @@ func TestProtobuf_Enum(t *testing.T) {
 			api.NewTestEnumValue("UNKNOWN", 1).
 				WithDocumentation("Unknown error."),
 		)
-	for _, v := range wantEnum.Values {
+	for _, v := range wantEnum.Values() {
 		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnum)
@@ -1295,7 +1295,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		WithValues(
 			api.NewTestEnumValue("ENUM_A_UNSPECIFIED", 0),
 		)
-	for _, v := range wantEnumA.Values {
+	for _, v := range wantEnumA.Values() {
 		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnumA)
@@ -1312,7 +1312,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 			api.NewTestEnumValue("GREEN", 2),
 			api.NewTestEnumValue("BLUE", 3),
 		)
-	for _, v := range wantEnumB.Values {
+	for _, v := range wantEnumB.Values() {
 		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnumB)

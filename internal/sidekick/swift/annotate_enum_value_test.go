@@ -61,7 +61,7 @@ func TestAnnotateEnumValue_Multiple(t *testing.T) {
 	}
 
 	var got []*enumValueAnnotations
-	for _, ev := range enum.Values {
+	for _, ev := range enum.Values() {
 		got = append(got, ev.Codec().(*enumValueAnnotations))
 	}
 
@@ -98,7 +98,7 @@ func TestAnnotateEnumValue_Aliases(t *testing.T) {
 	}
 
 	var got []*enumValueAnnotations
-	for _, ev := range enum.Values {
+	for _, ev := range enum.Values() {
 		got = append(got, ev.Codec().(*enumValueAnnotations))
 	}
 

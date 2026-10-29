@@ -228,7 +228,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	// External enums and messages are the ones that have yet
 	// to be annotated.
 	for e := range model.AllEnums() {
-		if e.Codec == nil {
+		if e.Codec() == nil {
 			if err := codec.annotateEnum(e, model, false); err != nil {
 				return nil, err
 			}
@@ -407,10 +407,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		for _, id := range deps.Enums {
 			enum := model.Enum(id)
 			// Some messages are not annotated (e.g. external messages).
-			if enum == nil || enum.Codec == nil {
+			if enum == nil || enum.Codec() == nil {
 				continue
 			}
-			annotation := enum.Codec.(*enumAnnotation)
+			annotation := enum.Codec().(*enumAnnotation)
 			annotation.FeatureGates = append(annotation.FeatureGates, svcAnn.FeatureName())
 			slices.Sort(annotation.FeatureGates)
 			annotation.FeatureGatesOp = "any"
@@ -452,10 +452,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		annotation.FeatureGates = allFeatures
 	}
 	for enum := range model.AllEnums() {
-		if enum.Codec == nil {
+		if enum.Codec() == nil {
 			continue
 		}
-		annotation := enum.Codec.(*enumAnnotation)
+		annotation := enum.Codec().(*enumAnnotation)
 		if len(annotation.FeatureGates) > 0 {
 			continue
 		}

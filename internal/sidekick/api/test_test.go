@@ -156,11 +156,11 @@ func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
-	if got := model.Enum(nestedEnum.ID); got != nestedEnum {
-		t.Errorf("model.Enum(%q) = %v, want %v", nestedEnum.ID, got, nestedEnum)
+	if got := model.Enum(nestedEnum.ID()); got != nestedEnum {
+		t.Errorf("model.Enum(%q) = %v, want %v", nestedEnum.ID(), got, nestedEnum)
 	}
-	if nestedEnum.Parent != parent {
-		t.Errorf("nestedEnum.Parent = %v, want %v", nestedEnum.Parent, parent)
+	if nestedEnum.Parent() != parent {
+		t.Errorf("nestedEnum.Parent() = %v, want %v", nestedEnum.Parent(), parent)
 	}
 	if val.Parent() != nestedEnum {
 		t.Errorf("val.Parent() = %v, want %v", val.Parent(), nestedEnum)
@@ -176,8 +176,8 @@ func TestNewTestAPI_DeduplicatesNestedEnums(t *testing.T) {
 	if got := len(parent.Enums); got != 1 {
 		t.Errorf("len(parent.Enums) = %d, want 1", got)
 	}
-	if got := model.Enum(enum.ID); got != enum {
-		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID, got, enum)
+	if got := model.Enum(enum.ID()); got != enum {
+		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID(), got, enum)
 	}
 }
 
@@ -416,7 +416,7 @@ func TestField_FluentSetters(t *testing.T) {
 	if f.Typez != api.TypezEnum {
 		t.Errorf("f.Typez = %v, want %v", f.Typez, api.TypezEnum)
 	}
-	if got, want := f.TypezID, enum.ID; got != want {
+	if got, want := f.TypezID, enum.ID(); got != want {
 		t.Errorf("f.TypezID = %q, want %q", got, want)
 	}
 	if !f.AutoPopulated {
