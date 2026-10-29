@@ -30,18 +30,18 @@ func (field *Field) recursivelyReferences(messageID string, model *API, visited 
 		if mapType == nil {
 			mapType = model.Map(field.TypezID())
 		}
-		if mapType == nil || visited[mapType.ID] {
+		if mapType == nil || visited[mapType.ID()] {
 			return false
 		}
-		visited[mapType.ID] = true
-		defer delete(visited, mapType.ID)
+		visited[mapType.ID()] = true
+		defer delete(visited, mapType.ID())
 		recursive := false
-		if mapType.Key != nil && mapType.Key.recursivelyReferences(messageID, model, visited) {
-			mapType.Key.recursive = true
+		if mapType.Key() != nil && mapType.Key().recursivelyReferences(messageID, model, visited) {
+			mapType.Key().recursive = true
 			recursive = true
 		}
-		if mapType.Value != nil && mapType.Value.recursivelyReferences(messageID, model, visited) {
-			mapType.Value.recursive = true
+		if mapType.Value() != nil && mapType.Value().recursivelyReferences(messageID, model, visited) {
+			mapType.Value().recursive = true
 			recursive = true
 		}
 		if recursive {

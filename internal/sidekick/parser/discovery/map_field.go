@@ -114,11 +114,11 @@ func insertMapType(model *api.API, valueTypez api.Typez, valueTypezID string) st
 		WithTypez(valueTypez).
 		WithTypezID(valueTypezID).
 		Build()
-	mapEntity := &api.Map{
-		ID:    id,
-		Key:   key,
-		Value: value,
-	}
+	mapEntity := api.NewMapBuilder().
+		WithID(id).
+		WithKey(key).
+		WithValue(value).
+		Build()
 	model.AddMap(mapEntity)
 	return id
 }

@@ -35,13 +35,13 @@ import (
 // reference any types or names of the `OneOf` during their generation.
 func CrossReference(model *API) error {
 	for m := range model.AllMaps() {
-		if m.Key != nil {
-			if err := crossReferenceField(model, m.Key); err != nil {
+		if m.Key() != nil {
+			if err := crossReferenceField(model, m.Key()); err != nil {
 				return err
 			}
 		}
-		if m.Value != nil {
-			if err := crossReferenceField(model, m.Value); err != nil {
+		if m.Value() != nil {
+			if err := crossReferenceField(model, m.Value()); err != nil {
 				return err
 			}
 		}
