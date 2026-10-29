@@ -404,7 +404,7 @@ func TestMethod_FluentSetters(t *testing.T) {
 
 func TestField_FluentSetters(t *testing.T) {
 	enum := api.NewTestEnum("State").WithPackage("test.v1")
-	pattern := &api.ResourceNamePattern{Segments: []api.ResourceNameSegment{{Literal: "items"}}}
+	pattern := api.NewTestResourceNamePattern(api.NewResourceNameSegment("items", ""))
 	f := api.NewTestField("state").
 		WithEnumType(enum).
 		WithAutoPopulated().
@@ -441,19 +441,6 @@ func TestMethod_TypeIDSetters(t *testing.T) {
 	}
 	if m.SourceServiceID != ".test.Service" {
 		t.Errorf("m.SourceServiceID = %q, want %q", m.SourceServiceID, ".test.Service")
-	}
-}
-
-func TestResourceNamePattern_Builder(t *testing.T) {
-	p := api.NewTestResourceNamePattern(
-		api.ResourceNameSegment{Literal: "projects"},
-		api.ResourceNameSegment{Variable: "project"},
-	)
-	if len(p.Segments) != 2 {
-		t.Fatalf("len(p.Segments) = %d, want 2", len(p.Segments))
-	}
-	if p.Segments[0].Literal != "projects" || p.Segments[1].Variable != "project" {
-		t.Errorf("unexpected segments: %+v", p.Segments)
 	}
 }
 

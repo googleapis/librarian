@@ -42,7 +42,7 @@ func (c *codec) annotateSampleInfo(method *api.Method) {
 	var ann *sampleInfoAnnotation
 	if field := si.ResourceNameField; field != nil {
 		fieldAnn := field.Codec.(*fieldAnnotations)
-		if field.ResourceNamePattern != nil && len(field.ResourceNamePattern.Segments) > 0 {
+		if field.ResourceNamePattern != nil && len(field.ResourceNamePattern.Segments()) > 0 {
 			ann = c.resourceNameToSampleInfo(field.ResourceNamePattern, fieldAnn)
 		} else if fieldAnn != nil {
 			ann = &sampleInfoAnnotation{
@@ -64,13 +64,13 @@ func (c *codec) annotateSampleInfo(method *api.Method) {
 func (c *codec) resourceNameToSampleInfo(pattern *api.ResourceNamePattern, fieldAnn *fieldAnnotations) *sampleInfoAnnotation {
 	var formatString []string
 	var parameters []string
-	for _, s := range pattern.Segments {
-		if s.Literal != "" {
-			formatString = append(formatString, s.Literal)
+	for _, s := range pattern.Segments() {
+		if s.Literal() != "" {
+			formatString = append(formatString, s.Literal())
 		}
-		if s.Variable != "" {
+		if s.Variable() != "" {
 			// Convert variable to snake_case and add _id suffix if needed
-			arg := s.Variable
+			arg := s.Variable()
 			if !strings.HasSuffix(arg, "_id") && !strings.HasSuffix(arg, "_name") {
 				arg += "_id"
 			}

@@ -189,8 +189,8 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 		}
 
 		got := field.ResourceNamePattern
-		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "resources", Variable: "resource"})
-		if diff := cmp.Diff(want, got); diff != "" {
+		want := NewTestResourceNamePattern(NewResourceNameSegment("resources", "resource"))
+		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -215,8 +215,8 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 		}
 
 		got := field.ResourceNamePattern
-		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "parents", Variable: "parent"})
-		if diff := cmp.Diff(want, got); diff != "" {
+		want := NewTestResourceNamePattern(NewResourceNameSegment("parents", "parent"))
+		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -239,8 +239,8 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 		}
 
 		got := field.ResourceNamePattern
-		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "resources", Variable: "resource"})
-		if diff := cmp.Diff(want, got); diff != "" {
+		want := NewTestResourceNamePattern(NewResourceNameSegment("resources", "resource"))
+		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -261,7 +261,7 @@ func TestToResourceNamePattern(t *testing.T) {
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
-				ResourceNameSegment{Literal: "projects", Variable: "project"},
+				NewResourceNameSegment("projects", "project"),
 			),
 		},
 		{
@@ -274,8 +274,8 @@ func TestToResourceNamePattern(t *testing.T) {
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
-				ResourceNameSegment{Literal: "projects", Variable: "project"},
-				ResourceNameSegment{Literal: "secrets", Variable: "secret"},
+				NewResourceNameSegment("projects", "project"),
+				NewResourceNameSegment("secrets", "secret"),
 			),
 		},
 		{
@@ -288,7 +288,7 @@ func TestToResourceNamePattern(t *testing.T) {
 			},
 			skipLast: true,
 			want: NewTestResourceNamePattern(
-				ResourceNameSegment{Literal: "projects", Variable: "project"},
+				NewResourceNameSegment("projects", "project"),
 			),
 		},
 		{
@@ -300,14 +300,14 @@ func TestToResourceNamePattern(t *testing.T) {
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
-				ResourceNameSegment{Literal: "projects", Variable: "project"},
-				ResourceNameSegment{Literal: "config", Variable: ""},
+				NewResourceNameSegment("projects", "project"),
+				NewResourceNameSegment("config", ""),
 			),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := toResourceNamePattern(test.pattern, test.skipLast)
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
