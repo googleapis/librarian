@@ -32,7 +32,7 @@ func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
 	if method.PathInfo == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings(), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -43,7 +43,7 @@ func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 
 	method.WithBindings(b1)
 
-	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings(), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -55,8 +55,8 @@ func TestMethod_WithBodyFieldPath_NilPathInfo(t *testing.T) {
 	if method.PathInfo == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if method.PathInfo.BodyFieldPath != "data" {
-		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo.BodyFieldPath)
+	if method.PathInfo.BodyFieldPath() != "data" {
+		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo.BodyFieldPath())
 	}
 }
 
@@ -64,11 +64,11 @@ func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithVerb("PUT")
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
+	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if method.PathInfo.Bindings[0].Verb() != "PUT" {
-		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo.Bindings[0].Verb())
+	if method.PathInfo.Bindings()[0].Verb() != "PUT" {
+		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo.Bindings()[0].Verb())
 	}
 }
 
@@ -77,10 +77,10 @@ func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	method.WithPathTemplate(pt)
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
+	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if method.PathInfo.Bindings[0].PathTemplate() != pt {
+	if method.PathInfo.Bindings()[0].PathTemplate() != pt {
 		t.Errorf("expected PathTemplate to match")
 	}
 }
@@ -89,11 +89,11 @@ func TestMethod_WithQueryParameters_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithQueryParameters("page_size")
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
+	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
 	want := map[string]bool{"page_size": true}
-	if diff := cmp.Diff(want, method.PathInfo.Bindings[0].QueryParameters()); diff != "" {
+	if diff := cmp.Diff(want, method.PathInfo.Bindings()[0].QueryParameters()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

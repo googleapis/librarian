@@ -167,7 +167,7 @@ func enumName(e *api.Enum) string {
 
 func httpPathFmt(pathInfo *api.PathInfo) string {
 	var builder strings.Builder
-	t := pathInfo.Bindings[0].PathTemplate()
+	t := pathInfo.Bindings()[0].PathTemplate()
 	for _, segment := range t.Segments() {
 		switch {
 		case segment.Literal() != "":
@@ -251,10 +251,11 @@ func shouldGenerateMethod(m *api.Method) bool {
 	if m.ClientSideStreaming || m.PathInfo == nil {
 		return false
 	}
-	if len(m.PathInfo.Bindings) == 0 {
+	bindings := m.PathInfo.Bindings()
+	if len(bindings) == 0 {
 		return false
 	}
-	return m.PathInfo.Bindings[0].PathTemplate() != nil
+	return bindings[0].PathTemplate() != nil
 }
 
 func formatDirectory(ctx context.Context, dir string) error {

@@ -73,32 +73,31 @@ func processRule(httpRule *httpRule, model *api.API, mID string) (*api.PathInfo,
 		return nil, err
 	}
 	if binding == nil {
-		return &api.PathInfo{}, nil
+		return api.NewPathInfoBuilder().Build(), nil
 	}
-	pathInfo := &api.PathInfo{
-		BodyFieldPath: body,
-		Bindings:      []*api.PathBinding{binding},
-	}
+	pathInfoBuilder := api.NewPathInfoBuilder().
+		WithBodyFieldPath(body).
+		WithBindings(binding)
 
 	for _, binding := range httpRule.GetAdditionalBindings() {
-		binding, body, err := processRuleShallow(binding, model, mID)
+		binding, additionalBody, err := processRuleShallow(binding, model, mID)
 		if err != nil {
 			return nil, err
 		}
-		if pathInfo.BodyFieldPath != "" && body != "" && body != pathInfo.BodyFieldPath {
+		if body != "" && additionalBody != "" && additionalBody != body {
 			if _, ok := suppressedAip127Warnings[mID]; !ok {
 				// Deviations from AIP-127 can result in bad generated code, but we know it is safe for some specific messages.
 				// Generate a warning if this happens when unexpecfted.
-				slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", pathInfo.BodyFieldPath, "additionalBindingBody", body)
+				slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", body, "additionalBindingBody", additionalBody)
 			}
 		}
 		if binding != nil {
-			pathInfo.Bindings = append(pathInfo.Bindings, binding)
+			pathInfoBuilder.WithBinding(binding)
 		} else {
 			slog.Warn("additional binding without a pattern", "message", mID)
 		}
 	}
-	return pathInfo, nil
+	return pathInfoBuilder.Build(), nil
 }
 
 func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.PathBinding, string, error) {

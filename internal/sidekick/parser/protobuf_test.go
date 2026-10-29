@@ -696,11 +696,11 @@ func TestProtobuf_Service(t *testing.T) {
 					Build()).
 				Build(),
 		).
-		WithQueryParameters()
+		WithQueryParameters().
+		WithBodyFieldPath("")
 	getFoo.SourceServiceID = ".test.TestService"
 	getFoo.InputTypeID = ".test.GetFooRequest"
 	getFoo.OutputTypeID = ".test.Foo"
-	getFoo.PathInfo.BodyFieldPath = ""
 	getFoo.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
 
 	createFoo := api.NewTestMethod("CreateFoo").
@@ -748,11 +748,11 @@ func TestProtobuf_Service(t *testing.T) {
 	uploadFoos := api.NewTestMethod("UploadFoos").
 		WithID(".test.TestService.UploadFoos").
 		WithDocumentation("A client-side streaming RPC.").
-		WithClientSideStreaming()
+		WithClientSideStreaming().
+		WithPathInfo(api.NewPathInfoBuilder().Build())
 	uploadFoos.SourceServiceID = ".test.TestService"
 	uploadFoos.InputTypeID = ".test.CreateFooRequest"
 	uploadFoos.OutputTypeID = ".test.Foo"
-	uploadFoos.PathInfo = &api.PathInfo{}
 
 	downloadFoos := api.NewTestMethod("DownloadFoos").
 		WithID(".test.TestService.DownloadFoos").
@@ -771,20 +771,20 @@ func TestProtobuf_Service(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
+		WithBodyFieldPath("").
 		WithServerSideStreaming()
 	downloadFoos.SourceServiceID = ".test.TestService"
 	downloadFoos.InputTypeID = ".test.GetFooRequest"
 	downloadFoos.OutputTypeID = ".test.Foo"
-	downloadFoos.PathInfo.BodyFieldPath = ""
 
 	chatLike := api.NewTestMethod("ChatLike").
 		WithID(".test.TestService.ChatLike").
 		WithDocumentation("A bidi streaming RPC.").
-		WithBidiStreaming()
+		WithBidiStreaming().
+		WithPathInfo(api.NewPathInfoBuilder().Build())
 	chatLike.SourceServiceID = ".test.TestService"
 	chatLike.InputTypeID = ".test.Foo"
 	chatLike.OutputTypeID = ".test.Foo"
-	chatLike.PathInfo = &api.PathInfo{}
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -1248,10 +1248,10 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	}
 	rpcA := api.NewTestMethod("RpcA").
 		WithID(".test.ServiceB.RpcA").
-		WithDeprecated(true)
+		WithDeprecated(true).
+		WithPathInfo(api.NewPathInfoBuilder().Build())
 	rpcA.InputTypeID = ".test.Request"
 	rpcA.OutputTypeID = ".test.Response"
-	rpcA.PathInfo = &api.PathInfo{}
 	rpcA.SourceServiceID = ".test.ServiceB"
 
 	wantServiceB := api.NewTestService("ServiceB").
