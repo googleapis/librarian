@@ -72,7 +72,7 @@ func (m *methodAnnotation) IsBidiStreaming() bool {
 
 // FullBody returns true if the HTTP body is configured as "*".
 func (m *methodAnnotation) FullBody() bool {
-	return m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
+	return m.PathInfo != nil && m.PathInfo.BodyFieldPath() == "*"
 }
 
 // IsServerStreaming returns true if the method is a server-side streaming RPC
@@ -88,7 +88,7 @@ func (m *methodAnnotation) HasGrpcResourceNameArgs() bool {
 
 // HasBindings returns true if the method has path bindings.
 func (m *methodAnnotation) HasBindings() bool {
-	return m.PathInfo != nil && len(m.PathInfo.Bindings) > 0
+	return m.PathInfo != nil && len(m.PathInfo.Bindings()) > 0
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -292,7 +292,7 @@ type sampleInfoAnnotation struct {
 
 // HasBindingSubstitutions returns true if the method has binding substitutions.
 func (m *methodAnnotation) HasBindingSubstitutions() bool {
-	for _, b := range m.PathInfo.Bindings {
+	for _, b := range m.PathInfo.Bindings() {
 		for _, s := range b.PathTemplate().Segments() {
 			if s.Variable() != nil {
 				return true
@@ -524,7 +524,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	var pathExtraction *PathExtraction
-	fullBody := m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
+	fullBody := m.PathInfo != nil && m.PathInfo.BodyFieldPath() == "*"
 	if fullBody {
 		clears, err := makeClearAccessors(fieldPath, m)
 		if err != nil {
@@ -611,7 +611,7 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
 
-	for _, b := range m.PathInfo.Bindings {
+	for _, b := range m.PathInfo.Bindings() {
 		if b.PathTemplate() == nil {
 			continue
 		}
@@ -630,11 +630,11 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 		b.SetAnnotations(ann)
 	}
 
-	m.PathInfo.Codec = &pathInfoAnnotation{
-		HasBody:          m.PathInfo.BodyFieldPath != "",
+	m.PathInfo.SetAnnotations(&pathInfoAnnotation{
+		HasBody:          m.PathInfo.BodyFieldPath() != "",
 		UniqueParameters: uniqueParameters,
 		IsIdempotent:     isIdempotent(m.PathInfo),
-	}
+	})
 	return nil
 }
 
@@ -667,8 +667,9 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 		return nil
 	}
 	if m.PathInfo != nil {
+		bindings := m.PathInfo.Bindings()
 		var firstBindingWithTargetResource *api.PathBinding
-		for _, b := range m.PathInfo.Bindings {
+		for _, b := range bindings {
 			if b.TargetResource() != nil {
 				annotation.HasResourceNameGeneration = true
 				firstBindingWithTargetResource = b
@@ -698,7 +699,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 			}
 			annotation.GrpcResourceNameArgs = grpcArgs
 
-			for _, b := range m.PathInfo.Bindings {
+			for _, b := range bindings {
 				bAnn, ok := b.Codec().(*pathBindingAnnotation)
 				if !ok {
 					continue
@@ -759,10 +760,11 @@ func formatResourceNameArgs(fieldPaths [][]string) []string {
 }
 
 func isIdempotent(p *api.PathInfo) string {
-	if len(p.Bindings) == 0 {
+	bindings := p.Bindings()
+	if len(bindings) == 0 {
 		return "false"
 	}
-	for _, b := range p.Bindings {
+	for _, b := range bindings {
 		if b.Verb() == "POST" || b.Verb() == "PATCH" {
 			return "false"
 		}

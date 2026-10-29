@@ -754,7 +754,7 @@ func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, si
 	var resourceField *Field
 	bodyFieldPath := ""
 	if pathInfo != nil {
-		bodyFieldPath = pathInfo.BodyFieldPath
+		bodyFieldPath = pathInfo.BodyFieldPath()
 	}
 
 	for _, f := range message.Fields {

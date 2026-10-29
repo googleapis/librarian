@@ -28,6 +28,7 @@ import (
 func AllowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
 		api.PathBinding{},
+		api.PathInfo{},
 		api.PathSegment{},
 		api.PathTemplate{},
 		api.PathVariable{},
