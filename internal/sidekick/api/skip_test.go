@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func ignoreMethodFields(names ...string) cmp.Option {
@@ -33,6 +32,23 @@ func ignoreMethodFields(names ...string) cmp.Option {
 			return false
 		}
 		if p.Index(-2).Type() != reflect.TypeFor[Method]() {
+			return false
+		}
+		sf, ok := p.Last().(cmp.StructField)
+		return ok && ignore[sf.Name()]
+	}, cmp.Ignore())
+}
+
+func ignoreServiceFields(names ...string) cmp.Option {
+	ignore := make(map[string]bool, len(names))
+	for _, n := range names {
+		ignore[n] = true
+	}
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != reflect.TypeFor[Service]() {
 			return false
 		}
 		sf, ok := p.Last().(cmp.StructField)
@@ -158,7 +174,7 @@ func TestSkipServices(t *testing.T) {
 
 	want := []*Service{s0, s2}
 
-	if diff := cmp.Diff(want, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(want, model.Services, allowUnexported(), ignoreServiceFields("model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -201,12 +217,12 @@ func TestSkipMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s0, s1, s2}
-	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), ignoreServiceFields("model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{m0, m2}
-	if diff := cmp.Diff(wantMethods, s1.Methods, allowUnexported(), ignoreMethodFields(methodIgnoreFields...)); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods(), allowUnexported(), ignoreMethodFields(methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -279,12 +295,12 @@ func TestIncludeMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s1}
-	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), ignoreMethodFields(methodIgnoreFields...), cmpopts.IgnoreFields(Service{}, "Model", "QuickstartMethod")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), ignoreMethodFields(methodIgnoreFields...), ignoreServiceFields("model", "quickstartMethod")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{m1, m2}
-	if diff := cmp.Diff(wantMethods, s1.Methods, allowUnexported(), ignoreMethodFields(methodIgnoreFields...)); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods(), allowUnexported(), ignoreMethodFields(methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

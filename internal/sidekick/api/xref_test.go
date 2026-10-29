@@ -139,11 +139,11 @@ func TestCrossReferenceService(t *testing.T) {
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	if service.Model != model {
-		t.Errorf("mismatched model, got=%v, want=%v", service.Model, model)
+	if service.Model() != model {
+		t.Errorf("mismatched model, got=%v, want=%v", service.Model(), model)
 	}
-	if mixin.Model != model {
-		t.Errorf("mismatched model, got=%v, want=%v", mixin.Model, model)
+	if mixin.Model() != model {
+		t.Errorf("mismatched model, got=%v, want=%v", mixin.Model(), model)
 	}
 }
 

@@ -121,11 +121,11 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 	}
 	lroServices := discoveryConfig.LroServices()
 	for _, svc := range model.Services {
-		if _, ok := lroServices[svc.ID]; ok {
+		if _, ok := lroServices[svc.id]; ok {
 			continue
 		}
 		var svcMixin *Method
-		for _, method := range svc.Methods {
+		for _, method := range svc.methods {
 			if method.outputTypeID != discoveryConfig.OperationID {
 				continue
 			}
@@ -150,7 +150,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 		}
 		method := &Method{
 			name:            "getOperation",
-			id:              fmt.Sprintf("%s.getOperation", svc.ID),
+			id:              fmt.Sprintf("%s.getOperation", svc.id),
 			documentation:   svcMixin.documentation,
 			inputTypeID:     svcMixin.inputTypeID,
 			outputTypeID:    svcMixin.outputTypeID,
@@ -163,7 +163,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 			sourceServiceID: sourceID,
 			isLroPoller:     true,
 		}
-		svc.Methods = append(svc.Methods, method)
+		svc.methods = append(svc.methods, method)
 		model.AddMethod(method)
 	}
 	return nil

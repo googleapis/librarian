@@ -133,7 +133,7 @@ func (m *modelAnnotations) HasServices() bool {
 // HasGrpc returns true if any service in the model has at least one gRPC method.
 func (m *modelAnnotations) HasGrpc() bool {
 	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
-		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+		if ann, ok := s.Codec().(*serviceAnnotations); ok {
 			return ann.HasGrpc()
 		}
 		return false
@@ -143,7 +143,7 @@ func (m *modelAnnotations) HasGrpc() bool {
 // HasHttp returns true if any service in the model has at least one HTTP method.
 func (m *modelAnnotations) HasHttp() bool {
 	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
-		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+		if ann, ok := s.Codec().(*serviceAnnotations); ok {
 			return ann.HasHttp()
 		}
 		return false
@@ -165,7 +165,7 @@ func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 // GrpcServices returns the subset of services that have at least one gRPC method.
 func (m *modelAnnotations) GrpcServices() []*api.Service {
 	return language.FilterSlice(m.Services, func(s *api.Service) bool {
-		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+		if ann, ok := s.Codec().(*serviceAnnotations); ok {
 			return ann.HasGrpc()
 		}
 		return false
@@ -176,7 +176,7 @@ func (m *modelAnnotations) GrpcServices() []*api.Service {
 func GrpcRootTypeIDs(model *api.API) []string {
 	var rootTypeIDs []string
 	for _, s := range model.Services {
-		for _, m := range s.Methods {
+		for _, m := range s.Methods() {
 			if ann, ok := m.Codec().(*methodAnnotation); ok && ann.IsGrpc {
 				if m.InputTypeID() != "" {
 					rootTypeIDs = append(rootTypeIDs, m.InputTypeID())
@@ -244,7 +244,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	hasLROs := false
 	hasDiscoveryLROs := false
 	for _, s := range model.Services {
-		for _, m := range s.Methods {
+		for _, m := range s.Methods() {
 			if !codec.generateMethod(m) {
 				continue
 			}
@@ -296,7 +296,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	}
 
 	servicesSubset := language.FilterSlice(model.Services, func(s *api.Service) bool {
-		return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return codec.generateMethod(m) })
+		return slices.ContainsFunc(s.Methods(), func(m *api.Method) bool { return codec.generateMethod(m) })
 	})
 	// The maximum (15) was chosen more or less arbitrarily circa 2025-06. At
 	// the time, only a handful of services exceeded this number of services.
@@ -309,7 +309,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	findUsedPackages(model, codec)
 	defaultHost := func() string {
 		if len(model.Services) > 0 {
-			return model.Services[0].DefaultHost
+			return model.Services[0].DefaultHost()
 		}
 		return ""
 	}()
@@ -324,7 +324,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	var quickstartService *api.Service
 	if codec.quickstartServiceOverride != "" {
 		idx := slices.IndexFunc(servicesSubset, func(s *api.Service) bool {
-			return strings.EqualFold(codec.ServiceName(s), codec.quickstartServiceOverride) || strings.EqualFold(s.Name, codec.quickstartServiceOverride)
+			return strings.EqualFold(codec.ServiceName(s), codec.quickstartServiceOverride) || strings.EqualFold(s.Name(), codec.quickstartServiceOverride)
 		})
 		if idx != -1 {
 			quickstartService = servicesSubset[idx]
@@ -338,7 +338,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	}
 
 	hasGrpc := slices.ContainsFunc(servicesSubset, func(s *api.Service) bool {
-		if sAnn, ok := s.Codec.(*serviceAnnotations); ok {
+		if sAnn, ok := s.Codec().(*serviceAnnotations); ok {
 			return sAnn.HasGrpc()
 		}
 		return false
@@ -397,7 +397,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		ExtraModules:            extraModules,
 		InternalModules:         codec.internalModules,
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
-			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
+			return slices.ContainsFunc(s.Methods(), func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),
 		GenerateSetterSamples:     codec.generateSetterSamples,
 		GenerateRpcSamples:        codec.generateRpcSamples,
@@ -420,9 +420,9 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	}
 	var allFeatures []string
 	for _, service := range ann.Services {
-		svcAnn := service.Codec.(*serviceAnnotations)
+		svcAnn := service.Codec().(*serviceAnnotations)
 		allFeatures = append(allFeatures, svcAnn.FeatureName())
-		deps := api.FindServiceDependencies(model, service.ID)
+		deps := api.FindServiceDependencies(model, service.ID())
 		for _, id := range deps.Enums {
 			enum := model.Enum(id)
 			// Some messages are not annotated (e.g. external messages).

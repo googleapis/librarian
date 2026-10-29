@@ -54,8 +54,8 @@ func TestMethod(t *testing.T) {
 	op := NewOperationInfoBuilder().Build()
 	lro := NewDiscoveryLroBuilder().Build()
 	sig := NewMethodSignatureBuilder().WithNames("name").Build()
-	svc := NewTestService("Svc")
-	srcSvc := NewTestService("SrcSvc")
+	svc := NewServiceBuilder().WithName("Svc").Build()
+	srcSvc := NewServiceBuilder().WithName("SrcSvc").Build()
 	model := NewTestAPI(nil, nil, nil)
 
 	got := NewMethodBuilder().

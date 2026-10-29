@@ -162,7 +162,7 @@ func (c *codec) generateServices(outdir string, model *api.API) error {
 	for _, s := range model.Services {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/service.swift.gotmpl",
-			OutputPath:   c.swiftFilename(s.Name),
+			OutputPath:   c.swiftFilename(s.Name()),
 		}
 		if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 			return err
@@ -188,7 +188,7 @@ func (c *codec) generateStubs(outdir string, model *api.API) error {
 		} {
 			generated := language.GeneratedFile{
 				TemplatePath: stub.template,
-				OutputPath:   c.swiftFilename(s.Name + stub.suffix),
+				OutputPath:   c.swiftFilename(s.Name() + stub.suffix),
 			}
 			if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 				return err
@@ -240,18 +240,18 @@ func (c *codec) generateSnippets(outdir string, model *api.API) error {
 		// If I (coryan@) am wrong, we can fix the generator at that time.
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/client_snippet.swift.gotmpl",
-			OutputPath:   filepath.Join("Snippets", s.Name+"Quickstart.swift"),
+			OutputPath:   filepath.Join("Snippets", s.Name()+"Quickstart.swift"),
 		}
 		if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 			return err
 		}
-		for _, m := range s.Methods {
+		for _, m := range s.Methods() {
 			if !c.shouldGenerateMethod(m) || m.IsLroPoller() {
 				continue
 			}
 			mGenerated := language.GeneratedFile{
 				TemplatePath: "templates/common/method_snippet.swift.gotmpl",
-				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name, m.Name())),
+				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name(), m.Name())),
 			}
 			if err := parsedTemplates.GenerateElement(outdir, m, mGenerated); err != nil {
 				return err

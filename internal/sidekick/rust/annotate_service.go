@@ -193,7 +193,8 @@ func (a *serviceAnnotations) EnabledFeatures() []string {
 
 func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 	// Some codecs skip some methods.
-	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
+	allMethods := s.Methods()
+	methods := language.FilterSlice(allMethods, func(m *api.Method) bool {
 		return c.generateMethod(m)
 	})
 	seenLROTypes := make(map[string]bool)
@@ -202,39 +203,39 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		if m.OperationInfo() != nil {
 			if _, ok := seenLROTypes[m.OperationInfo().MetadataTypeID()]; !ok {
 				seenLROTypes[m.OperationInfo().MetadataTypeID()] = true
-				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo().MetadataTypeID()))
+				lroTypes = append(lroTypes, s.Model().Message(m.OperationInfo().MetadataTypeID()))
 			}
 			if _, ok := seenLROTypes[m.OperationInfo().ResponseTypeID()]; !ok {
 				seenLROTypes[m.OperationInfo().ResponseTypeID()] = true
-				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo().ResponseTypeID()))
+				lroTypes = append(lroTypes, s.Model().Message(m.OperationInfo().ResponseTypeID()))
 			}
 		}
 	}
 	serviceName := c.ServiceName(s)
 	moduleName := toSnake(serviceName)
 	docLines, err := c.formatDocComments(
-		s.Documentation, s.ID, s.Model, []string{s.ID, s.Package})
+		s.Documentation(), s.ID(), s.Model(), []string{s.ID(), s.Package()})
 	if err != nil {
 		return nil, err
 	}
 	ann := &serviceAnnotations{
 		Name:                      toPascal(serviceName),
-		PackageModuleName:         packageToModuleName(s.Package),
+		PackageModuleName:         packageToModuleName(s.Package()),
 		ModuleName:                moduleName,
 		DocLines:                  docLines,
 		Methods:                   methods,
-		DefaultHost:               s.DefaultHost,
+		DefaultHost:               s.DefaultHost(),
 		LROTypes:                  lroTypes,
-		APITitle:                  s.Model.Title,
+		APITitle:                  s.Model().Title,
 		PerServiceFeatures:        c.perServiceFeatures,
-		HasVeneer:                 c.serviceHasVeneer(s.ID),
+		HasVeneer:                 c.serviceHasVeneer(s.ID()),
 		ExtendGrpcTransport:       c.extendGrpcTransport,
-		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
+		Incomplete:                slices.ContainsFunc(allMethods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
-		InternalBuilders:          c.serviceInternalBuilders(s.ID),
-		GenerateRpcSamples:        c.serviceGenerateRpcSamples(s.ID),
+		InternalBuilders:          c.serviceInternalBuilders(s.ID()),
+		GenerateRpcSamples:        c.serviceGenerateRpcSamples(s.ID()),
 		GrpcClient:                c.grpcClient,
 	}
-	s.Codec = ann
+	s.SetAnnotations(ann)
 	return ann, nil
 }

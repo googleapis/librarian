@@ -21,34 +21,67 @@ import (
 // Service represents a service in an API.
 type Service struct {
 	// Documentation for the service.
-	Documentation string
+	documentation string
 	// Name of the attribute.
-	Name string
+	name string
 	// ID is a unique identifier.
-	ID string
+	id string
 	// Some source specifications allow marking services as deprecated.
-	Deprecated bool
+	deprecated bool
 	// Methods associated with the Service.
-	Methods []*Method
+	methods []*Method
 	// DefaultHost fragment of a URL.
-	DefaultHost string
+	defaultHost string
 	// The Protobuf package this service belongs to.
-	Package string
+	packagez string
 
 	// The model this service belongs to, Go templates use this field to
 	// navigate the data structure.
-	Model *API
+	model *API
 	// QuickstartMethod is the method that will be used to generate the quickstart sample
 	// for this service.
-	QuickstartMethod *Method
+	quickstartMethod *Method
 	// Language specific annotations.
-	Codec any
+	codec any
 }
+
+// Documentation returns the documentation for the service.
+func (s *Service) Documentation() string { return s.documentation }
+
+// Name returns the name of the service.
+func (s *Service) Name() string { return s.name }
+
+// ID returns the unique identifier for the service.
+func (s *Service) ID() string { return s.id }
+
+// Deprecated returns whether the service is deprecated.
+func (s *Service) Deprecated() bool { return s.deprecated }
+
+// Methods returns the methods associated with the service.
+func (s *Service) Methods() []*Method { return slices.Clone(s.methods) }
+
+// DefaultHost returns the default host fragment of a URL for the service.
+func (s *Service) DefaultHost() string { return s.defaultHost }
+
+// Package returns the Protobuf package this service belongs to.
+func (s *Service) Package() string { return s.packagez }
+
+// Model returns the model this service belongs to.
+func (s *Service) Model() *API { return s.model }
+
+// QuickstartMethod returns the method used to generate the quickstart sample for this service.
+func (s *Service) QuickstartMethod() *Method { return s.quickstartMethod }
+
+// Codec returns the language-specific annotations for the service.
+func (s *Service) Codec() any { return s.codec }
+
+// SetAnnotations sets the language-specific annotations for the service.
+func (s *Service) SetAnnotations(a any) { s.codec = a }
 
 // HasClientSideStreaming returns true if the service contains any methods
 // that support client-side streaming.
 func (s *Service) HasClientSideStreaming() bool {
-	return slices.ContainsFunc(s.Methods, func(m *Method) bool {
+	return slices.ContainsFunc(s.methods, func(m *Method) bool {
 		return m.clientSideStreaming
 	})
 }
@@ -56,7 +89,7 @@ func (s *Service) HasClientSideStreaming() bool {
 // HasBidiStreaming returns true if the service contains any methods
 // that support bidirectional streaming.
 func (s *Service) HasBidiStreaming() bool {
-	return slices.ContainsFunc(s.Methods, func(m *Method) bool {
+	return slices.ContainsFunc(s.methods, func(m *Method) bool {
 		return m.clientSideStreaming && m.serverSideStreaming
 	})
 }
@@ -64,7 +97,7 @@ func (s *Service) HasBidiStreaming() bool {
 // HasServerSideStreaming returns true if the service contains any methods
 // that support server-side streaming and are not bidirectional.
 func (s *Service) HasServerSideStreaming() bool {
-	return slices.ContainsFunc(s.Methods, func(m *Method) bool {
+	return slices.ContainsFunc(s.methods, func(m *Method) bool {
 		return !m.clientSideStreaming && m.serverSideStreaming
 	})
 }

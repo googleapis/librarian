@@ -335,8 +335,10 @@ func TestMakeServiceMethodsError(t *testing.T) {
 			},
 		},
 	}
-	service := api.NewTestService("Service").
-		WithPackage("test")
+	service := api.NewServiceBuilder().
+		WithName("Service").
+		WithPackage("test").
+		WithID(".test.Service")
 	if err := makeServiceMethods(model, service, &doc, input); err == nil {
 		t.Errorf("expected error on method with media upload, service=%v", service)
 	}

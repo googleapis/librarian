@@ -313,12 +313,12 @@ func TestAnnotateModel_HasMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec1 := serviceWithMethods.Codec.(*serviceAnnotations)
+	codec1 := serviceWithMethods.Codec().(*serviceAnnotations)
 	if !codec1.HasMethods {
 		t.Errorf("Expected HasMethods to be true for ServiceWithMethods")
 	}
 
-	codec2 := serviceWithoutMethods.Codec.(*serviceAnnotations)
+	codec2 := serviceWithoutMethods.Codec().(*serviceAnnotations)
 	if codec2.HasMethods {
 		t.Errorf("Expected HasMethods to be false for ServiceWithoutMethods")
 	}
@@ -2044,9 +2044,9 @@ func TestFindExampleMethod(t *testing.T) {
 				methods[i], methods[j] = methods[j], methods[i]
 			})
 			s := api.NewTestService("Service").WithPackage("mypackage")
-			s.Codec = &serviceAnnotations{
+			s.SetAnnotations(&serviceAnnotations{
 				Methods: methods,
-			}
+			})
 			_, got := findExampleMethod([]*api.Service{s})
 			if got != test.want {
 				gotName := "nil"

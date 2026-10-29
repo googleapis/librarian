@@ -155,7 +155,7 @@ func serviceConfigMethodOverrides(
 		documentation = rule.GetDescription()
 	}
 	if documentation == "" {
-		documentation = fmt.Sprintf("Provides the [%s][%s] service functionality in this service.", mixin.Name, mixin.ID[1:])
+		documentation = fmt.Sprintf("Provides the [%s][%s] service functionality in this service.", mixin.Name(), mixin.ID()[1:])
 	}
 	return pathInfo, documentation, nil
 }

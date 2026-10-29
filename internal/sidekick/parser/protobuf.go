@@ -340,6 +340,35 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		return strings.Compare(a.Type(), b.Type())
 	})
 
+	// Collect all mixin methods enabled for services in this API.
+	type mixinMethodSpec struct {
+		proto      *descriptorpb.MethodDescriptorProto
+		mixin      *api.Service
+		serviceID  string
+		apiVersion string
+	}
+	var mixinSpecs []mixinMethodSpec
+	for _, f := range mixinFileDesc {
+		fFQN := "." + f.GetPackage()
+		for _, mixinProto := range f.Service {
+			sFQN := fFQN + "." + mixinProto.GetName()
+			mixin := processService(result, mixinProto, sFQN, f.GetPackage(), "", nil)
+			apiVersion := parseAPIVersion(sFQN, mixinProto.GetOptions())
+			for _, m := range mixinProto.Method {
+				originalFQN := sFQN + "." + m.GetName()
+				if !enabledMixinMethods[originalFQN] {
+					continue
+				}
+				mixinSpecs = append(mixinSpecs, mixinMethodSpec{
+					proto:      m,
+					mixin:      mixin,
+					serviceID:  sFQN,
+					apiVersion: apiVersion,
+				})
+			}
+		}
+	}
+
 	// Then we need to add the messages, enums and services to the list of
 	// elements to be generated.
 	for _, f := range req.GetSourceFileDescriptors() {
@@ -386,75 +415,36 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		for si, s := range f.Service {
 			sFQN := fFQN + "." + s.GetName()
 			sPath := []int32{fileDescriptorService, int32(si)}
-			service := processService(result, s, sFQN, f.GetPackage())
+			apiVersion := parseAPIVersion(sFQN, s.GetOptions())
+			var methods []*api.Method
 			for mi, m := range s.Method {
 				mFQN := sFQN + "." + m.GetName()
-				apiVersion := parseAPIVersion(sFQN, s.GetOptions())
 				mDoc := lookupComment(comments, append(sPath, serviceDescriptorProtoMethod, int32(mi)))
 				method, err := processMethod(result, m, mFQN, f.GetPackage(), sFQN, apiVersion, mDoc, serviceConfig)
 				if err != nil {
 					return nil, err
 				}
-				service.Methods = append(service.Methods, method)
+				methods = append(methods, method)
 			}
+			for _, spec := range mixinSpecs {
+				mFQN := sFQN + "." + spec.proto.GetName()
+				if result.Method(mFQN) != nil {
+					// The method already exists. This happens when services
+					// require a mixin in the service config yaml *and* also
+					// define the mixin method in the code.
+					continue
+				}
+				originalFQN := spec.serviceID + "." + spec.proto.GetName()
+				method, err := processMixinMethod(result, spec.proto, mFQN, originalFQN, f.GetPackage(), spec.serviceID, spec.apiVersion, spec.mixin, serviceConfig)
+				if err != nil {
+					return nil, err
+				}
+				methods = append(methods, method)
+			}
+			service := processService(result, s, sFQN, f.GetPackage(), lookupComment(comments, sPath), methods)
 			fileServices = append(fileServices, service)
 		}
-
-		// Add docs
-		for _, loc := range f.GetSourceCodeInfo().GetLocation() {
-			p := loc.GetPath()
-			if loc.GetLeadingComments() == "" || len(p) == 0 {
-				continue
-			}
-
-			switch p[0] {
-			case fileDescriptorService:
-				sFQN := fFQN + "." + f.GetService()[p[1]].GetName()
-				addServiceDocumentation(result, p[2:], loc.GetLeadingComments(), sFQN)
-			case fileDescriptorName, fileDescriptorPackage, fileDescriptorDependency,
-				fileDescriptorMessageType, fileDescriptorEnumType, fileDescriptorExtension,
-				fileDescriptorOptions, fileDescriptorSourceCodeInfo, fileDescriptorPublicDependency,
-				fileDescriptorWeakDependency, fileDescriptorSyntax, fileDescriptorEdition:
-				// We ignore this type of documentation because it produces no
-				// output in the generated code, or is already extracted via
-				// extractSourceComments.
-			default:
-				slog.Warn("dropped unknown documentation type", "loc", p, "docs", loc)
-			}
-		}
 		result.Services = append(result.Services, fileServices...)
-	}
-
-	// Add the mixin methods to the existing services.
-	for _, service := range result.Services {
-		for _, f := range mixinFileDesc {
-			fFQN := "." + f.GetPackage()
-			for _, mixinProto := range f.Service {
-				sFQN := fFQN + "." + mixinProto.GetName()
-				mixin := processService(result, mixinProto, sFQN, f.GetPackage())
-				for _, m := range mixinProto.Method {
-					// We want to include the method in the existing service,
-					// and not on the mixin.
-					mFQN := service.ID + "." + m.GetName()
-					originalFQN := sFQN + "." + m.GetName()
-					if !enabledMixinMethods[originalFQN] {
-						continue
-					}
-					if result.Method(mFQN) != nil {
-						// The method already exists. This happens when services
-						// require a mixin in the service config yaml *and* also
-						// define the mixin method in the code.
-						continue
-					}
-					apiVersion := parseAPIVersion(sFQN, mixinProto.GetOptions())
-					method, err := processMixinMethod(result, m, mFQN, originalFQN, service.Package, sFQN, apiVersion, mixin, serviceConfig)
-					if err != nil {
-						return nil, err
-					}
-					service.Methods = append(service.Methods, method)
-				}
-			}
-		}
 	}
 
 	if result.Name == "" && serviceConfig != nil {
@@ -574,14 +564,16 @@ func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, isOne
 	}
 }
 
-func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN, packagez string) *api.Service {
-	service := &api.Service{
-		Name:        s.GetName(),
-		ID:          sFQN,
-		Package:     packagez,
-		DefaultHost: parseDefaultHost(s.GetOptions()),
-		Deprecated:  s.GetOptions().GetDeprecated(),
-	}
+func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN, packagez, doc string, methods []*api.Method) *api.Service {
+	service := api.NewServiceBuilder().
+		WithName(s.GetName()).
+		WithID(sFQN).
+		WithPackage(packagez).
+		WithDocumentation(doc).
+		WithDefaultHost(parseDefaultHost(s.GetOptions())).
+		WithDeprecated(s.GetOptions().GetDeprecated()).
+		WithMethods(methods...).
+		Build()
 	model.AddService(service)
 	return service
 }
@@ -689,8 +681,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 			WithDocumentation(lookupComment(comments, append(pathPrefix, messageDescriptorOneOf, int32(i))))
 	}
 	for i, mf := range m.Field {
-		doc := lookupComment(comments, append(pathPrefix, messageDescriptorField, int32(i)))
-		field, err := processField(model, mf, mFQN, proto2, doc)
+		field, err := processField(model, mf, mFQN, proto2, lookupComment(comments, append(pathPrefix, messageDescriptorField, int32(i))))
 		if err != nil {
 			return nil, err
 		}
@@ -917,22 +908,6 @@ func commentPathKey(path []int32) string {
 		fmt.Fprintf(&b, "%d", v)
 	}
 	return b.String()
-}
-
-func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string) {
-	switch {
-	case len(p) == 0:
-		// This is a comment for a service
-		model.Service(sFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == serviceDescriptorProtoMethod:
-		// Method comments are already extracted via extractSourceComments;
-		// comments within a method (options, arguments, etc) are ignored.
-	case p[0] == serviceDescriptorProtoOption:
-		// This is a comment for a service option. Ignored, as these comments do
-		// not refer to any artifact in the generated code.
-	default:
-		slog.Warn("service dropped unknown documentation", "loc", p, "docs", doc)
-	}
 }
 
 func parseResourcePatterns(patterns []string) ([]api.ResourcePattern, error) {
