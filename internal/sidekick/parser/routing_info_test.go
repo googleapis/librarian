@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestExamples(t *testing.T) {
@@ -32,40 +33,48 @@ func TestExamples(t *testing.T) {
 			".test.TestService.Example1",
 			[]*api.RoutingInfo{{
 				Name: "app_profile_id",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"app_profile_id"},
-					Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("app_profile_id").
+						WithMatchingSegments("**").
+						Build(),
+				},
 			}},
 		},
 		{
 			".test.TestService.Example2",
 			[]*api.RoutingInfo{{
 				Name: "routing_id",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"app_profile_id"},
-					Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("app_profile_id").
+						WithMatchingSegments("**").
+						Build(),
+				},
 			}},
 		},
 		{
 			".test.TestService.Example3a",
 			[]*api.RoutingInfo{{
 				Name: "table_name",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"table_name"},
-					Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*", "instances", "*", "**"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("table_name").
+						WithMatchingSegments("projects", "*", "instances", "*", "**").
+						Build(),
+				},
 			}},
 		},
 		{
 			".test.TestService.Example3b",
 			[]*api.RoutingInfo{{
 				Name: "table_name",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"table_name"},
-					Matching:  api.RoutingPathSpec{Segments: []string{"regions", "*", "zones", "*", "**"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("table_name").
+						WithMatchingSegments("regions", "*", "zones", "*", "**").
+						Build(),
+				},
 			}},
 		},
 		{
@@ -73,14 +82,14 @@ func TestExamples(t *testing.T) {
 			[]*api.RoutingInfo{{
 				Name: "table_name",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"table_name"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*", "instances", "*", "**"}},
-					},
-					{
-						FieldPath: []string{"table_name"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"regions", "*", "zones", "*", "**"}},
-					},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("table_name").
+						WithMatchingSegments("projects", "*", "instances", "*", "**").
+						Build(),
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("table_name").
+						WithMatchingSegments("regions", "*", "zones", "*", "**").
+						Build(),
 				},
 			}},
 		},
@@ -88,11 +97,13 @@ func TestExamples(t *testing.T) {
 			".test.TestService.Example4",
 			[]*api.RoutingInfo{{
 				Name: "routing_id",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"table_name"},
-					Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-					Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("table_name").
+						WithMatchingSegments("projects", "*").
+						WithSuffixSegments("**").
+						Build(),
+				},
 			}},
 		},
 		{
@@ -100,16 +111,16 @@ func TestExamples(t *testing.T) {
 			[]*api.RoutingInfo{{
 				Name: "routing_id",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"table_name"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*", "instances", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-					},
-					{
-						FieldPath: []string{"table_name"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-					},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("table_name").
+						WithMatchingSegments("projects", "*", "instances", "*").
+						WithSuffixSegments("**").
+						Build(),
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("table_name").
+						WithMatchingSegments("projects", "*").
+						WithSuffixSegments("**").
+						Build(),
 				},
 			}},
 		},
@@ -118,20 +129,24 @@ func TestExamples(t *testing.T) {
 			[]*api.RoutingInfo{
 				{
 					Name: "instance_id",
-					Variants: []*api.RoutingInfoVariant{{
-						FieldPath: []string{"table_name"},
-						Prefix:    api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-						Matching:  api.RoutingPathSpec{Segments: []string{"instances", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-					}},
+					Variants: []*api.RoutingInfoVariant{
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithPrefixSegments("projects", "*").
+							WithMatchingSegments("instances", "*").
+							WithSuffixSegments("**").
+							Build(),
+					},
 				},
 				{
 					Name: "project_id",
-					Variants: []*api.RoutingInfoVariant{{
-						FieldPath: []string{"table_name"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"instances", "*", "**"}},
-					}},
+					Variants: []*api.RoutingInfoVariant{
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*").
+							WithSuffixSegments("instances", "*", "**").
+							Build(),
+					},
 				},
 			},
 		},
@@ -140,20 +155,24 @@ func TestExamples(t *testing.T) {
 			[]*api.RoutingInfo{
 				{
 					Name: "instance_id",
-					Variants: []*api.RoutingInfoVariant{{
-						FieldPath: []string{"table_name"},
-						Prefix:    api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-						Matching:  api.RoutingPathSpec{Segments: []string{"instances", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-					}},
+					Variants: []*api.RoutingInfoVariant{
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithPrefixSegments("projects", "*").
+							WithMatchingSegments("instances", "*").
+							WithSuffixSegments("**").
+							Build(),
+					},
 				},
 				{
 					Name: "project_id",
-					Variants: []*api.RoutingInfoVariant{{
-						FieldPath: []string{"table_name"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-					}},
+					Variants: []*api.RoutingInfoVariant{
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*").
+							WithSuffixSegments("**").
+							Build(),
+					},
 				},
 			},
 		},
@@ -162,18 +181,22 @@ func TestExamples(t *testing.T) {
 			[]*api.RoutingInfo{
 				{
 					Name: "project_id",
-					Variants: []*api.RoutingInfoVariant{{
-						FieldPath: []string{"table_name"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-					}},
+					Variants: []*api.RoutingInfoVariant{
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*").
+							WithSuffixSegments("**").
+							Build(),
+					},
 				},
 				{
 					Name: "routing_id",
-					Variants: []*api.RoutingInfoVariant{{
-						FieldPath: []string{"app_profile_id"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-					}},
+					Variants: []*api.RoutingInfoVariant{
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("app_profile_id").
+							WithMatchingSegments("**").
+							Build(),
+					},
 				},
 			},
 		},
@@ -183,20 +206,20 @@ func TestExamples(t *testing.T) {
 				{
 					Name: "routing_id",
 					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"app_profile_id"},
-							Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-						},
-						{
-							FieldPath: []string{"table_name"},
-							Matching:  api.RoutingPathSpec{Segments: []string{"regions", "*"}},
-							Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-						},
-						{
-							FieldPath: []string{"table_name"},
-							Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-							Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-						},
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("app_profile_id").
+							WithMatchingSegments("**").
+							Build(),
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("regions", "*").
+							WithSuffixSegments("**").
+							Build(),
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*").
+							WithSuffixSegments("**").
+							Build(),
 					},
 				},
 			},
@@ -207,36 +230,36 @@ func TestExamples(t *testing.T) {
 				{
 					Name: "routing_id",
 					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"app_profile_id"},
-							Prefix:    api.RoutingPathSpec{Segments: []string{"profiles"}},
-							Matching:  api.RoutingPathSpec{Segments: []string{"*"}},
-						},
-						{
-							FieldPath: []string{"app_profile_id"},
-							Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-						},
-						{
-							FieldPath: []string{"table_name"},
-							Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-							Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
-						},
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("app_profile_id").
+							WithPrefixSegments("profiles").
+							WithMatchingSegments("*").
+							Build(),
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("app_profile_id").
+							WithMatchingSegments("**").
+							Build(),
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*").
+							WithSuffixSegments("**").
+							Build(),
 					},
 				},
 				{
 					Name: "table_location",
 					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"table_name"},
-							Matching:  api.RoutingPathSpec{Segments: []string{"regions", "*", "zones", "*"}},
-							Suffix:    api.RoutingPathSpec{Segments: []string{"tables", "*"}},
-						},
-						{
-							FieldPath: []string{"table_name"},
-							Prefix:    api.RoutingPathSpec{Segments: []string{"projects", "*"}},
-							Matching:  api.RoutingPathSpec{Segments: []string{"instances", "*"}},
-							Suffix:    api.RoutingPathSpec{Segments: []string{"tables", "*"}},
-						},
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("regions", "*", "zones", "*").
+							WithSuffixSegments("tables", "*").
+							Build(),
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithPrefixSegments("projects", "*").
+							WithMatchingSegments("instances", "*").
+							WithSuffixSegments("tables", "*").
+							Build(),
 					},
 				},
 			},
@@ -251,7 +274,7 @@ func TestExamples(t *testing.T) {
 			if got == nil {
 				t.Fatalf("Cannot find method %s in API State", test.methodID)
 			}
-			if diff := cmp.Diff(test.want, got.Routing); diff != "" {
+			if diff := cmp.Diff(test.want, got.Routing, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -269,10 +292,12 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			"",
 			api.RoutingInfo{
 				Name: "default",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"default"},
-					Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithMatchingSegments("**").
+						Build(),
+				},
 			},
 		},
 		{
@@ -284,10 +309,12 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			"",
 			api.RoutingInfo{
 				Name: "",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{},
-					Matching:  api.RoutingPathSpec{Segments: []string{}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath([]string{}...).
+						WithMatchingSegments([]string{}...).
+						Build(),
+				},
 			},
 		},
 		{
@@ -297,11 +324,13 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			"projects/{parent}",
 			api.RoutingInfo{
 				Name: "parent",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"parent"},
-					Prefix:    api.RoutingPathSpec{Segments: []string{"projects"}},
-					Matching:  api.RoutingPathSpec{Segments: []string{"*"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("parent").
+						WithPrefixSegments("projects").
+						WithMatchingSegments("*").
+						Build(),
+				},
 			},
 		},
 		{
@@ -313,10 +342,12 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			"",
 			api.RoutingInfo{
 				Name: "parent",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"parent"},
-					Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("parent").
+						WithMatchingSegments("**").
+						Build(),
+				},
 			},
 		},
 		{
@@ -324,10 +355,12 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			"",
 			api.RoutingInfo{
 				Name: "field.child",
-				Variants: []*api.RoutingInfoVariant{{
-					FieldPath: []string{"field", "child"},
-					Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-				}},
+				Variants: []*api.RoutingInfoVariant{
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("field", "child").
+						WithMatchingSegments("**").
+						Build(),
+				},
 			},
 		},
 		{
@@ -336,10 +369,10 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			api.RoutingInfo{
 				Name: "default",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"default"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-					},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithMatchingSegments("**").
+						Build(),
 				},
 			},
 		},
@@ -349,10 +382,10 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			api.RoutingInfo{
 				Name: "routing",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"default"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"**"}},
-					},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithMatchingSegments("**").
+						Build(),
 				},
 			},
 		},
@@ -362,10 +395,10 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			api.RoutingInfo{
 				Name: "routing",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"default"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}},
-					},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithMatchingSegments("a", "*", "b", "**").
+						Build(),
 				},
 			},
 		},
@@ -375,11 +408,11 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			api.RoutingInfo{
 				Name: "routing",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"default"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}},
-						Prefix:    api.RoutingPathSpec{Segments: []string{"p", "*", "q", "*"}},
-					},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithMatchingSegments("a", "*", "b", "**").
+						WithPrefixSegments("p", "*", "q", "*").
+						Build(),
 				},
 			},
 		},
@@ -389,12 +422,12 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			api.RoutingInfo{
 				Name: "routing",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"default"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"a", "*", "b", "*"}},
-						Prefix:    api.RoutingPathSpec{Segments: []string{"p", "*", "q", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"s", "*", "u", "*", "v", "**"}},
-					},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithMatchingSegments("a", "*", "b", "*").
+						WithPrefixSegments("p", "*", "q", "*").
+						WithSuffixSegments("s", "*", "u", "*", "v", "**").
+						Build(),
 				},
 			},
 		},
@@ -404,12 +437,12 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			api.RoutingInfo{
 				Name: "routing",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"default"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}},
-						Prefix:    api.RoutingPathSpec{Segments: []string{"p", "*", "q", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"s", "*", "u", "*", "v", "*"}},
-					},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithMatchingSegments("a", "*", "b", "**").
+						WithPrefixSegments("p", "*", "q", "*").
+						WithSuffixSegments("s", "*", "u", "*", "v", "*").
+						Build(),
 				},
 			},
 		},
@@ -419,12 +452,13 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			api.RoutingInfo{
 				Name: "routing",
 				Variants: []*api.RoutingInfoVariant{
-					{
-						FieldPath: []string{"field", "sub_field", "child"},
-						Matching:  api.RoutingPathSpec{Segments: []string{"a", "*", "b", "*"}},
-						Prefix:    api.RoutingPathSpec{Segments: []string{"p", "*", "q", "*"}},
-						Suffix:    api.RoutingPathSpec{Segments: []string{"s", "*", "u", "*", "v", "**"}},
-					}},
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("field", "sub_field", "child").
+						WithMatchingSegments("a", "*", "b", "*").
+						WithPrefixSegments("p", "*", "q", "*").
+						WithSuffixSegments("s", "*", "u", "*", "v", "**").
+						Build(),
+				},
 			},
 		},
 	} {
@@ -433,7 +467,7 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(&test.want, got); diff != "" {
+			if diff := cmp.Diff(&test.want, got, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -478,11 +512,11 @@ func TestParseVariableSuccess(t *testing.T) {
 		wantSpec    api.RoutingPathSpec
 		wantTrailer string
 	}{
-		{"**", "default", api.RoutingPathSpec{Segments: []string{"**"}}, ""},
-		{"routing=**", "routing", api.RoutingPathSpec{Segments: []string{"**"}}, ""},
-		{"routing=a/*/b/**", "routing", api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}}, ""},
-		{"routing=a/*/b/**}", "routing", api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}}, "}"},
-		{"routing=a/*/b/**}/c/*", "routing", api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}}, "}/c/*"},
+		{"**", "default", api.NewRoutingPathSpec("**"), ""},
+		{"routing=**", "routing", api.NewRoutingPathSpec("**"), ""},
+		{"routing=a/*/b/**", "routing", api.NewRoutingPathSpec("a", "*", "b", "**"), ""},
+		{"routing=a/*/b/**}", "routing", api.NewRoutingPathSpec("a", "*", "b", "**"), "}"},
+		{"routing=a/*/b/**}/c/*", "routing", api.NewRoutingPathSpec("a", "*", "b", "**"), "}/c/*"},
 	} {
 		t.Run(test.path, func(t *testing.T) {
 			gotName, gotSpec, width, err := parseRoutingVariable("default", test.path)
@@ -492,7 +526,7 @@ func TestParseVariableSuccess(t *testing.T) {
 			if gotName != test.wantName {
 				t.Errorf("mismatched variable names, want=%s, got=%s", test.wantName, gotName)
 			}
-			if diff := cmp.Diff(test.wantSpec, gotSpec); diff != "" {
+			if diff := cmp.Diff(test.wantSpec, gotSpec, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if test.path[width:] != test.wantTrailer {
@@ -530,7 +564,7 @@ func TestParseRoutingPathSpecSuccess(t *testing.T) {
 	} {
 		t.Run(test.path, func(t *testing.T) {
 			got, width := parseRoutingPathSpec(test.path)
-			if diff := cmp.Diff(test.wantSegments, got.Segments); diff != "" {
+			if diff := cmp.Diff(test.wantSegments, got.Segments()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if test.path[width:] != test.wantTrailer {
