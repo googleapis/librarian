@@ -304,20 +304,20 @@ func (c *codec) annotateMapField(field *api.Field, ann *fieldAnnotations, m *api
 	if mapType == nil {
 		return fmt.Errorf("missing map type for field %s (%s)", field.ID(), field.TypezID())
 	}
-	keyAnn, err := c.annotateField(mapType.Key, m, model)
+	keyAnn, err := c.annotateField(mapType.Key(), m, model)
 	if err != nil {
 		return err
 	}
-	valAnn, err := c.annotateField(mapType.Value, m, model)
+	valAnn, err := c.annotateField(mapType.Value(), m, model)
 	if err != nil {
 		return err
 	}
-	ann.KeyField = mapType.Key
+	ann.KeyField = mapType.Key()
 	ann.KeyType = keyAnn.PrimitiveFieldType
-	ann.ValueField = mapType.Value
+	ann.ValueField = mapType.Value()
 	ann.ValueType = valAnn.PrimitiveFieldType
-	key := c.mapKeySerdeAs(mapType.Key)
-	value := c.mapValueSerdeAs(mapType.Value)
+	key := c.mapKeySerdeAs(mapType.Key())
+	value := c.mapValueSerdeAs(mapType.Value())
 	if key != "" || value != "" {
 		if key == "" {
 			key = "serde_with::Same"

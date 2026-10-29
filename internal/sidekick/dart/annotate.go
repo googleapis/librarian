@@ -1140,10 +1140,10 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 			data, defaultValue, decoder, field.JSONName())
 	case field.Map():
 		mapType := lookupMap(annotate.model, field)
-		keyType := mapType.Key.Typez()
+		keyType := mapType.Key().Typez()
 		keyDecoder := annotate.keyDecoder(keyType)
-		valueType := mapType.Value.Typez()
-		valueTypeID := mapType.Value.TypezID()
+		valueType := mapType.Value().Typez()
+		valueTypeID := mapType.Value().TypezID()
 		valueDecoder := annotate.decoder(valueType, valueTypeID)
 
 		return fmt.Sprintf(
@@ -1172,9 +1172,9 @@ func createNonNullableToJson(field *api.Field, model *api.API) string {
 		}
 	case field.Map():
 		mapType := lookupMap(model, field)
-		keyType := mapType.Key.Typez()
+		keyType := mapType.Key().Typez()
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
-		valueType := mapType.Value.Typez()
+		valueType := mapType.Value().Typez()
 		valueEncoder, valueEncodingRequired := encoder(valueType, "e.value")
 
 		if keyEncodingRequired || valueEncodingRequired {
@@ -1442,8 +1442,8 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 		out = "Uint8List"
 	case api.TypezMap:
 		mapType := lookupMap(annotate.model, f)
-		key := annotate.fieldType(mapType.Key)
-		val := annotate.fieldType(mapType.Value)
+		key := annotate.fieldType(mapType.Key())
+		val := annotate.fieldType(mapType.Value())
 		out = "Map<" + key + ", " + val + ">"
 	case api.TypezMessage:
 		message := annotate.model.Message(f.TypezID())

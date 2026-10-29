@@ -29,6 +29,7 @@ func allowUnexported() cmp.Option {
 		Method{},
 		Message{},
 		Field{},
+		Map{},
 		OneOf{},
 		Enum{},
 		EnumValue{},
