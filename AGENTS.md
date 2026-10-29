@@ -40,6 +40,7 @@ Before submitting changes, run the full test suite:
 
 ## Additional Context
 
+ @doc/howwewritesoftware.md
  @doc/howwewritego.md
  @doc/styleguide/markdown-style-guide.md
  @CONTRIBUTING.md
