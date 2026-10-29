@@ -98,13 +98,13 @@ func TestGenerateSnippets(t *testing.T) {
 				WithPlural("things")
 			thing := api.NewTestMessage("Thing").WithResource(thingResource).WithFields(
 				api.NewTestField("name").WithType(api.TypezString).WithResourceReference(
-					thingResource.Type,
+					thingResource.Type(),
 				),
 				api.NewTestField("cool_attribute").WithType(api.TypezBytes),
 			)
 			name := api.NewTestField("name").
 				WithType(api.TypezString).
-				WithResourceReference(thingResource.Type)
+				WithResourceReference(thingResource.Type())
 			if test.repeated {
 				name = name.WithRepeated()
 			}
@@ -181,13 +181,13 @@ func TestGenerateSnippets_Diagnose(t *testing.T) {
 				WithPlural("things")
 			thing := api.NewTestMessage("Thing").WithResource(thingResource).WithFields(
 				api.NewTestField("name").WithType(api.TypezString).WithResourceReference(
-					thingResource.Type,
+					thingResource.Type(),
 				),
 			)
 			getThingRequest := api.NewTestMessage("GetThingRequest").WithFields(
 				api.NewTestField("name").
 					WithType(api.TypezString).
-					WithResourceReference(thingResource.Type).
+					WithResourceReference(thingResource.Type()).
 					WithDeprecated(test.fieldDeprecated),
 			)
 			getThing := api.NewTestMethod("GetThing").
@@ -240,12 +240,12 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 		WithPlural("things")
 	thing := api.NewTestMessage("Thing").WithResource(thingResource).WithFields(
 		api.NewTestField("name").WithType(api.TypezString).WithResourceReference(
-			thingResource.Type,
+			thingResource.Type(),
 		),
 	)
 	updateMask := api.NewTestField("update_mask").WithType(api.TypezMessage).WithTypezID(api.WktFieldMaskID)
 	updateThingRequest := api.NewTestMessage("UpdateThingRequest").WithFields(
-		api.NewTestField("name").WithType(api.TypezString).WithResourceReference(thingResource.Type),
+		api.NewTestField("name").WithType(api.TypezString).WithResourceReference(thingResource.Type()),
 		updateMask,
 	)
 	updateThing := api.NewTestMethod("UpdateThing").
