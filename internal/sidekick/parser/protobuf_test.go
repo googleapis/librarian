@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -1342,7 +1343,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		// Find Shelf in the slice
 		var foundShelf *api.Resource
 		for _, r := range test.ResourceDefinitions {
-			if r.Type == "library.googleapis.com/Shelf" {
+			if r.Type() == "library.googleapis.com/Shelf" {
 				foundShelf = r
 				break
 			}
@@ -1350,7 +1351,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if foundShelf == nil {
 			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Shelf' not found")
 		}
-		if diff := cmp.Diff(shelfResourceDef, foundShelf, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
+		ignoreResourceFields := func(fields ...string) cmp.Option {
+			return cmp.FilterPath(func(p cmp.Path) bool {
+				return slices.Contains(fields, p.Last().String())
+			}, cmp.Ignore())
+		}
+		if diff := cmp.Diff(shelfResourceDef, foundShelf, apitest.AllowUnexported(), ignoreResourceFields(".self", ".codec", ".plural", ".singular")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1371,7 +1377,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		// Find Book in the slice
 		var foundBook *api.Resource
 		for _, r := range test.ResourceDefinitions {
-			if r.Type == "library.googleapis.com/Book" {
+			if r.Type() == "library.googleapis.com/Book" {
 				foundBook = r
 				break
 			}
@@ -1381,7 +1387,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 		// Note: Book resource has 'Self' populated because it's a message resource.
 		// Ignoring Self/Codec for comparison.
-		if diff := cmp.Diff(bookResourceDef, foundBook, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		if diff := cmp.Diff(bookResourceDef, foundBook, apitest.AllowUnexported(), ignoreResourceFields(".self", ".codec")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -1395,11 +1401,11 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if bookResource == nil {
 			t.Fatalf("Expected resource 'library.googleapis.com/Book' not found in ResourceByType map")
 		}
-		if bookResource.Type != "library.googleapis.com/Book" {
-			t.Errorf("bookResource.Type = %q; want %q", bookResource.Type, "library.googleapis.com/Book")
+		if bookResource.Type() != "library.googleapis.com/Book" {
+			t.Errorf("bookResource.Type() = %q; want %q", bookResource.Type(), "library.googleapis.com/Book")
 		}
-		if bookResource.Self.Name != "Book" {
-			t.Errorf("bookResource.Self.Name = %q; want %q", bookResource.Self.Name, "Book")
+		if bookResource.Self().Name != "Book" {
+			t.Errorf("bookResource.Self().Name = %q; want %q", bookResource.Self().Name, "Book")
 		}
 	})
 
@@ -1424,7 +1430,11 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			WithPlural("books").
 			WithSingular("book")
 
-		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		ignoreSelfCodec := cmp.FilterPath(func(p cmp.Path) bool {
+			s := p.Last().String()
+			return s == ".self" || s == ".codec"
+		}, cmp.Ignore())
+		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, apitest.AllowUnexported(), ignoreSelfCodec); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1518,12 +1528,12 @@ func TestProtobuf_ResourceCoverage(t *testing.T) {
 			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
 		}
 		got := test.ResourceDefinitions[0]
-		if got.Singular != "book_message" {
-			t.Errorf("Expected singular 'book_message', got %q", got.Singular)
+		if got.Singular() != "book_message" {
+			t.Errorf("Expected singular 'book_message', got %q", got.Singular())
 		}
 		// Verify Self is set (only message resources have Self populated by processResourceAnnotation)
-		if got.Self == nil {
-			t.Errorf("Expected Resource.Self to be populated for message-level resource")
+		if got.Self() == nil {
+			t.Errorf("Expected Resource.Self() to be populated for message-level resource")
 		}
 	})
 

@@ -102,3 +102,50 @@ func TestResourceReferenceSetAnnotationsPanicsWhenAlreadySet(t *testing.T) {
 	}()
 	rr.SetAnnotations("second")
 }
+
+func TestResource(t *testing.T) {
+	msg := NewTestMessage("Book")
+	segProjects := *NewPathSegmentBuilder().WithLiteral("projects").Build()
+	got := NewResourceBuilder().
+		WithType("test.googleapis.com/Book").
+		WithPlural("books").
+		WithSingular("book").
+		WithSelf(msg).
+		WithPatterns(ResourcePattern{segProjects}).
+		Build()
+
+	got.SetAnnotations("res-codec")
+
+	want := &Resource{
+		typez:    "test.googleapis.com/Book",
+		plural:   "books",
+		singular: "book",
+		self:     msg,
+		patterns: []ResourcePattern{{segProjects}},
+		codec:    "res-codec",
+	}
+	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
+		t.Errorf("Resource mismatch (-want +got):\n%s", diff)
+	}
+	if got.Type() != want.typez || got.Plural() != want.plural || got.Singular() != want.singular || got.Self() != msg || got.Codec() != want.codec {
+		t.Errorf("unexpected Resource getters: %+v", got)
+	}
+	if diff := cmp.Diff(want.patterns, got.Patterns(), allowUnexported()); diff != "" {
+		t.Errorf("Patterns() mismatch (-want +got):\n%s", diff)
+	}
+	got.Patterns()[0][0] = *NewPathSegmentBuilder().WithLiteral("mutated").Build()
+	if got.Patterns()[0][0].Literal() != "projects" {
+		t.Errorf("Patterns() getter should return a deep defensive copy")
+	}
+}
+
+func TestResourceSetAnnotationsPanicsWhenAlreadySet(t *testing.T) {
+	r := NewResourceBuilder().Build()
+	r.SetAnnotations("first")
+	defer func() {
+		if rec := recover(); rec == nil {
+			t.Errorf("expected panic when calling SetAnnotations a second time, got none")
+		}
+	}()
+	r.SetAnnotations("second")
+}
