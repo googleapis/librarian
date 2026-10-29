@@ -87,3 +87,40 @@ func TestResourceRefs(t *testing.T) {
 		t.Errorf("unexpected ResourceReference getters: %+v", gotRR)
 	}
 }
+
+func TestResource(t *testing.T) {
+	msg := NewTestMessage("Book")
+	segProjects := *NewPathSegmentBuilder().WithLiteral("projects").Build()
+	got := NewResourceBuilder().
+		WithType("test.googleapis.com/Book").
+		WithPlural("books").
+		WithSingular("book").
+		WithSelf(msg).
+		WithPatterns(ResourcePattern{segProjects}).
+		Build()
+
+	got.SetAnnotations("res-codec")
+
+	want := &Resource{
+		typez:    "test.googleapis.com/Book",
+		plural:   "books",
+		singular: "book",
+		self:     msg,
+		patterns: []ResourcePattern{{segProjects}},
+		codec:    "res-codec",
+	}
+	opts := cmp.AllowUnexported(Resource{}, PathSegment{}, PathVariable{})
+	if diff := cmp.Diff(want, got, opts); diff != "" {
+		t.Errorf("Resource mismatch (-want +got):\n%s", diff)
+	}
+	if got.Type() != want.typez || got.Plural() != want.plural || got.Singular() != want.singular || got.Self() != msg || got.Codec() != want.codec {
+		t.Errorf("unexpected Resource getters: %+v", got)
+	}
+	if diff := cmp.Diff(want.patterns, got.Patterns(), opts); diff != "" {
+		t.Errorf("Patterns() mismatch (-want +got):\n%s", diff)
+	}
+	got.Patterns()[0][0] = *NewPathSegmentBuilder().WithLiteral("mutated").Build()
+	if got.Patterns()[0][0].Literal() != "projects" {
+		t.Errorf("Patterns() getter should return a deep defensive copy")
+	}
+}

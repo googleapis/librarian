@@ -23,7 +23,7 @@ import (
 
 func TestFindBestResourceFieldByType(t *testing.T) {
 	f := newAIPTestFixture()
-	targetType := f.resource.Type
+	targetType := f.resource.Type()
 
 	for _, tc := range []struct {
 		name   string
@@ -73,7 +73,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 
 func TestFindBestResourceFieldBySingular(t *testing.T) {
 	f := newAIPTestFixture()
-	targetSingular := f.resource.Singular
+	targetSingular := f.resource.Singular()
 
 	for _, tc := range []struct {
 		name   string
