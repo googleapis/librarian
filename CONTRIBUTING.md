@@ -276,7 +276,7 @@ applied.
 Please don’t use alternate GitHub-supported aliases like Close or Resolves
 instead of Fixes.
 
-You can also use the Gemini CLI [/commit-message skill](#commit-message) to draft commit messages automatically. See [Gemini CLI skills](#gemini-cli-skills) for details.
+You can also use the AI Agent [/commit-message skill](#commit-message) to draft commit messages automatically. See [AI Agent skills](#ai-agent-skills) for details.
 
 ## The review process
 
@@ -348,13 +348,12 @@ file an issue following the guidelines above and include a clear justification.
 See the guidelines for
 [How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md).
 
-## Gemini CLI skills
+## AI Agent skills
 
 This repository includes project-scoped
-[agent skills](https://geminicli.com/docs/cli/skills/) for
-[Gemini CLI](https://github.com/google-gemini/gemini-cli). Skills are defined
-in the `.agents/skills/` directory and are discovered automatically when you run
-Gemini CLI from the repository root.
+[agent skills](https://geminicli.com/docs/cli/skills/) for your AI Agent.
+Skills are defined in the `.agents/skills/` directory and are discovered
+automatically when you run your AI Agent from the repository root.
 
 ### Using skills
 
@@ -363,7 +362,7 @@ the skill's description. Run `gemini` from the repository root and describe
 what you need. If a matching skill exists, Gemini calls `activate_skill` and
 you will see a confirmation prompt with the skill name before it runs.
 
-To list all available skills, run `/skills list` inside Gemini CLI.
+To list all available skills, run `/skills list` inside your AI Agent.
 
 ## Expectations for the team
 
