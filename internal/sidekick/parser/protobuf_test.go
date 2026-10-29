@@ -1050,10 +1050,10 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("foo").
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: ".google.protobuf.Empty",
-			ResponseTypeID: ".test.Foo",
-		})
+		WithOperationInfo(api.NewOperationInfoBuilder().
+			WithMetadataTypeID(".google.protobuf.Empty").
+			WithResponseTypeID(".test.Foo").
+			Build())
 	createFoo.SourceServiceID = ".test.LroService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
 	createFoo.OutputTypeID = ".google.longrunning.Operation"
@@ -1075,10 +1075,10 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("foo").
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: ".test.CreateMetadata",
-			ResponseTypeID: ".test.Foo",
-		})
+		WithOperationInfo(api.NewOperationInfoBuilder().
+			WithMetadataTypeID(".test.CreateMetadata").
+			WithResponseTypeID(".test.Foo").
+			Build())
 	createFooWithProgress.SourceServiceID = ".test.LroService"
 	createFooWithProgress.InputTypeID = ".test.CreateFooRequest"
 	createFooWithProgress.OutputTypeID = ".google.longrunning.Operation"

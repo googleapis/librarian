@@ -985,15 +985,17 @@ func NewTestRoutingInfoVariant(fieldPath ...string) *RoutingInfoVariant {
 
 // NewTestOperationInfo creates an OperationInfo with response and metadata type IDs.
 func NewTestOperationInfo(responseTypeID, metadataTypeID string) *OperationInfo {
-	return &OperationInfo{
-		ResponseTypeID: responseTypeID,
-		MetadataTypeID: metadataTypeID,
-	}
+	return NewOperationInfoBuilder().
+		WithResponseTypeID(responseTypeID).
+		WithMetadataTypeID(metadataTypeID).
+		Build()
 }
 
 // NewTestDiscoveryLro creates a DiscoveryLro with polling path parameters.
 func NewTestDiscoveryLro(pollingParams ...string) *DiscoveryLro {
-	return &DiscoveryLro{PollingPathParameters: pollingParams}
+	return NewDiscoveryLroBuilder().
+		WithPollingPathParameters(pollingParams...).
+		Build()
 }
 
 // NewTestSampleInfo creates a SampleInfo initialized with a resource name field.

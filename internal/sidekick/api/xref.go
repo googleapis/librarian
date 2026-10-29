@@ -72,7 +72,7 @@ func CrossReference(model *API) error {
 		m.InputType = input
 		m.OutputType = output
 		if m.OperationInfo != nil {
-			m.OperationInfo.Method = m
+			m.OperationInfo.method = m
 		}
 		for _, signature := range m.Signatures {
 			signature.Method = m
@@ -378,7 +378,7 @@ func enrichMethodSamples(m *Method) {
 	}
 
 	if m.OperationInfo != nil && m.Model != nil {
-		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID)
+		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID())
 	}
 
 	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"

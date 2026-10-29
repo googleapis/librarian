@@ -472,23 +472,6 @@ func TestResourceNamePattern_Builder(t *testing.T) {
 	}
 }
 
-func TestOperationInfo_Builder(t *testing.T) {
-	op := api.NewTestOperationInfo(".test.Response", ".test.Metadata")
-	if op.ResponseTypeID != ".test.Response" {
-		t.Errorf("op.ResponseTypeID = %q, want .test.Response", op.ResponseTypeID)
-	}
-	if op.MetadataTypeID != ".test.Metadata" {
-		t.Errorf("op.MetadataTypeID = %q, want .test.Metadata", op.MetadataTypeID)
-	}
-}
-
-func TestDiscoveryLro_Builder(t *testing.T) {
-	lro := api.NewTestDiscoveryLro("project", "zone")
-	if diff := cmp.Diff([]string{"project", "zone"}, lro.PollingPathParameters); diff != "" {
-		t.Errorf("mismatch in PollingPathParameters (-want +got):\n%s", diff)
-	}
-}
-
 func TestSampleInfo_Builder(t *testing.T) {
 	f := api.NewTestField("name")
 	s := api.NewTestSampleInfo(f)
