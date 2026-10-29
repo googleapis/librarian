@@ -107,17 +107,9 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 	}
 	binding := bindingBuilder.Build()
 
-	// Methods without path parameters don't get an overload. Typically one of
-	// the query parameter is "required" for them. Otherwise the request is some
-	// kind of singleton, these are sufficiently rare that missing the
-	// convenience overload is not a big problem.
-	var signature *api.MethodSignature
-	signatures := []*api.MethodSignature{}
+	var signatureNames []string
 	if len(input.ParameterOrder) != 0 {
-		// If there are path parameters, then create an additional signature
-		// formed by them, in the order specified by the discovery doc.
-		signature = &api.MethodSignature{Names: input.ParameterOrder}
-		signatures = append(signatures, signature)
+		signatureNames = append(signatureNames, input.ParameterOrder...)
 	}
 
 	bodyPathField := ""
@@ -137,12 +129,20 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		}
 		requestMessage.Fields = append(requestMessage.Fields, body)
 		bodyPathField = name
-		if signature != nil {
+		if len(signatureNames) != 0 {
 			// The body, if present, is required for signature requests.
-			signature.Names = append(signature.Names, name)
+			signatureNames = append(signatureNames, name)
 		}
 	}
 
+	// Methods without path parameters don't get an overload. Typically one of
+	// the query parameter is "required" for them. Otherwise the request is some
+	// kind of singleton, these are sufficiently rare that missing the
+	// convenience overload is not a big problem.
+	signatures := []*api.MethodSignature{}
+	if len(signatureNames) != 0 {
+		signatures = append(signatures, api.NewMethodSignatureBuilder().WithNames(signatureNames...).Build())
+	}
 	method := &api.Method{
 		ID:            id,
 		Name:          input.Name,
