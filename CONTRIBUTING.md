@@ -353,7 +353,7 @@ See the guidelines for
 This repository includes project-scoped
 [agent skills](https://geminicli.com/docs/cli/skills/) for
 [Gemini CLI](https://github.com/google-gemini/gemini-cli). Skills are defined
-in the `.gemini/skills/` directory and are discovered automatically when you run
+in the `.agents/skills/` directory and are discovered automatically when you run
 Gemini CLI from the repository root.
 
 ### Using skills
