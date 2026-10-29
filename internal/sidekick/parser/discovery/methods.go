@@ -151,10 +151,10 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		InputTypeID:   requestMessage.ID,
 		OutputTypeID:  outputID,
 		ReturnsEmpty:  outputID == ".google.protobuf.Empty",
-		PathInfo: &api.PathInfo{
-			Bindings:      []*api.PathBinding{binding},
-			BodyFieldPath: bodyPathField,
-		},
+		PathInfo: api.NewPathInfoBuilder().
+			WithBindings(binding).
+			WithBodyFieldPath(bodyPathField).
+			Build(),
 		Signatures: signatures,
 		APIVersion: input.APIVersion,
 	}

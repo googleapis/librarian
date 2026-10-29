@@ -218,7 +218,7 @@ type methodAnnotation struct {
 
 // HasBody returns true if the method has a body.
 func (m *methodAnnotation) HasBody() bool {
-	return m.Parent.PathInfo.BodyFieldPath != ""
+	return m.Parent.PathInfo.BodyFieldPath() != ""
 }
 
 // HasQueryLines returns true if the method has query lines.
@@ -799,9 +799,9 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	pathInfoAnnotation := &pathInfoAnnotation{
 		PathFmt: httpPathFmt(method.PathInfo),
 	}
-	method.PathInfo.Codec = pathInfoAnnotation
+	method.PathInfo.SetAnnotations(pathInfoAnnotation)
 
-	bodyMessageName := method.PathInfo.BodyFieldPath
+	bodyMessageName := method.PathInfo.BodyFieldPath()
 	if bodyMessageName == "*" {
 		bodyMessageName = "request"
 	} else if bodyMessageName != "" {
@@ -820,7 +820,8 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		annotate.annotateOperationInfo(method.OperationInfo)
 	}
 
-	queryParams := language.QueryParams(method, method.PathInfo.Bindings[0])
+	primaryBinding := method.PathInfo.Bindings()[0]
+	queryParams := language.QueryParams(method, primaryBinding)
 	queryLines := []string{}
 	for _, field := range queryParams {
 		queryLines = annotate.buildQueryLines(queryLines, "request.", false, "", field)
@@ -829,7 +830,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	annotation := &methodAnnotation{
 		Parent:              method,
 		Name:                strcase.ToLowerCamel(method.Name),
-		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb()),
+		RequestMethod:       strings.ToLower(primaryBinding.Verb()),
 		RequestType:         annotate.resolveMessageName(method.InputType, true),
 		ResponseType:        annotate.resolveMessageName(method.OutputType, true),
 		DocLines:            formatDocComments(method.Documentation, annotate.model),

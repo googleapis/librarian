@@ -384,9 +384,9 @@ func (s *Service) WithDefaultHost(host string) *Service {
 func NewTestMethod(name string) *Method {
 	return &Method{
 		Name: name,
-		ID:   fmt.Sprintf(".test.%s", name),
+		ID:   fmt.Sprintf(".%s.%s", "test", name),
 		PathInfo: &PathInfo{
-			Bindings: []*PathBinding{{}},
+			bindings: []*PathBinding{{}},
 		},
 	}
 }
@@ -434,10 +434,10 @@ func (m *Method) ensureFirstBinding() *PathBinding {
 	if m.PathInfo == nil {
 		m.PathInfo = &PathInfo{}
 	}
-	if len(m.PathInfo.Bindings) == 0 {
-		m.PathInfo.Bindings = append(m.PathInfo.Bindings, &PathBinding{})
+	if len(m.PathInfo.bindings) == 0 {
+		m.PathInfo.bindings = append(m.PathInfo.bindings, &PathBinding{})
 	}
-	return m.PathInfo.Bindings[0]
+	return m.PathInfo.bindings[0]
 }
 
 // WithVerb sets the HTTP verb for the first binding.
@@ -490,7 +490,7 @@ func (m *Method) WithBindings(bindings ...*PathBinding) *Method {
 	if m.PathInfo == nil {
 		m.PathInfo = &PathInfo{}
 	}
-	m.PathInfo.Bindings = bindings
+	m.PathInfo.bindings = bindings
 	return m
 }
 
@@ -500,7 +500,7 @@ func (m *Method) WithBodyFieldPath(path string) *Method {
 	if m.PathInfo == nil {
 		m.PathInfo = &PathInfo{}
 	}
-	m.PathInfo.BodyFieldPath = path
+	m.PathInfo.bodyFieldPath = path
 	return m
 }
 

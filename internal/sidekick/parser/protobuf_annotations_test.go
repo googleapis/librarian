@@ -89,9 +89,9 @@ func TestProcessRule_HttpBodyWildcard(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := &api.PathInfo{
-				BodyFieldPath: test.wantBodyField,
-				Bindings: []*api.PathBinding{
+			want := api.NewPathInfoBuilder().
+				WithBodyFieldPath(test.wantBodyField).
+				WithBindings(
 					api.NewPathBindingBuilder().
 						WithVerb("POST").
 						WithPathTemplate(api.NewPathTemplateBuilder().
@@ -108,8 +108,8 @@ func TestProcessRule_HttpBodyWildcard(t *testing.T) {
 							Build()).
 						WithQueryParameterMap(test.wantQueryParams).
 						Build(),
-				},
-			}
+				).
+				Build()
 			if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

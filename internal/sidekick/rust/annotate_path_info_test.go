@@ -117,7 +117,7 @@ func TestPathInfoAnnotations(t *testing.T) {
 			})
 			annotateModel(model, codec)
 
-			pathInfoAnn := method.PathInfo.Codec.(*pathInfoAnnotation)
+			pathInfoAnn := method.PathInfo.Codec().(*pathInfoAnnotation)
 			if pathInfoAnn.IsIdempotent != test.DefaultIdempotency {
 				t.Errorf("fail")
 			}

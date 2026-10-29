@@ -14,18 +14,40 @@
 
 package api
 
+import "slices"
+
 // PathInfo contains normalized request path information.
 type PathInfo struct {
 	// The list of bindings, including the top-level binding.
-	Bindings []*PathBinding
-	// Body is the name of the field that should be used as the body of the
+	bindings []*PathBinding
+	// bodyFieldPath is the name of the field that should be used as the body of the
 	// request.
 	//
 	// This is a string that may be "*" which indicates that the entire request
 	// should be used as the body.
 	//
 	// If this is empty then the body is not used.
-	BodyFieldPath string
+	bodyFieldPath string
 	// Language specific annotations.
-	Codec any
+	codec any
+}
+
+// Bindings returns the list of path bindings, including the top-level binding.
+func (p *PathInfo) Bindings() []*PathBinding {
+	return slices.Clone(p.bindings)
+}
+
+// BodyFieldPath returns the name of the field that should be used as the body of the request.
+func (p *PathInfo) BodyFieldPath() string {
+	return p.bodyFieldPath
+}
+
+// Codec returns the language-specific annotations for the path info.
+func (p *PathInfo) Codec() any {
+	return p.codec
+}
+
+// SetAnnotations sets the language-specific annotations for the path info.
+func (p *PathInfo) SetAnnotations(codec any) {
+	p.codec = codec
 }

@@ -259,10 +259,10 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		if m == nil {
 			t.Fatalf("missing method %s", methodID)
 		}
-		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-			m.PathInfo.Bindings[0] = api.NewPathBindingBuilder().
-				WithVerb(m.PathInfo.Bindings[0].Verb()).
-				WithQueryParameterMap(m.PathInfo.Bindings[0].QueryParameters()).
+		if m.PathInfo != nil && len(m.PathInfo.Bindings()) > 0 {
+			m.WithBindings(api.NewPathBindingBuilder().
+				WithVerb(m.PathInfo.Bindings()[0].Verb()).
+				WithQueryParameterMap(m.PathInfo.Bindings()[0].QueryParameters()).
 				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("projects").
 					WithVariableNamed("project").
@@ -275,7 +275,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 					fields,
 					api.ParseTemplateForTest(template),
 				)).
-				Build()
+				Build())
 		}
 	}
 
@@ -288,7 +288,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 
 	// Setup: Inject multiple bindings for the "Self" method
 	mSelf := model.Method(".test.v1.ResourceService.Self")
-	mSelf.PathInfo.Bindings = []*api.PathBinding{
+	mSelf.WithBindings(
 		api.NewPathBindingBuilder().
 			WithVerb("GET").
 			WithPathTemplate(api.NewPathTemplateBuilder().
@@ -320,7 +320,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			WithVerb("GET").
 			WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 			Build(),
-	}
+	)
 
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"detailed-tracing-attributes": "true",
@@ -392,7 +392,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 
 			if test.wantBindings != nil {
 				for i, wantBinding := range test.wantBindings {
-					gotBinding := m.PathInfo.Bindings[i].Codec().(*pathBindingAnnotation)
+					gotBinding := m.PathInfo.Bindings()[i].Codec().(*pathBindingAnnotation)
 					if diff := cmp.Diff(wantBinding, gotBinding, cmpopts.IgnoreFields(pathBindingAnnotation{}, "DetailedTracingAttributes", "PathFmt", "QueryParams", "Substitutions")); diff != "" {
 						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
