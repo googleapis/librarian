@@ -93,10 +93,10 @@ func (x *Method) Scopes() []string {
 
 // Scopes returns the scopes for a oneof.
 func (x *OneOf) Scopes() []string {
-	if len(x.Fields) > 0 {
-		return x.Fields[0].Scopes()
+	if len(x.fields) > 0 {
+		return x.fields[0].Scopes()
 	}
-	return fallbackScopes(x.ID)
+	return fallbackScopes(x.id)
 }
 
 // A fallback so we can be lazy in test set-up.

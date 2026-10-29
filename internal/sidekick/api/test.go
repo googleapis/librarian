@@ -202,11 +202,11 @@ func (m *Message) WithFields(fields ...*Field) *Message {
 func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	for _, o := range oneofs {
 		// If oneof ID is generic/default, re-scope it to the message.
-		if strings.HasPrefix(o.ID, ".test.") || o.ID == "" {
-			o.ID = fmt.Sprintf("%s.%s", m.ID, o.Name)
+		if strings.HasPrefix(o.id, ".test.") || o.id == "" {
+			o.id = fmt.Sprintf("%s.%s", m.ID, o.name)
 		}
 		m.OneOfs = append(m.OneOfs, o)
-		m.WithFields(o.Fields...)
+		m.WithFields(o.fields...)
 	}
 	return m
 }
@@ -226,8 +226,8 @@ func (m *Message) withParentRecursive(parent *Message) {
 		}
 	}
 	for _, o := range m.OneOfs {
-		if strings.HasPrefix(o.ID, ".test.") || o.ID == "" {
-			o.ID = fmt.Sprintf("%s.%s", m.ID, o.Name)
+		if strings.HasPrefix(o.id, ".test.") || o.id == "" {
+			o.id = fmt.Sprintf("%s.%s", m.ID, o.name)
 		}
 	}
 	for _, c := range m.Messages {
@@ -619,10 +619,10 @@ func (m *Method) ReturnEmpty() *Method {
 
 // NewTestOneOf creates a OneOf with defaults for testing.
 func NewTestOneOf(name string) *OneOf {
-	return &OneOf{
-		Name: name,
-		ID:   fmt.Sprintf(".test.%s", name),
-	}
+	return NewOneOfBuilder().
+		WithName(name).
+		WithID(fmt.Sprintf(".test.%s", name)).
+		Build()
 }
 
 // WithFields adds fields to a oneof group.
@@ -633,14 +633,20 @@ func (o *OneOf) WithFields(fields ...*Field) *OneOf {
 	for _, f := range fields {
 		f.isOneOf = true
 		f.group = o
-		o.Fields = append(o.Fields, f)
+		o.fields = append(o.fields, f)
 	}
 	return o
 }
 
 // WithDocumentation sets the documentation for the oneof group.
 func (o *OneOf) WithDocumentation(doc string) *OneOf {
-	o.Documentation = doc
+	o.documentation = doc
+	return o
+}
+
+// WithID overrides the oneof's ID.
+func (o *OneOf) WithID(id string) *OneOf {
+	o.id = id
 	return o
 }
 

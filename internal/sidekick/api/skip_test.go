@@ -312,11 +312,11 @@ func TestSkipOneOfField(t *testing.T) {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
 	wantOneOfFields := []*Field{f2}
-	if diff := cmp.Diff(wantOneOfFields, oneof.Fields, allowUnexported(), ignoreFieldCycle); diff != "" {
+	if diff := cmp.Diff(wantOneOfFields, oneof.Fields(), allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in oneof fields (-want +got):\n%s", diff)
 	}
-	if oneof.ExampleField != f2 {
-		t.Errorf("expected ExampleField to be %v, got %v", f2, oneof.ExampleField)
+	if oneof.ExampleField() != f2 {
+		t.Errorf("expected ExampleField to be %v, got %v", f2, oneof.ExampleField())
 	}
 }
 

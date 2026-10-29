@@ -161,7 +161,7 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got := group.ExampleField
+			got := group.ExampleField()
 			ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
 				return p.Last().String() == ".parent" || p.Last().String() == ".group"
 			}, cmp.Ignore())
