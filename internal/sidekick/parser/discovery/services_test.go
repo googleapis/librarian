@@ -48,7 +48,7 @@ func TestService(t *testing.T) {
 		WithBodyFieldPath("")
 	getMethod.InputTypeID = "..zones.getRequest"
 	getMethod.OutputTypeID = "..Zone"
-	getMethod.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone"}}}
+	getMethod.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "zone")}
 
 	listMethod := api.NewTestMethod("list").
 		WithID("..zones.list").
@@ -71,7 +71,7 @@ func TestService(t *testing.T) {
 		WithBodyFieldPath("")
 	listMethod.InputTypeID = "..zones.listRequest"
 	listMethod.OutputTypeID = "..ZoneList"
-	listMethod.Signatures = []*api.MethodSignature{{Names: []string{"project"}}}
+	listMethod.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project")}
 
 	want := newDiscoveryTestService("zones").
 		WithDocumentation("Service for the `zones` resource.").

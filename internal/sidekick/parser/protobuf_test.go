@@ -701,7 +701,7 @@ func TestProtobuf_Service(t *testing.T) {
 	getFoo.SourceServiceID = ".test.TestService"
 	getFoo.InputTypeID = ".test.GetFooRequest"
 	getFoo.OutputTypeID = ".test.Foo"
-	getFoo.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+	getFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
 
 	createFoo := api.NewTestMethod("CreateFoo").
 		WithID(".test.TestService.CreateFoo").
@@ -722,7 +722,7 @@ func TestProtobuf_Service(t *testing.T) {
 	createFoo.SourceServiceID = ".test.TestService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
 	createFoo.OutputTypeID = ".test.Foo"
-	createFoo.Signatures = []*api.MethodSignature{{Names: []string{"parent", "foo_id", "foo"}}}
+	createFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "foo_id", "foo")}
 
 	deleteFoo := api.NewTestMethod("DeleteFoo").
 		WithID(".test.TestService.DeleteFoo").
@@ -823,7 +823,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 	createFoo.SourceServiceID = ".test.TestService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
 	createFoo.OutputTypeID = ".test.Foo"
-	createFoo.Signatures = []*api.MethodSignature{{Names: []string{"parent", "foo_id", "bar"}}}
+	createFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "foo_id", "bar")}
 
 	addBar := api.NewTestMethod("AddBar").
 		WithID(".test.TestService.AddBar").
@@ -846,7 +846,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 	addBar.SourceServiceID = ".test.TestService"
 	addBar.InputTypeID = ".test.AddBarRequest"
 	addBar.OutputTypeID = ".test.Bar"
-	addBar.Signatures = []*api.MethodSignature{{Names: []string{"parent", "payload"}}}
+	addBar.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "payload")}
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -922,7 +922,7 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 	m.SourceServiceID = ".test.TestService"
 	m.InputTypeID = ".test." + inputType
 	m.OutputTypeID = ".test.ListFooResponse"
-	m.Signatures = []*api.MethodSignature{{Names: []string{"parent"}}}
+	m.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent")}
 	if pageTokenReq != "" {
 		m.WithPagination(
 			api.NewTestField("page_token").
@@ -1102,7 +1102,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 	getOperation.SourceServiceID = ".google.longrunning.Operations"
 	getOperation.InputTypeID = ".google.longrunning.GetOperationRequest"
 	getOperation.OutputTypeID = ".google.longrunning.Operation"
-	getOperation.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+	getOperation.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
 
 	wantService := api.NewTestService("LroService").
 		WithPackage("test").

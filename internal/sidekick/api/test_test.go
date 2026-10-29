@@ -444,21 +444,6 @@ func TestMethod_TypeIDSetters(t *testing.T) {
 	}
 }
 
-func TestMethodSignature_Builders(t *testing.T) {
-	f1 := api.NewTestField("name")
-	f2 := api.NewTestField("parent")
-	sig := api.NewTestMethodSignature("name", "parent").
-		WithFields(f1).
-		WithFields(f2)
-
-	if diff := cmp.Diff([]string{"name", "parent"}, sig.Names); diff != "" {
-		t.Errorf("mismatch in Names (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff([]*api.Field{f1, f2}, sig.Fields); diff != "" {
-		t.Errorf("mismatch in Fields (-want +got):\n%s", diff)
-	}
-}
-
 func TestResourceNamePattern_Builder(t *testing.T) {
 	p := api.NewTestResourceNamePattern(
 		api.ResourceNameSegment{Literal: "projects"},
