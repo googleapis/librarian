@@ -27,6 +27,7 @@ import (
 // in read-only api structs.
 func AllowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
+		api.PathSegment{},
 		api.PathVariable{},
 	)
 }

@@ -26,18 +26,16 @@ const (
 
 // PathSegment is a segment of a path.
 type PathSegment struct {
-	Literal  string
-	Variable *PathVariable
+	literal  string
+	variable *PathVariable
 }
 
-// WithLiteral adds a literal to the path segment.
-func (s *PathSegment) WithLiteral(l string) *PathSegment {
-	s.Literal = l
-	return s
+// Literal returns the literal string of the path segment, if any.
+func (s *PathSegment) Literal() string {
+	return s.literal
 }
 
-// WithVariable adds a variable to the path segment.
-func (s *PathSegment) WithVariable(v *PathVariable) *PathSegment {
-	s.Variable = v
-	return s
+// Variable returns the variable of the path segment, if any.
+func (s *PathSegment) Variable() *PathVariable {
+	return s.variable
 }

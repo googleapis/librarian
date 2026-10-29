@@ -166,24 +166,20 @@ func TestPathTemplateBuilder(t *testing.T) {
 	verb := "verb"
 	want := &PathTemplate{
 		Segments: []PathSegment{
-			{
-				Literal: "v1",
-			},
-			{
-				Variable: NewPathVariableBuilder("parent", "child").
+			*NewPathSegmentBuilder().WithLiteral("v1").Build(),
+			*NewPathSegmentBuilder().WithVariable(
+				NewPathVariableBuilder("parent", "child").
 					WithSegments("projects", "*", "locations", "**").
 					WithAllowReserved().
-					Build(),
-			},
-			{
-				Variable: NewPathVariableBuilder("v2", "field").
+					Build()).Build(),
+			*NewPathSegmentBuilder().WithVariable(
+				NewPathVariableBuilder("v2", "field").
 					WithSegments("*").
-					Build(),
-			},
+					Build()).Build(),
 		},
 		Verb: verb,
 	}
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathVariable{})); diff != "" {
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathSegment{}, PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
