@@ -313,18 +313,18 @@ func NewTestMapWithFields(name string, key, value *Field) *Map {
 	if value != nil && (strings.HasPrefix(value.id, ".test.") || value.id == "") {
 		value.id = fmt.Sprintf("%s.%s", id, value.name)
 	}
-	return &Map{ID: id, Key: key, Value: value}
+	return NewMapBuilder().WithID(id).WithKey(key).WithValue(value).Build()
 }
 
 // WithID overrides the map's ID.
 func (m *Map) WithID(id string) *Map {
-	oldID := m.ID
-	m.ID = id
-	if m.Key != nil && (strings.HasPrefix(m.Key.id, oldID+".") || strings.HasPrefix(m.Key.id, ".test.") || m.Key.id == "") {
-		m.Key.id = fmt.Sprintf("%s.%s", id, m.Key.name)
+	oldID := m.id
+	m.id = id
+	if m.key != nil && (strings.HasPrefix(m.key.id, oldID+".") || strings.HasPrefix(m.key.id, ".test.") || m.key.id == "") {
+		m.key.id = fmt.Sprintf("%s.%s", id, m.key.name)
 	}
-	if m.Value != nil && (strings.HasPrefix(m.Value.id, oldID+".") || strings.HasPrefix(m.Value.id, ".test.") || m.Value.id == "") {
-		m.Value.id = fmt.Sprintf("%s.%s", id, m.Value.name)
+	if m.value != nil && (strings.HasPrefix(m.value.id, oldID+".") || strings.HasPrefix(m.value.id, ".test.") || m.value.id == "") {
+		m.value.id = fmt.Sprintf("%s.%s", id, m.value.name)
 	}
 	return m
 }
@@ -712,7 +712,7 @@ func (f *Field) WithMapType(m *Map) *Field {
 	f.repeated = false
 	f.optional = false
 	if m != nil {
-		f.typezID = m.ID
+		f.typezID = m.id
 	}
 	return f
 }

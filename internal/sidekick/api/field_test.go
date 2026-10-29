@@ -25,7 +25,7 @@ func TestField(t *testing.T) {
 	rnp := NewResourceNamePattern(NewResourceNameSegment("projects", ""))
 	msg := NewTestMessage("Book")
 	en := NewEnumBuilder().WithName("State").Build()
-	mp := NewTestMap(".test.MapEntry", TypezString, TypezInt32)
+	mp := NewMapBuilder().WithID(".test.MapEntry").Build()
 	parent := NewTestMessage("Request")
 	group := NewTestOneOf("group")
 

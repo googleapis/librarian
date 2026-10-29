@@ -555,14 +555,14 @@ func (c *codec) mapType(f *api.Field, model *api.API) (string, error) {
 	if mapType == nil {
 		mapType = model.Map(f.TypezID())
 	}
-	if mapType == nil || mapType.Key == nil || mapType.Value == nil {
+	if mapType == nil || mapType.Key() == nil || mapType.Value() == nil {
 		return "", fmt.Errorf("missing map type for field %s (%s)", f.ID(), f.TypezID())
 	}
-	key, err := c.fieldType(mapType.Key, model, true, model.PackageName)
+	key, err := c.fieldType(mapType.Key(), model, true, model.PackageName)
 	if err != nil {
 		return "", err
 	}
-	val, err := c.fieldType(mapType.Value, model, true, model.PackageName)
+	val, err := c.fieldType(mapType.Value(), model, true, model.PackageName)
 	if err != nil {
 		return "", err
 	}
@@ -1563,8 +1563,8 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 			mapType = model.Map(f.TypezID())
 		}
 		if mapType != nil {
-			findUsedPackagesField(mapType.Key, model, c)
-			findUsedPackagesField(mapType.Value, model, c)
+			findUsedPackagesField(mapType.Key(), model, c)
+			findUsedPackagesField(mapType.Value(), model, c)
 		}
 		return
 	}

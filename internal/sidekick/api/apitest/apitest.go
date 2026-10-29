@@ -51,6 +51,7 @@ func AllowUnexported() cmp.Option {
 		api.Enum{},
 		api.EnumValue{},
 		api.Field{},
+		api.Map{},
 		api.MethodSignature{},
 		api.OperationInfo{},
 		api.PathBinding{},

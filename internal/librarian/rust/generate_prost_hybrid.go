@@ -157,8 +157,8 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 				mapType = model.Map(f.TypezID())
 			}
 			if mapType != nil {
-				enqueueField(fieldPath, mapType.Key)
-				enqueueField(fieldPath, mapType.Value)
+				enqueueField(fieldPath, mapType.Key())
+				enqueueField(fieldPath, mapType.Value())
 			}
 			return
 		}
