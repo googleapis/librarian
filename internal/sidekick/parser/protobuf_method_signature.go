@@ -47,7 +47,7 @@ func protobufMethodSignatures(m *descriptorpb.MethodDescriptorProto) ([]*api.Met
 		for name := range strings.SplitSeq(signature, ",") {
 			names = append(names, strings.TrimSpace(name))
 		}
-		signatures = append(signatures, &api.MethodSignature{Names: names})
+		signatures = append(signatures, api.NewMethodSignatureBuilder().WithNames(names...).Build())
 	}
 	return signatures, nil
 }
