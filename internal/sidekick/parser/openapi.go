@@ -474,7 +474,7 @@ func makeObjectField(model *api.API, packageName, messageName, name string, repe
 			WithDocumentation(field.Description).
 			WithDeprecated(field.Deprecated != nil && *field.Deprecated).
 			WithTypez(api.TypezMap).
-			WithTypezID(mapEntry.ID).
+			WithTypezID(mapEntry.ID()).
 			WithOptional(false).
 			WithRepeated(repeated).
 			WithMap(!repeated).
@@ -572,11 +572,11 @@ func makeMap(model *api.API, messageName, name string, schema *base.Schema) (*ap
 			WithTypez(valueTypez).
 			WithTypezID(valueID).
 			Build()
-		placeholder := &api.Map{
-			ID:    id,
-			Key:   key,
-			Value: value,
-		}
+		placeholder := api.NewMapBuilder().
+			WithID(id).
+			WithKey(key).
+			WithValue(value).
+			Build()
 		model.AddMap(placeholder)
 		mapEntry = placeholder
 	}

@@ -247,21 +247,21 @@ func TestMethod_ReturnEmpty(t *testing.T) {
 
 func TestNewTestMap(t *testing.T) {
 	got := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
-	want := &api.Map{
-		ID: ".test.TestMap",
-		Key: api.NewFieldBuilder().
+	want := api.NewMapBuilder().
+		WithID(".test.TestMap").
+		WithKey(api.NewFieldBuilder().
 			WithName("key").
 			WithJSONName("key").
 			WithID(".test.TestMap.key").
 			WithTypez(api.TypezString).
-			Build(),
-		Value: api.NewFieldBuilder().
+			Build()).
+		WithValue(api.NewFieldBuilder().
 			WithName("value").
 			WithJSONName("value").
 			WithID(".test.TestMap.value").
 			WithTypez(api.TypezInt32).
-			Build(),
-	}
+			Build()).
+		Build()
 	apitest.CheckMap(t, got, want)
 }
 
@@ -270,37 +270,48 @@ func TestNewTestMapWithFields(t *testing.T) {
 	key := api.NewTestField("custom_key").WithType(api.TypezString)
 	val := api.NewTestField("custom_val").WithMessageType(valMsg)
 	got := api.NewTestMapWithFields(".custom.package.MyMap", key, val)
-	want := &api.Map{
-		ID: ".custom.package.MyMap",
-		Key: api.NewFieldBuilder().
+	want := api.NewMapBuilder().
+		WithID(".custom.package.MyMap").
+		WithKey(api.NewFieldBuilder().
 			WithName("custom_key").
 			WithJSONName("customKey").
 			WithID(".custom.package.MyMap.custom_key").
 			WithTypez(api.TypezString).
-			Build(),
-		Value: api.NewFieldBuilder().
+			Build()).
+		WithValue(api.NewFieldBuilder().
 			WithName("custom_val").
 			WithJSONName("customVal").
 			WithID(".custom.package.MyMap.custom_val").
 			WithTypez(api.TypezMessage).
 			WithTypezID(valMsg.ID).
 			WithMessageType(valMsg).
-			Build(),
-	}
+			Build()).
+		Build()
 	apitest.CheckMap(t, got, want)
 }
 
 func TestMap_WithID(t *testing.T) {
 	m := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
 	m.WithID(".new.package.TestMap")
-	if got, want := m.ID, ".new.package.TestMap"; got != want {
-		t.Errorf("m.ID = %q, want %q", got, want)
+	if got, want := m.ID(), ".new.package.TestMap"; got != want {
+		t.Errorf("m.ID() = %q, want %q", got, want)
 	}
-	if got, want := m.Key.ID(), ".new.package.TestMap.key"; got != want {
-		t.Errorf("m.Key.ID() = %q, want %q", got, want)
+	if got, want := m.Key().ID(), ".new.package.TestMap.key"; got != want {
+		t.Errorf("m.Key().ID() = %q, want %q", got, want)
 	}
-	if got, want := m.Value.ID(), ".new.package.TestMap.value"; got != want {
-		t.Errorf("m.Value.ID() = %q, want %q", got, want)
+	if got, want := m.Value().ID(), ".new.package.TestMap.value"; got != want {
+		t.Errorf("m.Value().ID() = %q, want %q", got, want)
+	}
+}
+
+func TestMapBuilderFrom(t *testing.T) {
+	orig := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
+	copied := api.NewMapBuilderFrom(orig).Build()
+	apitest.CheckMap(t, copied, orig)
+
+	fromNil := api.NewMapBuilderFrom(nil).Build()
+	if fromNil.ID() != "" || fromNil.Key() != nil || fromNil.Value() != nil {
+		t.Errorf("NewMapBuilderFrom(nil) = %+v, want empty Map", fromNil)
 	}
 }
 
@@ -338,7 +349,7 @@ func TestField_WithMapType(t *testing.T) {
 	if f.Optional() {
 		t.Errorf("f.Optional() = %v, want false", f.Optional())
 	}
-	if got, want := f.TypezID(), m.ID; got != want {
+	if got, want := f.TypezID(), m.ID(); got != want {
 		t.Errorf("f.TypezID() = %q, want %q", got, want)
 	}
 }
@@ -348,11 +359,11 @@ func TestAPI_WithMaps(t *testing.T) {
 	m2 := api.NewTestMap("Map2", api.TypezString, api.TypezString)
 	model := api.NewTestAPI(nil, nil, nil).WithMaps(m1, m2)
 
-	if got := model.Map(m1.ID); got != m1 {
-		t.Errorf("model.Map(%q) = %v, want %v", m1.ID, got, m1)
+	if got := model.Map(m1.ID()); got != m1 {
+		t.Errorf("model.Map(%q) = %v, want %v", m1.ID(), got, m1)
 	}
-	if got := model.Map(m2.ID); got != m2 {
-		t.Errorf("model.Map(%q) = %v, want %v", m2.ID, got, m2)
+	if got := model.Map(m2.ID()); got != m2 {
+		t.Errorf("model.Map(%q) = %v, want %v", m2.ID(), got, m2)
 	}
 	var count int
 	for range model.AllMaps() {

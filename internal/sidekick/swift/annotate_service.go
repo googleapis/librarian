@@ -310,7 +310,7 @@ func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, metho
 		if err != nil {
 			return err
 		}
-		return c.addFieldDependencies(annotations, mapType.Value)
+		return c.addFieldDependencies(annotations, mapType.Value())
 	}
 	return nil
 }
@@ -321,7 +321,7 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 		if err != nil {
 			return err
 		}
-		return c.addFieldDependencies(annotations, mapType.Value)
+		return c.addFieldDependencies(annotations, mapType.Value())
 	}
 	switch field.Typez() {
 	case api.TypezMessage:

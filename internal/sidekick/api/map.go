@@ -16,10 +16,22 @@ package api
 
 // Map defines a map type `Map<K, V>`.
 type Map struct {
-	// ID is the unique identifier for the map type.
-	ID string
-	// Key is the field representing the map key.
-	Key *Field
-	// Value is the field representing the map value.
-	Value *Field
+	id    string
+	key   *Field
+	value *Field
+}
+
+// ID returns the unique identifier for the map type.
+func (m *Map) ID() string {
+	return m.id
+}
+
+// Key returns the field representing the map key.
+func (m *Map) Key() *Field {
+	return m.key
+}
+
+// Value returns the field representing the map value.
+func (m *Map) Value() *Field {
+	return m.value
 }

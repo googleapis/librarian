@@ -163,7 +163,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				UrlSafeValue:         true,
 				ProtoFieldName:       "name",
 				ProtoFieldNamePascal: "Name",
-				ValueField:           mapType.Value,
+				ValueField:           mapType.Value(),
 			},
 		},
 	} {

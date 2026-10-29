@@ -248,5 +248,5 @@ func (a *API) AddMap(m *Map) {
 	if a.mapByID == nil {
 		a.mapByID = make(map[string]*Map)
 	}
-	a.mapByID[m.ID] = m
+	a.mapByID[m.id] = m
 }

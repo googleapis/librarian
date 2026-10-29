@@ -53,17 +53,17 @@ func Validate(model *API) error {
 	}
 	mapsList := slices.Collect(model.AllMaps())
 	slices.SortFunc(mapsList, func(a, b *Map) int {
-		return cmp.Compare(a.ID, b.ID)
+		return cmp.Compare(a.id, b.id)
 	})
 	for _, m := range mapsList {
-		if m.Key == nil || m.Value == nil {
-			return fmt.Errorf("map %q must have non-nil key and value fields", m.ID)
+		if m.key == nil || m.value == nil {
+			return fmt.Errorf("map %q must have non-nil key and value fields", m.id)
 		}
-		if m.Key.typez == TypezMap || m.Key.mapz || m.Key.repeated {
-			return fmt.Errorf("map %q key cannot be a map or repeated field", m.ID)
+		if m.key.typez == TypezMap || m.key.mapz || m.key.repeated {
+			return fmt.Errorf("map %q key cannot be a map or repeated field", m.id)
 		}
-		if m.Value.typez == TypezMap || m.Value.mapz || m.Value.repeated {
-			return fmt.Errorf("map %q value cannot be a map or repeated field", m.ID)
+		if m.value.typez == TypezMap || m.value.mapz || m.value.repeated {
+			return fmt.Errorf("map %q value cannot be a map or repeated field", m.id)
 		}
 	}
 	return nil
