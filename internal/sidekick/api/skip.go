@@ -76,7 +76,7 @@ func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func
 				return fmt.Errorf("unsupported: skipping field %s which enables pagination", method.Pagination.ID)
 			}
 			idx := slices.IndexFunc(method.Signatures, func(s *MethodSignature) bool {
-				return slices.ContainsFunc(s.Fields, func(f *Field) bool { return skipField(f.ID) })
+				return slices.ContainsFunc(s.Fields(), func(f *Field) bool { return skipField(f.ID) })
 			})
 			if idx != -1 {
 				return fmt.Errorf("unsupported: skipping field that is in one of the method signatures for method: %s", method.ID)

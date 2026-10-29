@@ -43,7 +43,7 @@ func TestMakeServiceMethods(t *testing.T) {
 		WithBodyFieldPath("")
 	m1.InputTypeID = "..zones.getRequest"
 	m1.OutputTypeID = "..Zone"
-	m1.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone"}}}
+	m1.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "zone")}
 
 	m2 := api.NewTestMethod("insert").
 		WithID("..firewallPolicies.insert").
@@ -116,7 +116,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 		ReturnEmpty()
 	want.InputTypeID = "..zoneOperations.deleteRequest"
 	want.OutputTypeID = ".google.protobuf.Empty"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}}
+	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "zone", "operation")}
 	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -148,7 +148,7 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 		WithBodyFieldPath("body")
 	want.InputTypeID = "..projects.moveInstanceRequest"
 	want.OutputTypeID = "..Operation"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "body"}}}
+	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "body")}
 	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

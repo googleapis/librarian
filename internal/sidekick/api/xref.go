@@ -75,13 +75,13 @@ func CrossReference(model *API) error {
 			m.OperationInfo.method = m
 		}
 		for _, signature := range m.Signatures {
-			signature.Method = m
-			for _, name := range signature.Names {
+			signature.method = m
+			for _, name := range signature.names {
 				idx := slices.IndexFunc(input.Fields, func(f *Field) bool { return f.Name == name })
 				if idx == -1 {
 					return fmt.Errorf("cannot find field %s in method signature for method %s", name, m.ID)
 				}
-				signature.Fields = append(signature.Fields, input.Fields[idx])
+				signature.fields = append(signature.fields, input.Fields[idx])
 			}
 		}
 	}
