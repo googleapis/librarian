@@ -38,7 +38,7 @@ func TestValidateMessageMismatch(t *testing.T) {
 		[]*Service{NewTestService("s1").WithPackage("p1")}).
 		WithPackageName("p1")
 	if err := Validate(test); err == nil {
-		t.Errorf("expected an error in API validation got=%s", test.PackageName)
+		t.Errorf("expected an error in API validation got=%s", test.PackageName())
 	}
 
 	test = NewTestAPI(
@@ -47,7 +47,7 @@ func TestValidateMessageMismatch(t *testing.T) {
 		[]*Service{NewTestService("s1").WithPackage("p1")}).
 		WithPackageName("p1")
 	if err := Validate(test); err == nil {
-		t.Errorf("expected an error in API validation got=%s", test.PackageName)
+		t.Errorf("expected an error in API validation got=%s", test.PackageName())
 	}
 
 	test = NewTestAPI(
@@ -56,7 +56,7 @@ func TestValidateMessageMismatch(t *testing.T) {
 		[]*Service{NewTestService("s1").WithPackage("p1"), NewTestService("s2").WithPackage("p2")}).
 		WithPackageName("p1")
 	if err := Validate(test); err == nil {
-		t.Errorf("expected an error in API validation got=%s", test.PackageName)
+		t.Errorf("expected an error in API validation got=%s", test.PackageName())
 	}
 }
 
@@ -67,7 +67,7 @@ func TestValidateMessageMismatchNoPackage(t *testing.T) {
 		[]*Service{NewTestService("s1").WithPackage("p1")}).
 		WithPackageName("")
 	if err := Validate(test); err == nil {
-		t.Errorf("expected an error in API validation got=%s", test.PackageName)
+		t.Errorf("expected an error in API validation got=%s", test.PackageName())
 	}
 
 	test = NewTestAPI(
@@ -76,7 +76,7 @@ func TestValidateMessageMismatchNoPackage(t *testing.T) {
 		[]*Service{NewTestService("s1").WithPackage("p1")}).
 		WithPackageName("")
 	if err := Validate(test); err == nil {
-		t.Errorf("expected an error in API validation got=%s", test.PackageName)
+		t.Errorf("expected an error in API validation got=%s", test.PackageName())
 	}
 
 	test = NewTestAPI(
@@ -85,7 +85,7 @@ func TestValidateMessageMismatchNoPackage(t *testing.T) {
 		[]*Service{NewTestService("s1").WithPackage("p1"), NewTestService("s2").WithPackage("p2")}).
 		WithPackageName("")
 	if err := Validate(test); err == nil {
-		t.Errorf("expected an error in API validation got=%s", test.PackageName)
+		t.Errorf("expected an error in API validation got=%s", test.PackageName())
 	}
 }
 

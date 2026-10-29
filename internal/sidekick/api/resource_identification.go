@@ -31,7 +31,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 	// Build the set of known resource names for the heuristic.
 	vocabulary := BuildHeuristicVocabulary(model)
 
-	for _, service := range model.Services {
+	for _, service := range model.services {
 		for _, method := range service.Methods() {
 			if method.PathInfo() == nil {
 				continue
@@ -282,8 +282,8 @@ func getServiceHost(method *Method) (string, error) {
 	if method.Service() != nil && method.Service().DefaultHost() != "" {
 		return method.Service().DefaultHost(), nil
 	}
-	if method.Model() != nil && method.Model().Name != "" {
-		return method.Model().Name + ".googleapis.com", nil
+	if method.Model() != nil && method.Model().Name() != "" {
+		return method.Model().Name() + ".googleapis.com", nil
 	}
 	return "", fmt.Errorf("consistency error: no service host found for method %q", method.Name())
 }

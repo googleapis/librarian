@@ -216,7 +216,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	// If the dependency is marked as "required_by_services", then we force it
 	// as an import for the generated service files.
 	for _, p := range c.Dependencies {
-		if p.ApiPackage == c.Model.PackageName || p.Name == c.LibraryName {
+		if p.ApiPackage == c.Model.PackageName() || p.Name == c.LibraryName {
 			continue
 		}
 		if p.RequiredByServices {
@@ -234,7 +234,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 
 	for _, method := range methods {
 		if method.InputType() != nil {
-			if method.InputType().Package() != c.Model.PackageName {
+			if method.InputType().Package() != c.Model.PackageName() {
 				dep, err := c.addApiPackageDependency(method.InputType().Package())
 				if err != nil {
 					return nil, err
@@ -246,7 +246,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 			}
 		}
 		if method.OutputType() != nil {
-			if method.OutputType().Package() != c.Model.PackageName {
+			if method.OutputType().Package() != c.Model.PackageName() {
 				dep, err := c.addApiPackageDependency(method.OutputType().Package())
 				if err != nil {
 					return nil, err
@@ -274,7 +274,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		// body.contentType directly. Swift's MemberImportVisibility requires
 		// importing the defining module (GoogleApi) in the transport file even if
 		// GoogleApi does not appear in the service's public signatures.
-		if ma, ok := method.Codec().(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName != "google.api" {
+		if ma, ok := method.Codec().(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName() != "google.api" {
 			dep, err := c.addApiPackageDependency("google.api")
 			if err != nil {
 				return nil, err
@@ -329,7 +329,7 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 		if err != nil {
 			return err
 		}
-		if item.Package() != c.Model.PackageName {
+		if item.Package() != c.Model.PackageName() {
 			dep, err := c.addApiPackageDependency(item.Package())
 			if err != nil {
 				return err
@@ -345,7 +345,7 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 		if err != nil {
 			return err
 		}
-		if item.Package() != c.Model.PackageName {
+		if item.Package() != c.Model.PackageName() {
 			dep, err := c.addApiPackageDependency(item.Package())
 			if err != nil {
 				return err
@@ -388,7 +388,7 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 	if err != nil {
 		return err
 	}
-	if respMsg.Package() != c.Model.PackageName {
+	if respMsg.Package() != c.Model.PackageName() {
 		dep, err := c.addApiPackageDependency(respMsg.Package())
 		if err != nil {
 			return err
@@ -404,7 +404,7 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 	if err != nil {
 		return err
 	}
-	if metaMsg.Package() != c.Model.PackageName {
+	if metaMsg.Package() != c.Model.PackageName() {
 		dep, err := c.addApiPackageDependency(metaMsg.Package())
 		if err != nil {
 			return err

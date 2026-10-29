@@ -23,7 +23,7 @@ import (
 func TestService(t *testing.T) {
 	m1 := NewMethodBuilder().WithName("M1").Build()
 	m2 := NewMethodBuilder().WithName("M2").Build()
-	model := NewTestAPI(nil, nil, nil)
+	model := NewAPIBuilder().WithName("test").BuildSyntaxTree()
 
 	b := NewServiceBuilder().
 		WithName("BookService").

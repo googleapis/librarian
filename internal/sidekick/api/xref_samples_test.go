@@ -211,7 +211,7 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 			WithChildTypeReference("test.googleapis.com/Child")
 		message := NewTestMessage("Message").WithFields(field)
 		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
-		model.AddResource(res)
+		model.addResource(res)
 
 		if err := CrossReference(model); err != nil {
 			t.Fatal(err)

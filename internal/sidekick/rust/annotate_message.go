@@ -68,7 +68,7 @@ func (a *messageAnnotation) SingleFeatureGate() bool {
 // are also annotated.
 // Basic annotations are useful for annotating external messages with information used in samples.
 func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error {
-	qualifiedName, err := c.fullyQualifiedMessageName(m, model.PackageName)
+	qualifiedName, err := c.fullyQualifiedMessageName(m, model.PackageName())
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 		ModuleName:        c.MessageModuleName(m),
 		QualifiedName:     qualifiedName,
 		RelativeName:      relativeName,
-		ProstRelativeName: c.prostTypeName(m.Package(), prostMessageRelativePath(m), model.PackageName),
+		ProstRelativeName: c.prostTypeName(m.Package(), prostMessageRelativePath(m), model.PackageName()),
 		NameInExamples:    nameInExamples,
 		PackageModuleName: packageToModuleName(m.Package()),
 		SourceFQN:         strings.TrimPrefix(m.ID(), "."),

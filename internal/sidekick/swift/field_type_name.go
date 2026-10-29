@@ -169,7 +169,7 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 			// there is no package, so return the bare type name
 			return name, nil
 		}
-		if m.Package() == c.Model.PackageName {
+		if m.Package() == c.Model.PackageName() {
 			// this is the current package
 			if c.Module || c.LibraryName == "" {
 				// LibraryName is intentionally left empty when generating a module
@@ -220,7 +220,7 @@ func (c *codec) typePrefix(packageName, name string) (string, error) {
 	if err != nil || prefix != "" {
 		return prefix, err
 	}
-	if c.Model == nil || packageName != c.Model.PackageName {
+	if c.Model == nil || packageName != c.Model.PackageName() {
 		return "", nil
 	}
 	if c.Module || c.LibraryName == "" {
@@ -250,12 +250,12 @@ func (c *codec) typePrefix(packageName, name string) (string, error) {
 func (c *codec) externalTypePrefix(packageName string) (string, error) {
 	dep, ok := c.ApiPackages[packageName]
 	if !ok {
-		if packageName == c.Model.PackageName {
+		if packageName == c.Model.PackageName() {
 			return "", nil
 		}
 		return "", fmt.Errorf("package %q not found in ApiPackages", packageName)
 	}
-	if packageName == c.Model.PackageName && (!c.Module || c.TargetLibraryName == dep.Name) {
+	if packageName == c.Model.PackageName() && (!c.Module || c.TargetLibraryName == dep.Name) {
 		return "", nil
 	}
 	return dep.Name, nil

@@ -31,22 +31,25 @@ func TestAPI_Filter_Nil(t *testing.T) {
 	extM1 := NewTestMessage("ExtM1").WithPackage("google.type")
 	extE1 := NewTestEnum("ExtE1").WithPackage("google.type")
 
-	model := NewTestAPI([]*Message{m1}, []*Enum{e1}, nil)
-	model.AddMessage(extM1)
-	model.AddEnum(extE1)
+	model := NewAPIBuilderFrom(NewTestAPI([]*Message{m1}, []*Enum{e1}, nil)).
+		AddMessage(extM1).
+		AddEnum(extE1).
+		BuildSyntaxTree()
 
 	got := model.Filter(nil)
-	if diff := cmp.Diff([]*Message{m1}, got.Messages, allowUnexported()); diff != "" {
-		t.Errorf("Messages mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff([]*Message{m1}, got.Messages(), allowUnexported()); diff != "" {
+		t.Errorf("Messages() mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff([]*Enum{e1}, got.Enums, allowUnexported()); diff != "" {
-		t.Errorf("Enums mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff([]*Enum{e1}, got.Enums(), allowUnexported()); diff != "" {
+		t.Errorf("Enums() mismatch (-want +got):\n%s", diff)
 	}
-	if !slices.Contains(got.ExternalMessages, extM1) || !slices.Contains(got.ExternalMessages, model.Message(".google.protobuf.Any")) {
-		t.Errorf("ExternalMessages = %v, want extM1 and pre-registered external messages retained", got.ExternalMessages)
+	extMsgs := got.ExternalMessages()
+	if !slices.Contains(extMsgs, extM1) || !slices.Contains(extMsgs, model.Message(".google.protobuf.Any")) {
+		t.Errorf("ExternalMessages() = %v, want extM1 and pre-registered external messages retained", extMsgs)
 	}
-	if !slices.Contains(got.ExternalEnums, extE1) || !slices.Contains(got.ExternalEnums, model.Enum(".google.protobuf.NullValue")) {
-		t.Errorf("ExternalEnums = %v, want extE1 and pre-registered external enums retained", got.ExternalEnums)
+	extEnums := got.ExternalEnums()
+	if !slices.Contains(extEnums, extE1) || !slices.Contains(extEnums, model.Enum(".google.protobuf.NullValue")) {
+		t.Errorf("ExternalEnums() = %v, want extE1 and pre-registered external enums retained", extEnums)
 	}
 }
 
@@ -65,40 +68,44 @@ func TestAPI_Filter(t *testing.T) {
 	res := NewTestResource("test.googleapis.com/Book")
 	mapType := NewTestMap("AttributesEntry", TypezString, TypezString)
 
-	model := NewTestAPI([]*Message{m1, m2}, []*Enum{e1, e2}, []*Service{s1, s2})
-	model.Name = "testapi"
-	model.Title = "Test API"
-	model.Description = "Test API description"
-	model.Revision = "2026-01-01"
-	model.RubyPackage = "Test::Api"
-	model.PhpNamespace = "Test\\Api"
-	model.CsharpNamespace = "Test.Api"
-	model.QuickstartService = s1
-	model.Codec = "orig-codec"
-	model.ResourceDefinitions = []*Resource{res}
+	model := NewTestAPI([]*Message{m1, m2}, []*Enum{e1, e2}, []*Service{s1, s2}).
+		WithName("testapi").
+		WithTitle("Test API").
+		WithDescription("Test API description").
+		WithRevision("2026-01-01").
+		WithRubyPackage("Test::Api").
+		WithPhpNamespace("Test\\Api").
+		WithCsharpNamespace("Test.Api").
+		WithQuickstartService(s1).
+		WithResourceDefinitions(res)
+	model.SetAnnotations("orig-codec")
 	s1.SetAnnotations("svc-codec")
-	model.AddMessage(extM1)
-	model.AddMessage(extM2)
-	model.AddEnum(extE1)
-	model.AddEnum(extE2)
-	model.AddMap(mapType)
-	model.AddResource(res)
+	model.addMessage(extM1)
+	model.addMessage(extM2)
+	model.addEnum(extE1)
+	model.addEnum(extE2)
+	model.addMap(mapType)
+	model.addResource(res)
 
 	filtered := model.Filter(func(id string) bool {
 		return id == m1.ID() || id == e1.ID() || id == extM1.ID() || id == extE1.ID()
 	})
 
-	if len(filtered.Messages) != 1 || filtered.Messages[0] != m1 {
-		t.Errorf("got Messages = %v, want [%v]", filtered.Messages, m1)
+	msgs := filtered.Messages()
+	if len(msgs) != 1 || msgs[0] != m1 {
+		t.Errorf("got Messages() = %v, want [%v]", msgs, m1)
 	}
-	if len(filtered.Enums) != 1 || filtered.Enums[0] != e1 {
-		t.Errorf("got Enums = %v, want [%v]", filtered.Enums, e1)
+	enums := filtered.Enums()
+	if len(enums) != 1 || enums[0] != e1 {
+		t.Errorf("got Enums() = %v, want [%v]", enums, e1)
 	}
-	if len(filtered.ExternalMessages) != 1 || filtered.ExternalMessages[0] != extM1 {
-		t.Errorf("got ExternalMessages = %v, want [%v]", filtered.ExternalMessages, extM1)
+	extMsgs := filtered.ExternalMessages()
+	if len(extMsgs) != 1 || extMsgs[0] != extM1 {
+		t.Errorf("got ExternalMessages() = %v, want [%v]", extMsgs, extM1)
 	}
-	if len(filtered.ExternalEnums) != 1 || filtered.ExternalEnums[0] != extE1 {
-		t.Errorf("got ExternalEnums = %v, want [%v]", filtered.ExternalEnums, extE1)
+	extEnums := filtered.ExternalEnums()
+	if len(extEnums) != 1 || extEnums[0] != extE1 {
+		t.Errorf("got ExternalEnums() = %v, want [%v]", extEnums, extE1)
 	}
 	if got := filtered.Message(m2.ID()); got != m2 {
 		t.Errorf("filtered.Message(%q) = %v, want %v", m2.ID(), got, m2)
@@ -112,19 +119,19 @@ func TestAPI_Filter(t *testing.T) {
 	if got := filtered.Resource(res.Type()); got != res {
 		t.Errorf("filtered.Resource(%q) = %v, want %v", res.Type(), got, res)
 	}
-	if filtered.Codec != nil {
-		t.Errorf("filtered.Codec = %v, want nil", filtered.Codec)
+	if filtered.Codec() != nil {
+		t.Errorf("filtered.Codec() = %v, want nil", filtered.Codec())
 	}
 
-	services := filtered.Services
+	services := filtered.Services()
 	if len(services) != 2 {
-		t.Fatalf("len(filtered.Services) = %d, want 2", len(services))
+		t.Fatalf("len(filtered.Services()) = %d, want 2", len(services))
 	}
 	if services[0] == s1 || services[0].Codec() != nil {
 		t.Errorf("cloned service did not preserve Clone() semantics")
 	}
-	if filtered.QuickstartService != services[0] {
-		t.Errorf("filtered.QuickstartService = %v, want %v", filtered.QuickstartService, services[0])
+	if filtered.QuickstartService() != services[0] {
+		t.Errorf("filtered.QuickstartService() = %v, want %v", filtered.QuickstartService(), services[0])
 	}
 	if services[0].Model() != filtered {
 		t.Errorf("services[0].Model() = %v, want %v", services[0].Model(), filtered)
@@ -133,14 +140,14 @@ func TestAPI_Filter(t *testing.T) {
 	if len(methods) != 1 || methods[0].Model() != filtered {
 		t.Errorf("cloned method Model() = %v, want %v", methods[0].Model(), filtered)
 	}
-	if filtered.Name != model.Name ||
-		filtered.PackageName != model.PackageName ||
-		filtered.Title != model.Title ||
-		filtered.Description != model.Description ||
-		filtered.Revision != model.Revision ||
-		filtered.RubyPackage != model.RubyPackage ||
-		filtered.PhpNamespace != model.PhpNamespace ||
-		filtered.CsharpNamespace != model.CsharpNamespace {
+	if filtered.Name() != model.Name() ||
+		filtered.PackageName() != model.PackageName() ||
+		filtered.Title() != model.Title() ||
+		filtered.Description() != model.Description() ||
+		filtered.Revision() != model.Revision() ||
+		filtered.RubyPackage() != model.RubyPackage() ||
+		filtered.PhpNamespace() != model.PhpNamespace() ||
+		filtered.CsharpNamespace() != model.CsharpNamespace() {
 		t.Errorf("API metadata was not preserved: got %+v", filtered)
 	}
 }

@@ -20,7 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func makeMessageEnum(model *api.API, mb *api.MessageBuilder, name string, schema *schema) error {
+func makeMessageEnum(model *api.APIBuilder, mb *api.MessageBuilder, name string, schema *schema) error {
 	if schema.Enums == nil {
 		return nil
 	}

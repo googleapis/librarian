@@ -125,10 +125,10 @@ func enrichSamples(model *API) {
 		enrichMethodSamples(m)
 	}
 
-	for _, s := range model.Services {
+	for _, s := range model.services {
 		s.quickstartMethod = findQuickstartMethod(s)
 	}
-	model.QuickstartService = findQuickstartService(model)
+	model.quickstartService = findQuickstartService(model)
 }
 
 func findQuickstartMethod(s *Service) *Method {
@@ -201,14 +201,14 @@ func findQuickstartMethod(s *Service) *Method {
 }
 
 func findQuickstartService(api *API) *Service {
-	if len(api.Services) == 0 {
+	if len(api.services) == 0 {
 		return nil
 	}
 
 	var nonDeprecated []*Service
 	var deprecated []*Service
 
-	for _, s := range api.Services {
+	for _, s := range api.services {
 		if len(s.Methods()) > 0 {
 			if s.Deprecated() {
 				deprecated = append(deprecated, s)
@@ -224,7 +224,7 @@ func findQuickstartService(api *API) *Service {
 	}
 
 	if len(searchList) == 0 {
-		return api.Services[0]
+		return api.services[0]
 	}
 
 	if len(searchList) == 1 {
@@ -255,7 +255,7 @@ func findQuickstartService(api *API) *Service {
 		searchList = servicesWithAnyQuickstart
 	}
 
-	lowerApiName := strings.ToLower(api.Name)
+	lowerApiName := strings.ToLower(api.name)
 	for _, s := range searchList {
 		if strings.Contains(strings.ToLower(s.Name()), lowerApiName) {
 			return s

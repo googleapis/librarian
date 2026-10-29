@@ -49,7 +49,7 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 
 	// Index fields by their name and collect names
 	for _, msgName := range msgNames {
-		m := model.Message(fmt.Sprintf(".%s.%s", model.PackageName, msgName))
+		m := model.Message(fmt.Sprintf(".%s.%s", model.PackageName(), msgName))
 		if m == nil {
 			return nil, fmt.Errorf("failed to locate message %q", msgName)
 		}
@@ -94,9 +94,9 @@ func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, erro
 		fields = append(fields, clone)
 	}
 	msg := api.NewMessageBuilder().
-		WithID(fmt.Sprintf(".%s.%s", m.model.PackageName, name)).
+		WithID(fmt.Sprintf(".%s.%s", m.model.PackageName(), name)).
 		WithName(name).
-		WithPackage(m.model.PackageName).
+		WithPackage(m.model.PackageName()).
 		WithSyntheticRequest(true).
 		WithFields(fields...).
 		Build()
