@@ -133,8 +133,8 @@ func TestFilterModelToTypes(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(filtered.Messages) != 1 || filtered.Messages[0].ID() != streamingMsg.ID() {
-		t.Errorf("got messages %v, want [%s]", filtered.Messages, streamingMsg.ID())
+	if len(filtered.Messages()) != 1 || filtered.Messages()[0].ID() != streamingMsg.ID() {
+		t.Errorf("got messages %v, want [%s]", filtered.Messages(), streamingMsg.ID())
 	}
 	if len(unused) != 1 || unused[0] != unusedMsg.ID() {
 		t.Errorf("got unused %v, want [%s]", unused, unusedMsg.ID())
@@ -159,8 +159,8 @@ func TestFilterModelToTypesUnusedFieldLookup(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(filtered.Messages) != 1 || filtered.Messages[0].ID() != streamMsg.ID() {
-		t.Errorf("got messages %v, want [%s]", filtered.Messages, streamMsg.ID())
+	if len(filtered.Messages()) != 1 || filtered.Messages()[0].ID() != streamMsg.ID() {
+		t.Errorf("got messages %v, want [%s]", filtered.Messages(), streamMsg.ID())
 	}
 	if got := filtered.Message(childData.ID()); got != childData {
 		t.Errorf("filtered.Message(%q) = %v, want %v", childData.ID(), got, childData)
@@ -178,9 +178,10 @@ func TestFilterModelToTypesExternalTypes(t *testing.T) {
 		api.NewTestField("day").WithEnumType(externalEnum),
 	)
 
-	model := api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{})
-	model.AddMessage(externalMsg)
-	model.AddEnum(externalEnum)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{})).
+		AddMessage(externalMsg).
+		AddEnum(externalEnum).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -190,14 +191,14 @@ func TestFilterModelToTypesExternalTypes(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(filtered.Messages) != 1 || filtered.Messages[0].ID() != streamMsg.ID() {
-		t.Errorf("got package messages %v, want [%s]", filtered.Messages, streamMsg.ID())
+	if len(filtered.Messages()) != 1 || filtered.Messages()[0].ID() != streamMsg.ID() {
+		t.Errorf("got package messages %v, want [%s]", filtered.Messages(), streamMsg.ID())
 	}
-	if len(filtered.ExternalMessages) != 1 || filtered.ExternalMessages[0].ID() != externalMsg.ID() {
-		t.Errorf("got ExternalMessages %v, want [%s]", filtered.ExternalMessages, externalMsg.ID())
+	if len(filtered.ExternalMessages()) != 1 || filtered.ExternalMessages()[0].ID() != externalMsg.ID() {
+		t.Errorf("got ExternalMessages %v, want [%s]", filtered.ExternalMessages(), externalMsg.ID())
 	}
-	if len(filtered.ExternalEnums) != 1 || filtered.ExternalEnums[0].ID() != externalEnum.ID() {
-		t.Errorf("got ExternalEnums %v, want [%s]", filtered.ExternalEnums, externalEnum.ID())
+	if len(filtered.ExternalEnums()) != 1 || filtered.ExternalEnums()[0].ID() != externalEnum.ID() {
+		t.Errorf("got ExternalEnums %v, want [%s]", filtered.ExternalEnums(), externalEnum.ID())
 	}
 }
 
@@ -360,16 +361,17 @@ func TestFilterModelToTypesGoogleRpcStatus(t *testing.T) {
 		api.NewTestField("status").WithMessageType(statusMsg),
 	)
 
-	statusModel := api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{})
-	statusModel.AddMessage(statusMsg)
+	statusModel := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{})).
+		AddMessage(statusMsg).
+		BuildSyntaxTree()
 
 	filtered, unused, hasStatus, err := filterModelToTypes(statusModel, []string{reqMsg.ID()}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error for google.rpc.Status: %v", err)
 	}
 
-	if len(filtered.Messages) != 1 {
-		t.Errorf("got %d messages, want 1 (StreamReq only, google.rpc.Status handled via Codec)", len(filtered.Messages))
+	if len(filtered.Messages()) != 1 {
+		t.Errorf("got %d messages, want 1 (StreamReq only, google.rpc.Status handled via Codec)", len(filtered.Messages()))
 	}
 
 	if !hasStatus {
@@ -460,7 +462,7 @@ func TestFilterModelToTypesMultipleRoots(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			var gotMessages []string
-			for _, m := range filtered.Messages {
+			for _, m := range filtered.Messages() {
 				gotMessages = append(gotMessages, m.ID())
 			}
 			less := func(a, b string) bool { return a < b }
@@ -487,7 +489,7 @@ func TestFilterModelToTypesCyclicRecursion(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(filtered.Messages) != 1 {
-		t.Errorf("expected 1 parsed message, got %d", len(filtered.Messages))
+	if len(filtered.Messages()) != 1 {
+		t.Errorf("expected 1 parsed message, got %d", len(filtered.Messages()))
 	}
 }

@@ -17,40 +17,41 @@ package api
 import (
 	"iter"
 	"maps"
+	"slices"
 )
 
 // API represents an API surface.
 type API struct {
 	// Name of the API (e.g. secretmanager).
-	Name string
+	name string
 	// Name of the package name in the source specification format. For Protobuf
 	// this may be `google.cloud.secretmanager.v1`.
-	PackageName string
+	packageName string
 	// The API Title (e.g. "Secret Manager API" or "Cloud Spanner API").
-	Title string
+	title string
 	// The API Description.
-	Description string
+	description string
 	// The API Revision. In discovery-based services this is the "revision"
 	// attribute.
-	Revision string
+	revision string
 	// Services are a collection of services that make up the API.
-	Services []*Service
+	services []*Service
 	// Messages are a collection of messages used to process request and
 	// responses in the API.
-	Messages []*Message
+	messages []*Message
 	// ExternalMessages are top-level messages from external packages (e.g. google.type.LatLng).
-	ExternalMessages []*Message
+	externalMessages []*Message
 	// Enums
-	Enums []*Enum
+	enums []*Enum
 	// ExternalEnums are top-level enums from external packages.
-	ExternalEnums []*Enum
+	externalEnums []*Enum
 	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
-	ResourceDefinitions []*Resource
+	resourceDefinitions []*Resource
 	// QuickstartService is the service that will be used to generate the quickstart sample
 	// at the package level.
-	QuickstartService *Service
+	quickstartService *Service
 	// Language specific annotations.
-	Codec any
+	codec any
 
 	// serviceByID returns a service that is associated with the API.
 	serviceByID map[string]*Service
@@ -78,7 +79,7 @@ type API struct {
 	// for Swift uses this to emit warnings if: (1) the Ruby override differs
 	// from the standard name, and (2) there is no override in the
 	// `librarian.yaml` file.
-	RubyPackage string
+	rubyPackage string
 
 	// PhpNamespace captures the namespace override for PHP.
 	//
@@ -93,7 +94,7 @@ type API struct {
 	// for Swift uses this to emit warnings if: (1) the PHP override differs
 	// from the standard name, and (2) there is no override in the
 	// `librarian.yaml` file.
-	PhpNamespace string
+	phpNamespace string
 
 	// CsharpNamespace captures the namespace override for C#.
 	//
@@ -107,7 +108,7 @@ type API struct {
 	// for Swift uses this to emit warnings if: (1) the C# override differs
 	// from the standard name, and (2) there is no override in the
 	// `librarian.yaml` file.
-	CsharpNamespace string
+	csharpNamespace string
 }
 
 // ModelOverride holds configuration overrides for an API model.
@@ -119,12 +120,97 @@ type ModelOverride struct {
 	SkippedIDs  []string
 }
 
+// Name returns the name of the API (e.g. secretmanager).
+func (a *API) Name() string {
+	return a.name
+}
+
+// PackageName returns the package name in the source specification format.
+func (a *API) PackageName() string {
+	return a.packageName
+}
+
+// Title returns the API title.
+func (a *API) Title() string {
+	return a.title
+}
+
+// Description returns the API description.
+func (a *API) Description() string {
+	return a.description
+}
+
+// Revision returns the API revision.
+func (a *API) Revision() string {
+	return a.revision
+}
+
+// Services returns the collection of services that make up the API.
+func (a *API) Services() []*Service {
+	return slices.Clone(a.services)
+}
+
+// Messages returns the collection of messages in the API.
+func (a *API) Messages() []*Message {
+	return slices.Clone(a.messages)
+}
+
+// ExternalMessages returns top-level messages from external packages.
+func (a *API) ExternalMessages() []*Message {
+	return slices.Clone(a.externalMessages)
+}
+
+// Enums returns the collection of enums in the API.
+func (a *API) Enums() []*Enum {
+	return slices.Clone(a.enums)
+}
+
+// ExternalEnums returns top-level enums from external packages.
+func (a *API) ExternalEnums() []*Enum {
+	return slices.Clone(a.externalEnums)
+}
+
+// ResourceDefinitions returns the resource definitions from google.api.resource_definition.
+func (a *API) ResourceDefinitions() []*Resource {
+	return slices.Clone(a.resourceDefinitions)
+}
+
+// QuickstartService returns the service used to generate the package-level quickstart sample.
+func (a *API) QuickstartService() *Service {
+	return a.quickstartService
+}
+
+// Codec returns the language-specific annotations.
+func (a *API) Codec() any {
+	return a.codec
+}
+
+// SetAnnotations sets the language-specific annotations on the API.
+func (a *API) SetAnnotations(codec any) {
+	a.codec = codec
+}
+
+// RubyPackage returns the package name override for Ruby.
+func (a *API) RubyPackage() string {
+	return a.rubyPackage
+}
+
+// PhpNamespace returns the namespace override for PHP.
+func (a *API) PhpNamespace() string {
+	return a.phpNamespace
+}
+
+// CsharpNamespace returns the namespace override for C#.
+func (a *API) CsharpNamespace() string {
+	return a.csharpNamespace
+}
+
 // HasMessages returns true if the API contains messages (most do).
 //
 // This is useful in Go templates to skip code that only makes sense
 // when per-message code follows.
 func (a *API) HasMessages() bool {
-	return len(a.Messages) != 0
+	return len(a.messages) != 0
 }
 
 // HasServices returns true if the API contains services (most do).
@@ -132,7 +218,7 @@ func (a *API) HasMessages() bool {
 // This is useful in Go templates to skip code that only makes sense
 // when per-service code follows.
 func (a *API) HasServices() bool {
-	return len(a.Services) != 0
+	return len(a.services) != 0
 }
 
 // ModelCodec returns the Codec field with an alternative name.
@@ -140,7 +226,7 @@ func (a *API) HasServices() bool {
 // In some Go templates we want to access the annotations for the
 // enclosing model.
 func (a *API) ModelCodec() any {
-	return a.Codec
+	return a.codec
 }
 
 // Service returns a service that is associated with the API.
@@ -153,8 +239,7 @@ func (a *API) AllServices() iter.Seq[*Service] {
 	return maps.Values(a.serviceByID)
 }
 
-// AddService adds a service to the API.
-func (a *API) AddService(s *Service) {
+func (a *API) addService(s *Service) {
 	if a.serviceByID == nil {
 		a.serviceByID = make(map[string]*Service)
 	}
@@ -171,8 +256,7 @@ func (a *API) AllMethods() iter.Seq[*Method] {
 	return maps.Values(a.methodByID)
 }
 
-// AddMethod adds a method to the API.
-func (a *API) AddMethod(m *Method) {
+func (a *API) addMethod(m *Method) {
 	if a.methodByID == nil {
 		a.methodByID = make(map[string]*Method)
 	}
@@ -189,8 +273,7 @@ func (a *API) AllMessages() iter.Seq[*Message] {
 	return maps.Values(a.messageByID)
 }
 
-// AddMessage adds a message to the API.
-func (a *API) AddMessage(m *Message) {
+func (a *API) addMessage(m *Message) {
 	if a.messageByID == nil {
 		a.messageByID = make(map[string]*Message)
 	}
@@ -207,8 +290,7 @@ func (a *API) AllEnums() iter.Seq[*Enum] {
 	return maps.Values(a.enumByID)
 }
 
-// AddEnum adds an enum to the API.
-func (a *API) AddEnum(e *Enum) {
+func (a *API) addEnum(e *Enum) {
 	if a.enumByID == nil {
 		a.enumByID = make(map[string]*Enum)
 	}
@@ -225,8 +307,7 @@ func (a *API) AllResources() iter.Seq[*Resource] {
 	return maps.Values(a.resourceByType)
 }
 
-// AddResource adds a resource to the API.
-func (a *API) AddResource(r *Resource) {
+func (a *API) addResource(r *Resource) {
 	if a.resourceByType == nil {
 		a.resourceByType = make(map[string]*Resource)
 	}
@@ -243,8 +324,7 @@ func (a *API) AllMaps() iter.Seq[*Map] {
 	return maps.Values(a.mapByID)
 }
 
-// AddMap adds a map to the API.
-func (a *API) AddMap(m *Map) {
+func (a *API) addMap(m *Map) {
 	if a.mapByID == nil {
 		a.mapByID = make(map[string]*Map)
 	}

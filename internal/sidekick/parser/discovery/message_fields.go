@@ -20,7 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func makeMessageFields(model *api.API, mb *api.MessageBuilder, schema *schema) error {
+func makeMessageFields(model *api.APIBuilder, mb *api.MessageBuilder, schema *schema) error {
 	for _, input := range schema.Properties {
 		field, err := makeField(model, mb, input, true)
 		if err != nil {
@@ -31,7 +31,7 @@ func makeMessageFields(model *api.API, mb *api.MessageBuilder, schema *schema) e
 	return nil
 }
 
-func makeField(model *api.API, mb *api.MessageBuilder, input *property, optional bool) (*api.Field, error) {
+func makeField(model *api.APIBuilder, mb *api.MessageBuilder, input *property, optional bool) (*api.Field, error) {
 	if input.Schema.Type == "array" {
 		return makeArrayField(model, mb, input)
 	}
@@ -44,7 +44,7 @@ func makeField(model *api.API, mb *api.MessageBuilder, input *property, optional
 	return makeScalarFieldWithOptions(model, mb, input.Name, input.Schema, input.Schema.Description, optional, false)
 }
 
-func makeArrayField(model *api.API, mb *api.MessageBuilder, input *property) (*api.Field, error) {
+func makeArrayField(model *api.APIBuilder, mb *api.MessageBuilder, input *property) (*api.Field, error) {
 	field, err := makeInlineObjectField(model, mb, input.Name, input.Schema.ItemSchema, input.Schema.Description, false, true)
 	if err != nil || field != nil {
 		return field, err
@@ -52,11 +52,11 @@ func makeArrayField(model *api.API, mb *api.MessageBuilder, input *property) (*a
 	return makeScalarFieldWithOptions(model, mb, input.Name, input.Schema.ItemSchema, input.Schema.Description, false, true)
 }
 
-func makeScalarField(model *api.API, mb *api.MessageBuilder, name string, schema *schema) (*api.Field, error) {
+func makeScalarField(model *api.APIBuilder, mb *api.MessageBuilder, name string, schema *schema) (*api.Field, error) {
 	return makeScalarFieldWithOptions(model, mb, name, schema, schema.Description, true, false)
 }
 
-func makeScalarFieldWithOptions(model *api.API, mb *api.MessageBuilder, name string, schema *schema, description string, optional, repeated bool) (*api.Field, error) {
+func makeScalarFieldWithOptions(model *api.APIBuilder, mb *api.MessageBuilder, name string, schema *schema, description string, optional, repeated bool) (*api.Field, error) {
 	if err := makeMessageEnum(model, mb, name, schema); err != nil {
 		return nil, err
 	}
@@ -78,9 +78,9 @@ func makeScalarFieldWithOptions(model *api.API, mb *api.MessageBuilder, name str
 		Build(), nil
 }
 
-func scalarType(model *api.API, messageID, name string, input *schema) (api.Typez, string, error) {
+func scalarType(model *api.APIBuilder, messageID, name string, input *schema) (api.Typez, string, error) {
 	if input.Type == "" && input.Ref != "" {
-		typezID := fmt.Sprintf(".%s.%s", model.PackageName, input.Ref)
+		typezID := fmt.Sprintf(".%s.%s", model.PackageName(), input.Ref)
 		return api.TypezMessage, typezID, nil
 	}
 	switch input.Type {

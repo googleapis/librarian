@@ -478,7 +478,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
 			if test.resources != nil {
-				model.ResourceDefinitions = test.resources
+				model.WithResourceDefinitions(test.resources...)
 			}
 
 			// Add Get methods to populate vocabulary
@@ -486,7 +486,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				m := NewTestMethod("GetSomething").
 					WithBindings(NewPathBindingBuilder().WithPathTemplate(p).Build()).
 					WithIsAIPStandard(true)
-				model.Services[0].WithMethods(m)
+				model.Services()[0].WithMethods(m)
 			}
 			IdentifyTargetResources(model, true)
 

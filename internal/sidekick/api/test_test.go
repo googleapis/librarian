@@ -345,17 +345,17 @@ func TestAPI_FluentSetters(t *testing.T) {
 		WithDescription("Custom Description").
 		WithQuickstartService(svc)
 
-	if got, want := model.Name, "custom-name"; got != want {
-		t.Errorf("model.Name = %q, want %q", got, want)
+	if got, want := model.Name(), "custom-name"; got != want {
+		t.Errorf("model.Name() = %q, want %q", got, want)
 	}
-	if got, want := model.Title, "Custom Title"; got != want {
-		t.Errorf("model.Title = %q, want %q", got, want)
+	if got, want := model.Title(), "Custom Title"; got != want {
+		t.Errorf("model.Title() = %q, want %q", got, want)
 	}
-	if got, want := model.Description, "Custom Description"; got != want {
-		t.Errorf("model.Description = %q, want %q", got, want)
+	if got, want := model.Description(), "Custom Description"; got != want {
+		t.Errorf("model.Description() = %q, want %q", got, want)
 	}
-	if got := model.QuickstartService; got != svc {
-		t.Errorf("model.QuickstartService = %v, want %v", got, svc)
+	if got := model.QuickstartService(); got != svc {
+		t.Errorf("model.QuickstartService() = %v, want %v", got, svc)
 	}
 }
 

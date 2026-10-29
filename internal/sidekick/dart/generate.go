@@ -37,7 +37,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, codec map[stri
 		return err
 	}
 
-	err := parsedTemplates.GenerateFromModel(outdir, model, generatedFiles(model))
+	err := parsedTemplates.GenerateFromModel(outdir, annotate.model, generatedFiles(annotate.model))
 	if err == nil {
 		// Check if we're configured to skip formatting.
 		skipFormat := codec["skip-format"]
@@ -49,7 +49,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, codec map[stri
 }
 
 func generatedFiles(model *api.API) []language.GeneratedFile {
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 	mainFileNameWithExtension := codec.MainFileNameWithExtension
 
 	files := language.WalkTemplatesDir(dartTemplates, "templates")

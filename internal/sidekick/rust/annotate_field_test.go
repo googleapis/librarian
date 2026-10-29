@@ -347,7 +347,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		WithFields(repeatedField, messageField)
 
 	model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapType)
-	model.AddMessage(innerMessage)
+	model = api.NewAPIBuilderFrom(model).AddMessage(innerMessage).BuildSyntaxTree()
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})

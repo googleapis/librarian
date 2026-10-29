@@ -43,13 +43,13 @@ func TestProtobuf_Info(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	if got.Name != "secretmanager" {
-		t.Errorf("want = %q; got = %q", "secretmanager", got.Name)
+	if got.Name() != "secretmanager" {
+		t.Errorf("want = %q; got = %q", "secretmanager", got.Name())
 	}
-	if got.Title != sc.Title {
-		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
+	if got.Title() != sc.Title {
+		t.Errorf("want = %q; got = %q", sc.Title, got.Title())
 	}
-	if diff := cmp.Diff(sc.Documentation.Summary, got.Description); diff != "" {
+	if diff := cmp.Diff(sc.Documentation.Summary, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -70,7 +70,7 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 		WithPackageName("test").
 		WithTitle("Secret Manager API").
 		WithDescription("")
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreAPIFields("services", "messages", "enums", "serviceByID", "methodByID", "messageByID", "enumByID", "resourceByType", "mapByID")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -317,7 +317,7 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 		)
 	apitest.CheckMessage(t, message, want)
 	// Only `LocalMessage` should be found in the messages list:
-	for _, msg := range test.Messages {
+	for _, msg := range test.Messages() {
 		if msg.ID() == ".test.ImportedMessage" {
 			t.Errorf("imported messages should not be in message list %v", msg)
 		}
@@ -351,7 +351,7 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 	}
 	apitest.CheckEnum(t, *enum, *wantEnum)
 	// Only `LocalMessage` should be found in the messages list:
-	for _, msg := range test.Messages {
+	for _, msg := range test.Messages() {
 		if msg.ID() == ".test.ImportedMessage" {
 			t.Errorf("imported messages should not be in message list %v", msg)
 		}
@@ -1146,7 +1146,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	for _, service := range test.Services {
+	for _, service := range test.Services() {
 		if service.ID() == ".google.longrunning.Operations" {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
@@ -1320,8 +1320,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 
 	t.Run("API.ResourceDefinitions", func(t *testing.T) {
 		// We expect 2 ResourceDefinitions: Shelf (file-level) and Book (message-level).
-		if len(test.ResourceDefinitions) != 2 {
-			t.Fatalf("Expected 2 ResourceDefinitions, got %d", len(test.ResourceDefinitions))
+		if len(test.ResourceDefinitions()) != 2 {
+			t.Fatalf("Expected 2 ResourceDefinitions, got %d", len(test.ResourceDefinitions()))
 		}
 
 		// Verify Shelf
@@ -1336,7 +1336,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			)
 		// Find Shelf in the slice
 		var foundShelf *api.Resource
-		for _, r := range test.ResourceDefinitions {
+		for _, r := range test.ResourceDefinitions() {
 			if r.Type() == "library.googleapis.com/Shelf" {
 				foundShelf = r
 				break
@@ -1370,7 +1370,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			WithSingular("book")
 		// Find Book in the slice
 		var foundBook *api.Resource
-		for _, r := range test.ResourceDefinitions {
+		for _, r := range test.ResourceDefinitions() {
 			if r.Type() == "library.googleapis.com/Book" {
 				foundBook = r
 				break
@@ -1518,10 +1518,10 @@ func TestProtobuf_ResourceCoverage(t *testing.T) {
 
 		// Verify only 1 resource exists and it is the message-level one ("book_message").
 		// This confirms that message-level resources overwrite file-level resources with the same type.
-		if len(test.ResourceDefinitions) != 1 {
-			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
+		if len(test.ResourceDefinitions()) != 1 {
+			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions()))
 		}
-		got := test.ResourceDefinitions[0]
+		got := test.ResourceDefinitions()[0]
 		if got.Singular() != "book_message" {
 			t.Errorf("Expected singular 'book_message', got %q", got.Singular())
 		}

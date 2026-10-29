@@ -312,7 +312,7 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 		WithPackageName("google.cloud.test.v1")
 	c := newTestCodec(t, model, nil)
 	ann := &modelAnnotations{DependsOn: map[string]*Dependency{}}
-	c.Model.Codec = ann
+	c.Model.SetAnnotations(ann)
 	c.withExtraDependencies(t, []config.SwiftDependency{
 		{
 			ApiPackage: "google.cloud.external.v1",
@@ -342,7 +342,7 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 		WithPackageName("google.cloud.test.v1")
 	c := newTestCodec(t, model, nil)
 	ann := &modelAnnotations{DependsOn: map[string]*Dependency{}}
-	c.Model.Codec = ann
+	c.Model.SetAnnotations(ann)
 	c.withExtraDependencies(t, []config.SwiftDependency{
 		{
 			ApiPackage: "google.cloud.external.v1",

@@ -590,7 +590,7 @@ func TestWellKnownTypesAsMethod(t *testing.T) {
 	c := createRustCodec()
 
 	want := "wkt::Empty"
-	got, err := c.methodInOutTypeName(".google.protobuf.Empty", model, model.PackageName)
+	got, err := c.methodInOutTypeName(".google.protobuf.Empty", model, model.PackageName())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -663,7 +663,7 @@ func TestMethodInOut(t *testing.T) {
 	c := createRustCodec()
 
 	want := "crate::model::Target"
-	got, err := c.methodInOutTypeName("..Target", model, model.PackageName)
+	got, err := c.methodInOutTypeName("..Target", model, model.PackageName())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -672,7 +672,7 @@ func TestMethodInOut(t *testing.T) {
 	}
 
 	want = "crate::model::target::Nested"
-	got, err = c.methodInOutTypeName("..Target.Nested", model, model.PackageName)
+	got, err = c.methodInOutTypeName("..Target.Nested", model, model.PackageName())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -754,7 +754,7 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name())
 		}
-		got, err := c.fieldType(field, model, false, model.PackageName)
+		got, err := c.fieldType(field, model, false, model.PackageName())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -766,7 +766,7 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name())
 		}
-		got, err = c.fieldType(field, model, true, model.PackageName)
+		got, err = c.fieldType(field, model, true, model.PackageName())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -804,7 +804,7 @@ func TestOneOfFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name())
 		}
-		got, err := c.oneOfFieldType(field, model, model.PackageName)
+		got, err := c.oneOfFieldType(field, model, model.PackageName())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -857,7 +857,7 @@ func TestFieldMapTypeValues(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{message, otherMessage}, nil, nil).WithMaps(mapThing)
 			api.LabelRecursiveFields(model)
 			c := createRustCodec()
-			got, err := c.fieldType(field, model, false, model.PackageName)
+			got, err := c.fieldType(field, model, false, model.PackageName())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -900,7 +900,7 @@ func TestFieldMapTypeKey(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, nil).WithMaps(mapThing)
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got, err := c.fieldType(field, model, false, model.PackageName)
+		got, err := c.fieldType(field, model, false, model.PackageName())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1675,9 +1675,11 @@ func TestFormatDocCommentsSkippedMethodsAndServices(t *testing.T) {
 
 	// Model has someService in model.Services, but skippedService is omitted from model.Services
 	model := api.NewTestAPI(nil, nil, []*api.Service{someService})
-	model.AddMethod(skippedMethod)
-	model.AddMethod(skippedServiceMethod)
-	model.AddService(skippedService)
+	model = api.NewAPIBuilderFrom(model).
+		AddMethod(skippedMethod).
+		AddMethod(skippedServiceMethod).
+		AddService(skippedService).
+		BuildSyntaxTree()
 
 	c := &codec{
 		modulePath: "crate::model",
@@ -1912,8 +1914,10 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 		[]*api.Message{someMessage},
 		nil,
 		[]*api.Service{someService, renamedService, yellyService})
-	a.AddMessage(api.NewTestMessage("SetIamPolicyRequest").WithPackage("google.iam.v1"))
-	a.AddService(api.NewTestService("IAMPolicy").WithPackage("google.iam.v1"))
+	a = api.NewAPIBuilderFrom(a).
+		AddMessage(api.NewTestMessage("SetIamPolicyRequest").WithPackage("google.iam.v1")).
+		AddService(api.NewTestService("IAMPolicy").WithPackage("google.iam.v1")).
+		BuildSyntaxTree()
 	return a
 }
 
@@ -2049,7 +2053,7 @@ func TestMessageNames(t *testing.T) {
 		},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			got, err := c.fullyQualifiedMessageName(test.m, model.PackageName)
+			got, err := c.fullyQualifiedMessageName(test.m, model.PackageName())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2083,7 +2087,7 @@ func TestEnumNames(t *testing.T) {
 		if got := enumName(test.enum); got != test.wantEnum {
 			t.Errorf("enumName(%q) = %q; want = %s", test.enum.Name(), got, test.wantEnum)
 		}
-		got, err := c.fullyQualifiedEnumName(test.enum, model.PackageName)
+		got, err := c.fullyQualifiedEnumName(test.enum, model.PackageName())
 		if err != nil {
 			t.Fatal(err)
 		}

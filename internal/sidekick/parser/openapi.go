@@ -64,23 +64,17 @@ func createDocModel(contents []byte) (*libopenapi.DocumentModel[v3.Document], er
 }
 
 func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.DocumentModel[v3.Document]) (*api.API, error) {
-	result := &api.API{
-		Name:        "",
-		Title:       model.Model.Info.Title,
-		Description: model.Model.Info.Description,
-		Messages:    make([]*api.Message, 0),
-	}
-	// OpenAPI (for Google) uses some well-known types inspired by Protobuf.
-	// With protoc these types are automatically included via `import`
-	// statements. In the OpenAPI JSON inputs, these types are not automatically
-	// included.
-	result.LoadWellKnownTypes()
+	result := api.NewAPIBuilder().
+		WithTitle(model.Model.Info.Title).
+		WithDescription(model.Model.Info.Description).
+		WithMessages().
+		LoadWellKnownTypes()
 
 	if serviceConfig != nil {
-		result.Name = strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")
-		result.Title = serviceConfig.Title
+		result.WithName(strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")).
+			WithTitle(serviceConfig.Title)
 		if serviceConfig.Documentation != nil {
-			result.Description = serviceConfig.Documentation.Summary
+			result.WithDescription(serviceConfig.Documentation.Summary)
 		}
 	}
 
@@ -91,7 +85,7 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 	names := svcconfig.ExtractPackageName(serviceConfig)
 	if names != nil {
 		serviceName, packageName = names.ServiceName, names.PackageName
-		result.PackageName = packageName
+		result.WithPackageName(packageName)
 	}
 
 	for name, msg := range model.Model.Components.Schemas.FromOldest() {
@@ -113,7 +107,7 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 			WithFields(fields...).
 			Build()
 
-		result.Messages = append(result.Messages, message)
+		result.AppendMessage(message)
 		result.AddMessage(message)
 	}
 
@@ -121,10 +115,10 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	return result.BuildSyntaxTree(), nil
 }
 
-func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], serviceConfig *serviceconfig.Service, packageName, serviceName string) error {
+func makeServices(a *api.APIBuilder, model *libopenapi.DocumentModel[v3.Document], serviceConfig *serviceconfig.Service, packageName, serviceName string) error {
 	// It is hard to imagine an OpenAPI specification without at least some
 	// RPCs, but we can simplify the tests if we support specifications without
 	// paths or without any useful methods in the paths.
@@ -140,11 +134,11 @@ func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], serv
 		WithName(serviceName).
 		WithID(sID).
 		WithPackage(packageName).
-		WithDocumentation(a.Description).
+		WithDocumentation(a.Description()).
 		WithDefaultHost(defaultHost(model)).
 		WithMethods(methods...).
 		Build()
-	a.Services = append(a.Services, service)
+	a.AppendService(service)
 	a.AddService(service)
 	return nil
 }
@@ -163,7 +157,7 @@ func defaultHost(model *libopenapi.DocumentModel[v3.Document]) string {
 	return strings.TrimPrefix(defaultHost, "https://")
 }
 
-func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], serviceConfig *serviceconfig.Service, packageName, serviceName, serviceID string) ([]*api.Method, error) {
+func makeMethods(a *api.APIBuilder, model *libopenapi.DocumentModel[v3.Document], serviceConfig *serviceconfig.Service, packageName, serviceName, serviceID string) ([]*api.Method, error) {
 	if model.Model.Paths == nil {
 		// The method has no path, there is nothing to generate.
 		return nil, nil
@@ -179,7 +173,7 @@ func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], servi
 		WithServicePlaceholder(true)
 	parent := parentBuilder.Build()
 	a.AddMessage(parent)
-	a.Messages = append(a.Messages, parent)
+	a.AppendMessage(parent)
 
 	var methods []*api.Method
 	for pattern, item := range model.Model.Paths.PathItems.FromOldest() {
@@ -245,7 +239,7 @@ func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], servi
 
 // makeRequestMessage creates (if needed) the request message for `operation`. Returns the message
 // and the body field path (if any) for the request.
-func makeRequestMessage(a *api.API, parentBuilder *api.MessageBuilder, operation *v3.Operation, packageName, template string) (*api.Message, string, error) {
+func makeRequestMessage(a *api.APIBuilder, parentBuilder *api.MessageBuilder, operation *v3.Operation, packageName, template string) (*api.Message, string, error) {
 	parent := parentBuilder.Build()
 	messageName := fmt.Sprintf("%sRequest", operation.OperationId)
 	id := fmt.Sprintf("%s.%s", parent.ID(), messageName)
@@ -341,7 +335,7 @@ func openapiIsAutoPopulated(typez api.Typez, schema *base.Schema, p *v3.Paramete
 	return typez == api.TypezString && schema.Format == "uuid" && openapiFieldIsOptional(p)
 }
 
-func makeResponseMessage(api *api.API, operation *v3.Operation, packageName string) (*api.Message, error) {
+func makeResponseMessage(api *api.APIBuilder, operation *v3.Operation, packageName string) (*api.Message, error) {
 	if operation.Responses == nil {
 		return nil, fmt.Errorf("missing Responses in specification for operation %s", operation.OperationId)
 	}
@@ -383,7 +377,7 @@ func makeQueryParameters(operation *v3.Operation) map[string]bool {
 	return queryParameters
 }
 
-func makeMessageFields(model *api.API, packageName, messageName string, message *base.Schema) ([]*api.Field, error) {
+func makeMessageFields(model *api.APIBuilder, packageName, messageName string, message *base.Schema) ([]*api.Field, error) {
 	var fields []*api.Field
 	for name, f := range message.Properties.FromOldest() {
 		schema, err := f.BuildSchema()
@@ -400,7 +394,7 @@ func makeMessageFields(model *api.API, packageName, messageName string, message 
 	return fields, nil
 }
 
-func makeField(model *api.API, packageName, messageName, name string, optional bool, field *base.Schema) (*api.Field, error) {
+func makeField(model *api.APIBuilder, packageName, messageName, name string, optional bool, field *base.Schema) (*api.Field, error) {
 	if len(field.AllOf) != 0 {
 		// Simple object fields name an AllOf attribute, but no `Type` attribute.
 		return makeObjectField(model, packageName, messageName, name, false, field)
@@ -438,7 +432,7 @@ func makeScalarField(packageName, messageName, name string, schema *base.Schema,
 		Build(), nil
 }
 
-func makeObjectField(model *api.API, packageName, messageName, name string, repeated bool, field *base.Schema) (*api.Field, error) {
+func makeObjectField(model *api.APIBuilder, packageName, messageName, name string, repeated bool, field *base.Schema) (*api.Field, error) {
 	if len(field.AllOf) != 0 {
 		return makeObjectFieldAllOf(packageName, messageName, name, repeated, field)
 	}
@@ -499,7 +493,7 @@ func makeObjectField(model *api.API, packageName, messageName, name string, repe
 	return nil, fmt.Errorf("unknown object field type for field %s.%s", messageName, name)
 }
 
-func makeArrayField(model *api.API, packageName, messageName, name string, field *base.Schema) (*api.Field, error) {
+func makeArrayField(model *api.APIBuilder, packageName, messageName, name string, field *base.Schema) (*api.Field, error) {
 	if !field.Items.IsA() {
 		return nil, fmt.Errorf("cannot handle arrays without an `Items` field for %s.%s", messageName, name)
 	}
@@ -552,7 +546,7 @@ func makeObjectFieldAllOf(packageName, messageName, name string, repeated bool, 
 	return nil, fmt.Errorf("cannot build any AllOf schema for field %s.%s", messageName, name)
 }
 
-func makeMap(model *api.API, messageName, name string, schema *base.Schema) (*api.Map, error) {
+func makeMap(model *api.APIBuilder, messageName, name string, schema *base.Schema) (*api.Map, error) {
 	valueTypez, valueID, err := scalarType(messageName, name, schema)
 	if err != nil {
 		return nil, err
