@@ -1447,12 +1447,12 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 		}
 	}
 	for _, o := range m.OneOfs {
-		if o.Name == fieldName {
+		if o.Name() == fieldName {
 			p, err := c.fullyQualifiedMessageName(m, scope)
 			if err != nil {
 				return "", err
 			}
-			return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name), "r#")), nil
+			return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name()), "r#")), nil
 		}
 	}
 	return "", nil
@@ -1460,13 +1460,13 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 
 func (c *codec) tryOneOfRustdocLink(field *api.Field, message *api.Message, scope string) (string, error) {
 	for _, o := range message.OneOfs {
-		for _, f := range o.Fields {
+		for _, f := range o.Fields() {
 			if f.ID() == field.ID() {
 				p, err := c.fullyQualifiedMessageName(message, scope)
 				if err != nil {
 					return "", err
 				}
-				return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name), "r#")), nil
+				return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name()), "r#")), nil
 			}
 		}
 	}
@@ -1685,10 +1685,10 @@ func (c *codec) ServiceName(service *api.Service) string {
 
 // OneOfEnumName returns the oneof enum name.
 func (c *codec) OneOfEnumName(oneof *api.OneOf) string {
-	if override, ok := c.nameOverrides[oneof.ID]; ok {
+	if override, ok := c.nameOverrides[oneof.ID()]; ok {
 		return override
 	}
-	return toPascal(oneof.Name)
+	return toPascal(oneof.Name())
 }
 
 // FieldName returns the field name.

@@ -60,7 +60,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FieldType:           "crate::model::message::Type",
 		DocLines:            []string{"/// Say something clever about this oneof."},
 	}
-	if diff := cmp.Diff(wantOneOfCodec, group.Codec, cmpopts.IgnoreFields(api.OneOf{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantOneOfCodec, group.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -184,9 +184,6 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 	})
 	annotateModel(model, codec)
 
-	// Stops the recursion when comparing fields.
-	ignore := cmpopts.IgnoreFields(api.OneOf{}, "Codec")
-
 	want := &oneOfAnnotation{
 		FieldName:           "nested_thing",
 		SetterName:          "nested_thing",
@@ -200,7 +197,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		FieldType:           "crate::model::message::NestedThingOneOf",
 		DocLines:            []string{"/// Say something clever about this oneof."},
 	}
-	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
+	if diff := cmp.Diff(want, group.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -216,9 +213,6 @@ func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
 	codec := createRustCodec()
 	annotateModel(model, codec)
 
-	// Stops the recursion when comparing fields.
-	ignore := cmpopts.IgnoreFields(api.OneOf{}, "Codec")
-
 	want := &oneOfAnnotation{
 		FieldName:           "message",
 		SetterName:          "message",
@@ -233,7 +227,7 @@ func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
 		AliasInExamples:     "MessageOneOf",
 		EnumNameInExamples:  "MessageOneOf",
 	}
-	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
+	if diff := cmp.Diff(want, group.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -254,7 +248,6 @@ func TestOneOf_ReservedRawIdentifiers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ignore := cmpopts.IgnoreFields(api.OneOf{}, "Codec")
 	wantOneOf := &oneOfAnnotation{
 		FieldName:           "self_",
 		SetterName:          "self",
@@ -268,7 +261,7 @@ func TestOneOf_ReservedRawIdentifiers(t *testing.T) {
 		FieldType:           "crate::model::message::Self_",
 	}
 	t.Run("oneof", func(t *testing.T) {
-		if diff := cmp.Diff(wantOneOf, group.Codec, ignore); diff != "" {
+		if diff := cmp.Diff(wantOneOf, group.Codec()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
