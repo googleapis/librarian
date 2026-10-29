@@ -41,7 +41,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	indexMessage = func(m *Message) {
 		model.messageByID[m.ID] = m
 		if m.Resource != nil {
-			model.resourceByType[m.Resource.Type] = m.Resource
+			model.resourceByType[m.Resource.typez] = m.Resource
 		}
 		for _, f := range m.Fields {
 			if f.MapType != nil {
@@ -275,7 +275,7 @@ func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
 func (m *Message) WithResource(resource *Resource) *Message {
 	m.Resource = resource
 	if resource != nil {
-		resource.Self = m
+		resource.self = m
 	}
 	return m
 }
@@ -807,26 +807,30 @@ func (f *Field) WithDocumentation(documentation string) *Field {
 
 // NewTestResource creates a resource with defaults.
 func NewTestResource(typez string) *Resource {
-	return &Resource{
-		Type: typez,
-	}
+	return NewResourceBuilder().WithType(typez).Build()
 }
 
 // WithPatterns adds patterns to the resource.
 func (r *Resource) WithPatterns(patterns ...ResourcePattern) *Resource {
-	r.Patterns = append(r.Patterns, patterns...)
+	r.patterns = append(r.patterns, patterns...)
 	return r
 }
 
 // WithSingular sets the singular name of the resource.
 func (r *Resource) WithSingular(name string) *Resource {
-	r.Singular = name
+	r.singular = name
 	return r
 }
 
 // WithPlural sets the plural name of the resource.
 func (r *Resource) WithPlural(name string) *Resource {
-	r.Plural = name
+	r.plural = name
+	return r
+}
+
+// WithSelf sets the Message that defines this resource.
+func (r *Resource) WithSelf(self *Message) *Resource {
+	r.self = self
 	return r
 }
 
