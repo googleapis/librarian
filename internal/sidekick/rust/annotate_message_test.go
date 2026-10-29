@@ -87,8 +87,8 @@ func TestSetterSampleAnnotations(t *testing.T) {
 	if message.Codec.(*messageAnnotation).NameInExamples != "google_cloud_test_v1::model::TestMessage" {
 		t.Errorf("mismatch in message NameInExamples: got %q", message.Codec.(*messageAnnotation).NameInExamples)
 	}
-	if enum.Codec.(*enumAnnotation).NameInExamples != "google_cloud_test_v1::model::TestEnum" {
-		t.Errorf("mismatch in enum NameInExamples: got %q", enum.Codec.(*enumAnnotation).NameInExamples)
+	if enum.Codec().(*enumAnnotation).NameInExamples != "google_cloud_test_v1::model::TestEnum" {
+		t.Errorf("mismatch in enum NameInExamples: got %q", enum.Codec().(*enumAnnotation).NameInExamples)
 	}
 
 	enumField := message.Fields[0]

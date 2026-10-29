@@ -907,7 +907,7 @@ func TestExternalTypesAnnotations(t *testing.T) {
 		t.Errorf("msgAnn.ProstRelativeName = %q, want %q", msgAnn.ProstRelativeName, want)
 	}
 
-	enumAnn, ok := extEnum.Codec.(*enumAnnotation)
+	enumAnn, ok := extEnum.Codec().(*enumAnnotation)
 	if !ok {
 		t.Fatalf("expected enumAnnotation on extEnum")
 	}
@@ -936,7 +936,7 @@ func TestExternalTypesAnnotations(t *testing.T) {
 			t.Errorf("msgAnn2.ProstRelativeName = %q, want %q", msgAnn2.ProstRelativeName, want)
 		}
 
-		enumAnn2 := extEnum2.Codec.(*enumAnnotation)
+		enumAnn2 := extEnum2.Codec().(*enumAnnotation)
 		if want := "super::prost::google::r#type::DayOfWeek"; enumAnn2.ProstRelativeName != want {
 			t.Errorf("enumAnn2.ProstRelativeName = %q, want %q", enumAnn2.ProstRelativeName, want)
 		}

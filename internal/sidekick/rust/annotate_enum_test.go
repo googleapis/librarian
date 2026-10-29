@@ -57,7 +57,7 @@ func TestEnumAnnotations(t *testing.T) {
 		UniqueNames:       []*api.EnumValue{v0, v1, v2, v3, v4},
 		NameInExamples:    "google_cloud_test_v1::model::TestEnum",
 	}
-	if diff := cmp.Diff(wantEnumCodec, enum.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
+	if diff := cmp.Diff(wantEnumCodec, enum.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -137,7 +137,7 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 		NameInExamples:    "google_cloud_test_v1::model::TestEnum",
 	}
 
-	if diff := cmp.Diff(want, enum.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
+	if diff := cmp.Diff(want, enum.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -166,7 +166,7 @@ func TestNestedEnumAnnotations(t *testing.T) {
 		NameInExamples:    "google_cloud_test_v1::model::vertex_ai_search::IPMode",
 	}
 
-	if diff := cmp.Diff(want, enum.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
+	if diff := cmp.Diff(want, enum.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -194,7 +194,7 @@ func TestDiscoveryEnumAnnotations(t *testing.T) {
 		NameInExamples:    "google_cloud_test_v1::model::Status",
 	}
 
-	if diff := cmp.Diff(want, enum.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
+	if diff := cmp.Diff(want, enum.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -2081,14 +2081,14 @@ func TestEnumNames(t *testing.T) {
 		{nonNested, "Code", "crate::model::Code"},
 	} {
 		if got := enumName(test.enum); got != test.wantEnum {
-			t.Errorf("enumName(%q) = %q; want = %s", test.enum.Name, got, test.wantEnum)
+			t.Errorf("enumName(%q) = %q; want = %s", test.enum.Name(), got, test.wantEnum)
 		}
 		got, err := c.fullyQualifiedEnumName(test.enum, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if got != test.wantFQEnum {
-			t.Errorf("fullyQualifiedEnumName(%q) = %q; want = %s", test.enum.Name, got, test.wantFQEnum)
+			t.Errorf("fullyQualifiedEnumName(%q) = %q; want = %s", test.enum.Name(), got, test.wantFQEnum)
 		}
 	}
 }
@@ -2116,7 +2116,7 @@ func TestEnumValueVariantName(t *testing.T) {
 		)
 
 	var got []string
-	for _, value := range testEnum.Values {
+	for _, value := range testEnum.Values() {
 		got = append(got, enumValueVariantName(value))
 	}
 	want := []string{"Unspecified", "EnumName1", "A", "Partial", "Green"}
@@ -2125,7 +2125,7 @@ func TestEnumValueVariantName(t *testing.T) {
 	}
 
 	got = []string{}
-	for _, value := range networkingEnum.Values {
+	for _, value := range networkingEnum.Values() {
 		got = append(got, enumValueVariantName(value))
 	}
 	want = []string{"Unspecified", "InheritFromSubnetwork"}
@@ -2134,7 +2134,7 @@ func TestEnumValueVariantName(t *testing.T) {
 	}
 
 	got = []string{}
-	for _, value := range validationEnum.Values {
+	for _, value := range validationEnum.Values() {
 		got = append(got, enumValueVariantName(value))
 	}
 	want = []string{"Unknown", "Verify"}

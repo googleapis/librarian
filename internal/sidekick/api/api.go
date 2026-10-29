@@ -212,7 +212,7 @@ func (a *API) AddEnum(e *Enum) {
 	if a.enumByID == nil {
 		a.enumByID = make(map[string]*Enum)
 	}
-	a.enumByID[e.ID] = e
+	a.enumByID[e.id] = e
 }
 
 // Resource returns a resource that is associated with the API.

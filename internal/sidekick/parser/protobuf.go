@@ -410,18 +410,16 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 				// strip out parts of the path.
 				m := f.MessageType[p[1]]
 				addMessageDocumentation(result, m, p[2:], loc.GetLeadingComments(), fFQN+"."+m.GetName())
-			case fileDescriptorEnumType:
-				e := f.EnumType[p[1]]
-				addEnumDocumentation(result, p[2:], loc.GetLeadingComments(), fFQN+"."+e.GetName())
 			case fileDescriptorService:
 				sFQN := fFQN + "." + f.GetService()[p[1]].GetName()
 				addServiceDocumentation(result, p[2:], loc.GetLeadingComments(), sFQN)
 			case fileDescriptorName, fileDescriptorPackage, fileDescriptorDependency,
-				fileDescriptorExtension, fileDescriptorOptions, fileDescriptorSourceCodeInfo,
-				fileDescriptorPublicDependency, fileDescriptorWeakDependency,
-				fileDescriptorSyntax, fileDescriptorEdition:
+				fileDescriptorEnumType, fileDescriptorExtension, fileDescriptorOptions,
+				fileDescriptorSourceCodeInfo, fileDescriptorPublicDependency,
+				fileDescriptorWeakDependency, fileDescriptorSyntax, fileDescriptorEdition:
 				// We ignore this type of documentation because it produces no
-				// output in the generated code.
+				// output in the generated code, or is already extracted via
+				// extractSourceComments.
 			default:
 				slog.Warn("dropped unknown documentation type", "loc", p, "docs", loc)
 			}
@@ -837,26 +835,18 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.F
 }
 
 func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message, comments map[string]string, pathPrefix []int32) *api.Enum {
-	enum := &api.Enum{
-		Name:       e.GetName(),
-		ID:         eFQN,
-		Parent:     parent,
-		Package:    packagez,
-		Deprecated: e.GetOptions().GetDeprecated(),
-	}
-	model.AddEnum(enum)
+	var values []*api.EnumValue
 	for i, ev := range e.Value {
 		enumValue := api.NewEnumValueBuilder().
 			WithName(ev.GetName()).
 			WithNumber(ev.GetNumber()).
-			WithParent(enum).
 			WithDocumentation(lookupComment(comments, append(pathPrefix, enumDescriptorValue, int32(i)))).
 			WithDeprecated(ev.GetOptions().GetDeprecated()).
 			Build()
-		enum.Values = append(enum.Values, enumValue)
+		values = append(values, enumValue)
 	}
 	numbers := map[int32]*api.EnumValue{}
-	for _, v := range enum.Values {
+	for _, v := range values {
 		matchesStyle := func(v *api.EnumValue) bool {
 			return strings.ToUpper(v.Name()) == v.Name()
 		}
@@ -870,7 +860,17 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 	}
 	unique := slices.Collect(maps.Values(numbers))
 	slices.SortFunc(unique, func(a, b *api.EnumValue) int { return int(a.Number() - b.Number()) })
-	enum.UniqueNumberValues = unique
+	enum := api.NewEnumBuilder().
+		WithName(e.GetName()).
+		WithID(eFQN).
+		WithParent(parent).
+		WithPackage(packagez).
+		WithDocumentation(lookupComment(comments, pathPrefix)).
+		WithDeprecated(e.GetOptions().GetDeprecated()).
+		WithValues(values...).
+		WithUniqueNumberValues(unique...).
+		Build()
+	model.AddEnum(enum)
 	return enum
 }
 
@@ -944,37 +944,19 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 		addMessageDocumentation(model, nmsg, p[2:], doc, nmFQN)
 	case p[0] == messageDescriptorField && len(p) == 2:
 		message.Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == messageDescriptorEnum:
-		eFQN := mFQN + "." + m.GetEnumType()[p[1]].GetName()
-		addEnumDocumentation(model, p[2:], doc, eFQN)
 	case p[0] == messageDescriptorOneOf && len(p) == 2:
 		message.OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+	case p[0] == messageDescriptorEnum:
 	case p[0] == messageDescriptorExtensionRange:
 	case p[0] == messageDescriptorOptions:
 	case p[0] == messageDescriptorExtension:
 	case p[0] == messageDescriptorReservedRange:
 	case p[0] == messageDescriptorReservedName:
 		// These comments are ignored, as they refer to Protobuf elements
-		// without corresponding public APIs in the generated code.
+		// without corresponding public APIs in the generated code, or are
+		// already extracted via extractSourceComments.
 	default:
 		slog.Warn("message dropped documentation", "loc", p, "docs", doc)
-	}
-}
-
-// addEnumDocumentation adds documentation to an enum.
-func addEnumDocumentation(model *api.API, p []int32, doc string, eFQN string) {
-	switch {
-	case len(p) == 0:
-		// This is a comment for an enum
-		model.Enum(eFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == enumDescriptorValue && len(p) == 2:
-		// EnumValue documentation is populated when constructing the EnumValue.
-	case p[0] == enumDescriptorValue:
-		slog.Warn("enumValue comments with missing index", "loc", p, "docs", doc)
-	case p[0] == enumDescriptorReservedRange:
-		// A comment for a reserved range, ignore, it does not emit any generated code.
-	default:
-		slog.Warn("enum dropped documentation", "loc", p, "docs", doc)
 	}
 }
 

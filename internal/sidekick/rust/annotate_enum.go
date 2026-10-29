@@ -59,7 +59,8 @@ func (a *enumAnnotation) SingleFeatureGate() bool {
 }
 
 func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
-	for _, ev := range e.Values {
+	values := e.Values()
+	for _, ev := range values {
 		if err := c.annotateEnumValue(ev, model, full); err != nil {
 			return err
 		}
@@ -83,11 +84,11 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 	//      some services do not follow the Protobuf convention.
 	seen := map[string]*api.EnumValue{}
 	var unique []*api.EnumValue
-	for _, ev := range e.Values {
+	for _, ev := range values {
 		name := enumValueVariantName(ev)
 		if existing, ok := seen[name]; ok {
 			if existing.Number() != ev.Number() {
-				slog.Warn("conflicting names for enum values", "enum.ID", e.ID)
+				slog.Warn("conflicting names for enum values", "enum.ID", e.ID())
 			}
 		} else {
 			unique = append(unique, ev)
@@ -105,14 +106,14 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 		IsWktNullValue:    nameInExamples == "wkt::NullValue",
 		SerializeAsString: c.serializeEnumsAsStrings,
 	}
-	e.Codec = annotations
+	e.SetAnnotations(annotations)
 
 	if !full {
 		// We have basic annotations, we are done.
 		return nil
 	}
 
-	lines, err := c.formatDocComments(e.Documentation, e.ID, model, e.Scopes())
+	lines, err := c.formatDocComments(e.Documentation(), e.ID(), model, e.Scopes())
 	if err != nil {
 		return err
 	}
