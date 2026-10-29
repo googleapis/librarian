@@ -298,7 +298,7 @@ type codec struct {
 	// Note that using `self` does not work, as the generated code may contain
 	// nested modules for nested messages.
 	modulePath string
-	// Additional Rust packages imported by this module. The Mustache template
+	// Additional Rust packages imported by this module. The Go template
 	// hardcodes a number of packages, but some are configured via the
 	// command-line.
 	extraPackages []*packagez
@@ -506,15 +506,15 @@ func (c *codec) oneOfFieldType(f *api.Field, model *api.API, sourceSpecification
 	if err != nil {
 		return "", err
 	}
-	return oneOfFieldTypeFormatter(f, language.FieldIsMap(f, model), baseType), nil
+	return oneOfFieldTypeFormatter(f, baseType), nil
 }
 
-func oneOfFieldTypeFormatter(f *api.Field, fieldIsMap bool, baseType string) string {
+func oneOfFieldTypeFormatter(f *api.Field, baseType string) string {
 	switch {
 	case f.Repeated:
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType)
 	case f.Typez == api.TypezMessage:
-		if fieldIsMap {
+		if f.Map {
 			return baseType
 		}
 		return fmt.Sprintf("std::boxed::Box<%s>", baseType)
@@ -541,7 +541,7 @@ func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSp
 		if f.Optional {
 			return fmt.Sprintf("std::option::Option<std::boxed::Box<%s>>", baseType), nil
 		}
-		if language.FieldIsMap(f, model) {
+		if f.Map || f.Typez == api.TypezMap {
 			// Maps are never boxed.
 			return baseType, nil
 		}
@@ -553,45 +553,38 @@ func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSp
 	}
 }
 
-func (c *codec) mapType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
-	switch f.Typez {
-	case api.TypezMessage:
-		m := model.Message(f.TypezID)
-		if m == nil {
-			return "", fmt.Errorf("unable to lookup type (%q) for message field %s", f.TypezID, f.ID)
-		}
-		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
-
-	case api.TypezEnum:
-		e := model.Enum(f.TypezID)
-		if e == nil {
-			return "", fmt.Errorf("unable to lookup type (%q) for enum field %s", f.TypezID, f.ID)
-		}
-		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
-	default:
-		return scalarFieldType(f)
+func (c *codec) mapType(f *api.Field, model *api.API) (string, error) {
+	mapType := f.MapType
+	if mapType == nil {
+		mapType = model.Map(f.TypezID)
 	}
+	if mapType == nil || mapType.Key == nil || mapType.Value == nil {
+		return "", fmt.Errorf("missing map type for field %s (%s)", f.ID, f.TypezID)
+	}
+	key, err := c.fieldType(mapType.Key, model, true, model.PackageName)
+	if err != nil {
+		return "", err
+	}
+	val, err := c.fieldType(mapType.Value, model, true, model.PackageName)
+	if err != nil {
+		return "", err
+	}
+	return "std::collections::HashMap<" + key + "," + val + ">", nil
 }
 
 // baseFieldType returns the field type, ignoring any repeated or optional
 // attributes.
 func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
 	switch f.Typez {
+	case api.TypezMap:
+		return c.mapType(f, model)
 	case api.TypezMessage:
+		if f.Map {
+			return c.mapType(f, model)
+		}
 		m := model.Message(f.TypezID)
 		if m == nil {
 			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
-		}
-		if m.IsMap {
-			key, err := c.mapType(m.Fields[0], model, sourceSpecificationPackageName)
-			if err != nil {
-				return "", err
-			}
-			val, err := c.mapType(m.Fields[1], model, sourceSpecificationPackageName)
-			if err != nil {
-				return "", err
-			}
-			return "std::collections::HashMap<" + key + "," + val + ">", nil
 		}
 		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 	case api.TypezEnum:
@@ -618,7 +611,7 @@ func (c *codec) addQueryParameter(f *api.Field) string {
 			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
 		}
 		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName, fieldName)
-	case api.TypezMessage:
+	case api.TypezMessage, api.TypezMap:
 		// Query parameters in nested messages are first converted to a
 		// `serde_json::Value`` and then recursively merged into the request
 		// query. The conversion to `serde_json::Value` is expensive, but very
@@ -641,7 +634,7 @@ func (c *codec) addQueryParameterOneOf(f *api.Field) string {
 	switch f.Typez {
 	case api.TypezEnum:
 		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
-	case api.TypezMessage:
+	case api.TypezMessage, api.TypezMap:
 		// Query parameters in nested messages are first converted to a
 		// `serde_json::Value`` and then recursively merged into the request
 		// query. The conversion to `serde_json::Value` is expensive, but very
@@ -884,13 +877,82 @@ func toCamel(symbol string) string {
 	return escapeKeyword(strcase.ToLowerCamel(symbol))
 }
 
+// toProstWords splits a symbol into lowercase words using the same word
+// boundary rules as prost-build (which delegates to the Rust `heck` crate):
+//
+//  1. Non-alphanumeric characters are word separators.
+//  2. A word boundary occurs after a word whose last cased character is
+//     lowercase when the next character is uppercase.
+//  3. A word boundary occurs before an uppercase character when the previous
+//     cased character in the word is uppercase and the next character is
+//     lowercase.
+//
+// Notably, digits do not change the cased-character mode and do not trigger
+// word boundaries before digits (so "CVSSv3" splits into ["cvs", "sv3"]).
+func toProstWords(symbol string) []string {
+	const (
+		modeBoundary = iota
+		modeLowercase
+		modeUppercase
+	)
+	var words []string
+	for word := range strings.FieldsFuncSeq(symbol, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+	}) {
+		runes := []rune(word)
+		init := 0
+		mode := modeBoundary
+		for i, c := range runes {
+			if i+1 < len(runes) {
+				next := runes[i+1]
+				nextMode := mode
+				if unicode.IsLower(c) {
+					nextMode = modeLowercase
+				} else if unicode.IsUpper(c) {
+					nextMode = modeUppercase
+				}
+				if nextMode == modeLowercase && unicode.IsUpper(next) {
+					words = append(words, strings.ToLower(string(runes[init:i+1])))
+					init = i + 1
+					mode = modeBoundary
+				} else if mode == modeUppercase && unicode.IsUpper(c) && unicode.IsLower(next) {
+					words = append(words, strings.ToLower(string(runes[init:i])))
+					init = i
+					mode = modeBoundary
+				} else {
+					mode = nextMode
+				}
+			} else {
+				words = append(words, strings.ToLower(string(runes[init:])))
+			}
+		}
+	}
+	return words
+}
+
+// toProstSnake converts a symbol name to snake_case as generated by prost-build.
+func toProstSnake(symbol string) string {
+	if symbol == "" {
+		return ""
+	}
+	return escapeKeyword(strings.Join(toProstWords(symbol), "_"))
+}
+
 // toProstPascal converts a symbol name to PascalCase / UpperCamelCase as generated
 // by prost-build (which normalizes consecutive uppercase acronym letters to camel case).
 func toProstPascal(symbol string) string {
 	if symbol == "" {
 		return ""
 	}
-	return escapeKeyword(strcase.ToCamel(strcase.ToSnake(symbol)))
+	words := toProstWords(symbol)
+	for i, w := range words {
+		runes := []rune(w)
+		if len(runes) > 0 {
+			runes[0] = unicode.ToUpper(runes[0])
+			words[i] = string(runes)
+		}
+	}
+	return escapeKeyword(strings.Join(words, ""))
 }
 
 // prostMessageModulePath returns the submodule path for nested types within a parent message hierarchy.
@@ -901,7 +963,7 @@ func prostMessageModulePath(m *api.Message) string {
 	}
 	var segments []string
 	for curr := m; curr != nil; curr = curr.Parent {
-		segments = append(segments, toSnake(curr.Name))
+		segments = append(segments, toProstSnake(curr.Name))
 	}
 	slices.Reverse(segments)
 	return strings.Join(segments, "::")
@@ -1493,18 +1555,33 @@ func findUsedPackagesMessage(message *api.Message, model *api.API, c *codec, vis
 		findUsedPackagesMessage(m, model, c, visited)
 	}
 	for _, f := range message.Fields {
-		switch f.Typez {
-		case api.TypezMessage:
-			if fm := model.Message(f.TypezID); fm != nil {
-				usePackage(fm.Package, model, c)
-				if f.Map {
-					findUsedPackagesMessage(fm, model, c, visited)
-				}
-			}
-		case api.TypezEnum:
-			if fe := model.Enum(f.TypezID); fe != nil {
-				usePackage(fe.Package, model, c)
-			}
+		findUsedPackagesField(f, model, c)
+	}
+}
+
+func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
+	if f == nil {
+		return
+	}
+	if f.Map || f.Typez == api.TypezMap {
+		mapType := f.MapType
+		if mapType == nil {
+			mapType = model.Map(f.TypezID)
+		}
+		if mapType != nil {
+			findUsedPackagesField(mapType.Key, model, c)
+			findUsedPackagesField(mapType.Value, model, c)
+		}
+		return
+	}
+	switch f.Typez {
+	case api.TypezMessage:
+		if fm := model.Message(f.TypezID); fm != nil {
+			usePackage(fm.Package, model, c)
+		}
+	case api.TypezEnum:
+		if fe := model.Enum(f.TypezID); fe != nil {
+			usePackage(fe.Package, model, c)
 		}
 	}
 }
@@ -1711,14 +1788,18 @@ func (c *codec) serviceGenerateRpcSamples(serviceID string) bool {
 
 // escapeKeyword maps Rust keywords to safe identifiers.
 //
-// Keywords that cannot be used as raw identifiers (r#crate, r#self, r#super, r#Self)
+// Keywords that cannot be used as raw identifiers ("_", r#crate, r#self, r#super, r#Self)
 // according to https://doc.rust-lang.org/reference/identifiers.html#grammar-RESERVED_RAW_IDENTIFIER
 // are suffixed with an underscore, matching prost-build.
+// Identifiers starting with a digit are prefixed with an underscore.
 // All other keywords are prefixed with "r#".
 func escapeKeyword(symbol string) string {
 	switch symbol {
-	case "crate", "self", "super", "Self":
+	case "_", "crate", "self", "super", "Self":
 		return symbol + "_"
+	}
+	if len(symbol) > 0 && unicode.IsNumber([]rune(symbol)[0]) {
+		return "_" + symbol
 	}
 	keywords := map[string]bool{
 		"as":       true,
@@ -1774,6 +1855,8 @@ func escapeKeyword(symbol string) string {
 
 		// Reserved in Rust 2018+
 		"try": true,
+		// Reserved in Rust 2024+
+		"gen": true,
 	}
 	if keywords[symbol] {
 		return "r#" + symbol

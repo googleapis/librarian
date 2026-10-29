@@ -201,6 +201,97 @@ func TestProtobuf_ScalarOptional(t *testing.T) {
 	))
 }
 
+func TestProtobuf_Proto2Optional(t *testing.T) {
+	requireProtoc(t)
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "proto2.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	message := test.Message(".test.Fake")
+	if message == nil {
+		t.Fatalf("Cannot find message %s in API", ".test.Fake")
+	}
+	choice := api.NewTestOneOf("choice").
+		WithFields(
+			api.NewTestField("f_oneof").
+				WithDocumentation("A oneof field.").
+				WithType(api.TypezString),
+		)
+	for _, f := range choice.Fields {
+		f.Group = nil
+	}
+	apitest.CheckMessage(t, message, newTestProtobufFakeMessage(
+		api.NewTestField("f_int32").
+			WithDocumentation("An optional scalar field.").
+			WithType(api.TypezInt32).
+			WithProto2Optional(),
+		api.NewTestField("f_string").
+			WithDocumentation("An optional string field.").
+			WithType(api.TypezString).
+			WithProto2Optional(),
+		api.NewTestField("f_enum").
+			WithDocumentation("An optional enum field.").
+			WithType(api.TypezEnum).
+			WithTypezID(".test.Fake.Kind").
+			WithProto2Optional(),
+		api.NewTestField("f_default").
+			WithDocumentation("An optional field with a non-zero default.").
+			WithType(api.TypezBool).
+			WithProto2Optional(),
+		api.NewTestField("f_required").
+			WithDocumentation("A required field.").
+			WithType(api.TypezString),
+		api.NewTestField("f_repeated").
+			WithDocumentation("A repeated field.").
+			WithType(api.TypezString).
+			WithRepeated(),
+		api.NewTestField("f_message").
+			WithDocumentation("An optional message field.").
+			WithType(api.TypezMessage).
+			WithTypezID(".test.Fake.Inner").
+			WithOptional(),
+		api.NewTestField("f_map").
+			WithDocumentation("A map field.").
+			WithMap().
+			WithType(api.TypezMessage).
+			WithTypezID(".test.Fake.FMapEntry"),
+		api.NewTestField("result").
+			WithType(api.TypezGroup).
+			WithTypezID(".test.Fake.Result"),
+	).WithOneOfs(choice))
+
+	message = test.Message(".test.Fake.Inner")
+	if message == nil {
+		t.Fatalf("Cannot find message %s in API", ".test.Fake.Inner")
+	}
+	apitest.CheckMessage(t, message, api.NewTestMessage("Inner").
+		WithPackage("test").
+		WithID(".test.Fake.Inner").
+		WithDocumentation("A nested message.").
+		WithFields(
+			api.NewTestField("f_inner").
+				WithDocumentation("An optional field in a nested message.").
+				WithType(api.TypezInt32).
+				WithProto2Optional(),
+		))
+
+	message = test.Message(".test.Fake.FMapEntry")
+	if message == nil {
+		t.Fatalf("Cannot find message %s in API", ".test.Fake.FMapEntry")
+	}
+	wantMapEntry := api.NewTestMessage("FMapEntry").
+		WithPackage("test").
+		WithID(".test.Fake.FMapEntry").
+		WithFields(
+			api.NewTestField("key").
+				WithType(api.TypezString),
+			api.NewTestField("value").
+				WithType(api.TypezInt32),
+		)
+	wantMapEntry.IsMap = true
+	apitest.CheckMessage(t, message, wantMapEntry)
+}
+
 func TestProtobuf_SkipExternalMessages(t *testing.T) {
 	requireProtoc(t)
 	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
@@ -342,7 +433,7 @@ func TestProtobuf_Comments(t *testing.T) {
 					WithMatch()).
 				WithLiteral("foos"),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 	createMethod.SourceServiceID = ".test.Service"
 	createMethod.InputTypeID = ".test.Request"
@@ -607,7 +698,7 @@ func TestProtobuf_Service(t *testing.T) {
 					WithLiteral("foos").
 					WithMatch()),
 		).
-		WithQueryParameters(map[string]bool{})
+		WithQueryParameters()
 	getFoo.SourceServiceID = ".test.TestService"
 	getFoo.InputTypeID = ".test.GetFooRequest"
 	getFoo.OutputTypeID = ".test.Foo"
@@ -626,7 +717,7 @@ func TestProtobuf_Service(t *testing.T) {
 					WithMatch()).
 				WithLiteral("foos"),
 		).
-		WithQueryParameters(map[string]bool{"foo_id": true}).
+		WithQueryParameters("foo_id").
 		WithBodyFieldPath("foo")
 	createFoo.SourceServiceID = ".test.TestService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
@@ -646,7 +737,7 @@ func TestProtobuf_Service(t *testing.T) {
 					WithLiteral("foos").
 					WithMatch()),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		ReturnEmpty()
 	deleteFoo.SourceServiceID = ".test.TestService"
 	deleteFoo.InputTypeID = ".test.DeleteFooRequest"
@@ -675,7 +766,7 @@ func TestProtobuf_Service(t *testing.T) {
 					WithMatch()).
 				WithVerb("Download"),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithServerSideStreaming()
 	downloadFoos.SourceServiceID = ".test.TestService"
 	downloadFoos.InputTypeID = ".test.GetFooRequest"
@@ -721,7 +812,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					WithMatch()).
 				WithLiteral("foos"),
 		).
-		WithQueryParameters(map[string]bool{"foo_id": true}).
+		WithQueryParameters("foo_id").
 		WithBodyFieldPath("bar")
 	createFoo.SourceServiceID = ".test.TestService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
@@ -742,7 +833,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					WithMatch()).
 				WithVerb("addFoo"),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 	addBar.SourceServiceID = ".test.TestService"
 	addBar.InputTypeID = ".test.AddBarRequest"
@@ -805,7 +896,7 @@ func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
 	}
 }
 
-func newTestPaginationMethod(name, inputType string, queryParams map[string]bool, pageTokenReq string) *api.Method {
+func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams ...string) *api.Method {
 	m := api.NewTestMethod(name).
 		WithID(".test.TestService." + name).
 		WithVerb("GET").
@@ -817,7 +908,7 @@ func newTestPaginationMethod(name, inputType string, queryParams map[string]bool
 					WithMatch()).
 				WithLiteral("foos"),
 		).
-		WithQueryParameters(queryParams)
+		WithQueryParameters(queryParams...)
 	m.SourceServiceID = ".test.TestService"
 	m.InputTypeID = ".test." + inputType
 	m.OutputTypeID = ".test.ListFooResponse"
@@ -846,25 +937,25 @@ func TestProtobuf_Pagination(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "")
+	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", "", "page_size", "page_token")
 	missingNextPageToken.OutputTypeID = ".test.ListFooMissingNextPageTokenResponse"
 
-	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "")
+	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", "", "page_size", "page_token")
 	missingRepeatedItem.OutputTypeID = ".test.ListFooMissingRepeatedItemResponse"
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
 		WithDefaultHost("test.googleapis.com").
 		WithMethods(
-			newTestPaginationMethod("ListFoo", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "ListFooRequest"),
-			newTestPaginationMethod("ListFooWithMaxResultsInt32", "ListFooMaxResultsInt32Request", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsInt32Request"),
-			newTestPaginationMethod("ListFooWithMaxResultsUInt32", "ListFooMaxResultsUInt32Request", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsUInt32Request"),
-			newTestPaginationMethod("ListFooWithMaxResultsUInt32Value", "ListFooMaxResultsUInt32ValueRequest", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsUInt32ValueRequest"),
-			newTestPaginationMethod("ListFooWithMaxResultsInt32Value", "ListFooMaxResultsInt32ValueRequest", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsInt32ValueRequest"),
-			newTestPaginationMethod("ListFooWithMaxResultsIncorrectMessageType", "ListFooMaxResultIncorrectMessageTypeRequest", map[string]bool{"max_results": true, "page_token": true}, ""),
+			newTestPaginationMethod("ListFoo", "ListFooRequest", "ListFooRequest", "page_size", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsInt32", "ListFooMaxResultsInt32Request", "ListFooMaxResultsInt32Request", "max_results", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsUInt32", "ListFooMaxResultsUInt32Request", "ListFooMaxResultsUInt32Request", "max_results", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsUInt32Value", "ListFooMaxResultsUInt32ValueRequest", "ListFooMaxResultsUInt32ValueRequest", "max_results", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsInt32Value", "ListFooMaxResultsInt32ValueRequest", "ListFooMaxResultsInt32ValueRequest", "max_results", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsIncorrectMessageType", "ListFooMaxResultIncorrectMessageTypeRequest", "", "max_results", "page_token"),
 			missingNextPageToken,
-			newTestPaginationMethod("ListFooMissingPageSize", "ListFooMissingPageSizeRequest", map[string]bool{"page_token": true}, ""),
-			newTestPaginationMethod("ListFooMissingPageToken", "ListFooMissingPageTokenRequest", map[string]bool{"page_size": true}, ""),
+			newTestPaginationMethod("ListFooMissingPageSize", "ListFooMissingPageSizeRequest", "", "page_token"),
+			newTestPaginationMethod("ListFooMissingPageToken", "ListFooMissingPageTokenRequest", "", "page_size"),
 			missingRepeatedItem,
 		)
 	apitest.CheckService(t, service, wantService)
@@ -945,7 +1036,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					WithMatch()).
 				WithLiteral("foos"),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("foo").
 		WithOperationInfo(&api.OperationInfo{
 			MetadataTypeID: ".google.protobuf.Empty",
@@ -968,7 +1059,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					WithMatch()).
 				WithLiteral("foos"),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("foo").
 		WithOperationInfo(&api.OperationInfo{
 			MetadataTypeID: ".test.CreateMetadata",
@@ -990,7 +1081,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					WithLiteral("operations").
 					WithMatch()),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 	getOperation.SourceServiceID = ".google.longrunning.Operations"
 	getOperation.InputTypeID = ".google.longrunning.GetOperationRequest"

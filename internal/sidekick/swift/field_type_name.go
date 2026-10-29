@@ -46,13 +46,15 @@ func (c *codec) fieldTypeName(field *api.Field) (*fieldTypeNames, error) {
 
 func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
 	switch field.Typez {
+	case api.TypezMap:
+		return c.mapFieldTypeNames(field)
 	case api.TypezMessage:
+		if field.Map {
+			return c.mapFieldTypeNames(field)
+		}
 		m, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
 			return nil, err
-		}
-		if m.IsMap {
-			return c.mapFieldTypeNames(m)
 		}
 		base, err := c.messageTypeName(m)
 		if err != nil {
@@ -78,8 +80,8 @@ func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
 	}
 }
 
-func (c *codec) mapFieldTypeNames(m *api.Message) (*fieldTypeNames, error) {
-	keyType, valueType, err := c.mapFieldTypeComponents(m)
+func (c *codec) mapFieldTypeNames(field *api.Field) (*fieldTypeNames, error) {
+	keyType, valueType, err := c.mapFieldTypeComponents(field)
 	if err != nil {
 		return nil, err
 	}
@@ -91,16 +93,16 @@ func (c *codec) mapFieldTypeNames(m *api.Message) (*fieldTypeNames, error) {
 	}, nil
 }
 
-func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
-	kv, err := decomposeMap(m)
+func (c *codec) mapFieldTypeComponents(field *api.Field) (string, string, error) {
+	mapType, err := lookupMap(c.Model, field)
 	if err != nil {
 		return "", "", err
 	}
-	key, err := c.fieldTypeBase(kv.Key)
+	key, err := c.fieldTypeBase(mapType.Key)
 	if err != nil {
 		return "", "", err
 	}
-	value, err := c.fieldTypeBase(kv.Value)
+	value, err := c.fieldTypeBase(mapType.Value)
 	if err != nil {
 		return "", "", err
 	}

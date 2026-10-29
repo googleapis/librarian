@@ -795,20 +795,18 @@ func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 	status := api.NewTestMessage("Status").
 		WithPackage("google.rpc")
-	mapMessage := api.NewTestMapMessageWithFields(
-		"Entry",
+	mapEntry := api.NewTestMapWithFields(
+		".some.package.HasMap.MapFieldEntry",
 		api.NewTestField("key").WithType(api.TypezString),
 		api.NewTestField("value").WithMessageType(status),
-	).
-		WithPackage("some.package").
-		WithID(".some.package.HasMap.MapFieldEntry")
+	)
 	message := api.NewTestMessage("HasMap").
 		WithPackage("some.package").
 		WithFields(
 			api.NewTestField("map_field").
-				WithMessageType(mapMessage),
+				WithMapType(mapEntry),
 		)
-	model := api.NewTestAPI([]*api.Message{message, status, mapMessage}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{message, status}, nil, nil).WithPackageName("some.package")
 	annotate := newAnnotateModel(model)
 
 	annotate.annotateModel(map[string]string{
@@ -819,9 +817,6 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 	codec := message.Codec.(*messageAnnotation)
 	if codec.OmitGeneration {
 		t.Errorf("HasMap.OmitGeneration = true, want false")
-	}
-	if !mapMessage.Codec.(*messageAnnotation).OmitGeneration {
-		t.Errorf("mapMessage.OmitGeneration = false, want true")
 	}
 
 	if !annotate.imports["package:google_cloud_rpc/google_cloud_rpc.dart"] {
@@ -1128,8 +1123,8 @@ func TestCreateFromJsonLine(t *testing.T) {
 		WithPackage("google.protobuf")
 	valueMessage := api.NewTestMessage("Value").
 		WithPackage("google.protobuf")
-	mapStringToBytes := api.NewTestMapMessage("$StringToBytes", api.TypezString, api.TypezBytes)
-	mapInt32ToBytes := api.NewTestMapMessage("$Int32ToBytes", api.TypezInt32, api.TypezBytes)
+	mapStringToBytes := api.NewTestMap("$StringToBytes", api.TypezString, api.TypezBytes)
+	mapInt32ToBytes := api.NewTestMap("$Int32ToBytes", api.TypezInt32, api.TypezBytes)
 
 	for _, test := range []struct {
 		name  string
@@ -1331,13 +1326,13 @@ func TestCreateFromJsonLine(t *testing.T) {
 		{
 			// string -> bytes
 			name:  "map string to bytes",
-			field: api.NewTestField("message").WithMap().WithMessageType(mapStringToBytes),
+			field: api.NewTestField("message").WithMapType(mapStringToBytes),
 			want:  "switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeString(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
 		},
 		{
 			// int32 -> bytes
 			name:  "map int32 to bytes",
-			field: api.NewTestField("message").WithMap().WithMessageType(mapInt32ToBytes),
+			field: api.NewTestField("message").WithMapType(mapInt32ToBytes),
 			want:  "switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeIntKey(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
 		},
 	} {
@@ -1354,19 +1349,19 @@ func TestCreateFromJsonLine(t *testing.T) {
 
 func TestToJson(t *testing.T) {
 	enumState := sample.EnumState()
-	mapStringToString := api.NewTestMapMessage("$StringToString", api.TypezString, api.TypezString)
-	mapInt32ToString := api.NewTestMapMessage("$Int32ToString", api.TypezInt32, api.TypezString)
-	mapBoolToString := api.NewTestMapMessage("$BoolToString", api.TypezBool, api.TypezString)
-	mapStringToInt64 := api.NewTestMapMessage("$StringToInt64", api.TypezString, api.TypezInt64)
-	mapInt64ToString := api.NewTestMapMessage("$Int64ToString", api.TypezInt64, api.TypezString)
-	mapUint32ToString := api.NewTestMapMessage("$Uint32ToString", api.TypezUint32, api.TypezString)
-	mapUint64ToString := api.NewTestMapMessage("$Uint64ToString", api.TypezUint64, api.TypezString)
-	mapSint32ToString := api.NewTestMapMessage("$Sint32ToString", api.TypezSint32, api.TypezString)
-	mapSint64ToString := api.NewTestMapMessage("$Sint64ToString", api.TypezSint64, api.TypezString)
-	mapFixed32ToString := api.NewTestMapMessage("$Fixed32ToString", api.TypezFixed32, api.TypezString)
-	mapFixed64ToString := api.NewTestMapMessage("$Fixed64ToString", api.TypezFixed64, api.TypezString)
-	mapSfixed32ToString := api.NewTestMapMessage("$Sfixed32ToString", api.TypezSfixed32, api.TypezString)
-	mapSfixed64ToString := api.NewTestMapMessage("$Sfixed64ToString", api.TypezSfixed64, api.TypezString)
+	mapStringToString := api.NewTestMap("$StringToString", api.TypezString, api.TypezString)
+	mapInt32ToString := api.NewTestMap("$Int32ToString", api.TypezInt32, api.TypezString)
+	mapBoolToString := api.NewTestMap("$BoolToString", api.TypezBool, api.TypezString)
+	mapStringToInt64 := api.NewTestMap("$StringToInt64", api.TypezString, api.TypezInt64)
+	mapInt64ToString := api.NewTestMap("$Int64ToString", api.TypezInt64, api.TypezString)
+	mapUint32ToString := api.NewTestMap("$Uint32ToString", api.TypezUint32, api.TypezString)
+	mapUint64ToString := api.NewTestMap("$Uint64ToString", api.TypezUint64, api.TypezString)
+	mapSint32ToString := api.NewTestMap("$Sint32ToString", api.TypezSint32, api.TypezString)
+	mapSint64ToString := api.NewTestMap("$Sint64ToString", api.TypezSint64, api.TypezString)
+	mapFixed32ToString := api.NewTestMap("$Fixed32ToString", api.TypezFixed32, api.TypezString)
+	mapFixed64ToString := api.NewTestMap("$Fixed64ToString", api.TypezFixed64, api.TypezString)
+	mapSfixed32ToString := api.NewTestMap("$Sfixed32ToString", api.TypezSfixed32, api.TypezString)
+	mapSfixed64ToString := api.NewTestMap("$Sfixed64ToString", api.TypezSfixed64, api.TypezString)
 
 	for _, test := range []struct {
 		name  string
@@ -1560,67 +1555,67 @@ func TestToJson(t *testing.T) {
 		// maps
 		{
 			name:  "map_string_to_string",
-			field: api.NewTestField("map_string_to_string").WithMap().WithMessageType(mapStringToString),
+			field: api.NewTestField("map_string_to_string").WithMapType(mapStringToString),
 			want:  "if (mapStringToString.isNotDefault) 'mapStringToString': mapStringToString",
 		},
 		{
 			name:  "map_int32_to_string",
-			field: api.NewTestField("map_int32_to_string").WithMap().WithMessageType(mapInt32ToString),
+			field: api.NewTestField("map_int32_to_string").WithMapType(mapInt32ToString),
 			want:  "if (mapInt32ToString.isNotDefault) 'mapInt32ToString': {for (final e in mapInt32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_bool_to_string",
-			field: api.NewTestField("map_bool_to_string").WithMap().WithMessageType(mapBoolToString),
+			field: api.NewTestField("map_bool_to_string").WithMapType(mapBoolToString),
 			want:  "if (mapBoolToString.isNotDefault) 'mapBoolToString': {for (final e in mapBoolToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_string_to_int64",
-			field: api.NewTestField("map_string_to_int64").WithMap().WithMessageType(mapStringToInt64),
+			field: api.NewTestField("map_string_to_int64").WithMapType(mapStringToInt64),
 			want:  "if (mapStringToInt64.isNotDefault) 'mapStringToInt64': {for (final e in mapStringToInt64.entries) e.key: e.value.toString()}",
 		},
 		{
 			name:  "map_int64_to_string",
-			field: api.NewTestField("map_int64_to_string").WithMap().WithMessageType(mapInt64ToString),
+			field: api.NewTestField("map_int64_to_string").WithMapType(mapInt64ToString),
 			want:  "if (mapInt64ToString.isNotDefault) 'mapInt64ToString': {for (final e in mapInt64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_uint32_to_string",
-			field: api.NewTestField("map_uint32_to_string").WithMap().WithMessageType(mapUint32ToString),
+			field: api.NewTestField("map_uint32_to_string").WithMapType(mapUint32ToString),
 			want:  "if (mapUint32ToString.isNotDefault) 'mapUint32ToString': {for (final e in mapUint32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_uint64_to_string",
-			field: api.NewTestField("map_uint64_to_string").WithMap().WithMessageType(mapUint64ToString),
+			field: api.NewTestField("map_uint64_to_string").WithMapType(mapUint64ToString),
 			want:  "if (mapUint64ToString.isNotDefault) 'mapUint64ToString': {for (final e in mapUint64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_sint32_to_string",
-			field: api.NewTestField("map_sint32_to_string").WithMap().WithMessageType(mapSint32ToString),
+			field: api.NewTestField("map_sint32_to_string").WithMapType(mapSint32ToString),
 			want:  "if (mapSint32ToString.isNotDefault) 'mapSint32ToString': {for (final e in mapSint32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_sint64_to_string",
-			field: api.NewTestField("map_sint64_to_string").WithMap().WithMessageType(mapSint64ToString),
+			field: api.NewTestField("map_sint64_to_string").WithMapType(mapSint64ToString),
 			want:  "if (mapSint64ToString.isNotDefault) 'mapSint64ToString': {for (final e in mapSint64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_fixed32_to_string",
-			field: api.NewTestField("map_fixed32_to_string").WithMap().WithMessageType(mapFixed32ToString),
+			field: api.NewTestField("map_fixed32_to_string").WithMapType(mapFixed32ToString),
 			want:  "if (mapFixed32ToString.isNotDefault) 'mapFixed32ToString': {for (final e in mapFixed32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_fixed64_to_string",
-			field: api.NewTestField("map_fixed64_to_string").WithMap().WithMessageType(mapFixed64ToString),
+			field: api.NewTestField("map_fixed64_to_string").WithMapType(mapFixed64ToString),
 			want:  "if (mapFixed64ToString.isNotDefault) 'mapFixed64ToString': {for (final e in mapFixed64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_sfixed32_to_string",
-			field: api.NewTestField("map_sfixed32_to_string").WithMap().WithMessageType(mapSfixed32ToString),
+			field: api.NewTestField("map_sfixed32_to_string").WithMapType(mapSfixed32ToString),
 			want:  "if (mapSfixed32ToString.isNotDefault) 'mapSfixed32ToString': {for (final e in mapSfixed32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			name:  "map_sfixed64_to_string",
-			field: api.NewTestField("map_sfixed64_to_string").WithMap().WithMessageType(mapSfixed64ToString),
+			field: api.NewTestField("map_sfixed64_to_string").WithMapType(mapSfixed64ToString),
 			want:  "if (mapSfixed64ToString.isNotDefault) 'mapSfixed64ToString': {for (final e in mapSfixed64ToString.entries) e.key.toString(): e.value}",
 		},
 	} {
@@ -1713,12 +1708,12 @@ func TestAnnotateEnum(t *testing.T) {
 func TestAnnotateField(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		makeField func(message, mapMessage, empty *api.Message, enumState *api.Enum) *api.Field
+		makeField func(message *api.Message, mapEntry *api.Map, empty *api.Message, enumState *api.Enum) *api.Field
 		want      *fieldAnnotation
 	}{
 		{
 			name: "implicit presence primitive",
-			makeField: func(_, _, _ *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, _ *api.Map, _ *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("int32_field").WithType(api.TypezInt32)
 			},
 			want: &fieldAnnotation{
@@ -1734,7 +1729,7 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "required primitive",
-			makeField: func(_, _, _ *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, _ *api.Map, _ *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("int32_field").
 					WithType(api.TypezInt32).
 					WithBehavior(api.FieldBehaviorRequired)
@@ -1752,7 +1747,7 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "optional primitive",
-			makeField: func(_, _, _ *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, _ *api.Map, _ *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("int32_field").WithType(api.TypezInt32).WithOptional()
 			},
 			want: &fieldAnnotation{
@@ -1768,7 +1763,7 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "repeated",
-			makeField: func(_, _, _ *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, _ *api.Map, _ *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("int32_list").WithType(api.TypezInt32).WithRepeated()
 			},
 			want: &fieldAnnotation{
@@ -1784,10 +1779,9 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "map",
-			makeField: func(_, mapMessage, _ *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, mapEntry *api.Map, _ *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("map_field").
-					WithMessageType(mapMessage).
-					WithMap()
+					WithMapType(mapEntry)
 			},
 			want: &fieldAnnotation{
 				Name:                  "mapField",
@@ -1802,7 +1796,7 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "message",
-			makeField: func(message, _, _ *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(message *api.Message, _ *api.Map, _ *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("message_field").WithMessageType(message)
 			},
 			want: &fieldAnnotation{
@@ -1818,7 +1812,7 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "required message",
-			makeField: func(message, _, _ *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(message *api.Message, _ *api.Map, _ *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("message_field").
 					WithMessageType(message).
 					WithBehavior(api.FieldBehaviorRequired)
@@ -1836,7 +1830,7 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "enum",
-			makeField: func(_, _, _ *api.Message, enumState *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, _ *api.Map, _ *api.Message, enumState *api.Enum) *api.Field {
 				return api.NewTestField("enum_field").WithEnumType(enumState)
 			},
 			want: &fieldAnnotation{
@@ -1852,7 +1846,7 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "required enum",
-			makeField: func(_, _, _ *api.Message, enumState *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, _ *api.Map, _ *api.Message, enumState *api.Enum) *api.Field {
 				return api.NewTestField("enum_field").
 					WithEnumType(enumState).
 					WithBehavior(api.FieldBehaviorRequired)
@@ -1872,7 +1866,7 @@ func TestAnnotateField(t *testing.T) {
 			// `google.protobuf.Empty` is a special because, in some cases, it is
 			// converted to the `void` Dart type. `void` is not nullable in Dart.
 			name: "google.protobuf.Empty",
-			makeField: func(_, _, empty *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, _ *api.Map, empty *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("empty_field").WithMessageType(empty)
 			},
 			want: &fieldAnnotation{
@@ -1888,7 +1882,7 @@ func TestAnnotateField(t *testing.T) {
 		},
 		{
 			name: "float",
-			makeField: func(_, _, _ *api.Message, _ *api.Enum) *api.Field {
+			makeField: func(_ *api.Message, _ *api.Map, _ *api.Message, _ *api.Enum) *api.Field {
 				return api.NewTestField("float_field").WithType(api.TypezFloat).WithOptional()
 			},
 			want: &fieldAnnotation{
@@ -1907,10 +1901,10 @@ func TestAnnotateField(t *testing.T) {
 			enumState := api.NewTestEnum("State")
 			message := api.NewTestMessage("Message")
 			empty := api.NewTestMessage("Empty").WithPackage("google.protobuf")
-			mapMessage := api.NewTestMapMessage("MapMessage", api.TypezString, api.TypezInt32)
-			field := test.makeField(message, mapMessage, empty, enumState)
+			mapEntry := api.NewTestMap("MapMessage", api.TypezString, api.TypezInt32)
+			field := test.makeField(message, mapEntry, empty, enumState)
 
-			model := api.NewTestAPI([]*api.Message{message, mapMessage, empty}, []*api.Enum{enumState}, nil)
+			model := api.NewTestAPI([]*api.Message{message, empty}, []*api.Enum{enumState}, nil).WithMaps(mapEntry)
 			annotate := newAnnotateModel(model)
 			registerMissingWkt(annotate.model)
 

@@ -64,7 +64,7 @@ func updateCargoVersion(path string, newVersion semver.Version) error {
 		return fmt.Errorf("%w in %q", ErrNoVersionField, path)
 	}
 	// The number of spaces may seem weird. They match the number of spaces in
-	// the mustache template.
+	// the Go template (Cargo.toml.gotmpl).
 	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion.String())
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
 }

@@ -360,11 +360,11 @@ func TestAnnotateService_Pagination(t *testing.T) {
 
 func TestAnnotateService_MapPagination(t *testing.T) {
 	itemType := api.NewTestMessage("Item").WithPackage("external")
-	mapType := api.NewTestMapMessageWithFields(
+	mapType := api.NewTestMapWithFields(
 		"$map<string, Item>",
 		api.NewTestField("key").WithType(api.TypezString),
 		api.NewTestField("value").WithMessageType(itemType),
-	).WithPackage("test")
+	)
 
 	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
 	inputType := api.NewTestMessage("ListItemsRequest").
@@ -373,7 +373,7 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 	outputType := api.NewTestMessage("ListItemsResponse").
 		WithPagination(
 			api.NewTestField("next_page_token").WithType(api.TypezString),
-			api.NewTestField("items").WithMessageType(mapType).WithMap(),
+			api.NewTestField("items").WithMapType(mapType),
 		)
 	list := api.NewTestMethod("ListItems").
 		WithInput(inputType).
@@ -385,9 +385,9 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 	service := api.NewTestService("TestService").WithMethods(list)
 
 	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
-		WithPackageName("test")
+		WithPackageName("test").
+		WithMaps(mapType)
 	model.AddMessage(itemType)
-	model.AddMessage(mapType)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -523,16 +523,11 @@ func TestAnnotateService_WktImports(t *testing.T) {
 }
 
 func TestAnnotateService_MapFieldDependencies(t *testing.T) {
-	mapEntry := api.NewTestMapMessage("DataMapEntry", api.TypezString, api.TypezBytes).
-		WithPackage("test")
+	mapEntry := api.NewTestMap("DataMapEntry", api.TypezString, api.TypezBytes)
 
-	mapField := api.NewTestField("data_map").
-		WithMap().
-		WithMessageType(mapEntry)
+	mapField := api.NewTestField("data_map").WithMapType(mapEntry)
 
-	signature := &api.MethodSignature{
-		Fields: []*api.Field{mapField},
-	}
+	signature := api.NewTestMethodSignature().WithFields(mapField)
 	inputType := api.NewTestMessage("Request").
 		WithPackage("test").
 		WithFields(mapField)
@@ -546,8 +541,9 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		WithSignatures(signature)
 
 	service := api.NewTestService("MapService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, mapEntry}, nil, []*api.Service{service}).
-		WithPackageName("test")
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName("test").
+		WithMaps(mapEntry)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -702,5 +698,47 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 	wantMethods := []string{"Unary"}
 	if diff := cmp.Diff(wantMethods, gotMethods); diff != "" {
 		t.Errorf("Methods mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_HTTPBodyRequestImports(t *testing.T) {
+	httpBodyMsg := api.NewTestMessage("HttpBody").WithPackage("google.api")
+	req := api.NewTestMessage("ReceiveWebhookRequest").
+		WithPackage("test").
+		WithFields(api.NewTestField("body").WithMessageType(httpBodyMsg).WithOptional())
+	resp := api.NewTestMessage("ReceiveWebhookResponse").WithPackage("test")
+	method := api.NewTestMethod("ReceiveWebhook").
+		WithInput(req).
+		WithOutput(resp).
+		WithBodyFieldPath("body").
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("webhook"))
+	service := api.NewTestService("TestService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).
+		WithPackageName("test")
+	model.AddMessage(httpBodyMsg)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.api",
+			Name:       "GoogleApi",
+		},
+	})
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleApi"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("ServiceImports() mismatch (-want +got):\n%s", diff)
+	}
+	wantPublicImports := []string{}
+	if diff := cmp.Diff(wantPublicImports, annotations.PublicServiceImports()); diff != "" {
+		t.Errorf("PublicServiceImports() mismatch (-want +got):\n%s", diff)
 	}
 }

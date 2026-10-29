@@ -35,7 +35,7 @@ type Service struct {
 	// The Protobuf package this service belongs to.
 	Package string
 
-	// The model this service belongs to, mustache templates use this field to
+	// The model this service belongs to, Go templates use this field to
 	// navigate the data structure.
 	Model *API
 	// QuickstartMethod is the method that will be used to generate the quickstart sample

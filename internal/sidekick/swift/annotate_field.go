@@ -205,20 +205,25 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		annotations.FieldType = annotations.BaseFieldType + "?"
 		annotations.Decoding = DecodingOptional
 	}
-	if field.Map && !annotations.IsStringKeyed() {
-		annotations.Decoding = DecodingMapCustomKey
-		annotations.Encoding = EncodingMapCustomKey
-	}
-	if field.Map && field.TypezID != "" {
-		m, err := lookupMessage(c.Model, field.TypezID)
+	if field.Map || field.Typez == api.TypezMap {
+		if !annotations.IsStringKeyed() {
+			annotations.Decoding = DecodingMapCustomKey
+			annotations.Encoding = EncodingMapCustomKey
+		}
+		mapType, err := lookupMap(c.Model, field)
 		if err != nil {
 			return nil, err
 		}
-		fields, err := decomposeMap(m)
-		if err != nil {
+		if mapType.Key == nil || mapType.Value == nil {
+			return nil, fmt.Errorf("map field %q missing key or value", field.ID)
+		}
+		if _, err := c.annotateField(mapType.Key, model); err != nil {
 			return nil, err
 		}
-		annotations.ValueField = fields.Value
+		if _, err := c.annotateField(mapType.Value, model); err != nil {
+			return nil, err
+		}
+		annotations.ValueField = mapType.Value
 	}
 	if field.Optional {
 		annotations.Decoding = DecodingOptional
@@ -232,7 +237,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		if field.Typez == api.TypezBytes {
 			annotations.UrlSafeValue = true
 		}
-		if field.Map && annotations.ValueType == "Foundation.Data" {
+		if (field.Map || field.Typez == api.TypezMap) && annotations.ValueType == "Foundation.Data" {
 			annotations.UrlSafeValue = true
 		}
 	}
@@ -240,7 +245,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	// For map fields, parts.Base is the full dictionary type `[K: V]`,
 	// (which is not a single primitive/scalar type) so PrimitiveFieldType remains empty
 	// and map entry components are inspected via KeyType, ValueType, and ValueField instead.
-	if !field.Map {
+	if !field.Map && field.Typez != api.TypezMap {
 		annotations.PrimitiveFieldType = parts.Base
 	}
 	deprecatedType, err := c.fieldTypeDeprecated(field)
@@ -255,20 +260,20 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 // fieldTypeDeprecated reports whether the message or enum naming this field's
 // type is deprecated. For maps it inspects the value type.
 func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
+	if field.Map || field.Typez == api.TypezMap {
+		mapType, err := lookupMap(c.Model, field)
+		if err != nil {
+			return false, err
+		}
+		return c.fieldTypeDeprecated(mapType.Value)
+	}
 	switch field.Typez {
 	case api.TypezMessage:
 		m, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
 			return false, err
 		}
-		if !m.IsMap {
-			return m.Deprecated, nil
-		}
-		fields, err := decomposeMap(m)
-		if err != nil {
-			return false, err
-		}
-		return c.fieldTypeDeprecated(fields.Value)
+		return m.Deprecated, nil
 	case api.TypezEnum:
 		e, err := lookupEnum(c.Model, field.TypezID)
 		if err != nil {
@@ -280,34 +285,20 @@ func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
 }
 
 func (c *codec) fieldPackage(field *api.Field) (string, error) {
+	if field.Map || field.Typez == api.TypezMap {
+		mapType, err := lookupMap(c.Model, field)
+		if err != nil {
+			return "", err
+		}
+		return c.fieldPackage(mapType.Value)
+	}
 	switch field.Typez {
 	case api.TypezMessage:
 		m, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
 			return "", err
 		}
-		if !m.IsMap {
-			return m.Package, nil
-		}
-		fields, err := decomposeMap(m)
-		if err != nil {
-			return "", err
-		}
-		mf := fields.Value
-		switch mf.Typez {
-		case api.TypezMessage:
-			vm, err := lookupMessage(c.Model, mf.TypezID)
-			if err != nil {
-				return "", err
-			}
-			return vm.Package, nil
-		case api.TypezEnum:
-			ve, err := lookupEnum(c.Model, mf.TypezID)
-			if err != nil {
-				return "", err
-			}
-			return ve.Package, nil
-		}
+		return m.Package, nil
 	case api.TypezEnum:
 		e, err := lookupEnum(c.Model, field.TypezID)
 		if err != nil {

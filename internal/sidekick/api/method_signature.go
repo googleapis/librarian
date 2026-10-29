@@ -37,7 +37,7 @@ type MethodSignature struct {
 
 	// Method cross-references the method containing this signature.
 	//
-	// This is useful in mustache templates, as the template can access the
+	// This is useful in Go templates, as the template can access the
 	// method and the method's annotations from within a signature.
 	Method *Method
 }

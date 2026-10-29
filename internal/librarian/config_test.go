@@ -64,6 +64,37 @@ libraries:
 `, googleapisDir),
 			want: "mysecretmanager\n",
 		},
+		{
+			name:  "get library with custom name (ruby)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: fmt.Sprintf(`language: ruby
+sources:
+  googleapis:
+    dir: %s
+libraries:
+- name: google-cloud-secret_manager-v1
+  apis:
+  - path: google/cloud/secretmanager/v1
+`, googleapisDir),
+			want: "google-cloud-secret_manager-v1\n",
+		},
+		{
+			name:  "get library with subpackage API path (go)",
+			path:  "libraries",
+			value: "google/cloud/oslogin/common",
+			configYAML: fmt.Sprintf(`language: go
+sources:
+  googleapis:
+    dir: %s
+libraries:
+- name: oslogin
+  apis:
+  - path: google/cloud/oslogin/v1
+  - path: google/cloud/oslogin/common
+`, googleapisDir),
+			want: "oslogin\n",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()

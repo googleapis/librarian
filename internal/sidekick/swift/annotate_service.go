@@ -53,9 +53,7 @@ type serviceAnnotations struct {
 	// A snippet is a standalone executable. Nothing in it is deprecated, so it
 	// needs the attribute even when the service itself is. The name avoids
 	// colliding with `methodAnnotations.DiagnoseSnippet`, which means
-	// something different: mustache resolves `{{#Codec.X}}` by walking the
-	// context stack, so two same-named fields on different annotation types
-	// can be confused.
+	// something different.
 	DiagnoseClientSnippet bool
 
 	// DiagnoseSnippetRunner guards `SnippetRunner.main()` in the generated
@@ -271,6 +269,20 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				return nil, err
 			}
 		}
+		// When a wrapper request message in this package embeds a
+		// google.api.HttpBody field, the generated transport reads body.data and
+		// body.contentType directly. Swift's MemberImportVisibility requires
+		// importing the defining module (GoogleApi) in the transport file even if
+		// GoogleApi does not appear in the service's public signatures.
+		if ma, ok := method.Codec.(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName != "google.api" {
+			dep, err := c.addApiPackageDependency("google.api")
+			if err != nil {
+				return nil, err
+			}
+			if dep != nil {
+				annotations.DependsOn[dep.Name] = dep
+			}
+		}
 		for _, signature := range method.Signatures {
 			if err := c.addSignatureDependencies(annotations, signature); err != nil {
 				return nil, err
@@ -293,28 +305,29 @@ func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, metho
 	if itemsField.Repeated {
 		return c.addFieldDependencies(annotations, itemsField)
 	}
-	if itemsField.Map {
-		mapType, err := lookupMessage(c.Model, itemsField.TypezID)
+	if itemsField.Map || itemsField.Typez == api.TypezMap {
+		mapType, err := lookupMap(c.Model, itemsField)
 		if err != nil {
 			return err
 		}
-		if len(mapType.Fields) != 2 {
-			return fmt.Errorf("missing key/value fields for map type: %s", itemsField.TypezID)
-		}
-		return c.addFieldDependencies(annotations, mapType.Fields[1])
+		return c.addFieldDependencies(annotations, mapType.Value)
 	}
 	return nil
 }
 
 func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api.Field) error {
+	if field.Map || field.Typez == api.TypezMap {
+		mapType, err := lookupMap(c.Model, field)
+		if err != nil {
+			return err
+		}
+		return c.addFieldDependencies(annotations, mapType.Value)
+	}
 	switch field.Typez {
 	case api.TypezMessage:
 		item, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
 			return err
-		}
-		if item.IsMap && len(item.Fields) == 2 {
-			return c.addFieldDependencies(annotations, item.Fields[1])
 		}
 		if item.Package != c.Model.PackageName {
 			dep, err := c.addApiPackageDependency(item.Package)

@@ -40,18 +40,16 @@ func TestMapKeyAnnotations(t *testing.T) {
 		{"serde_with::DisplayFromStr", api.TypezBool},
 	} {
 		t.Run(test.wantSerdeAs, func(t *testing.T) {
-			mapMessage := api.NewTestMapMessage("$map<unused, unused>", test.typez, api.TypezString).
-				WithPackage("$").
-				WithID("$map<unused, unused>")
+			mapType := api.NewTestMap("$map<unused, unused>", test.typez, api.TypezString)
 
 			field := api.NewTestField("field").
-				WithMessageType(mapMessage)
+				WithMapType(mapType)
 
 			message := api.NewTestMessage("TestMessage").
 				WithDocumentation("A test message.").
 				WithFields(field)
 
-			model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
+			model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapType)
 			api.CrossReference(model)
 			api.LabelRecursiveFields(model)
 			codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{})
@@ -117,22 +115,20 @@ func TestMapValueAnnotations(t *testing.T) {
 			} else {
 				valueField.WithType(test.typez)
 			}
-			mapMessage := api.NewTestMapMessageWithFields(
+			mapType := api.NewTestMapWithFields(
 				"$map<unused, unused>",
 				api.NewTestField("key").WithType(api.TypezInt32),
 				valueField,
-			).
-				WithPackage("$").
-				WithID("$map<unused, unused>")
+			)
 
-			field := api.NewTestField("field").WithMessageType(mapMessage)
+			field := api.NewTestField("field").WithMapType(mapType)
 
 			message := api.NewTestMessage("Message").
 				WithPackage("test").
 				WithDocumentation("A test message.").
 				WithFields(field)
 
-			model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
+			model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapType)
 			api.CrossReference(model)
 			api.LabelRecursiveFields(model)
 			codec := newTestCodec(t, test.spec, "test", map[string]string{})
@@ -149,18 +145,16 @@ func TestMapValueAnnotations(t *testing.T) {
 
 // A map without any SerdeAs mapping receives a special annotation.
 func TestMapAnnotationsSameSame(t *testing.T) {
-	mapMessage := api.NewTestMapMessage("$map<string, string>", api.TypezString, api.TypezString).
-		WithPackage("$").
-		WithID("$map<string, string>")
+	mapType := api.NewTestMap("$map<string, string>", api.TypezString, api.TypezString)
 
 	field := api.NewTestField("field").
-		WithMessageType(mapMessage)
+		WithMapType(mapType)
 
 	message := api.NewTestMessage("Message").
 		WithDocumentation("A test message.").
 		WithFields(field)
 
-	model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapType)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
@@ -171,6 +165,6 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 
 	got := field.Codec.(*fieldAnnotations).SerdeAs
 	if got != "" {
-		t.Errorf("mismatch for %v, got=%q", mapMessage, got)
+		t.Errorf("mismatch for %v, got=%q", mapType, got)
 	}
 }

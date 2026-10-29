@@ -79,9 +79,7 @@ type messageAnnotations struct {
 	// `init(from:)` and `encode(to:)` must name every field, including the
 	// deprecated ones, and the proto conversions do the same. The name avoids
 	// colliding with `methodAnnotations.DiagnoseFields`, which means something
-	// different: mustache resolves `{{#Codec.X}}` by walking the context
-	// stack, so two same-named fields on different annotation types can be
-	// confused.
+	// different.
 	DiagnoseCodable bool
 
 	// DiagnosePagination is true when the `GoogleGax._PaginatedResponse`
@@ -261,8 +259,8 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		switch {
 		case itemField.Repeated:
 			annotations.PageableItemType = itemFieldCodec.BaseFieldType
-		case itemField.Map:
-			keyType, valueType, err := c.mapFieldTypeComponents(itemField.MessageType)
+		case itemField.Map || itemField.Typez == api.TypezMap:
+			keyType, valueType, err := c.mapFieldTypeComponents(itemField)
 			if err != nil {
 				return err
 			}

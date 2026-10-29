@@ -302,7 +302,7 @@ func TestGenerateService_DiagnoseMethodTypes(t *testing.T) {
 						WithOutput(responseType).
 						WithVerb("POST").
 						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple")).
-						WithSignatures(&api.MethodSignature{Fields: []*api.Field{requestType.Fields[0]}}).
+						WithSignatures(api.NewTestMethodSignature().WithFields(requestType.Fields[0])).
 						WithDeprecated(test.methodDeprecated),
 					api.NewTestMethod("GetOperation").
 						WithInput(getOperationInputType).
@@ -389,7 +389,7 @@ func TestGenerateService_DiagnoseRequestFields(t *testing.T) {
 					WithOutput(responseType).
 					WithVerb("POST").
 					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple")).
-					WithSignatures(&api.MethodSignature{Fields: []*api.Field{requestType.Fields[0]}}),
+					WithSignatures(api.NewTestMethodSignature().WithFields(requestType.Fields[0])),
 				api.NewTestMethod("GetOperation").
 					WithInput(getOperationInputType).
 					WithOutput(operationType).

@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"maps"
@@ -82,9 +83,10 @@ func buildCodec(library *config.Library) map[string]string {
 	if library.CopyrightYear != "" {
 		codec["copyright-year"] = library.CopyrightYear
 	}
-	if library.Version != "" {
-		codec["version"] = library.Version
-	}
+	// An unreleased library has no version in librarian.yaml. Generating it with
+	// the version of its first release lets other packages in the workspace
+	// depend on it before bump records that release.
+	codec["version"] = cmp.Or(library.Version, initialVersion)
 	if library.SkipRelease {
 		codec["not-for-publication"] = "true"
 	}
