@@ -36,9 +36,10 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 			name: "from standard method path",
 			services: []*Service{
 				NewTestService("Service").WithMethods(
-					newAIPMethod("GetWidget", (&PathTemplate{}).
+					newAIPMethod("GetWidget", NewPathTemplateBuilder().
 						WithLiteral("users").WithVariableNamed("user").
-						WithLiteral("widgets").WithVariableNamed("widget")),
+						WithLiteral("widgets").WithVariableNamed("widget").
+						Build()),
 				),
 			},
 			want: map[string]bool{
@@ -55,8 +56,9 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 			name: "includes standard CRUD methods",
 			services: []*Service{
 				NewTestService("Service").WithMethods(
-					newAIPMethod("CreateWidget", (&PathTemplate{}).
-						WithLiteral("internal").WithVariableNamed("id")),
+					newAIPMethod("CreateWidget", NewPathTemplateBuilder().
+						WithLiteral("internal").WithVariableNamed("id").
+						Build()),
 				),
 			},
 			want: map[string]bool{
@@ -72,8 +74,9 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 			name: "ignores custom action methods",
 			services: []*Service{
 				NewTestService("Service").WithMethods(
-					NewTestMethod("StartWidget").WithPathTemplate((&PathTemplate{}).
-						WithLiteral("internal").WithVariableNamed("id")),
+					NewTestMethod("StartWidget").WithPathTemplate(NewPathTemplateBuilder().
+						WithLiteral("internal").WithVariableNamed("id").
+						Build()),
 				),
 			},
 			want: map[string]bool{
@@ -88,11 +91,12 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 			name: "from nested variable template",
 			services: []*Service{
 				NewTestService("Service").WithMethods(
-					newAIPMethod("GetInstance", (&PathTemplate{}).
+					newAIPMethod("GetInstance", NewPathTemplateBuilder().
 						WithLiteral("v1").
 						WithVariable(NewPathVariableBuilder("name").
 							WithSegments("projects", SingleSegmentWildcard, "instances", MultiSegmentWildcard).
-							Build())),
+							Build()).
+						Build()),
 				),
 			},
 			want: map[string]bool{

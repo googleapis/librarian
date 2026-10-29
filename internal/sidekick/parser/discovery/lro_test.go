@@ -39,14 +39,15 @@ func TestLroAnnotations(t *testing.T) {
 	want := api.NewTestMethod("insert").
 		WithID("..instances.insert").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
 			WithVariableNamed("zone").
-			WithLiteral("instances")).
+			WithLiteral("instances").
+			Build()).
 		WithQueryParameters(
 			"requestId",
 			"sourceInstanceTemplate",
@@ -71,7 +72,7 @@ func TestLroAnnotations(t *testing.T) {
 	wantMixin := api.NewTestMethod("getOperation").
 		WithID("..instances.getOperation").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
@@ -79,7 +80,8 @@ func TestLroAnnotations(t *testing.T) {
 			WithLiteral("zones").
 			WithVariableNamed("zone").
 			WithLiteral("operations").
-			WithVariableNamed("operation")).
+			WithVariableNamed("operation").
+			Build()).
 		WithQueryParameters().
 		WithBodyFieldPath("")
 	wantMixin.InputTypeID = "..zoneOperations.getRequest"
@@ -112,24 +114,26 @@ func TestLroAnnotationsError(t *testing.T) {
 			api.NewTestMethod("create_foo").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("zone").
 					WithLiteral("foo").
-					WithVariableNamed("id")).
+					WithVariableNamed("id").
+					Build()).
 				WithQueryParameters(),
 			api.NewTestMethod("create_bar").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("region").
 					WithLiteral("foo").
-					WithVariableNamed("id")).
+					WithVariableNamed("id").
+					Build()).
 				WithQueryParameters(),
 		)
 	pollerService := newDiscoveryTestService("Operations").
@@ -137,24 +141,26 @@ func TestLroAnnotationsError(t *testing.T) {
 			api.NewTestMethod("get_1").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("zone").
 					WithLiteral("operations").
-					WithVariableNamed("operation")).
+					WithVariableNamed("operation").
+					Build()).
 				WithQueryParameters(),
 			api.NewTestMethod("get_2").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("region").
 					WithLiteral("operations").
-					WithVariableNamed("operation")).
+					WithVariableNamed("operation").
+					Build()).
 				WithQueryParameters(),
 		)
 

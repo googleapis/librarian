@@ -151,39 +151,6 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 	}
 }
 
-func TestPathTemplateBuilder(t *testing.T) {
-	got := (&PathTemplate{}).
-		WithLiteral("v1").
-		WithVariable(NewPathVariableBuilder("parent", "child").
-			WithLiteral("projects").
-			WithMatch().
-			WithAllowReserved().
-			WithLiteral("locations").
-			WithMatchRecursive().
-			Build()).
-		WithVariableNamed("v2", "field").
-		WithVerb("verb")
-	verb := "verb"
-	want := &PathTemplate{
-		Segments: []PathSegment{
-			*NewPathSegmentBuilder().WithLiteral("v1").Build(),
-			*NewPathSegmentBuilder().WithVariable(
-				NewPathVariableBuilder("parent", "child").
-					WithSegments("projects", "*", "locations", "**").
-					WithAllowReserved().
-					Build()).Build(),
-			*NewPathSegmentBuilder().WithVariable(
-				NewPathVariableBuilder("v2", "field").
-					WithSegments("*").
-					Build()).Build(),
-		},
-		Verb: verb,
-	}
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathSegment{}, PathVariable{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
 func TestPathBindingHeuristic(t *testing.T) {
 	heuristic := &TargetResource{
 		FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},

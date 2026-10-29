@@ -43,9 +43,10 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 		WithDocumentation("A create method.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v7").
-				WithLiteral("thing"),
+				WithLiteral("thing").
+				Build(),
 		).
 		WithQueryParameters("parent").
 		WithAPIVersion("v7_20260206")
@@ -58,10 +59,11 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 		WithDocumentation("Another sort of method.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v7").
 				WithLiteral("thing").
-				WithVerb("make"),
+				WithVerb("make").
+				Build(),
 		).
 		WithQueryParameters("parent").
 		WithAPIVersion("v7_20260206")

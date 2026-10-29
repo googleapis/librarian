@@ -36,13 +36,14 @@ func TestService(t *testing.T) {
 		WithID("..zones.get").
 		WithDocumentation("Returns the specified Zone resource.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
-			WithVariableNamed("zone")).
+			WithVariableNamed("zone").
+			Build()).
 		WithQueryParameters().
 		WithBodyFieldPath("")
 	getMethod.InputTypeID = "..zones.getRequest"
@@ -53,12 +54,13 @@ func TestService(t *testing.T) {
 		WithID("..zones.list").
 		WithDocumentation("Retrieves the list of Zone resources available to the specified project.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
-			WithLiteral("zones")).
+			WithLiteral("zones").
+			Build()).
 		WithQueryParameters(
 			"filter",
 			"maxResults",

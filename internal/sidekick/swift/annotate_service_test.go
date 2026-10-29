@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestAnnotateService(t *testing.T) {
@@ -102,7 +103,7 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	noBindingMethod := api.NewTestMethod("NoBindingMethod").
 		WithInput(inputType).
 		WithOutput(outputType).
@@ -163,7 +164,7 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 			name: "generated quickstart",
 			quickstartMethod: api.NewTestMethod("Quickstart").
 				WithVerb("GET").
-				WithPathTemplate(&api.PathTemplate{}),
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 			wantQuickstart: true,
 		},
 	} {
@@ -245,7 +246,7 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 	wantRequired := map[string]*api.Service{
 		sourceService.ID: sourceService,
 	}
-	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, cmpopts.IgnoreFields(api.Method{}, "Model"), cmpopts.IgnoreFields(api.Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Model"), cmpopts.IgnoreFields(api.Service{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -260,7 +261,7 @@ func TestAnnotateService_LRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 		WithOperationInfo(&api.OperationInfo{
 			ResponseTypeID: lroResponseType.ID,
 			MetadataTypeID: lroMetadataType.ID,
@@ -328,7 +329,7 @@ func TestAnnotateService_Pagination(t *testing.T) {
 		WithOutput(outputType).
 		WithPagination(pageToken).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("items").Build())
 
 	service := api.NewTestService("TestService").WithMethods(list)
 
@@ -380,7 +381,7 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 		WithOutput(outputType).
 		WithPagination(pageToken).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("items").Build())
 
 	service := api.NewTestService("TestService").WithMethods(list)
 
@@ -455,7 +456,7 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 				WithOutput(outputType).
 				WithSignatures(test.signatures...).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build())
 			service := api.NewTestService("TestService").WithMethods(create)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
 				WithPackageName("test")
@@ -492,7 +493,7 @@ func TestAnnotateService_WktImports(t *testing.T) {
 	method := api.NewTestMethod("DeleteThing").
 		WithInput(inputType).
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
 		ReturnEmpty()
 	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{inputType}, nil, []*api.Service{service}).
@@ -537,7 +538,7 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("upload").Build()).
 		WithSignatures(signature)
 
 	service := api.NewTestService("MapService").WithMethods(method)
@@ -598,7 +599,7 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build())
 
 			var messages []*api.Message
 			messages = append(messages, inputType, outputType)
@@ -650,27 +651,27 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("unary"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("unary").Build())
 
 	serverStreaming := api.NewTestMethod("ServerStreaming").
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("serverStreaming")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("serverStreaming").Build()).
 		WithServerSideStreaming()
 
 	clientStreaming := api.NewTestMethod("ClientStreaming").
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("clientStreaming")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("clientStreaming").Build()).
 		WithClientSideStreaming()
 
 	bidiStreaming := api.NewTestMethod("BidiStreaming").
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("bidiStreaming")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("bidiStreaming").Build()).
 		WithServerSideStreaming().
 		WithClientSideStreaming()
 
@@ -712,7 +713,7 @@ func TestAnnotateService_HTTPBodyRequestImports(t *testing.T) {
 		WithOutput(resp).
 		WithBodyFieldPath("body").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("webhook"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("webhook").Build())
 	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).
 		WithPackageName("test")
