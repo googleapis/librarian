@@ -351,7 +351,7 @@ See the guidelines for
 ## AI Agent skills
 
 This repository includes project-scoped
-[agent skills](https://geminicli.com/docs/cli/skills/) for your AI Agent.
+[agent skills](https://agentskills.io/) for your AI Agent.
 Skills are defined in the `.agents/skills/` directory and are discovered
 automatically when you run your AI Agent from the repository root.
 
