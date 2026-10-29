@@ -45,14 +45,14 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 		if len(schema.EnumDeprecated) != 0 {
 			deprecated = schema.EnumDeprecated[number]
 		}
-		value := &api.EnumValue{
-			Name:          name,
-			Number:        int32(number),
-			ID:            fmt.Sprintf("%s.%s", enum.ID, name),
-			Documentation: schema.EnumDescriptions[number],
-			Parent:        enum,
-			Deprecated:    deprecated,
-		}
+		value := api.NewEnumValueBuilder().
+			WithName(name).
+			WithNumber(int32(number)).
+			WithID(fmt.Sprintf("%s.%s", enum.ID, name)).
+			WithDocumentation(schema.EnumDescriptions[number]).
+			WithParent(enum).
+			WithDeprecated(deprecated).
+			Build()
 		enum.Values = append(enum.Values, value)
 		enum.UniqueNumberValues = append(enum.UniqueNumberValues, value)
 	}
