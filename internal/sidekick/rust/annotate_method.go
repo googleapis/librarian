@@ -314,11 +314,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			}
 			routingVariantAnnotations := &routingVariantAnnotations{
 				FieldAccessors:   fieldAccessors,
-				PrefixSegments:   annotateSegments(variant.Prefix.Segments),
-				MatchingSegments: annotateSegments(variant.Matching.Segments),
-				SuffixSegments:   annotateSegments(variant.Suffix.Segments),
+				PrefixSegments:   annotateSegments(variant.Prefix().Segments()),
+				MatchingSegments: annotateSegments(variant.Matching().Segments()),
+				SuffixSegments:   annotateSegments(variant.Suffix().Segments()),
 			}
-			variant.Codec = routingVariantAnnotations
+			variant.SetAnnotations(routingVariantAnnotations)
 		}
 	}
 	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model, m.Model.PackageName)
@@ -430,7 +430,7 @@ func isDiscoveryLro(m *api.Method) bool {
 }
 
 func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) ([]string, error) {
-	return makeAccessors(variant.FieldPath, m)
+	return makeAccessors(variant.FieldPath(), m)
 }
 
 func makeAccessors(fields []string, m *api.Method) ([]string, error) {

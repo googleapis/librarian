@@ -980,7 +980,7 @@ func NewTestRoutingInfo(name string, variants ...*RoutingInfoVariant) *RoutingIn
 
 // NewTestRoutingInfoVariant creates a RoutingInfoVariant with a field path.
 func NewTestRoutingInfoVariant(fieldPath ...string) *RoutingInfoVariant {
-	return &RoutingInfoVariant{FieldPath: fieldPath}
+	return NewRoutingInfoVariantBuilder().WithFieldPath(fieldPath...).Build()
 }
 
 // NewTestOperationInfo creates an OperationInfo with response and metadata type IDs.
