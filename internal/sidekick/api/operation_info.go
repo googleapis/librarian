@@ -18,12 +18,39 @@ package api
 type OperationInfo struct {
 	// The metadata type. If there is no metadata, this is set to
 	// `.google.protobuf.Empty`.
-	MetadataTypeID string
+	metadataTypeID string
 	// The result type. This is the expected type when the long running
 	// operation completes successfully.
-	ResponseTypeID string
+	responseTypeID string
 	// The method.
-	Method *Method
+	method *Method
 	// Language specific annotations.
-	Codec any
+	codec any
+}
+
+// MetadataTypeID returns the metadata type ID. If there is no metadata, this is
+// set to `.google.protobuf.Empty`.
+func (o *OperationInfo) MetadataTypeID() string {
+	return o.metadataTypeID
+}
+
+// ResponseTypeID returns the result type ID expected when the long running
+// operation completes successfully.
+func (o *OperationInfo) ResponseTypeID() string {
+	return o.responseTypeID
+}
+
+// Method returns the parent method.
+func (o *OperationInfo) Method() *Method {
+	return o.method
+}
+
+// Codec returns the language-specific annotations.
+func (o *OperationInfo) Codec() any {
+	return o.codec
+}
+
+// SetAnnotations sets the language-specific annotations.
+func (o *OperationInfo) SetAnnotations(codec any) {
+	o.codec = codec
 }
