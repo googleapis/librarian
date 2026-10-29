@@ -357,12 +357,13 @@ automatically when you run your AI Agent from the repository root.
 
 ### Using skills
 
-Skills activate automatically when Gemini identifies a matching task based on
-the skill's description. Run `gemini` from the repository root and describe
-what you need. If a matching skill exists, Gemini calls `activate_skill` and
-you will see a confirmation prompt with the skill name before it runs.
+Skills activate automatically when your AI Agent identifies a matching task
+based on the skill's description. Start your AI Agent from the repository root
+and describe what you need. If a matching skill exists, your AI Agent loads its
+instructions and follows them.
 
-To list all available skills, run `/skills list` inside your AI Agent.
+To see which skills are available, browse the `.agents/skills/` directory or
+consult your AI Agent's documentation for how to list skills.
 
 ## Expectations for the team
 
