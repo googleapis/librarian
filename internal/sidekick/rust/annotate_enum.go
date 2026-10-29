@@ -86,7 +86,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 	for _, ev := range e.Values {
 		name := enumValueVariantName(ev)
 		if existing, ok := seen[name]; ok {
-			if existing.Number != ev.Number {
+			if existing.Number() != ev.Number() {
 				slog.Warn("conflicting names for enum values", "enum.ID", e.ID)
 			}
 		} else {

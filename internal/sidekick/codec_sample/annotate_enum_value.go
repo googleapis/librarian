@@ -22,9 +22,9 @@ type enumValueAnnotations struct {
 }
 
 func (c *codec) annotateEnumValue(v *api.EnumValue, eAnn *enumAnnotations) error {
-	v.Codec = &enumValueAnnotations{
+	v.SetAnnotations(&enumValueAnnotations{
 		Enum: eAnn,
-		Name: v.Name + "_SAMPLE",
-	}
+		Name: v.Name() + "_SAMPLE",
+	})
 	return nil
 }

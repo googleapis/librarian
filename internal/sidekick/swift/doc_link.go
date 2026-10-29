@@ -131,7 +131,7 @@ func (c *codec) tryEnumValueDocLink(id string) (string, error) {
 		return "", nil
 	}
 	for _, v := range e.Values {
-		if v.Name == valueName {
+		if v.Name() == valueName {
 			p, err := c.enumTypeName(e)
 			if err != nil {
 				return "", err
