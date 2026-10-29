@@ -196,8 +196,8 @@ func TestFilterModelToTypesExternalTypes(t *testing.T) {
 	if len(filtered.ExternalMessages) != 1 || filtered.ExternalMessages[0].ID != externalMsg.ID {
 		t.Errorf("got ExternalMessages %v, want [%s]", filtered.ExternalMessages, externalMsg.ID)
 	}
-	if len(filtered.ExternalEnums) != 1 || filtered.ExternalEnums[0].ID != externalEnum.ID {
-		t.Errorf("got ExternalEnums %v, want [%s]", filtered.ExternalEnums, externalEnum.ID)
+	if len(filtered.ExternalEnums) != 1 || filtered.ExternalEnums[0].ID() != externalEnum.ID() {
+		t.Errorf("got ExternalEnums %v, want [%s]", filtered.ExternalEnums, externalEnum.ID())
 	}
 }
 

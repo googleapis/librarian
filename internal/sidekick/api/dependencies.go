@@ -149,8 +149,8 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if enum := model.Enum(id); enum != nil {
-			if enum.Parent != nil {
-				add(enum.Parent.ID)
+			if enum.parent != nil {
+				add(enum.parent.ID)
 			}
 			continue
 		}

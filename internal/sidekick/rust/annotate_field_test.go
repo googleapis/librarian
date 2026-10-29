@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func newTestCodec(t *testing.T, specificationFormat, packageName string, options map[string]string) *codec {
@@ -136,7 +137,7 @@ func TestFieldAnnotations(t *testing.T) {
 		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, wkt::internal::I64>",
 		SkipIfIsDefault:    true,
 	}
-	if diff := cmp.Diff(wantField, mapField.Codec); diff != "" {
+	if diff := cmp.Diff(wantField, mapField.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = ""
@@ -665,7 +666,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 	}
 	// We ignore the Parent.Codec field of Fields, as that points to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
-	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec")); diff != "" {
+	if diff := cmp.Diff(wantMessage, message.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent(), cmpopts.IgnoreFields(api.Field{}, "Parent.Codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -747,7 +748,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		ValueField:         valueField,
 		SkipIfIsDefault:    true,
 	}
-	if diff := cmp.Diff(wantField, mapField.Codec); diff != "" {
+	if diff := cmp.Diff(wantField, mapField.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -196,8 +196,8 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 
 func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 	name := enumName(e)
-	if e.Parent == nil {
-		prefix, err := c.typePrefix(e.Package, name)
+	if e.Parent() == nil {
+		prefix, err := c.typePrefix(e.Package(), name)
 		if err != nil {
 			return "", err
 		}
@@ -206,7 +206,7 @@ func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 		}
 		return name, nil
 	}
-	parent, err := c.messageTypeName(e.Parent)
+	parent, err := c.messageTypeName(e.Parent())
 	if err != nil {
 		return "", err
 	}

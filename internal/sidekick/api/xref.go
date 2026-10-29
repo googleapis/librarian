@@ -279,7 +279,7 @@ func enrichEnumSamples(e *Enum) {
 		return !v.Deprecated() && v.Number() != 0
 	}
 
-	for _, ev := range e.Values {
+	for _, ev := range e.values {
 		// A simple heuristic to avoid duplicates.
 		// This is not perfect, but it should handle the most common cases.
 		name := strcase.ToCamel(strings.ToLower(ev.Name()))
@@ -320,9 +320,9 @@ func enrichEnumSamples(e *Enum) {
 		result = result[:3]
 	}
 
-	e.ValuesForExamples = make([]*SampleValue, len(result))
+	e.valuesForExamples = make([]*SampleValue, len(result))
 	for i, ev := range result {
-		e.ValuesForExamples[i] = NewSampleValue(ev, i)
+		e.valuesForExamples[i] = NewSampleValue(ev, i)
 	}
 }
 

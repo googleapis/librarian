@@ -230,7 +230,7 @@ func SecretVersion() *api.Message {
 			WithType(api.TypezString),
 		api.NewTestField("state").
 			WithType(api.TypezEnum).
-			WithTypezID(state.ID),
+			WithTypezID(state.ID()),
 	)
 }
 
