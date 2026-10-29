@@ -408,9 +408,9 @@ func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
 
 	if f.ResourceReference != nil {
 		// The field is a resource reference.
-		if res := model.Resource(f.ResourceReference.Type); res != nil {
+		if res := model.Resource(f.ResourceReference.Type()); res != nil {
 			resource = res
-		} else if res := model.Resource(f.ResourceReference.ChildType); res != nil {
+		} else if res := model.Resource(f.ResourceReference.ChildType()); res != nil {
 			resource = res
 			truncateChild = true
 		}
@@ -433,35 +433,37 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 			continue
 		}
 		seg := ResourceNameSegment{
-			Literal: s.Literal(),
+			literal: s.Literal(),
 		}
-		if s.Variable() != nil && len(s.Variable().FieldPath()) > 0 {
-			// The parser used for parsing resource name patterns is the same used for
-			// parsing HTTP rules. Resource patterns do not have "field paths",
-			// instead they only have "placeholders" for each of the resource IDs of
-			// the resources that are part of the resource name hierarchy.
-			// These placeholders end up on the first, and only, field path
-			// that results when parsing a segment of a resource name pattern.
-			seg.Variable = s.Variable().FieldPath()[0]
+		if s.Variable() != nil {
+			if fieldPath := s.Variable().FieldPath(); len(fieldPath) > 0 {
+				// The parser used for parsing resource name patterns is the same used for
+				// parsing HTTP rules. Resource patterns do not have "field paths",
+				// instead they only have "placeholders" for each of the resource IDs of
+				// the resources that are part of the resource name hierarchy.
+				// These placeholders end up on the first, and only, field path
+				// that results when parsing a segment of a resource name pattern.
+				seg.variable = fieldPath[0]
+			}
 		}
 
 		// Try to combine with next segment if this is a literal and next is variable
 		if s.Literal() != "" && i+1 < len(pattern) && pattern[i+1].Variable() != nil {
-			if len(pattern[i+1].Variable().FieldPath()) > 0 {
-				seg.Variable = pattern[i+1].Variable().FieldPath()[0]
+			if fieldPath := pattern[i+1].Variable().FieldPath(); len(fieldPath) > 0 {
+				seg.variable = fieldPath[0]
 			}
 			i++
 		}
 
 		// Clean up leading and trailing slashes
-		seg.Literal = strings.TrimSuffix(strings.TrimPrefix(seg.Literal, "/"), "/")
+		seg.literal = strings.TrimSuffix(strings.TrimPrefix(seg.literal, "/"), "/")
 
 		segments = append(segments, seg)
 	}
 	if skipLast && len(segments) > 0 {
 		segments = segments[:len(segments)-1]
 	}
-	return &ResourceNamePattern{Segments: segments}
+	return NewResourceNamePattern(segments...)
 }
 
 func aipStandardGetInfo(m *Method) *SampleInfo {
@@ -695,10 +697,10 @@ func findBestResourceFieldByType(message *Message, model *API, targetType string
 		if field.ResourceReference == nil {
 			continue
 		}
-		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+		if field.ResourceReference.Type() == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource := model.Resource(field.ResourceReference.Type)
+		resource := model.Resource(field.ResourceReference.Type())
 		if resource == nil {
 			continue
 		}
@@ -718,10 +720,10 @@ func findBestResourceFieldBySingular(message *Message, model *API, targetSingula
 		if field.ResourceReference == nil {
 			continue
 		}
-		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+		if field.ResourceReference.Type() == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource := model.Resource(field.ResourceReference.Type)
+		resource := model.Resource(field.ResourceReference.Type())
 		if resource == nil {
 			continue
 		}
@@ -743,7 +745,7 @@ func findBestParentFieldByType(message *Message, childType string) *Field {
 		if field.Name == StandardFieldNameForParentResourceRef {
 			return field
 		}
-		if field.ResourceReference != nil && field.ResourceReference.ChildType == childType {
+		if field.ResourceReference != nil && field.ResourceReference.ChildType() == childType {
 			bestField = field
 		}
 	}

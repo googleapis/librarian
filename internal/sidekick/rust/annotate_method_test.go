@@ -470,12 +470,10 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 func TestAnnotateSampleInfo(t *testing.T) {
 	field := api.NewTestField("name").
 		WithType(api.TypezString).
-		WithResourceNamePattern(&api.ResourceNamePattern{
-			Segments: []api.ResourceNameSegment{
-				{Literal: "projects"},
-				{Variable: "project"},
-			},
-		})
+		WithResourceNamePattern(api.NewTestResourceNamePattern(
+			api.NewResourceNameSegment("projects", ""),
+			api.NewResourceNameSegment("", "project"),
+		))
 	message := api.NewTestMessage("TestMessage").
 		WithPackage("test.v1").
 		WithFields(field)

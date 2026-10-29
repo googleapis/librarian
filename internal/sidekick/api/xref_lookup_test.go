@@ -64,7 +64,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestResourceFieldByType(msg, f.model, targetType)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -119,7 +119,7 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestResourceFieldBySingular(msg, f.model, targetSingular)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -168,7 +168,7 @@ func TestFindBestParentFieldByType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestParentFieldByType(msg, childType)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -361,7 +361,7 @@ func TestFindBodyField(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findBodyField(tc.message, tc.pathInfo, tc.targetType, tc.singular)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -395,7 +395,7 @@ func TestFindResourceIDField(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findResourceIDField(tc.message, tc.singular)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
