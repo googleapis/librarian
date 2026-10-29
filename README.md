@@ -19,6 +19,12 @@ To run without installing:
 
 See the [doc/](doc/) folder for additional documentation.
 
+## Learning the code
+
+Use the [code-walkthrough](.agents/skills/code-walkthrough) skill by prompting
+your AI agent "walk me through the code" to generate an interactive walkthrough
+site locally. Note that this can take time to generate (~10-15 minutes).
+
 ## Contributing
 
 This project supports the Google Cloud SDK ecosystem and is not
