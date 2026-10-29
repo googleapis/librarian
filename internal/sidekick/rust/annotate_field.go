@@ -230,7 +230,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		ann.MessageType = field.MessageType()
 	}
 	if field.Group() != nil {
-		ann.OtherFieldsInGroup = language.FilterSlice(field.Group().Fields, func(f *api.Field) bool { return field != f })
+		ann.OtherFieldsInGroup = language.FilterSlice(field.Group().Fields(), func(f *api.Field) bool { return field != f })
 	}
 	ann.FieldTypeIsParentType = (field.MessageType() == message || // Single or repeated field whose type is the same as the containing type.
 		// Map field whose value type is the same as the containing type.

@@ -14,21 +14,52 @@
 
 package api
 
+import "slices"
+
 // OneOf is a group of fields that are mutually exclusive. Notably, proto3 optional
 // fields are all their own one-of.
 type OneOf struct {
-	// Name of the attribute.
-	Name string
-	// ID is a unique identifier.
-	ID string
-	// Documentation for the field.
-	Documentation string
-	// Fields associated with the one-of.
-	Fields []*Field
-	// The best field to show in a oneof related samples.
-	// Non deprecated fields are preferred, then scalar, repeated, map fields
-	// in that order.
-	ExampleField *Field
-	// Codec is a placeholder to put language specific annotations.
-	Codec any
+	name          string
+	id            string
+	documentation string
+	fields        []*Field
+	exampleField  *Field
+	codec         any
+}
+
+// Name returns the name of the attribute.
+func (o *OneOf) Name() string {
+	return o.name
+}
+
+// ID returns a unique identifier.
+func (o *OneOf) ID() string {
+	return o.id
+}
+
+// Documentation returns the documentation for the field.
+func (o *OneOf) Documentation() string {
+	return o.documentation
+}
+
+// Fields returns the fields associated with the one-of.
+func (o *OneOf) Fields() []*Field {
+	return slices.Clone(o.fields)
+}
+
+// ExampleField returns the best field to show in a oneof related samples.
+// Non deprecated fields are preferred, then scalar, repeated, map fields
+// in that order.
+func (o *OneOf) ExampleField() *Field {
+	return o.exampleField
+}
+
+// Codec returns a placeholder to put language specific annotations.
+func (o *OneOf) Codec() any {
+	return o.codec
+}
+
+// SetAnnotations sets the language-specific codec annotations on the one-of.
+func (o *OneOf) SetAnnotations(codec any) {
+	o.codec = codec
 }

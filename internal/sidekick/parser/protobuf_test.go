@@ -218,9 +218,6 @@ func TestProtobuf_Proto2Optional(t *testing.T) {
 				WithDocumentation("A oneof field.").
 				WithType(api.TypezString),
 		)
-	for _, f := range choice.Fields {
-		f.WithGroup(nil)
-	}
 	apitest.CheckMessage(t, message, newTestProtobufFakeMessage(
 		api.NewTestField("f_int32").
 			WithDocumentation("An optional scalar field.").
@@ -504,9 +501,6 @@ func TestProtobuf_OneOfs(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID(".test.Inner"),
 		)
-	for _, f := range choice.Fields {
-		f.WithGroup(nil)
-	}
 	wantFake := api.NewTestMessage("Fake").
 		WithPackage("test").
 		WithDocumentation("A test message.").

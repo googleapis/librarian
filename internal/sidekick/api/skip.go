@@ -100,7 +100,7 @@ func skipMessageElements(message *Message, skip func(id string) bool, skipField 
 		if skipField(x.id) {
 			return true
 		}
-		if x.group != nil && skipField(x.group.ID) {
+		if x.group != nil && skipField(x.group.id) {
 			return true
 		}
 		return false
@@ -108,14 +108,14 @@ func skipMessageElements(message *Message, skip func(id string) bool, skipField 
 	message.Fields = slices.DeleteFunc(message.Fields, skipped)
 	message.SkippedFields = slices.DeleteFunc(previous, func(x *Field) bool { return !skipped(x) })
 	for _, oneof := range message.OneOfs {
-		oneof.Fields = slices.DeleteFunc(oneof.Fields, func(x *Field) bool {
+		oneof.fields = slices.DeleteFunc(oneof.fields, func(x *Field) bool {
 			return skipField(x.id)
 		})
-		if len(oneof.Fields) > 0 {
-			oneof.ExampleField = slices.MaxFunc(oneof.Fields, sortOneOfFieldForExamples)
+		if len(oneof.fields) > 0 {
+			oneof.exampleField = slices.MaxFunc(oneof.fields, sortOneOfFieldForExamples)
 		}
 	}
 	message.OneOfs = slices.DeleteFunc(message.OneOfs, func(x *OneOf) bool {
-		return skipField(x.ID) || len(x.Fields) == 0
+		return skipField(x.id) || len(x.fields) == 0
 	})
 }

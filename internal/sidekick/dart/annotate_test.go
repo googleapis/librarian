@@ -948,7 +948,7 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 		// one ofs
 		{
 			name:  "oneof bool",
-			field: api.NewTestOneOf("oneof").WithFields(api.NewTestField("bool").WithType(api.TypezBool)).Fields[0],
+			field: api.NewTestOneOf("oneof").WithFields(api.NewTestField("bool").WithType(api.TypezBool)).Fields()[0],
 			want:  []string{"if (result.bool$ case final $1?) 'bool': '${$1}'"},
 		},
 
@@ -1277,7 +1277,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 		// one ofs
 		{
 			name:  "oneof bool",
-			field: api.NewTestOneOf("oneof").WithFields(api.NewTestField("bool").WithType(api.TypezBool)).Fields[0],
+			field: api.NewTestOneOf("oneof").WithFields(api.NewTestField("bool").WithType(api.TypezBool)).Fields()[0],
 			want:  "switch (json['bool']) { null => null, Object $1 => decodeBool($1)}",
 		},
 
