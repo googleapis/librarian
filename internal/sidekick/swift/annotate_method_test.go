@@ -425,10 +425,7 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 		WithOutput(outputType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: lroResponseType.ID,
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -474,10 +471,7 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		WithOutput(outputType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", lroMetadataType.ID))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -827,10 +821,7 @@ func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
 				WithOutput(outputType).
 				WithVerb("POST").
 				WithPathTemplate(api.NewPathTemplateBuilder().Build()).
-				WithOperationInfo(&api.OperationInfo{
-					ResponseTypeID: lroResponseType.ID,
-					MetadataTypeID: lroMetadataType.ID,
-				})
+				WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
 			service := api.NewTestService("TestService").WithMethods(method)
 
 			model := api.NewTestAPI(

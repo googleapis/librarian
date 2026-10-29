@@ -1596,10 +1596,10 @@ func findUsedPackages(model *api.API, c *codec) {
 				usePackage(m.Package, model, c)
 			}
 			if method.OperationInfo != nil {
-				if m := model.Message(method.OperationInfo.MetadataTypeID); m != nil {
+				if m := model.Message(method.OperationInfo.MetadataTypeID()); m != nil {
 					usePackage(m.Package, model, c)
 				}
-				if m := model.Message(method.OperationInfo.ResponseTypeID); m != nil {
+				if m := model.Message(method.OperationInfo.ResponseTypeID()); m != nil {
 					usePackage(m.Package, model, c)
 				}
 			}

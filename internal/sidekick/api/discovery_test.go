@@ -68,3 +68,27 @@ func TestPathParameters(t *testing.T) {
 		})
 	}
 }
+
+func TestDiscoveryLro(t *testing.T) {
+	got := NewDiscoveryLroBuilder().
+		WithPollingPathParameters("project", "zone").
+		Build()
+	got.SetAnnotations("lro-codec")
+	want := &DiscoveryLro{
+		pollingPathParameters: []string{"project", "zone"},
+		codec:                 "lro-codec",
+	}
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(DiscoveryLro{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(want.pollingPathParameters, got.PollingPathParameters()); diff != "" {
+		t.Errorf("PollingPathParameters() mismatch (-want +got):\n%s", diff)
+	}
+	got.PollingPathParameters()[0] = "mutated"
+	if got.PollingPathParameters()[0] != "project" {
+		t.Errorf("PollingPathParameters() should return a defensive copy")
+	}
+	if got.Codec() != "lro-codec" {
+		t.Errorf("Codec() = %v, want %q", got.Codec(), "lro-codec")
+	}
+}

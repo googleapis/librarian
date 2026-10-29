@@ -384,7 +384,7 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 	}
 
 	// Ensure we have the necessary dependencies for the LRO response and metadata types.
-	respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
+	respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID())
 	if err != nil {
 		return err
 	}
@@ -400,7 +400,7 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 			}
 		}
 	}
-	metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
+	metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID())
 	if err != nil {
 		return err
 	}

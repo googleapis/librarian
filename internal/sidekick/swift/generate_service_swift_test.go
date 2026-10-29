@@ -732,10 +732,7 @@ func TestGenerateService_LRO(t *testing.T) {
 		WithOutput(operationType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("workflows").Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: workflowType.ID,
-			MetadataTypeID: metadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(workflowType.ID, metadataType.ID))
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationInputType).
@@ -845,10 +842,7 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		WithOutput(operationType).
 		WithVerb("DELETE").
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("workflows").Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: metadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID))
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationInputType).
@@ -923,10 +917,8 @@ func TestGenerateService_DiscoveryLRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("POST").
-		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("instances").Build())
-	insertInstance.DiscoveryLro = &api.DiscoveryLro{
-		PollingPathParameters: []string{"zone"},
-	}
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("instances").Build()).
+		WithDiscoveryLro(api.NewTestDiscoveryLro("zone"))
 
 	service := api.NewTestService("Instances").
 		WithPackage("google.cloud.compute.v1").
