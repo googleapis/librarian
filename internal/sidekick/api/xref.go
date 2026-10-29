@@ -800,12 +800,6 @@ func crossReferenceField(model *API, f *Field) error {
 			return fmt.Errorf("unknown message type %s for field %s", f.TypezID, f.ID)
 		}
 		f.MessageType = t
-		if t.IsMap && len(t.Fields) == 2 {
-			if model.Map(f.TypezID) == nil {
-				model.AddMap(&Map{ID: f.TypezID, Key: t.Fields[0], Value: t.Fields[1]})
-			}
-			f.MapType = model.Map(f.TypezID)
-		}
 	case TypezEnum:
 		t := model.Enum(f.TypezID)
 		if t == nil {

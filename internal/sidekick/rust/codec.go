@@ -514,9 +514,6 @@ func oneOfFieldTypeFormatter(f *api.Field, baseType string) string {
 	case f.Repeated:
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType)
 	case f.Typez == api.TypezMessage:
-		if f.Map {
-			return baseType
-		}
 		return fmt.Sprintf("std::boxed::Box<%s>", baseType)
 	case f.Optional:
 		return fmt.Sprintf("std::option::Option<%s>", baseType)
@@ -541,7 +538,7 @@ func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSp
 		if f.Optional {
 			return fmt.Sprintf("std::option::Option<std::boxed::Box<%s>>", baseType), nil
 		}
-		if f.Map || f.Typez == api.TypezMap {
+		if f.Typez == api.TypezMap {
 			// Maps are never boxed.
 			return baseType, nil
 		}
@@ -579,9 +576,6 @@ func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationP
 	case api.TypezMap:
 		return c.mapType(f, model)
 	case api.TypezMessage:
-		if f.Map {
-			return c.mapType(f, model)
-		}
 		m := model.Message(f.TypezID)
 		if m == nil {
 			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
@@ -1563,7 +1557,7 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 	if f == nil {
 		return
 	}
-	if f.Map || f.Typez == api.TypezMap {
+	if f.Typez == api.TypezMap {
 		mapType := f.MapType
 		if mapType == nil {
 			mapType = model.Map(f.TypezID)

@@ -253,7 +253,6 @@ func TestProtobuf_Proto2Optional(t *testing.T) {
 		api.NewTestField("f_map").
 			WithDocumentation("A map field.").
 			WithMap().
-			WithType(api.TypezMessage).
 			WithTypezID(".test.Fake.FMapEntry"),
 		api.NewTestField("result").
 			WithType(api.TypezGroup).
@@ -275,21 +274,19 @@ func TestProtobuf_Proto2Optional(t *testing.T) {
 				WithProto2Optional(),
 		))
 
-	message = test.Message(".test.Fake.FMapEntry")
-	if message == nil {
-		t.Fatalf("Cannot find message %s in API", ".test.Fake.FMapEntry")
+	mapEntry := test.Map(".test.Fake.FMapEntry")
+	if mapEntry == nil {
+		t.Fatalf("Cannot find map %s in API", ".test.Fake.FMapEntry")
 	}
-	wantMapEntry := api.NewTestMessage("FMapEntry").
-		WithPackage("test").
-		WithID(".test.Fake.FMapEntry").
-		WithFields(
-			api.NewTestField("key").
-				WithType(api.TypezString),
-			api.NewTestField("value").
-				WithType(api.TypezInt32),
-		)
-	wantMapEntry.IsMap = true
-	apitest.CheckMessage(t, message, wantMapEntry)
+	apitest.CheckMap(t, mapEntry, api.NewTestMapWithFields(
+		".test.Fake.FMapEntry",
+		api.NewTestField("key").
+			WithType(api.TypezString).
+			WithJSONName("key"),
+		api.NewTestField("value").
+			WithType(api.TypezInt32).
+			WithJSONName("value"),
+	))
 }
 
 func TestProtobuf_SkipExternalMessages(t *testing.T) {
@@ -623,56 +620,53 @@ func TestProtobuf_MapFields(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	want := api.NewTestMessage("Fake").
+	apitest.CheckMessage(t, message, api.NewTestMessage("Fake").
 		WithPackage("test").
 		WithFields(
 			api.NewTestField("singular_map").
-				WithMap().
-				WithType(api.TypezMessage).
-				WithTypezID(".test.Fake.SingularMapEntry"),
+				WithType(api.TypezMap).
+				WithTypezID(".test.Fake.SingularMapEntry").
+				WithJSONName("singularMap").
+				WithMap(),
 			api.NewTestField("enum_value").
-				WithMap().
-				WithType(api.TypezMessage).
-				WithTypezID(".test.Fake.EnumValueEntry"),
-		)
-	apitest.CheckMessage(t, message, want)
+				WithType(api.TypezMap).
+				WithTypezID(".test.Fake.EnumValueEntry").
+				WithJSONName("enumValue").
+				WithMap(),
+		))
 
 	if diff := cmp.Diff([]*api.Message(nil), message.Messages); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	message = test.Message(".test.Fake.SingularMapEntry")
-	if message == nil {
-		t.Fatalf("Cannot find message %s in API State", ".test.Fake.SingularMapEntry")
+	singularMap := test.Map(".test.Fake.SingularMapEntry")
+	if singularMap == nil {
+		t.Fatalf("Cannot find map %s in API State", ".test.Fake.SingularMapEntry")
 	}
-	wantSingularMapEntry := api.NewTestMessage("SingularMapEntry").
-		WithPackage("test").
-		WithID(".test.Fake.SingularMapEntry").
-		WithFields(
-			api.NewTestField("key").
-				WithType(api.TypezString),
-			api.NewTestField("value").
-				WithType(api.TypezInt32),
-		)
-	wantSingularMapEntry.IsMap = true
-	apitest.CheckMessage(t, message, wantSingularMapEntry)
+	apitest.CheckMap(t, singularMap, api.NewTestMapWithFields(
+		".test.Fake.SingularMapEntry",
+		api.NewTestField("key").
+			WithType(api.TypezString).
+			WithJSONName("key"),
+		api.NewTestField("value").
+			WithType(api.TypezInt32).
+			WithJSONName("value"),
+	))
 
-	message = test.Message(".test.Fake.EnumValueEntry")
-	if message == nil {
-		t.Fatalf("Cannot find message %s in API State", ".test.Fake.EnumValueEntry")
+	enumValueMap := test.Map(".test.Fake.EnumValueEntry")
+	if enumValueMap == nil {
+		t.Fatalf("Cannot find map %s in API State", ".test.Fake.EnumValueEntry")
 	}
-	wantEnumValueEntry := api.NewTestMessage("EnumValueEntry").
-		WithPackage("test").
-		WithID(".test.Fake.EnumValueEntry").
-		WithFields(
-			api.NewTestField("key").
-				WithType(api.TypezString),
-			api.NewTestField("value").
-				WithType(api.TypezEnum).
-				WithTypezID(".test.TestEnum"),
-		)
-	wantEnumValueEntry.IsMap = true
-	apitest.CheckMessage(t, message, wantEnumValueEntry)
+	apitest.CheckMap(t, enumValueMap, api.NewTestMapWithFields(
+		".test.Fake.EnumValueEntry",
+		api.NewTestField("key").
+			WithType(api.TypezString).
+			WithJSONName("key"),
+		api.NewTestField("value").
+			WithType(api.TypezEnum).
+			WithTypezID(".test.TestEnum").
+			WithJSONName("value"),
+	))
 }
 
 func TestProtobuf_Service(t *testing.T) {

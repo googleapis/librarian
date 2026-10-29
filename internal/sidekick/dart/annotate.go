@@ -763,7 +763,7 @@ func createToStringLines(message *api.Message) []string {
 		name := codec.Name
 
 		// Don't generate toString() entries for lists, maps, or messages.
-		if field.Repeated || field.Typez == api.TypezMessage {
+		if field.Repeated || field.Typez == api.TypezMessage || field.Typez == api.TypezMap {
 			continue
 		}
 
@@ -1308,7 +1308,7 @@ func (annotate *annotateModel) buildQueryLines(
 			return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
 		}
 
-	case field.Map || field.Typez == api.TypezMap:
+	case field.Typez == api.TypezMap:
 		// Maps are not supported.
 		slog.Error("unhandled query param", "type", "map")
 		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))
@@ -1444,13 +1444,6 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 		val := annotate.fieldType(mapType.Value)
 		out = "Map<" + key + ", " + val + ">"
 	case api.TypezMessage:
-		if f.Map {
-			mapType := lookupMap(annotate.model, f)
-			key := annotate.fieldType(mapType.Key)
-			val := annotate.fieldType(mapType.Value)
-			out = "Map<" + key + ", " + val + ">"
-			break
-		}
 		message := annotate.model.Message(f.TypezID)
 		if message == nil {
 			slog.Error("unable to lookup type", "id", f.TypezID)

@@ -152,7 +152,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 			unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
 			return
 		}
-		if f.Map || f.Typez == api.TypezMap {
+		if f.Typez == api.TypezMap {
 			mapType := f.MapType
 			if mapType == nil {
 				mapType = model.Map(f.TypezID)
@@ -295,7 +295,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 
 	var unusedTypes []string
 	for m := range model.AllMessages() {
-		if m.ID != "" && !isWKT(m.ID) && !m.IsMap && !reachableMsgs[m.ID] {
+		if m.ID != "" && !isWKT(m.ID) && !reachableMsgs[m.ID] {
 			unusedTypes = append(unusedTypes, m.ID)
 		}
 	}

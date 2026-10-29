@@ -305,7 +305,7 @@ func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, metho
 	if itemsField.Repeated {
 		return c.addFieldDependencies(annotations, itemsField)
 	}
-	if itemsField.Map || itemsField.Typez == api.TypezMap {
+	if itemsField.Typez == api.TypezMap {
 		mapType, err := lookupMap(c.Model, itemsField)
 		if err != nil {
 			return err
@@ -316,7 +316,7 @@ func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, metho
 }
 
 func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api.Field) error {
-	if field.Map || field.Typez == api.TypezMap {
+	if field.Typez == api.TypezMap {
 		mapType, err := lookupMap(c.Model, field)
 		if err != nil {
 			return err

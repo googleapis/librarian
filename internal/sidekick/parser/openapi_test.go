@@ -300,9 +300,9 @@ func TestOpenAPI_MapString(t *testing.T) {
 		WithID("..Fake").
 		WithDocumentation("A test message.").
 		WithFields(
-			api.NewTestField("fMap").WithType(api.TypezMessage).WithTypezID("$map<string, string>").WithMap(),
-			api.NewTestField("fMapS32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
-			api.NewTestField("fMapS64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
+			api.NewTestField("fMap").WithType(api.TypezMap).WithTypezID("$map<string, string>").WithMap(),
+			api.NewTestField("fMapS32").WithType(api.TypezMap).WithTypezID("$map<string, int32>").WithMap(),
+			api.NewTestField("fMapS64").WithType(api.TypezMap).WithTypezID("$map<string, int64>").WithMap(),
 		)
 	apitest.CheckMessage(t, test.Messages[0], wantMap)
 }
@@ -334,8 +334,8 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 		WithID("..Fake").
 		WithDocumentation("A test message.").
 		WithFields(
-			api.NewTestField("fMapI32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
-			api.NewTestField("fMapI64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
+			api.NewTestField("fMapI32").WithType(api.TypezMap).WithTypezID("$map<string, int32>").WithMap(),
+			api.NewTestField("fMapI64").WithType(api.TypezMap).WithTypezID("$map<string, int64>").WithMap(),
 		)
 	apitest.CheckMessage(t, test.Messages[0], wantMapInteger)
 }
@@ -388,7 +388,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				WithOptional(),
 			api.NewTestField("labels").
 				WithDocumentation("Cross-service attributes for the location. For example\n\n    {\"cloud.googleapis.com/region\": \"us-east1\"}").
-				WithType(api.TypezMessage).
+				WithType(api.TypezMap).
 				WithTypezID("$map<string, string>").
 				WithMap(),
 			api.NewTestField("metadata").
