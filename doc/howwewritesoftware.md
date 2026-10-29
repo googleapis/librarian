@@ -11,7 +11,7 @@ review principles to preemptively address recurring concerns in pull requests.
     cross-cutting logic into common packages.
 *   **Cross-Language Consistency:** If a solution exists for one language
     (e.g., dependency management), adopt that established pattern rather than
-    inventing a new one for a different language.
+    inventing a new one for a different language (see this [example](https://github.com/googleapis/librarian/pull/6613) in which the Java-specific tidy logic was implemented within the Java-specific validation, as is the case for all languages, as opposed to top-level validation).
 
 ## 2. Refactoring, DRY & State Management
 
@@ -23,20 +23,18 @@ review principles to preemptively address recurring concerns in pull requests.
 *   **Atomicity in State Mutations:** Never mutate shared state or
     configuration objects before fallible operations. Perform all checks first,
     and only mutate state when success is guaranteed.
-*   **Inline Single-Use Variables:** If a variable is used only immediately
+*   **Inline Single-Use Local Variables:** If a local variable is used only immediately
     after its declaration (e.g., as arguments to a command), inline it to
-    reduce boilerplate.
-*   **Minimize Vertical Density:** Group related code tightly. Avoid
-    unnecessary blank lines, using them only to signal a shift in logic.
+    reduce boilerplate. This does not apply to magic numbers or constants, which should always be named for clarity.
 *   **Avoid Overly Defensive Code:** Do not add redundant checks for files or
     data that are fully controlled by the project, or if existence is already
     guaranteed by previous pipeline steps.
 
 ## 3. Reproducibility & Integrity
 
-*   **Pin Tool and Dependency Versions:** Never use floating tags like
+*   **Pin Tool and Dependency Versions:** Avoid using floating tags like
     `"latest"` for tools or dependencies. Always enforce pinned, stable
-    versions for reproducible builds.
+    versions for reproducible builds where possible.
 *   **Prefer Immutable Identifiers:** Use specific commit SHAs rather than
     resolving branch names when downloading remote tools or checking out
     repositories. Verify file integrity using SHA-256 checksums where
@@ -56,6 +54,7 @@ review principles to preemptively address recurring concerns in pull requests.
     path.
 *   **Test Realistic Scenarios:** Avoid writing tests for impossible states
     (e.g., passing Python configurations to Java validators).
+*   **Targeted and Clear Tests:** Tests should be targeted and clearly named to explain (through the name or documentation) what they are validating. Where possible, separate setup, action, and assertion sections with `// Given`, `// When`, and `// Then` comments.
 
 ## 5. General Code Health
 
