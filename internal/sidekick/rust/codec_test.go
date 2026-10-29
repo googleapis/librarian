@@ -2158,11 +2158,12 @@ func TestPathFmt(t *testing.T) {
 			"/v1/{}",
 			(&api.PathTemplate{}).
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("locations").
-					WithMatch()),
+					WithMatch().
+					Build()),
 		},
 		{
 			"/v1/{}:action",

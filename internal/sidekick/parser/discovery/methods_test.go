@@ -78,7 +78,7 @@ func TestMakeServiceMethods(t *testing.T) {
 			if got == nil {
 				t.Fatalf("expected method %s in the API model", test.id)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -114,7 +114,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 	want.InputTypeID = "..zoneOperations.deleteRequest"
 	want.OutputTypeID = ".google.protobuf.Empty"
 	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -145,7 +145,7 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 	want.InputTypeID = "..projects.moveInstanceRequest"
 	want.OutputTypeID = "..Operation"
 	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "body"}}}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -158,11 +158,11 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		targetSegments := tmpl.Segments[firstIndex : i+1]
 		for _, s := range targetSegments {
 			if s.Variable != nil {
-				_, err := findField(method.InputType, s.Variable.FieldPath)
+				_, err := findField(method.InputType, s.Variable.FieldPath())
 				if err != nil {
 					return nil, err
 				}
-				fieldPaths = append(fieldPaths, s.Variable.FieldPath)
+				fieldPaths = append(fieldPaths, s.Variable.FieldPath())
 			}
 		}
 		template, err := constructTemplate(method, targetSegments)
@@ -190,7 +190,7 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 			continue
 		}
 
-		fieldPath := segment.Variable.FieldPath
+		fieldPath := segment.Variable.FieldPath()
 		field, err := findField(method.InputType, fieldPath)
 		if err != nil {
 			return nil, err
@@ -266,9 +266,9 @@ func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, e
 			}
 			result = append(result, PathSegment{Literal: l})
 		} else if seg.Variable != nil {
-			result = append(result, PathSegment{Variable: &PathVariable{
-				FieldPath: seg.Variable.FieldPath,
-			}})
+			result = append(result, PathSegment{
+				Variable: NewPathVariableBuilder(seg.Variable.FieldPath()...).Build(),
+			})
 		}
 	}
 	return result, nil

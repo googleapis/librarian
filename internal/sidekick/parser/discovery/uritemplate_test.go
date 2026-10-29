@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestParseUriTemplateSuccess(t *testing.T) {
@@ -45,12 +46,12 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 			WithLiteral("reservationSubBlocks")},
 		{"v1/{+parent}/externalAccountKeys", (&api.PathTemplate{}).
 			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("parent").WithAllowReserved().WithMatchRecursive()).
+			WithVariable(api.NewPathVariableBuilder("parent").WithAllowReserved().WithMatchRecursive().Build()).
 			WithLiteral("externalAccountKeys")},
 		{"dns/v1/{+resource}:getIamPolicy", (&api.PathTemplate{}).
 			WithLiteral("dns").
 			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("resource").WithAllowReserved().WithMatchRecursive()).
+			WithVariable(api.NewPathVariableBuilder("resource").WithAllowReserved().WithMatchRecursive().Build()).
 			WithVerb("getIamPolicy")},
 	} {
 		t.Run(test.input, func(t *testing.T) {
@@ -58,7 +59,7 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+			if diff := cmp.Diff(test.want, got, apitest.AllowUnexported(), cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -103,7 +104,7 @@ func TestParseExpression(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariable(test.want).WithMatch()}, gotSegment); diff != "" {
+			if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariableBuilder(test.want).WithMatch().Build()}, gotSegment, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if len(test.want)+2 != gotWidth {

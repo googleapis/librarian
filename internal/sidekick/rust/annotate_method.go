@@ -509,7 +509,7 @@ func annotateSegments(segments []string) []string {
 }
 
 func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubstitution, error) {
-	accessors, err := makeAccessors(v.FieldPath, m)
+	accessors, err := makeAccessors(v.FieldPath(), m)
 	if err != nil {
 		return nil, err
 	}
@@ -519,13 +519,13 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		fieldAccessor.WriteString(a)
 	}
 	var rustNames []string
-	for _, n := range v.FieldPath {
+	for _, n := range v.FieldPath() {
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	var pathExtraction *PathExtraction
 	fullBody := m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
 	if fullBody {
-		clears, err := makeClearAccessors(v.FieldPath, m)
+		clears, err := makeClearAccessors(v.FieldPath(), m)
 		if err != nil {
 			return nil, err
 		}
@@ -540,7 +540,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		FieldAccessor:  fieldAccessor.String(),
 		FieldName:      strings.Join(rustNames, "."),
 		PathExtraction: pathExtraction,
-		Template:       v.Segments,
+		Template:       v.Segments(),
 	}
 	return binding, nil
 }

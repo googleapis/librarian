@@ -75,11 +75,12 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 		WithVerb("GET").
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("name").
+			WithVariable(api.NewPathVariableBuilder("name").
 				WithLiteral("projects").
 				WithMatch().
 				WithLiteral("locations").
-				WithMatch())).
+				WithMatch().
+				Build())).
 		WithQueryParameters()
 	want.SourceServiceID = ".google.cloud.location.Locations"
 	want.InputTypeID = ".google.cloud.location.GetLocationRequest"
@@ -139,9 +140,10 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 		WithVerb("POST").
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("resource").
+			WithVariable(api.NewPathVariableBuilder("resource").
 				WithLiteral("services").
-				WithMatch()).
+				WithMatch().
+				Build()).
 			WithVerb("getIamPolicy")).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
@@ -209,9 +211,10 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 		WithVerb("GET").
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v2").
-			WithVariable(api.NewPathVariable("name").
+			WithVariable(api.NewPathVariableBuilder("name").
 				WithLiteral("operations").
-				WithMatch())).
+				WithMatch().
+				Build())).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
 	want.SourceServiceID = ".google.longrunning.Operations"
@@ -290,9 +293,10 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 		WithVerb("DELETE").
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v2").
-			WithVariable(api.NewPathVariable("name").
+			WithVariable(api.NewPathVariableBuilder("name").
 				WithLiteral("operations").
-				WithMatch())).
+				WithMatch().
+				Build())).
 		WithQueryParameters().
 		WithBodyFieldPath("*").
 		ReturnEmpty()
@@ -367,9 +371,10 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 		WithVerb("GET").
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("name").
+			WithVariable(api.NewPathVariableBuilder("name").
 				WithLiteral("operations").
-				WithMatch())).
+				WithMatch().
+				Build())).
 		WithQueryParameters()
 	want.SourceServiceID = ".test.LroService"
 	want.InputTypeID = ".google.longrunning.GetOperationRequest"
