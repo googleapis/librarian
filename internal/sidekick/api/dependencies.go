@@ -90,7 +90,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 
 		// Recurse one level, depending on the input type.
 		if service := model.Service(id); service != nil {
-			for _, method := range service.Methods {
+			for _, method := range service.methods {
 				add(method.id)
 			}
 			continue
@@ -134,7 +134,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 
 		// Recurse one level, depending on the input type.
 		if method := model.Method(id); method != nil {
-			add(method.service.ID)
+			add(method.service.id)
 			continue
 		}
 

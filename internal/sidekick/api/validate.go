@@ -37,7 +37,7 @@ func Validate(model *API) error {
 	}
 
 	for _, s := range model.Services {
-		if err := validatePkg(s.Package, s.ID); err != nil {
+		if err := validatePkg(s.packagez, s.id); err != nil {
 			return err
 		}
 	}

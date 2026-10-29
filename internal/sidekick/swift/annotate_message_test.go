@@ -411,9 +411,9 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 			// Discovery requests are synthetic. The messages are injected into the data
 			// model by sidekick. To avoid clashes, sidekick puts the request messages
 			// within a placeholder named after the service.
-			servicePlaceholder := api.NewTestMessage(test.service.Name).
-				WithPackage(test.service.Package).
-				WithID(test.service.ID).
+			servicePlaceholder := api.NewTestMessage(test.service.Name()).
+				WithPackage(test.service.Package()).
+				WithID(test.service.ID()).
 				WithMessages(test.request).
 				WithServicePlaceholder()
 			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, nil, []*api.Service{test.service})
