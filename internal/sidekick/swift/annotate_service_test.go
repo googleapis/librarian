@@ -262,10 +262,7 @@ func TestAnnotateService_LRO(t *testing.T) {
 		WithOutput(outputType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: lroResponseType.ID,
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 

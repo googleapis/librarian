@@ -845,13 +845,13 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 }
 
 func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.OperationInfo) {
-	response := annotate.model.Message(operationInfo.ResponseTypeID)
-	metadata := annotate.model.Message(operationInfo.MetadataTypeID)
+	response := annotate.model.Message(operationInfo.ResponseTypeID())
+	metadata := annotate.model.Message(operationInfo.MetadataTypeID())
 
-	operationInfo.Codec = &operationInfoAnnotation{
+	operationInfo.SetAnnotations(&operationInfoAnnotation{
 		ResponseType: annotate.resolveMessageName(response, false),
 		MetadataType: annotate.resolveMessageName(metadata, false),
-	}
+	})
 }
 
 func (annotate *annotateModel) annotateOneOf(oneof *api.OneOf) {

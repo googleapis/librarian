@@ -382,11 +382,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		annotation.Attributes = []string{"#[allow(clippy::should_implement_trait)]"}
 	}
 	if m.OperationInfo != nil {
-		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model, m.Model.PackageName)
+		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID(), m.Model, m.Model.PackageName)
 		if err != nil {
 			return nil, err
 		}
-		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model, m.Model.PackageName)
+		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID(), m.Model, m.Model.PackageName)
 		if err != nil {
 			return nil, err
 		}
@@ -395,7 +395,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			ResponseType:     responseType,
 			PackageNamespace: c.rootModuleName(m.Model),
 		}
-		m.OperationInfo.Codec = opInfo
+		m.OperationInfo.SetAnnotations(opInfo)
 		annotation.OperationInfo = opInfo
 	}
 	if m.DiscoveryLro != nil {
@@ -404,14 +404,14 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			ReturnType:          returnType,
 			ServiceNameToPascal: annotation.ServiceNameToPascal,
 		}
-		for _, p := range m.DiscoveryLro.PollingPathParameters {
+		for _, p := range m.DiscoveryLro.PollingPathParameters() {
 			a := discoveryLroPathParameter{
 				Name:       toSnake(p),
 				SetterName: toSnakeNoMangling(p),
 			}
 			lroAnnotation.PollingPathParameters = append(lroAnnotation.PollingPathParameters, a)
 		}
-		m.DiscoveryLro.Codec = lroAnnotation
+		m.DiscoveryLro.SetAnnotations(lroAnnotation)
 	}
 	m.Codec = annotation
 	return annotation, nil

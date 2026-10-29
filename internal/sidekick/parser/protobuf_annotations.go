@@ -54,11 +54,10 @@ func parseOperationInfo(packagez string, m *descriptorpb.MethodDescriptorProto) 
 		return nil
 	}
 	protobufInfo := proto.GetExtension(m.GetOptions(), extensionId).(*longrunningpb.OperationInfo)
-	operationInfo := &api.OperationInfo{
-		MetadataTypeID: normalizeTypeID(packagez, protobufInfo.GetMetadataType()),
-		ResponseTypeID: normalizeTypeID(packagez, protobufInfo.GetResponseType()),
-	}
-	return operationInfo
+	return api.NewOperationInfoBuilder().
+		WithMetadataTypeID(normalizeTypeID(packagez, protobufInfo.GetMetadataType())).
+		WithResponseTypeID(normalizeTypeID(packagez, protobufInfo.GetResponseType())).
+		Build()
 }
 
 func parsePathInfo(m *descriptorpb.MethodDescriptorProto, model *api.API) (*api.PathInfo, error) {
