@@ -22,10 +22,10 @@ type enumAnnotations struct {
 
 func (c *codec) annotateEnum(e *api.Enum) error {
 	eAnn := &enumAnnotations{
-		Name: e.Name + "Sample",
+		Name: e.Name() + "Sample",
 	}
-	e.Codec = eAnn
-	for _, v := range e.Values {
+	e.SetAnnotations(eAnn)
+	for _, v := range e.Values() {
 		if err := c.annotateEnumValue(v, eAnn); err != nil {
 			return err
 		}

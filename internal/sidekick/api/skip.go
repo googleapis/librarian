@@ -65,7 +65,7 @@ func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func
 	for _, m := range model.Messages {
 		skipMessageElements(m, skip, skipField)
 	}
-	model.Enums = slices.DeleteFunc(model.Enums, func(x *Enum) bool { return skip(x.ID) })
+	model.Enums = slices.DeleteFunc(model.Enums, func(x *Enum) bool { return skip(x.id) })
 	model.Messages = slices.DeleteFunc(model.Messages, func(x *Message) bool { return skip(x.ID) })
 	model.Services = slices.DeleteFunc(model.Services, func(x *Service) bool { return skip(x.ID) })
 
@@ -94,7 +94,7 @@ func skipMessageElements(message *Message, skip func(id string) bool, skipField 
 		skipMessageElements(m, skip, skipField)
 	}
 	message.Messages = slices.DeleteFunc(message.Messages, func(x *Message) bool { return skip(x.ID) })
-	message.Enums = slices.DeleteFunc(message.Enums, func(x *Enum) bool { return skip(x.ID) })
+	message.Enums = slices.DeleteFunc(message.Enums, func(x *Enum) bool { return skip(x.id) })
 	previous := slices.Clone(message.Fields)
 	skipped := func(x *Field) bool {
 		if skipField(x.ID) {

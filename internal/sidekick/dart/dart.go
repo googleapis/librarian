@@ -158,9 +158,9 @@ func fieldName(field *api.Field) string {
 }
 
 func enumName(e *api.Enum) string {
-	name := strcase.ToCamel(e.Name)
-	if e.Parent != nil {
-		name = messageName(e.Parent) + nestedEnumChar + name
+	name := strcase.ToCamel(e.Name())
+	if e.Parent() != nil {
+		name = messageName(e.Parent()) + nestedEnumChar + name
 	}
 	return name
 }

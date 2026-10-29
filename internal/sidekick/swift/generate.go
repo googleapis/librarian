@@ -143,9 +143,9 @@ func (c *codec) generateMessages(outdir string, model *api.API) error {
 
 func (c *codec) generateEnums(outdir string, model *api.API) error {
 	for _, e := range model.Enums {
-		name := e.Name
-		if e.Parent == nil && e.Package == wellKnownProtobufPackage {
-			name = "WKT" + e.Name
+		name := e.Name()
+		if e.Parent() == nil && e.Package() == wellKnownProtobufPackage {
+			name = "WKT" + e.Name()
 		}
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/enum_file.swift.gotmpl",

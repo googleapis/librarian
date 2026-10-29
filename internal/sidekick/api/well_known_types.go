@@ -60,11 +60,11 @@ func (model *API) LoadWellKnownTypes() {
 	for _, message := range wellKnownMessages {
 		model.AddMessage(message)
 	}
-	model.AddEnum(&Enum{
-		ID:      WktNullValueID,
-		Name:    "NullValue",
-		Package: "google.protobuf",
-	})
+	model.AddEnum(NewEnumBuilder().
+		WithID(WktNullValueID).
+		WithName("NullValue").
+		WithPackage("google.protobuf").
+		Build())
 }
 
 var wellKnownMessages = []*Message{

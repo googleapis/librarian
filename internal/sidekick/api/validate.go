@@ -47,7 +47,7 @@ func Validate(model *API) error {
 		}
 	}
 	for _, e := range model.Enums {
-		if err := validatePkg(e.Package, e.ID); err != nil {
+		if err := validatePkg(e.packagez, e.id); err != nil {
 			return err
 		}
 	}
