@@ -167,7 +167,7 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 	if len(got.Values) < 7 {
 		t.Fatalf("expected at least 7 values in the enum value list, got=%v", got)
 	}
-	if !got.Values[6].Deprecated {
+	if !got.Values[6].Deprecated() {
 		t.Errorf("expected a deprecated enum value, got=%v", got.Values[6])
 	}
 }

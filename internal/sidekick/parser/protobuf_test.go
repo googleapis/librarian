@@ -350,7 +350,7 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 			api.NewTestEnumValue("BLUE", 2),
 		)
 	for _, v := range wantEnum.Values {
-		v.ID = ""
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *enum, *wantEnum)
 	// Only `LocalMessage` should be found in the messages list:
@@ -411,7 +411,7 @@ func TestProtobuf_Comments(t *testing.T) {
 				WithDocumentation("The second enum value description."),
 		)
 	for _, v := range wantStatus.Values {
-		v.ID = ""
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantStatus)
 
@@ -471,11 +471,12 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 		api.NewTestEnumValue("FOLLOWS_STYLE", 3).WithID(""),
 	}
 
-	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(fullList, withAlias.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	less := func(a, b *api.EnumValue) bool { return a.Name() < b.Name() }
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(fullList, withAlias.Values, apitest.AllowUnexported(), cmpopts.SortSlices(less), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues, apitest.AllowUnexported(), cmpopts.SortSlices(less), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -877,7 +878,7 @@ func TestProtobuf_Enum(t *testing.T) {
 				WithDocumentation("Unknown error."),
 		)
 	for _, v := range wantEnum.Values {
-		v.ID = ""
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnum)
 }
@@ -1295,7 +1296,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 			api.NewTestEnumValue("ENUM_A_UNSPECIFIED", 0),
 		)
 	for _, v := range wantEnumA.Values {
-		v.ID = ""
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnumA)
 
@@ -1312,7 +1313,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 			api.NewTestEnumValue("BLUE", 3),
 		)
 	for _, v := range wantEnumB.Values {
-		v.ID = ""
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnumB)
 }

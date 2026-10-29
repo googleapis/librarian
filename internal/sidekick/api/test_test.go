@@ -162,8 +162,8 @@ func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
 	if nestedEnum.Parent != parent {
 		t.Errorf("nestedEnum.Parent = %v, want %v", nestedEnum.Parent, parent)
 	}
-	if val.Parent != nestedEnum {
-		t.Errorf("val.Parent = %v, want %v", val.Parent, nestedEnum)
+	if val.Parent() != nestedEnum {
+		t.Errorf("val.Parent() = %v, want %v", val.Parent(), nestedEnum)
 	}
 }
 
