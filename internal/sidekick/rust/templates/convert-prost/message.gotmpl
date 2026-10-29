@@ -37,6 +37,9 @@ impl gaxi::prost::ToProto<{{ .Codec.ProstRelativeName }}> for {{ .Codec.Qualifie
             {{- else }}
             {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| v.to_proto()).transpose()?,
             {{- end }}
+            {{- else if .Proto2Optional }}
+            {{- /* The generated model stores "not set" as zero, so zero maps to None. */}}
+            {{ .Codec.FieldName }}: Some(self.{{ .Codec.FieldName }}.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
             {{- else }}
             {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.to_proto()?,
             {{- end }}
@@ -76,6 +79,8 @@ impl gaxi::prost::FromProto<{{ .Codec.QualifiedName }}> for {{ .Codec.ProstRelat
                 {{- if .Singular }}
                 {{- if .Optional }}
                 .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(|v| v.cnv()).transpose()?)
+                {{- else if .Proto2Optional }}
+                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.unwrap_or_default())
                 {{- else }}
                 .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }})
                 {{- end }}
