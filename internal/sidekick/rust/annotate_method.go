@@ -293,7 +293,7 @@ type sampleInfoAnnotation struct {
 // HasBindingSubstitutions returns true if the method has binding substitutions.
 func (m *methodAnnotation) HasBindingSubstitutions() bool {
 	for _, b := range m.PathInfo.Bindings {
-		for _, s := range b.PathTemplate.Segments() {
+		for _, s := range b.PathTemplate().Segments() {
 			if s.Variable() != nil {
 				return true
 			}
@@ -509,7 +509,8 @@ func annotateSegments(segments []string) []string {
 }
 
 func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubstitution, error) {
-	accessors, err := makeAccessors(v.FieldPath(), m)
+	fieldPath := v.FieldPath()
+	accessors, err := makeAccessors(fieldPath, m)
 	if err != nil {
 		return nil, err
 	}
@@ -519,13 +520,13 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		fieldAccessor.WriteString(a)
 	}
 	var rustNames []string
-	for _, n := range v.FieldPath() {
+	for _, n := range fieldPath {
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	var pathExtraction *PathExtraction
 	fullBody := m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
 	if fullBody {
-		clears, err := makeClearAccessors(v.FieldPath(), m)
+		clears, err := makeClearAccessors(fieldPath, m)
 		if err != nil {
 			return nil, err
 		}
@@ -585,7 +586,7 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 
 func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBindingAnnotation, error) {
 	var subs []*bindingSubstitution
-	for _, s := range b.PathTemplate.Segments() {
+	for _, s := range b.PathTemplate().Segments() {
 		if s.Variable() != nil {
 			sub, err := makeBindingSubstitution(s.Variable(), m)
 			if err != nil {
@@ -595,7 +596,7 @@ func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBin
 		}
 	}
 	binding := &pathBindingAnnotation{
-		PathFmt:                   httpPathFmt(b.PathTemplate),
+		PathFmt:                   httpPathFmt(b.PathTemplate()),
 		QueryParams:               language.QueryParams(m, b),
 		Substitutions:             subs,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
@@ -611,7 +612,7 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 	var uniqueParameters []*bindingSubstitution
 
 	for _, b := range m.PathInfo.Bindings {
-		if b.PathTemplate == nil {
+		if b.PathTemplate() == nil {
 			continue
 		}
 		ann, err := c.annotatePathBinding(b, m)
@@ -626,7 +627,7 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 			}
 		}
 
-		b.Codec = ann
+		b.SetAnnotations(ann)
 	}
 
 	m.PathInfo.Codec = &pathInfoAnnotation{
@@ -668,7 +669,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 	if m.PathInfo != nil {
 		var firstBindingWithTargetResource *api.PathBinding
 		for _, b := range m.PathInfo.Bindings {
-			if b.TargetResource != nil {
+			if b.TargetResource() != nil {
 				annotation.HasResourceNameGeneration = true
 				firstBindingWithTargetResource = b
 				break
@@ -683,7 +684,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 			annotation.ResourceNameTemplateGrpc = tmpl
 
 			var grpcArgs []string
-			for _, path := range firstBindingWithTargetResource.TargetResource.FieldPaths {
+			for _, path := range firstBindingWithTargetResource.TargetResource().FieldPaths() {
 				accessors, err := makeAccessors(path, m)
 				if err != nil {
 					return err
@@ -698,19 +699,19 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 			annotation.GrpcResourceNameArgs = grpcArgs
 
 			for _, b := range m.PathInfo.Bindings {
-				bAnn, ok := b.Codec.(*pathBindingAnnotation)
+				bAnn, ok := b.Codec().(*pathBindingAnnotation)
 				if !ok {
 					continue
 				}
 				bAnn.HasResourceNameGeneration = true
 
-				if b.TargetResource != nil {
+				if b.TargetResource() != nil {
 					tmpl, err := formatResourceNameTemplateFromPath(m, b)
 					if err != nil {
 						return err
 					}
 					bAnn.ResourceNameTemplate = tmpl
-					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
+					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource().FieldPaths())
 				} else {
 					bAnn.ResourceNameTemplate = ""
 					bAnn.ResourceNameArgs = nil
@@ -722,12 +723,16 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 }
 
 func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
-	if b.TargetResource == nil || len(b.TargetResource.Template) == 0 {
+	if b.TargetResource() == nil {
+		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
+	}
+	template := b.TargetResource().Template()
+	if len(template) == 0 {
 		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
 	}
 
 	var sb strings.Builder
-	for i, seg := range b.TargetResource.Template {
+	for i, seg := range template {
 		if i > 0 {
 			sb.WriteString("/")
 		}
@@ -758,7 +763,7 @@ func isIdempotent(p *api.PathInfo) string {
 		return "false"
 	}
 	for _, b := range p.Bindings {
-		if b.Verb == "POST" || b.Verb == "PATCH" {
+		if b.Verb() == "POST" || b.Verb() == "PATCH" {
 			return "false"
 		}
 	}

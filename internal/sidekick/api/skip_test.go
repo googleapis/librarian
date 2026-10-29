@@ -22,6 +22,40 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
+func allowUnexported() cmp.Option {
+	return cmp.AllowUnexported(
+		API{},
+		Service{},
+		Method{},
+		Message{},
+		Field{},
+		OneOf{},
+		Enum{},
+		EnumValue{},
+		PathVariable{},
+		PathSegment{},
+		PathTemplate{},
+		PathBinding{},
+		PathInfo{},
+		RoutingPathSpec{},
+		RoutingInfoVariant{},
+		RoutingInfo{},
+		RoutingInfoCombo{},
+		RoutingInfoComboItem{},
+		OperationInfo{},
+		DiscoveryLro{},
+		MethodSignature{},
+		Resource{},
+		ResourceReference{},
+		ResourceNamePattern{},
+		ResourceNameSegment{},
+		TargetResource{},
+		SampleInfo{},
+		SampleValue{},
+		PaginationInfo{},
+	)
+}
+
 func TestSkipMessages(t *testing.T) {
 	m0 := NewTestMessage("Message0")
 	m1 := NewTestMessage("Message1")
@@ -142,12 +176,12 @@ func TestSkipMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s0, s1, s2}
-	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{m0, m2}
-	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods, allowUnexported(), cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -214,12 +248,12 @@ func TestIncludeMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s1}
-	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...), cmpopts.IgnoreFields(Service{}, "Model", "QuickstartMethod")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), cmpopts.IgnoreFields(Method{}, methodIgnoreFields...), cmpopts.IgnoreFields(Service{}, "Model", "QuickstartMethod")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{m1, m2}
-	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods, allowUnexported(), cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
