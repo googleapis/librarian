@@ -353,7 +353,7 @@ func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 	if c.skipDependency(dep) {
 		return nil, nil
 	}
-	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {
+	if ann, ok := c.Model.Codec().(*modelAnnotations); ok {
 		ann.DependsOn[dep.Name] = dep
 	}
 	return dep, nil

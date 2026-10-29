@@ -132,11 +132,12 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		).
 		WithDefaultHost("storage.googleapis.com")
 
-	controlModel := api.NewTestAPI([]*api.Message{folder, createFolderRequest, renameFolderRequest, renameFolderMetadata}, nil, []*api.Service{controlService})
-	controlModel.AddMessage(policy)
-	controlModel.AddMessage(getIamPolicyRequest)
-	controlModel.AddMessage(operation)
-	controlModel.AddMessage(getOperationRequest)
+	controlModel := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{folder, createFolderRequest, renameFolderRequest, renameFolderMetadata}, nil, []*api.Service{controlService})).
+		AddMessage(policy).
+		AddMessage(getIamPolicyRequest).
+		AddMessage(operation).
+		AddMessage(getOperationRequest).
+		BuildSyntaxTree()
 	if err := api.CrossReference(controlModel); err != nil {
 		t.Fatal(err)
 	}

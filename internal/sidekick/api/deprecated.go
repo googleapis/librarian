@@ -16,17 +16,17 @@ package api
 
 // HasDeprecatedEntities returns true if the API has any deprecated entities.
 func (model *API) HasDeprecatedEntities() bool {
-	for _, e := range model.Enums {
+	for _, e := range model.enums {
 		if e.hasDeprecatedEntities() {
 			return true
 		}
 	}
-	for _, m := range model.Messages {
+	for _, m := range model.messages {
 		if m.hasDeprecatedEntities() {
 			return true
 		}
 	}
-	for _, s := range model.Services {
+	for _, s := range model.services {
 		if s.hasDeprecatedEntities() {
 			return true
 		}

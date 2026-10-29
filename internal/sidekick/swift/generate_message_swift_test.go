@@ -187,8 +187,9 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 			api.NewTestField("ext_field").WithMessageType(externalMessage),
 		)
 
-	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
-	model.AddMessage(externalMessage)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{message}, nil, nil)).
+		AddMessage(externalMessage).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{

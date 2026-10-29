@@ -52,17 +52,17 @@ func TestCreateModelDisco(t *testing.T) {
 	wantTitle := "Secret Manager API"
 	wantDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
 	wantPackageName := "google.cloud.secretmanager.v1"
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	if got.Name() != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name())
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	if got.Title() != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title())
 	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+	if diff := cmp.Diff(wantDescription, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if got.PackageName != wantPackageName {
-		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName)
+	if got.PackageName() != wantPackageName {
+		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName())
 	}
 	// This is strange, but we want to verify the package name override from
 	// the service config YAML applies to the message IDs too.
@@ -138,9 +138,9 @@ func TestCreateModelOverrides(t *testing.T) {
 		want string
 	}
 	testCases := []TestCase{
-		{model.Name, "Name Override"},
-		{model.Title, "Title Override"},
-		{model.Description, "Description Override"},
+		{model.Name(), "Name Override"},
+		{model.Title(), "Title Override"},
+		{model.Description(), "Description Override"},
 	}
 	for _, c := range testCases {
 		if c.got != c.want {

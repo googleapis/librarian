@@ -62,12 +62,12 @@ func SkipModelElements(model *API, overrides ModelOverride) error {
 }
 
 func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func(id string) bool) error {
-	for _, m := range model.Messages {
+	for _, m := range model.messages {
 		skipMessageElements(m, skip, skipField)
 	}
-	model.Enums = slices.DeleteFunc(model.Enums, func(x *Enum) bool { return skip(x.id) })
-	model.Messages = slices.DeleteFunc(model.Messages, func(x *Message) bool { return skip(x.id) })
-	model.Services = slices.DeleteFunc(model.Services, func(x *Service) bool { return skip(x.id) })
+	model.enums = slices.DeleteFunc(model.enums, func(x *Enum) bool { return skip(x.id) })
+	model.messages = slices.DeleteFunc(model.messages, func(x *Message) bool { return skip(x.id) })
+	model.services = slices.DeleteFunc(model.services, func(x *Service) bool { return skip(x.id) })
 
 	for service := range model.AllServices() {
 		service.methods = slices.DeleteFunc(service.methods, func(x *Method) bool { return skip(x.id) })
@@ -83,8 +83,8 @@ func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func
 			}
 		}
 	}
-	if model.QuickstartService != nil && !slices.Contains(model.Services, model.QuickstartService) {
-		model.QuickstartService = findQuickstartService(model)
+	if model.quickstartService != nil && !slices.Contains(model.services, model.quickstartService) {
+		model.quickstartService = findQuickstartService(model)
 	}
 	return nil
 }

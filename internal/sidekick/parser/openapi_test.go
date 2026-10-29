@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -231,7 +230,7 @@ func TestOpenAPI_SimpleObject(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], newTestOpenAPIFakeMessage(
+	apitest.CheckMessage(t, test.Messages()[0], newTestOpenAPIFakeMessage(
 		api.NewTestField("fObject").
 			WithDocumentation("An object field.").
 			WithType(api.TypezMessage).
@@ -266,7 +265,7 @@ func TestOpenAPI_Any(t *testing.T) {
 		t.Errorf("Error in makeAPI() %q", err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], newTestOpenAPIFakeMessage(
+	apitest.CheckMessage(t, test.Messages()[0], newTestOpenAPIFakeMessage(
 		api.NewTestField("fMap").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any").WithOptional(),
 	))
 }
@@ -303,7 +302,7 @@ func TestOpenAPI_MapString(t *testing.T) {
 			api.NewTestField("fMapS32").WithType(api.TypezMap).WithTypezID("$map<string, int32>").WithMap(),
 			api.NewTestField("fMapS64").WithType(api.TypezMap).WithTypezID("$map<string, int64>").WithMap(),
 		)
-	apitest.CheckMessage(t, test.Messages[0], wantMap)
+	apitest.CheckMessage(t, test.Messages()[0], wantMap)
 }
 
 func TestOpenAPI_MapInteger(t *testing.T) {
@@ -336,7 +335,7 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 			api.NewTestField("fMapI32").WithType(api.TypezMap).WithTypezID("$map<string, int32>").WithMap(),
 			api.NewTestField("fMapI64").WithType(api.TypezMap).WithTypezID("$map<string, int64>").WithMap(),
 		)
-	apitest.CheckMessage(t, test.Messages[0], wantMapInteger)
+	apitest.CheckMessage(t, test.Messages()[0], wantMapInteger)
 }
 
 func openapiSecretManagerAPI(t *testing.T) *api.API {
@@ -536,7 +535,7 @@ func TestOpenAPI_MakeApiWithServiceConfig(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 	want := sample.API()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreAPIFields("services", "messages", "enums", "serviceByID", "methodByID", "messageByID", "enumByID", "resourceByType", "mapByID")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -553,13 +552,12 @@ func TestOpenAPI_MakeApiServiceConfigOverridesDescription(t *testing.T) {
 	}
 	serviceConfig := sample.ServiceConfig()
 	serviceConfig.Documentation.Summary = "Test Only - Override Description."
-	want := sample.API()
-	want.Description = serviceConfig.Documentation.Summary
+	want := sample.API().WithDescription(serviceConfig.Documentation.Summary)
 	got, err := makeAPIForOpenAPI(serviceConfig, model)
 	if err != nil {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreAPIFields("services", "messages", "enums", "serviceByID", "methodByID", "messageByID", "enumByID", "resourceByType", "mapByID")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 

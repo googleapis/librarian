@@ -199,7 +199,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if err != nil {
 		return err
 	}
-	if wktDep != nil && wktDep.ApiPackage != c.Model.PackageName {
+	if wktDep != nil && wktDep.ApiPackage != c.Model.PackageName() {
 		// Messages generated in the library for WKT library (we have a few)
 		// should not import the library.
 		annotations.DependsOn[wktDep.Name] = wktDep
@@ -228,7 +228,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if message.Deprecated() {
 			fieldCodec.DiagnoseType = false
 		}
-		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
+		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName() {
 			dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
 			if err != nil {
 				return err

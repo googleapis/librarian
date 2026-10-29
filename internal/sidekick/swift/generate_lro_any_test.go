@@ -200,10 +200,12 @@ func lroAnyTwoServiceTestModel(t *testing.T) *api.API {
 		WithPackage("google.storage.control.v2").
 		WithMethods(method)
 
-	model.Messages = append(model.Messages, managedFolder)
-	model.AddMessage(managedFolder)
-	model.Services = append(model.Services, service)
-	model.AddService(service)
+	model = api.NewAPIBuilderFrom(model).
+		AppendMessage(managedFolder).
+		AddMessage(managedFolder).
+		AppendService(service).
+		AddService(service).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

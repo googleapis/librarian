@@ -100,10 +100,30 @@ func IgnoreServiceFields(names ...string) cmp.Option {
 	}, cmp.Ignore())
 }
 
+// IgnoreAPIFields returns a [cmp.Option] that ignores the named unexported
+// fields on [api.API].
+func IgnoreAPIFields(names ...string) cmp.Option {
+	set := make(map[string]bool, len(names))
+	for _, n := range names {
+		set["."+n] = true
+	}
+	apiType := reflect.TypeFor[api.API]()
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != apiType {
+			return false
+		}
+		return set[p.Last().String()]
+	}, cmp.Ignore())
+}
+
 // AllowUnexported returns a [cmp.Option] that permits comparing unexported
 // fields on all read-only [api] AST and metadata structs.
 func AllowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
+		api.API{},
 		api.DiscoveryLro{},
 		api.Enum{},
 		api.EnumValue{},

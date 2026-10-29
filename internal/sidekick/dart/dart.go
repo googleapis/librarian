@@ -238,7 +238,7 @@ func packageName(api *api.API, packageNameOverride string) string {
 
 	// Convert 'google.protobuf' to 'google_cloud_protobuf' and
 	// 'google.cloud.language.v2' to 'google_cloud_language_v2.
-	packageName := api.PackageName
+	packageName := api.PackageName()
 	packageName = strings.TrimPrefix(packageName, "google.cloud.")
 	packageName = strings.TrimPrefix(packageName, "google.")
 	return "google_cloud_" + strings.ReplaceAll(packageName, ".", "_")

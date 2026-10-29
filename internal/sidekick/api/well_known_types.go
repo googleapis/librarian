@@ -51,16 +51,16 @@ const (
 	WktBoolValueID = ".google.protobuf.BoolValue"
 )
 
-// LoadWellKnownTypes adds well-known types to `state`.
+// loadWellKnownTypes adds well-known types to `state`.
 //
 // Some source specification formats (Discovery, OpenAPI) must manually add the
 // well-known types. In Protobuf these types are automatically defined in the
 // protoc output.
-func (model *API) LoadWellKnownTypes() {
+func (model *API) loadWellKnownTypes() {
 	for _, message := range wellKnownMessages {
-		model.AddMessage(message)
+		model.addMessage(message)
 	}
-	model.AddEnum(NewEnumBuilder().
+	model.addEnum(NewEnumBuilder().
 		WithID(WktNullValueID).
 		WithName("NullValue").
 		WithPackage("google.protobuf").

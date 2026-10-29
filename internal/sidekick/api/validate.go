@@ -23,7 +23,7 @@ import (
 // Validate verifies the model satisfies the requires to be used by Codecs.
 func Validate(model *API) error {
 	validatePkg := func(newPackage, elementName string) error {
-		if model.PackageName == newPackage {
+		if model.packageName == newPackage {
 			return nil
 		}
 		// Special exceptions for mixin services
@@ -33,20 +33,20 @@ func Validate(model *API) error {
 			return nil
 		}
 		return fmt.Errorf("sidekick requires all top-level elements to be in the same package want=%q, got=%q for %q",
-			model.PackageName, newPackage, elementName)
+			model.packageName, newPackage, elementName)
 	}
 
-	for _, s := range model.Services {
+	for _, s := range model.services {
 		if err := validatePkg(s.packagez, s.id); err != nil {
 			return err
 		}
 	}
-	for _, m := range model.Messages {
+	for _, m := range model.messages {
 		if err := validatePkg(m.packagez, m.id); err != nil {
 			return err
 		}
 	}
-	for _, e := range model.Enums {
+	for _, e := range model.enums {
 		if err := validatePkg(e.packagez, e.id); err != nil {
 			return err
 		}

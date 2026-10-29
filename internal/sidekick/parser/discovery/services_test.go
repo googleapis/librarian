@@ -85,18 +85,19 @@ func TestServiceDeprecated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 	doc := document{}
 	input := resource{
 		Name:       "TestDeprecated",
 		Deprecated: true,
 	}
-	if err := addService(model, &doc, &input); err != nil {
+	if err := addService(ab, &doc, &input); err != nil {
 		t.Fatal(err)
 	}
 	want := newDiscoveryTestService("TestDeprecated").
 		WithDocumentation("Service for the `TestDeprecated` resource.").
 		WithDeprecated(true)
-	got := model.Service(want.ID())
+	got := ab.Service(want.ID())
 	if got == nil {
 		t.Fatalf("missing service %s", want.ID())
 	}
@@ -147,14 +148,15 @@ func TestServiceTopLevelMethodErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 	doc := document{}
 	input := resource{
 		Methods: []*method{
 			{MediaUpload: &mediaUpload{}},
 		},
 	}
-	if err := addServiceRecursive(model, &doc, &input); err == nil {
-		t.Errorf("expected error in addServiceRecursive invalid top-level method, got=%v", model.Services)
+	if err := addServiceRecursive(ab, &doc, &input); err == nil {
+		t.Errorf("expected error in addServiceRecursive invalid top-level method, got=%v", ab.Services())
 	}
 }
 
@@ -163,6 +165,7 @@ func TestServiceChildMethodErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 	doc := document{}
 	input := resource{
 		Resources: []*resource{
@@ -173,7 +176,7 @@ func TestServiceChildMethodErrors(t *testing.T) {
 			},
 		},
 	}
-	if err := addServiceRecursive(model, &doc, &input); err == nil {
-		t.Errorf("expected error in addServiceRecursive invalid child method, got=%v", model.Services)
+	if err := addServiceRecursive(ab, &doc, &input); err == nil {
+		t.Errorf("expected error in addServiceRecursive invalid child method, got=%v", ab.Services())
 	}
 }
