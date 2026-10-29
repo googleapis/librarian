@@ -128,13 +128,13 @@ func (r *TargetResource) Template() []PathSegment {
 	return slices.Clone(r.template)
 }
 
-func cloneFieldPaths(fieldPaths [][]string) [][]string {
-	if fieldPaths == nil {
+func cloneFieldPaths(paths [][]string) [][]string {
+	if paths == nil {
 		return nil
 	}
-	cloned := make([][]string, len(fieldPaths))
-	for i, fp := range fieldPaths {
-		cloned[i] = slices.Clone(fp)
+	cloned := make([][]string, len(paths))
+	for i, p := range paths {
+		cloned[i] = slices.Clone(p)
 	}
 	return cloned
 }

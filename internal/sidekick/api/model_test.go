@@ -55,7 +55,7 @@ func TestRoutingCombosSimpleOr(t *testing.T) {
 			},
 		},
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -81,7 +81,7 @@ func TestRoutingCombosSimpleAnd(t *testing.T) {
 			},
 		},
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -127,15 +127,15 @@ func TestRoutingCombosFull(t *testing.T) {
 		make_combo(va3, vb1, vc1),
 		make_combo(va3, vb2, vc1),
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestRoutingInfoVariantFieldName(t *testing.T) {
-	variant := &RoutingInfoVariant{
-		FieldPath: []string{"request", "b", "c"},
-	}
+	variant := NewRoutingInfoVariantBuilder().
+		WithFieldPath("request", "b", "c").
+		Build()
 	got := variant.FieldName()
 	want := "request.b.c"
 	if got != want {
@@ -144,17 +144,11 @@ func TestRoutingInfoVariantFieldName(t *testing.T) {
 }
 
 func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
-	variant := &RoutingInfoVariant{
-		Prefix: RoutingPathSpec{
-			Segments: []string{"a", "b", "c"},
-		},
-		Matching: RoutingPathSpec{
-			Segments: []string{"d", "*"},
-		},
-		Suffix: RoutingPathSpec{
-			Segments: []string{"e", "**"},
-		},
-	}
+	variant := NewRoutingInfoVariantBuilder().
+		WithPrefixSegments("a", "b", "c").
+		WithMatchingSegments("d", "*").
+		WithSuffixSegments("e", "**").
+		Build()
 	got := variant.TemplateAsString()
 	want := "a/b/c/d/*/e/**"
 	if got != want {
