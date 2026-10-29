@@ -742,11 +742,11 @@ func processMapEntry(model *api.API, nm *descriptorpb.DescriptorProto, nmFQN str
 			valueField = field
 		}
 	}
-	model.AddMap(&api.Map{
-		ID:    nmFQN,
-		Key:   keyField,
-		Value: valueField,
-	})
+	model.AddMap(api.NewMapBuilder().
+		WithID(nmFQN).
+		WithKey(keyField).
+		WithValue(valueField).
+		Build())
 	return nil
 }
 

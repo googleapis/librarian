@@ -116,7 +116,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if m := model.Map(id); m != nil {
-			addFieldDependencies(m.Key, m.Value)
+			addFieldDependencies(m.key, m.value)
 			continue
 		}
 
@@ -156,7 +156,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if m := model.Map(id); m != nil {
-			addFieldDependencies(m.Key, m.Value)
+			addFieldDependencies(m.key, m.value)
 			continue
 		}
 	}
