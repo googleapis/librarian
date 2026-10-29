@@ -204,7 +204,7 @@ func TestAnnotateService_Gating(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, service := range model.Services {
+	for _, service := range model.Services() {
 		t.Run(service.Name(), func(t *testing.T) {
 			ann, ok := service.Codec().(*serviceAnnotations)
 			if !ok {
@@ -245,7 +245,7 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 	wantRequired := map[string]*api.Service{
 		sourceService.ID(): sourceService,
 	}
-	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), apitest.IgnoreMethodFields("model"), apitest.IgnoreServiceFields("model")); diff != "" {
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), apitest.IgnoreMethodFields("model"), apitest.IgnoreServiceFields("model"), cmpopts.IgnoreFields(modelAnnotations{}, "QuickstartService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -329,9 +329,10 @@ func TestAnnotateService_Pagination(t *testing.T) {
 
 	service := api.NewTestService("TestService").WithMethods(list)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
-		WithPackageName("test")
-	model.AddMessage(itemType)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName("test")).
+		AddMessage(itemType).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -381,10 +382,11 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 
 	service := api.NewTestService("TestService").WithMethods(list)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
 		WithPackageName("test").
-		WithMaps(mapType)
-	model.AddMessage(itemType)
+		WithMaps(mapType)).
+		AddMessage(itemType).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -454,9 +456,10 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 				WithVerb("POST").
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build())
 			service := api.NewTestService("TestService").WithMethods(create)
-			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
-				WithPackageName("test")
-			model.AddMessage(thing)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+				WithPackageName("test")).
+				AddMessage(thing).
+				BuildSyntaxTree()
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -672,8 +675,7 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 		WithClientSideStreaming()
 
 	service := api.NewTestService("StreamingTestService").WithMethods(unary, serverStreaming, clientStreaming, bidiStreaming)
-	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).WithPackageName("test")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -711,9 +713,10 @@ func TestAnnotateService_HTTPBodyRequestImports(t *testing.T) {
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("webhook").Build())
 	service := api.NewTestService("TestService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).
-		WithPackageName("test")
-	model.AddMessage(httpBodyMsg)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).
+		WithPackageName("test")).
+		AddMessage(httpBodyMsg).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

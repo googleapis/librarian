@@ -416,8 +416,9 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 				WithID(test.service.ID()).
 				WithMessages(test.request).
 				WithServicePlaceholder()
-			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, nil, []*api.Service{test.service})
-			model.AddMessage(test.request)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{servicePlaceholder}, nil, []*api.Service{test.service})).
+				AddMessage(test.request).
+				BuildSyntaxTree()
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)

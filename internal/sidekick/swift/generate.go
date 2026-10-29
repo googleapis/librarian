@@ -109,7 +109,7 @@ func (c *codec) generateDocc(outdir string, model *api.API) error {
 			OutputPath:   output,
 		},
 	}
-	if annotations, ok := model.Codec.(*modelAnnotations); ok && annotations.HasTraits() {
+	if annotations, ok := model.Codec().(*modelAnnotations); ok && annotations.HasTraits() {
 		files = append(files, language.GeneratedFile{
 			TemplatePath: "templates/docc/package_traits.md.gotmpl",
 			OutputPath:   filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", "PackageTraits.md"),
@@ -119,7 +119,7 @@ func (c *codec) generateDocc(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateMessages(outdir string, model *api.API) error {
-	for _, m := range model.Messages {
+	for _, m := range model.Messages() {
 		name := m.Name()
 		if m.Parent() == nil && m.Package() == wellKnownProtobufPackage {
 			name = "WKT" + m.Name()
@@ -142,7 +142,7 @@ func (c *codec) generateMessages(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateEnums(outdir string, model *api.API) error {
-	for _, e := range model.Enums {
+	for _, e := range model.Enums() {
 		name := e.Name()
 		if e.Parent() == nil && e.Package() == wellKnownProtobufPackage {
 			name = "WKT" + e.Name()
@@ -159,7 +159,7 @@ func (c *codec) generateEnums(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateServices(outdir string, model *api.API) error {
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/service.swift.gotmpl",
 			OutputPath:   c.swiftFilename(s.Name()),
@@ -176,7 +176,7 @@ func (c *codec) generateStubs(outdir string, model *api.API) error {
 	if c.isGrpc() {
 		transportTemplate = "templates/grpc/transport.swift.gotmpl"
 	}
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		for _, stub := range []struct {
 			suffix   string
 			template string
@@ -210,7 +210,7 @@ func (c *codec) generateLROAnyConverter(outdir string, model *api.API) error {
 		// gRPC transport generates.
 		return nil
 	}
-	annotations, ok := model.Codec.(*modelAnnotations)
+	annotations, ok := model.Codec().(*modelAnnotations)
 	if ok && annotations.HasLROAnyTypes() {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/grpc/lro_any_converter.swift.gotmpl",
@@ -222,7 +222,7 @@ func (c *codec) generateLROAnyConverter(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateSnippets(outdir string, model *api.API) error {
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		// If two services differ only in case (such as `fooService` and
 		// `FooService`), then this might generate clashing filenames in
 		// filesystems that are case insensitive.
@@ -262,7 +262,7 @@ func (c *codec) generateSnippets(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateClients(outdir string, model *api.API) error {
-	if len(model.Services) == 0 {
+	if len(model.Services()) == 0 {
 		return nil
 	}
 	generated := language.GeneratedFile{
@@ -273,7 +273,7 @@ func (c *codec) generateClients(outdir string, model *api.API) error {
 }
 
 func (c *codec) generatePackageVersion(outdir string, model *api.API) error {
-	if len(model.Services) > 0 {
+	if len(model.Services()) > 0 {
 		return nil
 	}
 	generated := language.GeneratedFile{

@@ -51,7 +51,7 @@ func TestModelAnnotations(t *testing.T) {
 			"../../testdata/googleapis/google/type/f2.proto",
 		},
 	}
-	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "WktTypes")); diff != "" {
+	if diff := cmp.Diff(want, model.Codec(), cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "WktTypes")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

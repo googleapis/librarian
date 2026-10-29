@@ -263,8 +263,8 @@ func TestGenerateReadme_WithRevision(t *testing.T) {
 		WithPackage(pkg)
 	model := api.NewTestAPI([]*api.Message{message}, nil, nil).
 		WithPackageName(pkg).
-		WithTitle("Compute Engine API")
-	model.Revision = "20260101"
+		WithTitle("Compute Engine API").
+		WithRevision("20260101")
 
 	library := &config.Library{
 		Name:    "google-cloud-compute-v1",

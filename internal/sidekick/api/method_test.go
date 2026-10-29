@@ -56,7 +56,7 @@ func TestMethod(t *testing.T) {
 	sig := NewMethodSignatureBuilder().WithNames("name").Build()
 	svc := NewServiceBuilder().WithName("Svc").Build()
 	srcSvc := NewServiceBuilder().WithName("SrcSvc").Build()
-	model := NewTestAPI(nil, nil, nil)
+	model := NewAPIBuilder().WithName("test").BuildSyntaxTree()
 
 	got := NewMethodBuilder().
 		WithName("GetBook").

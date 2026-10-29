@@ -20,7 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func maybeMapField(model *api.API, mb *api.MessageBuilder, input *property) (*api.Field, error) {
+func maybeMapField(model *api.APIBuilder, mb *api.MessageBuilder, input *property) (*api.Field, error) {
 	if input.Schema.Type != "object" || input.Schema.Format != "" {
 		return nil, nil
 	}
@@ -37,12 +37,12 @@ func maybeMapField(model *api.API, mb *api.MessageBuilder, input *property) (*ap
 	return maybeMapOfPrimitiveField(model, mb, input)
 }
 
-func maybeMapOfObjectField(model *api.API, mb *api.MessageBuilder, input *property) *api.Field {
+func maybeMapOfObjectField(model *api.APIBuilder, mb *api.MessageBuilder, input *property) *api.Field {
 	if input.Schema.AdditionalProperties.Ref == "" {
 		return nil
 	}
 	message := mb.Build()
-	valueTypezID := fmt.Sprintf(".%s.%s", model.PackageName, input.Schema.AdditionalProperties.Ref)
+	valueTypezID := fmt.Sprintf(".%s.%s", model.PackageName(), input.Schema.AdditionalProperties.Ref)
 	typezID := insertMapType(model, api.TypezMessage, valueTypezID)
 	field := api.NewFieldBuilder().
 		WithName(input.Name).
@@ -57,7 +57,7 @@ func maybeMapOfObjectField(model *api.API, mb *api.MessageBuilder, input *proper
 	return field
 }
 
-func maybeMapOfEnumField(model *api.API, mb *api.MessageBuilder, input *property) (*api.Field, error) {
+func maybeMapOfEnumField(model *api.APIBuilder, mb *api.MessageBuilder, input *property) (*api.Field, error) {
 	if input.Schema.AdditionalProperties.Enums == nil {
 		return nil, nil
 	}
@@ -80,7 +80,7 @@ func maybeMapOfEnumField(model *api.API, mb *api.MessageBuilder, input *property
 	return field, nil
 }
 
-func maybeMapOfPrimitiveField(model *api.API, mb *api.MessageBuilder, input *property) (*api.Field, error) {
+func maybeMapOfPrimitiveField(model *api.APIBuilder, mb *api.MessageBuilder, input *property) (*api.Field, error) {
 	message := mb.Build()
 	valueTypez, valueTypezID, err := scalarType(model, message.ID(), input.Name, input.Schema.AdditionalProperties)
 	if err != nil {
@@ -100,7 +100,7 @@ func maybeMapOfPrimitiveField(model *api.API, mb *api.MessageBuilder, input *pro
 	return field, nil
 }
 
-func insertMapType(model *api.API, valueTypez api.Typez, valueTypezID string) string {
+func insertMapType(model *api.APIBuilder, valueTypez api.Typez, valueTypezID string) string {
 	id := fmt.Sprintf("$map<string, %s>", valueTypezID)
 	if model.Map(id) != nil {
 		return id

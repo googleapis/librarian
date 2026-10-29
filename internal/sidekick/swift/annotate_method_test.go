@@ -297,10 +297,11 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("TestService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service}).
-		WithPackageName("google.cloud.test.v1")
-	model.AddMessage(inputMessage)
-	model.AddMessage(outputMessage)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service}).
+		WithPackageName("google.cloud.test.v1")).
+		AddMessage(inputMessage).
+		AddMessage(outputMessage).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -1071,9 +1072,10 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("test").Build()).
 				WithBodyFieldPath(test.bodyFieldPath)
 			service := api.NewTestService("TestService").WithMethods(method)
-			model := api.NewTestAPI([]*api.Message{wrapperReq, regularMsg}, nil, []*api.Service{service}).
-				WithPackageName("test")
-			model.AddMessage(httpBodyMsg)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{wrapperReq, regularMsg}, nil, []*api.Service{service}).
+				WithPackageName("test")).
+				AddMessage(httpBodyMsg).
+				BuildSyntaxTree()
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}

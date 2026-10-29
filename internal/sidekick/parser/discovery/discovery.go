@@ -35,32 +35,27 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConf
 	if err != nil {
 		return nil, err
 	}
-	result := &api.API{
-		Name:        doc.Name,
-		Title:       doc.Title,
-		Description: doc.Description,
-		Revision:    doc.Revision,
-		Messages:    make([]*api.Message, 0),
-	}
-	// Discovery docs use some well-known types inspired by Protobuf. With
-	// protoc these types are automatically included via `import` statements.
-	// In the Discovery docs JSON inputs, these types are not automatically
-	// included.
-	result.LoadWellKnownTypes()
+	result := api.NewAPIBuilder().
+		WithName(doc.Name).
+		WithTitle(doc.Title).
+		WithDescription(doc.Description).
+		WithRevision(doc.Revision).
+		WithMessages().
+		LoadWellKnownTypes()
 
 	// Discovery docs do not define a service name or package name. The service
 	// config may provide one.
 	packageName := ""
 	if serviceConfig != nil {
-		result.Name = strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")
-		result.Title = serviceConfig.Title
+		result.WithName(strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")).
+			WithTitle(serviceConfig.Title)
 		if serviceConfig.Documentation != nil {
-			result.Description = serviceConfig.Documentation.Summary
+			result.WithDescription(serviceConfig.Documentation.Summary)
 		}
 		names := svcconfig.ExtractPackageName(serviceConfig)
 		if names != nil {
 			packageName, _ = names.PackageName, names.ServiceName
-			result.PackageName = packageName
+			result.WithPackageName(packageName)
 		}
 	}
 
@@ -79,12 +74,12 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConf
 			return nil, err
 		}
 		message := mb.Build()
-		result.Messages = append(result.Messages, message)
+		result.AppendMessage(message)
 		result.AddMessage(message)
 	}
 	// The messages must be sorted otherwise the generated code gets different
 	// output on each run.
-	slices.SortStableFunc(result.Messages, compareMessages)
+	result.SortMessages(compareMessages)
 
 	for _, resource := range doc.Resources {
 		if err := addServiceRecursive(result, doc, resource); err != nil {
@@ -93,13 +88,13 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConf
 	}
 	// The services must be sorted otherwise the generated code gets different
 	// output on each run.
-	slices.SortStableFunc(result.Services, compareServices)
+	result.SortServices(compareServices)
 
-	if err := api.AddDiscoveryLroAnnotations(result, discoveryConfig); err != nil {
+	if err := result.AddDiscoveryLroAnnotations(discoveryConfig); err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return result.BuildSyntaxTree(), nil
 }
 
 // A document is an API discovery document.

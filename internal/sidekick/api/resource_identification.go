@@ -31,7 +31,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 	// Build the set of known resource names for the heuristic.
 	vocabulary := BuildHeuristicVocabulary(model)
 
-	for _, service := range model.Services {
+	for _, service := range model.services {
 		for _, method := range service.methods {
 			if method.pathInfo == nil {
 				continue
@@ -60,7 +60,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		}
 		if target != nil {
 			if binding.targetResource != nil {
-				return fmt.Errorf("targetResource already set for method: %s", method.ID)
+				return fmt.Errorf("targetResource already set for method: %s", method.id)
 			}
 			binding.targetResource = target
 			return nil
@@ -73,7 +73,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 	}
 	if target != nil {
 		if binding.targetResource != nil {
-			return fmt.Errorf("targetResource already set for method: %s", method.ID)
+			return fmt.Errorf("targetResource already set for method: %s", method.id)
 		}
 		binding.targetResource = target
 		return nil
@@ -281,8 +281,8 @@ func getServiceHost(method *Method) (string, error) {
 	if method.service != nil && method.service.defaultHost != "" {
 		return method.service.defaultHost, nil
 	}
-	if method.model != nil && method.model.Name != "" {
-		return method.model.Name + ".googleapis.com", nil
+	if method.model != nil && method.model.name != "" {
+		return method.model.name + ".googleapis.com", nil
 	}
 	return "", fmt.Errorf("consistency error: no service host found for method %q", method.name)
 }
