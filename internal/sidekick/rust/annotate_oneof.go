@@ -81,14 +81,14 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		return nil, err
 	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model, oneof.Scopes())
+	docLines, err := c.formatDocComments(oneof.Documentation(), oneof.ID(), model, oneof.Scopes())
 	if err != nil {
 		return nil, err
 	}
 
 	ann := &oneOfAnnotation{
-		FieldName:                  toSnake(oneof.Name),
-		SetterName:                 toSnakeNoMangling(oneof.Name),
+		FieldName:                  toSnake(oneof.Name()),
+		SetterName:                 toSnakeNoMangling(oneof.Name()),
 		EnumName:                   enumName,
 		QualifiedName:              qualifiedName,
 		RelativeName:               relativeEnumName,
@@ -114,6 +114,6 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		ann.EnumNameInExamples = ann.AliasInExamples
 	}
 
-	oneof.Codec = ann
+	oneof.SetAnnotations(ann)
 	return ann, nil
 }

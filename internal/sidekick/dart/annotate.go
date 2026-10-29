@@ -855,10 +855,10 @@ func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.Operatio
 }
 
 func (annotate *annotateModel) annotateOneOf(oneof *api.OneOf) {
-	oneof.Codec = &oneOfAnnotation{
-		Name:     strcase.ToLowerCamel(oneof.Name),
-		DocLines: formatDocComments(oneof.Documentation, annotate.model),
-	}
+	oneof.SetAnnotations(&oneOfAnnotation{
+		Name:     strcase.ToLowerCamel(oneof.Name()),
+		DocLines: formatDocComments(oneof.Documentation(), annotate.model),
+	})
 }
 
 func (annotate *annotateModel) annotateField(field *api.Field) {

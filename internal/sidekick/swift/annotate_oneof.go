@@ -26,16 +26,16 @@ type oneOfAnnotations struct {
 }
 
 func (c *codec) annotateOneOf(oneof *api.OneOf) error {
-	docLines, err := c.formatDocumentation(oneof.Documentation, oneof.Scopes())
+	docLines, err := c.formatDocumentation(oneof.Documentation(), oneof.Scopes())
 	if err != nil {
 		return err
 	}
 	annotations := &oneOfAnnotations{
-		Name:         OneOfName(oneof.Name),
-		PropertyName: camelCase(oneof.Name),
-		Checker:      camelCase(oneof.Name + "CheckAndSet"),
+		Name:         OneOfName(oneof.Name()),
+		PropertyName: camelCase(oneof.Name()),
+		Checker:      camelCase(oneof.Name() + "CheckAndSet"),
 		DocLines:     docLines,
 	}
-	oneof.Codec = annotations
+	oneof.SetAnnotations(annotations)
 	return nil
 }

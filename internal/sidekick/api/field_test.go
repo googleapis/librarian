@@ -27,7 +27,7 @@ func TestField(t *testing.T) {
 	en := NewEnumBuilder().WithName("State").Build()
 	mp := NewMapBuilder().WithID(".test.MapEntry").Build()
 	parent := NewTestMessage("Request")
-	group := NewTestOneOf("group")
+	group := NewOneOfBuilder().WithName("group").Build()
 
 	got := NewFieldBuilder().
 		WithName("book").
