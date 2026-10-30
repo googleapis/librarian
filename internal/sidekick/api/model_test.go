@@ -154,12 +154,13 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 func TestPathTemplateBuilder(t *testing.T) {
 	got := (&PathTemplate{}).
 		WithLiteral("v1").
-		WithVariable(NewPathVariable("parent", "child").
+		WithVariable(NewPathVariableBuilder("parent", "child").
 			WithLiteral("projects").
 			WithMatch().
 			WithAllowReserved().
 			WithLiteral("locations").
-			WithMatchRecursive()).
+			WithMatchRecursive().
+			Build()).
 		WithVariableNamed("v2", "field").
 		WithVerb("verb")
 	verb := "verb"
@@ -169,22 +170,20 @@ func TestPathTemplateBuilder(t *testing.T) {
 				Literal: "v1",
 			},
 			{
-				Variable: &PathVariable{
-					FieldPath:     []string{"parent", "child"},
-					Segments:      []string{"projects", "*", "locations", "**"},
-					AllowReserved: true,
-				},
+				Variable: NewPathVariableBuilder("parent", "child").
+					WithSegments("projects", "*", "locations", "**").
+					WithAllowReserved().
+					Build(),
 			},
 			{
-				Variable: &PathVariable{
-					FieldPath: []string{"v2", "field"},
-					Segments:  []string{"*"},
-				},
+				Variable: NewPathVariableBuilder("v2", "field").
+					WithSegments("*").
+					Build(),
 			},
 		},
 		Verb: verb,
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

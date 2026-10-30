@@ -39,7 +39,7 @@ func (template *PathTemplate) FlatPath() string {
 		if segment.Literal != "" {
 			buffer.WriteString(segment.Literal)
 		} else if segment.Variable != nil {
-			fmt.Fprintf(&buffer, "{%s}", strings.Join(segment.Variable.FieldPath, "."))
+			fmt.Fprintf(&buffer, "{%s}", strings.Join(segment.Variable.FieldPath(), "."))
 		}
 		sep = "/"
 	}
@@ -60,8 +60,8 @@ func (p *PathTemplate) WithVariable(v *PathVariable) *PathTemplate {
 
 // WithVariableNamed adds a variable with the given name to the path template.
 func (p *PathTemplate) WithVariableNamed(fields ...string) *PathTemplate {
-	v := PathVariable{FieldPath: fields}
-	p.Segments = append(p.Segments, PathSegment{Variable: v.WithMatch()})
+	v := NewPathVariableBuilder(fields...).WithMatch().Build()
+	p.Segments = append(p.Segments, PathSegment{Variable: v})
 	return p
 }
 

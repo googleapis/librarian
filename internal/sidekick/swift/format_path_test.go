@@ -197,12 +197,10 @@ func TestNewPathVariable(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:    "non-optional string",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"parent"},
-			},
-			count: 0,
+			name:     "non-optional string",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("parent").Build(),
+			count:    0,
 			want: &pathVariable{
 				Name:          "pathVariable0",
 				Expression:    ".parent as Swift.String?",
@@ -212,12 +210,10 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "optional string",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"display_name"},
-			},
-			count: 1,
+			name:     "optional string",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("display_name").Build(),
+			count:    1,
 			want: &pathVariable{
 				Name:          "pathVariable1",
 				Expression:    ".displayName",
@@ -227,21 +223,17 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "error - oneof field",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"oneof_field"},
-			},
-			count:   6,
-			wantErr: true,
+			name:     "error - oneof field",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("oneof_field").Build(),
+			count:    6,
+			wantErr:  true,
 		},
 		{
-			name:    "nested non-optional string",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"secret", "name"},
-			},
-			count: 2,
+			name:     "nested non-optional string",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("secret", "name").Build(),
+			count:    2,
 			want: &pathVariable{
 				Name:          "pathVariable2",
 				Expression:    ".secret.map({ $0.name })",
@@ -251,12 +243,10 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "nested optional string",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"secret", "description"},
-			},
-			count: 3,
+			name:     "nested optional string",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("secret", "description").Build(),
+			count:    3,
 			want: &pathVariable{
 				Name:          "pathVariable3",
 				Expression:    ".secret.flatMap({ $0.description })",
@@ -266,12 +256,10 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "explicit json_name",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"custom_name"},
-			},
-			count: 7,
+			name:     "explicit json_name",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("custom_name").Build(),
+			count:    7,
 			want: &pathVariable{
 				Name:          "pathVariable7",
 				Expression:    ".customName as Swift.String?",
@@ -281,22 +269,18 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "error - unsupported type bytes",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"data"},
-			},
-			count:   4,
-			wantErr: true,
+			name:     "error - unsupported type bytes",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("data").Build(),
+			count:    4,
+			wantErr:  true,
 		},
 		{
-			name:    "error - lookup field missing",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"missing"},
-			},
-			count:   5,
-			wantErr: true,
+			name:     "error - lookup field missing",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("missing").Build(),
+			count:    5,
+			wantErr:  true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

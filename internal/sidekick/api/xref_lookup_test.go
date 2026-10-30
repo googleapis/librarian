@@ -262,7 +262,7 @@ func TestFlatPath(t *testing.T) {
 		{
 			Input: (&PathTemplate{}).
 				WithLiteral("projects").
-				WithVariable(NewPathVariable("a", "b", "c").WithMatchRecursive()),
+				WithVariable(NewPathVariableBuilder("a", "b", "c").WithMatchRecursive().Build()),
 			Want: "projects/{a.b.c}",
 		},
 	} {

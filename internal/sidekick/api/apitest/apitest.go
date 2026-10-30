@@ -23,6 +23,23 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
+// AllowUnexported returns a cmp.Option allowing comparison of unexported fields
+// in read-only api structs.
+func AllowUnexported() cmp.Option {
+	return cmp.AllowUnexported(
+		api.PathVariable{},
+	)
+}
+
+// CmpOptions returns standard comparison options for api types, including
+// AllowUnexported() and EquateEmpty().
+func CmpOptions() cmp.Option {
+	return cmp.Options{
+		AllowUnexported(),
+		cmpopts.EquateEmpty(),
+	}
+}
+
 // CheckMessage compares two `Message` instances ignoring the order of fields, and oneofs and ignoring child messages.
 func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 	t.Helper()
@@ -58,11 +75,12 @@ func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 // CheckService compares two `Service` instances ignoring method order.
 func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
+	if diff := cmp.Diff(want, got, AllowUnexported(), cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Method) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(want.Methods, got.Methods,
+		AllowUnexported(),
 		cmpopts.SortSlices(less),
 		cmpopts.IgnoreFields(api.Field{}, "Parent"),
 		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
@@ -87,6 +105,7 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 		t.Errorf("missing method %s", name)
 	}
 	if diff := cmp.Diff(want, got,
+		AllowUnexported(),
 		cmpopts.IgnoreFields(api.Field{}, "Parent"),
 		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
 	); diff != "" {

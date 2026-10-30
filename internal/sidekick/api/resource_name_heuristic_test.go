@@ -90,10 +90,9 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 				NewTestService("Service").WithMethods(
 					newAIPMethod("GetInstance", (&PathTemplate{}).
 						WithLiteral("v1").
-						WithVariable(&PathVariable{
-							FieldPath: []string{"name"},
-							Segments:  []string{"projects", SingleSegmentWildcard, "instances", MultiSegmentWildcard},
-						})),
+						WithVariable(NewPathVariableBuilder("name").
+							WithSegments("projects", SingleSegmentWildcard, "instances", MultiSegmentWildcard).
+							Build())),
 				),
 			},
 			want: map[string]bool{

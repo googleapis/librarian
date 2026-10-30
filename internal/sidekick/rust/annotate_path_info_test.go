@@ -150,11 +150,12 @@ func TestPathBindingAnnotations(t *testing.T) {
 
 	b0 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
 		WithLiteral("v2").
-		WithVariable(api.NewPathVariable("name").
+		WithVariable(api.NewPathVariableBuilder("name").
 			WithLiteral("projects").
 			WithMatch().
 			WithLiteral("locations").
-			WithMatch()).
+			WithMatch().
+			Build()).
 		WithVerb("create")).
 		WithQueryParameters("id")
 	wantB0 := &pathBindingAnnotation{
@@ -303,9 +304,10 @@ func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
 	response := api.NewTestMessage("Response")
 	binding := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
 		WithLiteral("v2").
-		WithVariable(api.NewPathVariable("name").
+		WithVariable(api.NewPathVariableBuilder("name").
 			WithLiteral("projects").
-			WithMatch()).
+			WithMatch().
+			Build()).
 		WithVerb("create"))
 	method := api.NewTestMethod("DoFoo").
 		WithInput(request).
@@ -348,8 +350,9 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		binding := api.NewTestPathBinding("GET", (&api.PathTemplate{}).
 			WithLiteral("v1").
 			WithLiteral("machines").
-			WithVariable(api.NewPathVariable(test.FieldName).
-				WithMatch()).
+			WithVariable(api.NewPathVariableBuilder(test.FieldName).
+				WithMatch().
+				Build()).
 			WithVerb("create")).
 			WithQueryParameters()
 		wantBinding := &pathBindingAnnotation{

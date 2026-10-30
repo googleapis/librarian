@@ -112,14 +112,14 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 	if !match {
 		return nil, 0, fmt.Errorf("invalid varname found on expression %q", input)
 	}
-	variable := api.NewPathVariable(tail)
+	variable := api.NewPathVariableBuilder(tail)
 	if allowReserved {
 		variable.WithAllowReserved()
 		variable.WithMatchRecursive()
 	} else {
 		variable.WithMatch()
 	}
-	return &api.PathSegment{Variable: variable}, end + 2, nil
+	return &api.PathSegment{Variable: variable.Build()}, end + 2, nil
 }
 
 // parseLiteral() extracts a literal value from `input`.
