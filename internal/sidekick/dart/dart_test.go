@@ -40,7 +40,7 @@ func TestMessageNames(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := messageName(test.message); got != test.want {
-				t.Errorf("messageName(%v) = %q, want %q", test.message.Name, got, test.want)
+				t.Errorf("messageName(%v) = %q, want %q", test.message.Name(), got, test.want)
 			}
 		})
 	}
@@ -94,7 +94,7 @@ func TestResolveMessageName(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := annotate.resolveMessageName(test.message, true)
 			if got != test.want {
-				t.Errorf("resolveMessageName(%s) = %s, want %s", test.message.Name, got, test.want)
+				t.Errorf("resolveMessageName(%s) = %s, want %s", test.message.Name(), got, test.want)
 			}
 		})
 	}
@@ -192,7 +192,7 @@ func TestResolveMessageNameImportPrefixes(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := annotate.resolveMessageName(test.message, true)
 			if got != test.want {
-				t.Errorf("resolveMessageName(%s) = %s, want %s", test.message.Name, got, test.want)
+				t.Errorf("resolveMessageName(%s) = %s, want %s", test.message.Name(), got, test.want)
 			}
 		})
 	}

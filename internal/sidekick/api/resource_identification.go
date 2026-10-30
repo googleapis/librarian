@@ -196,7 +196,7 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 			return nil, err
 		}
 		if field == nil {
-			return nil, fmt.Errorf("consistency error: field %v not found in message %q", fieldPath, method.InputType.Name)
+			return nil, fmt.Errorf("consistency error: field %v not found in message %q", fieldPath, method.InputType.name)
 		}
 		if !field.IsResourceReference() {
 			return nil, nil
@@ -218,24 +218,24 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 // findField traverses the (nested) message structure to find a field by its field path.
 func findField(msg *Message, path []string) (*Field, error) {
 	if len(path) == 0 {
-		return nil, fmt.Errorf("consistency error: empty field path in msg: %s", msg.ID)
+		return nil, fmt.Errorf("consistency error: empty field path in msg: %s", msg.id)
 	}
 
 	current := msg
 	var field *Field
 
 	for i, name := range path {
-		idx := slices.IndexFunc(current.Fields, func(f *Field) bool {
+		idx := slices.IndexFunc(current.fields, func(f *Field) bool {
 			return f.name == name
 		})
 		if idx == -1 {
-			return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, current.Name)
+			return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, current.name)
 		}
-		field = current.Fields[idx]
+		field = current.fields[idx]
 
 		if i < len(path)-1 {
 			if field.messageType == nil {
-				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.name, current.Name)
+				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.name, current.name)
 			}
 			current = field.messageType
 		}

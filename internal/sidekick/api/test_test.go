@@ -114,8 +114,8 @@ func TestField_WithJSONName(t *testing.T) {
 
 func TestMessage_WithDocumentation(t *testing.T) {
 	m := api.NewTestMessage("Test").WithDocumentation("A test message.")
-	if m.Documentation != "A test message." {
-		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation)
+	if m.Documentation() != "A test message." {
+		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation())
 	}
 }
 
@@ -138,21 +138,20 @@ func TestNewTestAPI_IndexesNestedMessages(t *testing.T) {
 	parent := api.NewTestMessage("Parent").WithMessages(child)
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
-	if got := model.Message(child.ID); got != child {
-		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	if got := model.Message(child.ID()); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID(), got, child)
 	}
-	if child.Parent != parent {
-		t.Errorf("child.Parent = %v, want %v", child.Parent, parent)
+	if child.Parent() != parent {
+		t.Errorf("child.Parent() = %v, want %v", child.Parent(), parent)
 	}
 }
 
 func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
 	val := api.NewTestEnumValue("VAL", 0)
 	nestedEnum := api.NewTestEnum("NestedEnum").WithValues(val)
-	parent := api.NewTestMessage("Parent")
 	// Bypassing WithEnums() deliberately leaves Parent and Value.Parent unwired,
 	// verifying that NewTestAPI properly initializes them during indexing.
-	parent.Enums = []*api.Enum{nestedEnum}
+	parent := api.NewMessageBuilderFrom(api.NewTestMessage("Parent")).AddEnum(nestedEnum).Build()
 
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
@@ -173,8 +172,8 @@ func TestNewTestAPI_DeduplicatesNestedEnums(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, nil)
 
-	if got := len(parent.Enums); got != 1 {
-		t.Errorf("len(parent.Enums) = %d, want 1", got)
+	if got := len(parent.Enums()); got != 1 {
+		t.Errorf("len(parent.Enums()) = %d, want 1", got)
 	}
 	if got := model.Enum(enum.ID()); got != enum {
 		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID(), got, enum)
@@ -187,11 +186,11 @@ func TestNewTestAPI_DeduplicatesNestedMessages(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent, child}, nil, nil)
 
-	if got := len(parent.Messages); got != 1 {
-		t.Errorf("len(parent.Messages) = %d, want 1", got)
+	if got := len(parent.Messages()); got != 1 {
+		t.Errorf("len(parent.Messages()) = %d, want 1", got)
 	}
-	if got := model.Message(child.ID); got != child {
-		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	if got := model.Message(child.ID()); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID(), got, child)
 	}
 }
 
@@ -200,8 +199,8 @@ func TestMessage_WithMessages_UpdatesOneOfIDs(t *testing.T) {
 	child := api.NewTestMessage("Child").WithOneOfs(oneof)
 	_ = api.NewTestMessage("Parent").WithMessages(child)
 
-	if got, want := child.OneOfs[0].ID(), ".test.Parent.Child.choice"; got != want {
-		t.Errorf("child.OneOfs[0].ID() = %q, want %q", got, want)
+	if got, want := child.OneOfs()[0].ID(), ".test.Parent.Child.choice"; got != want {
+		t.Errorf("child.OneOfs()[0].ID() = %q, want %q", got, want)
 	}
 }
 
@@ -258,7 +257,7 @@ func TestNewTestMapWithFields(t *testing.T) {
 			WithJSONName("customVal").
 			WithID(".custom.package.MyMap.custom_val").
 			WithTypez(api.TypezMessage).
-			WithTypezID(valMsg.ID).
+			WithTypezID(valMsg.ID()).
 			WithMessageType(valMsg).
 			Build()).
 		Build()
@@ -449,18 +448,5 @@ func TestSampleInfo_Builder(t *testing.T) {
 	s := api.NewTestSampleInfo(f)
 	if s.ResourceNameField != f {
 		t.Errorf("s.ResourceNameField = %v, want %v", s.ResourceNameField, f)
-	}
-}
-
-func TestPaginationInfo_Builder(t *testing.T) {
-	token := api.NewTestField("next_page_token")
-	items := api.NewTestField("items")
-	p := api.NewTestPaginationInfo(token, items)
-
-	if p.NextPageToken != token {
-		t.Errorf("p.NextPageToken = %v, want %v", p.NextPageToken, token)
-	}
-	if p.PageableItem != items {
-		t.Errorf("p.PageableItem = %v, want %v", p.PageableItem, items)
 	}
 }

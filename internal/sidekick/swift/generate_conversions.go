@@ -65,7 +65,7 @@ func (c *codec) generateEnumConversions(outdir string) error {
 
 func (c *codec) generateMessageConversions(outdir string) error {
 	for _, m := range c.Model.Messages {
-		if m.Parent != nil || m.ServicePlaceholder {
+		if m.Parent() != nil || m.ServicePlaceholder() {
 			continue
 		}
 		name := c.messageFileName(m)

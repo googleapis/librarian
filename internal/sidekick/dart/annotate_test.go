@@ -726,10 +726,10 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 		{message: sample.Automatic(), want: 0},
 		{message: withMapMsg, want: 1},
 	} {
-		t.Run(test.message.Name, func(t *testing.T) {
+		t.Run(test.message.Name(), func(t *testing.T) {
 			annotate.annotateMessage(test.message)
 
-			codec := test.message.Codec.(*messageAnnotation)
+			codec := test.message.Codec().(*messageAnnotation)
 			got := codec.ToStringLines
 
 			if len(got) != test.want {
@@ -753,7 +753,7 @@ func TestAnnotateMessage_ToString_MapField(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := msg.Codec.(*messageAnnotation)
+	codec := msg.Codec().(*messageAnnotation)
 	want := []string{
 		"'name=$name',",
 		"if (description != null) 'description=$description',",
@@ -780,7 +780,7 @@ func TestAnnotateMessage_HasFields(t *testing.T) {
 	t.Run("has fields", func(t *testing.T) {
 		secret := sample.Secret()
 		annotate.annotateMessage(secret)
-		codec := secret.Codec.(*messageAnnotation)
+		codec := secret.Codec().(*messageAnnotation)
 		if !codec.HasFields() {
 			t.Errorf("mismatch got = %v, want true", codec.HasFields())
 		}
@@ -788,7 +788,7 @@ func TestAnnotateMessage_HasFields(t *testing.T) {
 
 	t.Run("no fields", func(t *testing.T) {
 		annotate.annotateMessage(emptyMessage)
-		codec := emptyMessage.Codec.(*messageAnnotation)
+		codec := emptyMessage.Codec().(*messageAnnotation)
 		if codec.HasFields() {
 			t.Errorf("mismatch got = %v, want false", codec.HasFields())
 		}
@@ -809,7 +809,7 @@ func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 	annotate := newAnnotateModel(model)
 	annotate.annotateMessage(message)
 
-	codec := message.Codec.(*messageAnnotation)
+	codec := message.Codec().(*messageAnnotation)
 	if !codec.OmitGeneration {
 		t.Errorf("Expected OmitGeneration to be true for .google.longrunning.Operation")
 	}
@@ -845,7 +845,7 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 	})
 	annotate.annotateMessage(message)
 
-	codec := message.Codec.(*messageAnnotation)
+	codec := message.Codec().(*messageAnnotation)
 	if codec.OmitGeneration {
 		t.Errorf("HasMap.OmitGeneration = true, want false")
 	}

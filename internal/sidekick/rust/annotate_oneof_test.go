@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
@@ -65,7 +64,7 @@ func TestOneOfAnnotations(t *testing.T) {
 	}
 
 	// Stops the recursion when comparing fields.
-	ignore := cmp.Options{apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")}
+	ignore := cmp.Options{apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")}
 	wantFieldCodec := &fieldAnnotations{
 		FieldName:          "oneof_field",
 		SetterName:         "oneof_field",
@@ -262,7 +261,7 @@ func TestOneOf_ReservedRawIdentifiers(t *testing.T) {
 		}
 	})
 
-	ignoreField := cmp.Options{apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")}
+	ignoreField := cmp.Options{apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")}
 	wantSelfBranch := &fieldAnnotations{
 		FieldName:          "self_",
 		SetterName:         "self",

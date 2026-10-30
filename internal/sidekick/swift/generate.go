@@ -120,14 +120,14 @@ func (c *codec) generateDocc(outdir string, model *api.API) error {
 
 func (c *codec) generateMessages(outdir string, model *api.API) error {
 	for _, m := range model.Messages {
-		name := m.Name
-		if m.Parent == nil && m.Package == wellKnownProtobufPackage {
-			name = "WKT" + m.Name
+		name := m.Name()
+		if m.Parent() == nil && m.Package() == wellKnownProtobufPackage {
+			name = "WKT" + m.Name()
 		}
 		output := c.swiftFilename(name)
 		tmpl := "templates/common/message_file.swift.gotmpl"
-		if m.ServicePlaceholder {
-			output = c.swiftFilename(m.Name + "+Requests")
+		if m.ServicePlaceholder() {
+			output = c.swiftFilename(m.Name() + "+Requests")
 			tmpl = "templates/common/placeholder_file.swift.gotmpl"
 		}
 		generated := language.GeneratedFile{

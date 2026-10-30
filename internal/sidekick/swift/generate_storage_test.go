@@ -112,7 +112,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithOutput(folder).
 				WithVerb("POST").
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v2").WithVariableNamed("parent").WithLiteral("folders").Build()).
-				WithAutoPopulated(createFolderRequest.Fields[2]),
+				WithAutoPopulated(createFolderRequest.Fields()[2]),
 			api.NewTestMethod("GetIamPolicy").
 				WithInput(getIamPolicyRequest).
 				WithOutput(policy).
@@ -123,7 +123,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithOutput(operation).
 				WithVerb("POST").
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v2").WithVariableNamed("name").WithLiteral(":rename").Build()).
-				WithOperationInfo(api.NewTestOperationInfo(folder.ID, renameFolderMetadata.ID)),
+				WithOperationInfo(api.NewTestOperationInfo(folder.ID(), renameFolderMetadata.ID())),
 			api.NewTestMethod("GetOperation").
 				WithInput(getOperationRequest).
 				WithOutput(operation).

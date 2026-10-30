@@ -20,7 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func maybeMapField(model *api.API, message *api.Message, input *property) (*api.Field, error) {
+func maybeMapField(model *api.API, mb *api.MessageBuilder, input *property) (*api.Field, error) {
 	if input.Schema.Type != "object" || input.Schema.Format != "" {
 		return nil, nil
 	}
@@ -28,25 +28,26 @@ func maybeMapField(model *api.API, message *api.Message, input *property) (*api.
 		return nil, nil
 	}
 
-	if field := maybeMapOfObjectField(model, message, input); field != nil {
+	if field := maybeMapOfObjectField(model, mb, input); field != nil {
 		return field, nil
 	}
-	if field, err := maybeMapOfEnumField(model, message, input); err != nil || field != nil {
+	if field, err := maybeMapOfEnumField(model, mb, input); err != nil || field != nil {
 		return field, err
 	}
-	return maybeMapOfPrimitiveField(model, message, input)
+	return maybeMapOfPrimitiveField(model, mb, input)
 }
 
-func maybeMapOfObjectField(model *api.API, message *api.Message, input *property) *api.Field {
+func maybeMapOfObjectField(model *api.API, mb *api.MessageBuilder, input *property) *api.Field {
 	if input.Schema.AdditionalProperties.Ref == "" {
 		return nil
 	}
+	message := mb.Build()
 	valueTypezID := fmt.Sprintf(".%s.%s", model.PackageName, input.Schema.AdditionalProperties.Ref)
 	typezID := insertMapType(model, api.TypezMessage, valueTypezID)
 	field := api.NewFieldBuilder().
 		WithName(input.Name).
 		WithJSONName(input.Name).
-		WithID(fmt.Sprintf("%s.%s", message.ID, input.Name)).
+		WithID(fmt.Sprintf("%s.%s", message.ID(), input.Name)).
 		WithDocumentation(input.Schema.Description).
 		WithTypez(api.TypezMap).
 		WithTypezID(typezID).
@@ -56,19 +57,20 @@ func maybeMapOfObjectField(model *api.API, message *api.Message, input *property
 	return field
 }
 
-func maybeMapOfEnumField(model *api.API, message *api.Message, input *property) (*api.Field, error) {
+func maybeMapOfEnumField(model *api.API, mb *api.MessageBuilder, input *property) (*api.Field, error) {
 	if input.Schema.AdditionalProperties.Enums == nil {
 		return nil, nil
 	}
-	if err := makeMessageEnum(model, message, input.Name, input.Schema.AdditionalProperties); err != nil {
+	if err := makeMessageEnum(model, mb, input.Name, input.Schema.AdditionalProperties); err != nil {
 		return nil, err
 	}
-	valueTypezID := fmt.Sprintf("%s.%s", message.ID, input.Name)
+	message := mb.Build()
+	valueTypezID := fmt.Sprintf("%s.%s", message.ID(), input.Name)
 	typezID := insertMapType(model, api.TypezEnum, valueTypezID)
 	field := api.NewFieldBuilder().
 		WithName(input.Name).
 		WithJSONName(input.Name).
-		WithID(fmt.Sprintf("%s.%s", message.ID, input.Name)).
+		WithID(fmt.Sprintf("%s.%s", message.ID(), input.Name)).
 		WithDocumentation(input.Schema.Description).
 		WithTypez(api.TypezMap).
 		WithTypezID(typezID).
@@ -78,8 +80,9 @@ func maybeMapOfEnumField(model *api.API, message *api.Message, input *property) 
 	return field, nil
 }
 
-func maybeMapOfPrimitiveField(model *api.API, message *api.Message, input *property) (*api.Field, error) {
-	valueTypez, valueTypezID, err := scalarType(model, message.ID, input.Name, input.Schema.AdditionalProperties)
+func maybeMapOfPrimitiveField(model *api.API, mb *api.MessageBuilder, input *property) (*api.Field, error) {
+	message := mb.Build()
+	valueTypez, valueTypezID, err := scalarType(model, message.ID(), input.Name, input.Schema.AdditionalProperties)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +90,7 @@ func maybeMapOfPrimitiveField(model *api.API, message *api.Message, input *prope
 	field := api.NewFieldBuilder().
 		WithName(input.Name).
 		WithJSONName(input.Name).
-		WithID(fmt.Sprintf("%s.%s", message.ID, input.Name)).
+		WithID(fmt.Sprintf("%s.%s", message.ID(), input.Name)).
 		WithDocumentation(input.Schema.Description).
 		WithTypez(api.TypezMap).
 		WithTypezID(typezID).

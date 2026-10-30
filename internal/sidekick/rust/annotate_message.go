@@ -75,53 +75,54 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 	annotations := &messageAnnotation{
-		Name:              toPascal(m.Name),
+		Name:              toPascal(m.Name()),
 		ModuleName:        c.MessageModuleName(m),
 		QualifiedName:     qualifiedName,
 		RelativeName:      relativeName,
 		ProstRelativeName: prostMessageRelativePath(m),
 		NameInExamples:    nameInExamples,
-		PackageModuleName: packageToModuleName(m.Package),
-		SourceFQN:         strings.TrimPrefix(m.ID, "."),
+		PackageModuleName: packageToModuleName(m.Package()),
+		SourceFQN:         strings.TrimPrefix(m.ID(), "."),
 	}
-	m.Codec = annotations
+	m.SetAnnotations(annotations)
 
 	if !full {
 		// We have basic annotations, we are done.
 		return nil
 	}
 
-	for _, f := range m.Fields {
+	fields := m.Fields()
+	for _, f := range fields {
 		if _, err := c.annotateField(f, m, model); err != nil {
 			return err
 		}
 	}
-	for _, o := range m.OneOfs {
+	for _, o := range m.OneOfs() {
 		if _, err := c.annotateOneOf(o, m, model); err != nil {
 			return err
 		}
 	}
-	for _, e := range m.Enums {
+	for _, e := range m.Enums() {
 		if err := c.annotateEnum(e, model, true); err != nil {
 			return err
 		}
 	}
-	for _, child := range m.Messages {
+	for _, child := range m.Messages() {
 		if err := c.annotateMessage(child, model, true); err != nil {
 			return err
 		}
 	}
-	basicFields := language.FilterSlice(m.Fields, func(f *api.Field) bool {
+	basicFields := language.FilterSlice(fields, func(f *api.Field) bool {
 		return !f.IsOneOf()
 	})
 
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, model, m.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation(), m.ID(), model, m.Scopes())
 	if err != nil {
 		return err
 	}
 	annotations.DocLines = docLines
 	annotations.HasNestedTypes = language.HasNestedTypes(m)
 	annotations.BasicFields = basicFields
-	annotations.Internal = slices.Contains(c.internalTypes, m.ID)
+	annotations.Internal = slices.Contains(c.internalTypes, m.ID())
 	return nil
 }

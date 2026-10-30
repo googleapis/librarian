@@ -48,12 +48,12 @@ func TestPageSimple(t *testing.T) {
 		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
-	if method.Pagination != request.Fields[1] {
-		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
+	if method.Pagination != request.Fields()[1] {
+		t.Errorf("mismatch, want=%v, got=%v", request.Fields()[1], method.Pagination)
 	}
-	want := NewTestPaginationInfo(response.Fields[0], response.Fields[1])
+	want := NewTestPaginationInfo(response.Fields()[0], response.Fields()[1])
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(want, response.Pagination, allowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(want, response.Pagination(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -94,12 +94,12 @@ func TestPageWithOverride(t *testing.T) {
 		{ID: ".package.Service.List", ItemField: "items"},
 	}
 	UpdateMethodPagination(overrides, model)
-	if method.Pagination != request.Fields[1] {
-		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
+	if method.Pagination != request.Fields()[1] {
+		t.Errorf("mismatch, want=%v, got=%v", request.Fields()[1], method.Pagination)
 	}
-	want := NewTestPaginationInfo(response.Fields[0], response.Fields[2])
+	want := NewTestPaginationInfo(response.Fields()[0], response.Fields()[2])
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(want, response.Pagination, allowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(want, response.Pagination(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -252,7 +252,7 @@ func TestPaginationRequestPageSizeSuccess(t *testing.T) {
 			)
 		got := paginationRequestPageSize(response)
 		ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-		if diff := cmp.Diff(response.Fields[0], got, allowUnexported(), ignoreParent); diff != "" {
+		if diff := cmp.Diff(response.Fields()[0], got, allowUnexported(), ignoreParent); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -364,7 +364,7 @@ func TestPaginationResponseItemMatching(t *testing.T) {
 			WithFields(f)
 		got := paginationResponseItem(nil, "package.Service.List", response)
 		ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-		if diff := cmp.Diff(response.Fields[0], got, allowUnexported(), ignoreParent); diff != "" {
+		if diff := cmp.Diff(response.Fields()[0], got, allowUnexported(), ignoreParent); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -393,7 +393,7 @@ func TestPaginationResponseItemMatchingMany(t *testing.T) {
 			WithFields(f1, f2)
 		got := paginationResponseItem(nil, "package.Service.List", response)
 		ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-		if diff := cmp.Diff(response.Fields[0], got, allowUnexported(), ignoreParent); diff != "" {
+		if diff := cmp.Diff(response.Fields()[0], got, allowUnexported(), ignoreParent); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -408,7 +408,7 @@ func TestPaginationResponseItemMatchingPreferRepeatedOverMap(t *testing.T) {
 		)
 	got := paginationResponseItem(nil, "package.Service.List", response)
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(response.Fields[1], got, allowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(response.Fields()[1], got, allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -463,5 +463,24 @@ func TestPaginationResponseNextPageToken(t *testing.T) {
 		if got != nil {
 			t.Errorf("the field should not be a next page token, got=%v", got)
 		}
+	}
+}
+
+func TestPaginationInfo(t *testing.T) {
+	token := NewFieldBuilder().WithName("next_page_token").Build()
+	items := NewFieldBuilder().WithName("items").Build()
+	got := NewPaginationInfo(token, items)
+	want := &PaginationInfo{
+		nextPageToken: token,
+		pageableItem:  items,
+	}
+	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if got.NextPageToken() != token {
+		t.Errorf("NextPageToken() = %v, want %v", got.NextPageToken(), token)
+	}
+	if got.PageableItem() != items {
+		t.Errorf("PageableItem() = %v, want %v", got.PageableItem(), items)
 	}
 }

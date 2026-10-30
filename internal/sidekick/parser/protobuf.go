@@ -405,17 +405,12 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			}
 
 			switch p[0] {
-			case fileDescriptorMessageType:
-				// Because of message nesting we need to call recursively and
-				// strip out parts of the path.
-				m := f.MessageType[p[1]]
-				addMessageDocumentation(result, m, p[2:], loc.GetLeadingComments(), fFQN+"."+m.GetName())
 			case fileDescriptorService:
 				sFQN := fFQN + "." + f.GetService()[p[1]].GetName()
 				addServiceDocumentation(result, p[2:], loc.GetLeadingComments(), sFQN)
 			case fileDescriptorName, fileDescriptorPackage, fileDescriptorDependency,
-				fileDescriptorEnumType, fileDescriptorExtension, fileDescriptorOptions,
-				fileDescriptorSourceCodeInfo, fileDescriptorPublicDependency,
+				fileDescriptorMessageType, fileDescriptorEnumType, fileDescriptorExtension,
+				fileDescriptorOptions, fileDescriptorSourceCodeInfo, fileDescriptorPublicDependency,
 				fileDescriptorWeakDependency, fileDescriptorSyntax, fileDescriptorEdition:
 				// We ignore this type of documentation because it produces no
 				// output in the generated code, or is already extracted via
@@ -632,17 +627,18 @@ func isProto2(f *descriptorpb.FileDescriptorProto) bool {
 }
 
 func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, proto2 bool, parent *api.Message, comments map[string]string, pathPrefix []int32) (*api.Message, error) {
-	message := &api.Message{
-		Name:       m.GetName(),
-		ID:         mFQN,
-		Parent:     parent,
-		Package:    packagez,
-		Deprecated: m.GetOptions().GetDeprecated(),
-	}
+	mb := api.NewMessageBuilder().
+		WithName(m.GetName()).
+		WithID(mFQN).
+		WithParent(parent).
+		WithPackage(packagez).
+		WithDocumentation(lookupComment(comments, pathPrefix)).
+		WithDeprecated(m.GetOptions().GetDeprecated())
+	message := mb.Build()
 	model.AddMessage(message)
 
 	if opts := m.GetOptions(); opts != nil {
-		if err := processResourceAnnotation(opts, message, model); err != nil {
+		if err := processResourceAnnotation(opts, mb, model); err != nil {
 			return nil, err
 		}
 	}
@@ -659,13 +655,13 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 			if err != nil {
 				return nil, err
 			}
-			message.Messages = append(message.Messages, nmsg)
+			mb.AddMessage(nmsg)
 		}
 	}
 	for i, e := range m.GetEnumType() {
 		eFQN := mFQN + "." + e.GetName()
 		e := processEnum(model, e, eFQN, packagez, message, comments, append(pathPrefix, messageDescriptorEnum, int32(i)))
-		message.Enums = append(message.Enums, e)
+		mb.AddEnum(e)
 	}
 	oneOfBuilders := make([]*api.OneOfBuilder, len(m.OneofDecl))
 	for i, oneof := range m.OneofDecl {
@@ -680,7 +676,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		if err != nil {
 			return nil, err
 		}
-		message.Fields = append(message.Fields, field)
+		mb.AddField(field)
 		if field.IsOneOf() {
 			oneOfBuilders[*mf.OneofIndex].AddField(field)
 		}
@@ -690,7 +686,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	for _, ob := range oneOfBuilders {
 		oneof := ob.Build()
 		if len(oneof.Fields()) > 0 {
-			message.OneOfs = append(message.OneOfs, oneof)
+			mb.AddOneOf(oneof)
 		}
 	}
 
@@ -744,19 +740,20 @@ func processMapEntry(model *api.API, nm *descriptorpb.DescriptorProto, nmFQN str
 	return nil
 }
 
-func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message, model *api.API) error {
+func processResourceAnnotation(opts *descriptorpb.MessageOptions, mb *api.MessageBuilder, model *api.API) error {
 	if !proto.HasExtension(opts, eResource) {
 		return nil
 	}
+	message := mb.Build()
 	ext := proto.GetExtension(opts, eResource)
 	res, ok := ext.(*resourceDescriptor)
 	if !ok {
-		return fmt.Errorf("in message %q: unexpected type for eResource extension: %T", message.ID, ext)
+		return fmt.Errorf("in message %q: unexpected type for eResource extension: %T", message.ID(), ext)
 	}
 
 	patterns, err := parseResourcePatterns(res.GetPattern())
 	if err != nil {
-		return fmt.Errorf("in message %q: %w", message.ID, err)
+		return fmt.Errorf("in message %q: %w", message.ID(), err)
 	}
 
 	resource := api.NewResourceBuilder().
@@ -766,7 +763,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		WithSingular(res.GetSingular()).
 		WithSelf(message).
 		Build()
-	message.Resource = resource
+	mb.WithResource(resource)
 	model.AddResource(resource)
 	return nil
 }
@@ -921,40 +918,6 @@ func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string)
 		// not refer to any artifact in the generated code.
 	default:
 		slog.Warn("service dropped unknown documentation", "loc", p, "docs", doc)
-	}
-}
-
-func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p []int32, doc string, mFQN string) {
-	message := model.Message(mFQN)
-	if message == nil {
-		return
-	}
-	// Beware of refactoring the calls to `trimLeadingSpacesInDocumentation`.
-	// We should modify `doc` only once, upon assignment to `.Documentation`
-	switch {
-	case len(p) == 0:
-		// This is a comment for a top level message
-		message.Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == messageDescriptorNestedType:
-		nmsg := m.GetNestedType()[p[1]]
-		if nmsg.GetOptions().GetMapEntry() {
-			return
-		}
-		nmFQN := mFQN + "." + nmsg.GetName()
-		addMessageDocumentation(model, nmsg, p[2:], doc, nmFQN)
-	case p[0] == messageDescriptorOneOf:
-	case p[0] == messageDescriptorField:
-	case p[0] == messageDescriptorEnum:
-	case p[0] == messageDescriptorExtensionRange:
-	case p[0] == messageDescriptorOptions:
-	case p[0] == messageDescriptorExtension:
-	case p[0] == messageDescriptorReservedRange:
-	case p[0] == messageDescriptorReservedName:
-		// These comments are ignored, as they refer to Protobuf elements
-		// without corresponding public APIs in the generated code, or are
-		// already extracted via extractSourceComments.
-	default:
-		slog.Warn("message dropped documentation", "loc", p, "docs", doc)
 	}
 }
 
