@@ -63,9 +63,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 					Name: "secretField",
 				})
 				return api.NewTestMethod("TestMethod").
-					WithSampleInfo(&api.SampleInfo{
-						ResourceNameField: field,
-					})
+					WithSampleInfo(api.NewSampleInfoBuilder().
+						WithResourceNameField(field).
+						Build())
 			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"secretField"},
@@ -76,10 +76,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		{
 			name: "AIP standard update",
 			method: func() *api.Method {
-				m := api.NewTestMethod("TestMethod").
-					WithSampleInfo(&api.SampleInfo{})
-				m.IsAIPStandardUpdate = true
-				return m
+				return api.NewTestMethod("TestMethod").
+					WithSampleInfo(api.NewSampleInfoBuilder().Build()).
+					WithIsAIPStandardUpdate(true)
 			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"name"},
@@ -93,9 +92,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 			codec.annotateSampleInfo(test.method)
 
 			var got *sampleInfoAnnotation
-			if test.method.SampleInfo != nil {
-				if test.method.SampleInfo.Codec != nil {
-					got = test.method.SampleInfo.Codec.(*sampleInfoAnnotation)
+			if test.method.SampleInfo() != nil {
+				if test.method.SampleInfo().Codec() != nil {
+					got = test.method.SampleInfo().Codec().(*sampleInfoAnnotation)
 				}
 			}
 

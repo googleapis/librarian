@@ -66,12 +66,12 @@ func (c *codec) lroAnyTypes(methods []*api.Method) ([]*lroAnyType, error) {
 	seen := map[string]bool{}
 	var types []*lroAnyType
 	for _, method := range methods {
-		if method.OperationInfo == nil {
+		if method.OperationInfo() == nil {
 			continue
 		}
 		for _, id := range []string{
-			method.OperationInfo.MetadataTypeID(),
-			method.OperationInfo.ResponseTypeID(),
+			method.OperationInfo().MetadataTypeID(),
+			method.OperationInfo().ResponseTypeID(),
 		} {
 			if id == "" || seen[id] {
 				continue

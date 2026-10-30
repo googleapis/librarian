@@ -131,11 +131,11 @@ func (ann *serviceAnnotations) needsWktImport() bool {
 
 func (ann *serviceAnnotations) hasUpdateMask() bool {
 	for _, m := range ann.Methods {
-		if m.SampleInfo != nil && m.SampleInfo.UpdateMaskField != nil {
+		if m.SampleInfo() != nil && m.SampleInfo().UpdateMaskField() != nil {
 			return true
 		}
 	}
-	if ann.QuickstartMethod != nil && ann.QuickstartMethod.SampleInfo != nil && ann.QuickstartMethod.SampleInfo.UpdateMaskField != nil {
+	if ann.QuickstartMethod != nil && ann.QuickstartMethod.SampleInfo() != nil && ann.QuickstartMethod.SampleInfo().UpdateMaskField() != nil {
 		return true
 	}
 	return false
@@ -144,7 +144,7 @@ func (ann *serviceAnnotations) hasUpdateMask() bool {
 // HasLROs returns true if one of the methods is an LRO.
 func (ann *serviceAnnotations) HasLROs() bool {
 	return slices.ContainsFunc(ann.Methods, func(m *api.Method) bool {
-		ma := m.Codec.(*methodAnnotations)
+		ma := m.Codec().(*methodAnnotations)
 		return ma != nil && (ma.LRO != nil || ma.DiscoveryLRO != nil)
 	})
 }
@@ -162,8 +162,8 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				return nil, err
 			}
 			methods = append(methods, method)
-			if method.IsLroPoller && method.SourceService != nil && method.SourceService.Package == service.Package {
-				requiredServices[method.SourceService.ID] = method.SourceService
+			if method.IsLroPoller() && method.SourceService() != nil && method.SourceService().Package == service.Package {
+				requiredServices[method.SourceService().ID] = method.SourceService()
 			}
 		}
 	}
@@ -181,7 +181,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	// service's own deprecation, which is all it can name anyway.
 	diagnoseClientSnippet := service.Deprecated
 	if quickstartMethod != nil {
-		if ann, ok := quickstartMethod.Codec.(*methodAnnotations); ok {
+		if ann, ok := quickstartMethod.Codec().(*methodAnnotations); ok {
 			diagnoseClientSnippet = diagnoseClientSnippet || ann.DiagnoseSnippet
 		}
 	}
@@ -233,9 +233,9 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	}
 
 	for _, method := range methods {
-		if method.InputType != nil {
-			if method.InputType.Package() != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(method.InputType.Package())
+		if method.InputType() != nil {
+			if method.InputType().Package() != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(method.InputType().Package())
 				if err != nil {
 					return nil, err
 				}
@@ -245,26 +245,26 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				}
 			}
 		}
-		if method.OutputType != nil {
-			if method.OutputType.Package() != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(method.OutputType.Package())
+		if method.OutputType() != nil {
+			if method.OutputType().Package() != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(method.OutputType().Package())
 				if err != nil {
 					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
-					if !method.ReturnsEmpty && method.OutputType.ID() != ".google.protobuf.Empty" {
+					if !method.ReturnsEmpty() && method.OutputType().ID() != ".google.protobuf.Empty" {
 						annotations.PublicDependsOn[dep.Name] = dep
 					}
 				}
 			}
 		}
-		if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination() != nil {
+		if method.Pagination() != nil && method.OutputType() != nil && method.OutputType().Pagination() != nil {
 			if err := c.addPaginationDependencies(annotations, method); err != nil {
 				return nil, err
 			}
 		}
-		if method.IsLRO && method.OperationInfo != nil {
+		if method.IsLRO() && method.OperationInfo() != nil {
 			if err := c.addLroDependencies(annotations, method); err != nil {
 				return nil, err
 			}
@@ -274,7 +274,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		// body.contentType directly. Swift's MemberImportVisibility requires
 		// importing the defining module (GoogleApi) in the transport file even if
 		// GoogleApi does not appear in the service's public signatures.
-		if ma, ok := method.Codec.(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName != "google.api" {
+		if ma, ok := method.Codec().(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName != "google.api" {
 			dep, err := c.addApiPackageDependency("google.api")
 			if err != nil {
 				return nil, err
@@ -283,7 +283,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				annotations.DependsOn[dep.Name] = dep
 			}
 		}
-		for _, signature := range method.Signatures {
+		for _, signature := range method.Signatures() {
 			if err := c.addSignatureDependencies(annotations, signature); err != nil {
 				return nil, err
 			}
@@ -298,9 +298,9 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 }
 
 func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, method *api.Method) error {
-	itemsField := method.OutputType.Pagination().PageableItem()
+	itemsField := method.OutputType().Pagination().PageableItem()
 	if itemsField == nil {
-		return fmt.Errorf("inconsistent pagination info for method: %s", method.ID)
+		return fmt.Errorf("inconsistent pagination info for method: %s", method.ID())
 	}
 	if itemsField.Repeated() {
 		return c.addFieldDependencies(annotations, itemsField)
@@ -384,7 +384,7 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 	}
 
 	// Ensure we have the necessary dependencies for the LRO response and metadata types.
-	respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID())
+	respMsg, err := lookupMessage(c.Model, method.OperationInfo().ResponseTypeID())
 	if err != nil {
 		return err
 	}
@@ -400,7 +400,7 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 			}
 		}
 	}
-	metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID())
+	metaMsg, err := lookupMessage(c.Model, method.OperationInfo().MetadataTypeID())
 	if err != nil {
 		return err
 	}
@@ -428,13 +428,13 @@ func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signat
 func (c *codec) shouldGenerateMethod(method *api.Method) bool {
 	// Swift does not yet support streaming RPCs.
 	// See https://github.com/googleapis/google-cloud-swift/issues/451
-	if method.ClientSideStreaming || method.ServerSideStreaming {
+	if method.ClientSideStreaming() || method.ServerSideStreaming() {
 		return false
 	}
 	if c.isGrpc() {
 		return true
 	}
-	return method.PathInfo != nil && len(method.PathInfo.Bindings()) != 0
+	return method.PathInfo() != nil && len(method.PathInfo().Bindings()) != 0
 }
 
 func (c *codec) addFeatureAnnotations(

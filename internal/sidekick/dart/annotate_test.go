@@ -325,8 +325,7 @@ func TestAnnotateModel_HasMethods(t *testing.T) {
 }
 
 func TestAnnotateModel_Examples_ValidMethod(t *testing.T) {
-	method := sample.MethodListSecretVersions()
-	method.IsSimple = true
+	method := sample.MethodListSecretVersions().WithIsSimple(true)
 	serviceWithMethods := api.NewTestService("ServiceWithMethods").
 		WithPackage(sample.Package).
 		WithMethods(method)
@@ -419,7 +418,7 @@ func TestAnnotateMethod(t *testing.T) {
 	}
 
 	annotate.annotateMethod(method)
-	codec := method.Codec.(*methodAnnotation)
+	codec := method.Codec().(*methodAnnotation)
 
 	got := codec.Name
 	want := "listSecretVersions"
@@ -469,12 +468,12 @@ func TestAnnotateMethod_IsLast(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec1 := notLastMethod.Codec.(*methodAnnotation)
+	codec1 := notLastMethod.Codec().(*methodAnnotation)
 	if codec1.IsLast {
 		t.Errorf("Expected IsLast to be false for method1")
 	}
 
-	codec2 := lastMethod.Codec.(*methodAnnotation)
+	codec2 := lastMethod.Codec().(*methodAnnotation)
 	if !codec2.IsLast {
 		t.Errorf("Expected IsLast to be true for method2")
 	}
@@ -1970,33 +1969,32 @@ func TestFindExampleMethod(t *testing.T) {
 
 	lroMethod := api.NewTestMethod("LroMethod").WithOperationInfo(api.NewOperationInfoBuilder().Build())
 
-	streamingMethod := api.NewTestMethod("StreamingMethod")
-	streamingMethod.IsSimple = false
+	streamingMethod := api.NewTestMethod("StreamingMethod").WithIsSimple(false)
 
 	voidMethod := api.NewTestMethod("VoidMethod").
 		WithInput(msgWithoutRequired).
-		ReturnEmpty()
-	voidMethod.IsSimple = true
+		ReturnEmpty().
+		WithIsSimple(true)
 
 	requiredInputMethod := api.NewTestMethod("RequiredInputMethod").
 		WithInput(msgWithRequired).
-		WithOutput(msgWithoutRequired)
-	requiredInputMethod.IsSimple = true
+		WithOutput(msgWithoutRequired).
+		WithIsSimple(true)
 
 	requiredOutputMethod := api.NewTestMethod("RequiredOutputMethod").
 		WithInput(msgWithoutRequired).
-		WithOutput(msgWithRequired)
-	requiredOutputMethod.IsSimple = true
+		WithOutput(msgWithRequired).
+		WithIsSimple(true)
 
 	differentPackageMethod := api.NewTestMethod("DifferentPackageMethod").
 		WithInput(differentPackageMsg).
-		WithOutput(differentPackageMsg)
-	differentPackageMethod.IsSimple = true
+		WithOutput(differentPackageMsg).
+		WithIsSimple(true)
 
 	perfectMethod := api.NewTestMethod("PerfectMethod").
 		WithInput(msgWithoutRequired).
-		WithOutput(msgWithoutRequired)
-	perfectMethod.IsSimple = true
+		WithOutput(msgWithoutRequired).
+		WithIsSimple(true)
 
 	for _, test := range []struct {
 		name    string
@@ -2053,11 +2051,11 @@ func TestFindExampleMethod(t *testing.T) {
 			if got != test.want {
 				gotName := "nil"
 				if got != nil {
-					gotName = got.Name
+					gotName = got.Name()
 				}
 				wantName := "nil"
 				if test.want != nil {
-					wantName = test.want.Name
+					wantName = test.want.Name()
 				}
 				t.Errorf("findExampleMethod() = %v, want %v", gotName, wantName)
 			}

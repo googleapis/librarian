@@ -29,10 +29,10 @@ func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
 
 	method.WithBindings(b1, b2)
 
-	if method.PathInfo == nil {
+	if method.PathInfo() == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings(), cmp.AllowUnexported(api.PathBinding{}, api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo().Bindings(), cmp.AllowUnexported(api.PathBinding{}, api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -43,7 +43,7 @@ func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 
 	method.WithBindings(b1)
 
-	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings(), cmp.AllowUnexported(api.PathBinding{}, api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo().Bindings(), cmp.AllowUnexported(api.PathBinding{}, api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -52,11 +52,11 @@ func TestMethod_WithBodyFieldPath_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithBodyFieldPath("data")
 
-	if method.PathInfo == nil {
+	if method.PathInfo() == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if method.PathInfo.BodyFieldPath() != "data" {
-		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo.BodyFieldPath())
+	if method.PathInfo().BodyFieldPath() != "data" {
+		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo().BodyFieldPath())
 	}
 }
 
@@ -64,11 +64,11 @@ func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithVerb("PUT")
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if method.PathInfo.Bindings()[0].Verb() != "PUT" {
-		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo.Bindings()[0].Verb())
+	if method.PathInfo().Bindings()[0].Verb() != "PUT" {
+		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo().Bindings()[0].Verb())
 	}
 }
 
@@ -77,10 +77,10 @@ func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	method.WithPathTemplate(pt)
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if method.PathInfo.Bindings()[0].PathTemplate() != pt {
+	if method.PathInfo().Bindings()[0].PathTemplate() != pt {
 		t.Errorf("expected PathTemplate to match")
 	}
 }
@@ -89,19 +89,19 @@ func TestMethod_WithQueryParameters_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithQueryParameters("page_size")
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
 	want := map[string]bool{"page_size": true}
-	if diff := cmp.Diff(want, method.PathInfo.Bindings()[0].QueryParameters()); diff != "" {
+	if diff := cmp.Diff(want, method.PathInfo().Bindings()[0].QueryParameters()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestMethod_WithDocumentation(t *testing.T) {
 	method := api.NewTestMethod("Test").WithDocumentation("A test method.")
-	if method.Documentation != "A test method." {
-		t.Errorf("expected Documentation 'A test method.', got %q", method.Documentation)
+	if method.Documentation() != "A test method." {
+		t.Errorf("expected Documentation 'A test method.', got %q", method.Documentation())
 	}
 }
 
@@ -214,8 +214,8 @@ func TestService_WithDocumentation(t *testing.T) {
 
 func TestMethod_ReturnEmpty(t *testing.T) {
 	m := api.NewTestMethod("Delete").ReturnEmpty()
-	if got := m.ReturnsEmpty; !got {
-		t.Errorf("m.ReturnsEmpty = %v, want true", got)
+	if got := m.ReturnsEmpty(); !got {
+		t.Errorf("m.ReturnsEmpty() = %v, want true", got)
 	}
 }
 
@@ -381,20 +381,20 @@ func TestMethod_FluentSetters(t *testing.T) {
 		WithRouting(routing).
 		WithAutoPopulated(reqID)
 
-	if got, want := m.ID, ".custom.Service.Create"; got != want {
-		t.Errorf("m.ID = %q, want %q", got, want)
+	if got, want := m.ID(), ".custom.Service.Create"; got != want {
+		t.Errorf("m.ID() = %q, want %q", got, want)
 	}
-	if got, want := m.APIVersion, "v1_20260101"; got != want {
-		t.Errorf("m.APIVersion = %q, want %q", got, want)
+	if got, want := m.APIVersion(), "v1_20260101"; got != want {
+		t.Errorf("m.APIVersion() = %q, want %q", got, want)
 	}
-	if m.PathInfo != nil {
-		t.Errorf("m.PathInfo = %v, want nil", m.PathInfo)
+	if m.PathInfo() != nil {
+		t.Errorf("m.PathInfo() = %v, want nil", m.PathInfo())
 	}
-	if len(m.Routing) != 1 || m.Routing[0] != routing {
-		t.Errorf("m.Routing = %v, want [%v]", m.Routing, routing)
+	if len(m.Routing()) != 1 || m.Routing()[0] != routing {
+		t.Errorf("m.Routing() = %v, want [%v]", m.Routing(), routing)
 	}
-	if len(m.AutoPopulated) != 1 || m.AutoPopulated[0] != reqID {
-		t.Errorf("m.AutoPopulated = %v, want [%v]", m.AutoPopulated, reqID)
+	if len(m.AutoPopulated()) != 1 || m.AutoPopulated()[0] != reqID {
+		t.Errorf("m.AutoPopulated() = %v, want [%v]", m.AutoPopulated(), reqID)
 	}
 	if !reqID.AutoPopulated() {
 		t.Errorf("reqID.AutoPopulated() = false, want true")
@@ -432,21 +432,13 @@ func TestMethod_TypeIDSetters(t *testing.T) {
 		WithOutputTypeID(".test.Response").
 		WithSourceServiceID(".test.Service")
 
-	if m.InputTypeID != ".test.Request" {
-		t.Errorf("m.InputTypeID = %q, want %q", m.InputTypeID, ".test.Request")
+	if m.InputTypeID() != ".test.Request" {
+		t.Errorf("m.InputTypeID() = %q, want %q", m.InputTypeID(), ".test.Request")
 	}
-	if m.OutputTypeID != ".test.Response" {
-		t.Errorf("m.OutputTypeID = %q, want %q", m.OutputTypeID, ".test.Response")
+	if m.OutputTypeID() != ".test.Response" {
+		t.Errorf("m.OutputTypeID() = %q, want %q", m.OutputTypeID(), ".test.Response")
 	}
-	if m.SourceServiceID != ".test.Service" {
-		t.Errorf("m.SourceServiceID = %q, want %q", m.SourceServiceID, ".test.Service")
-	}
-}
-
-func TestSampleInfo_Builder(t *testing.T) {
-	f := api.NewTestField("name")
-	s := api.NewTestSampleInfo(f)
-	if s.ResourceNameField != f {
-		t.Errorf("s.ResourceNameField = %v, want %v", s.ResourceNameField, f)
+	if m.SourceServiceID() != ".test.Service" {
+		t.Errorf("m.SourceServiceID() = %q, want %q", m.SourceServiceID(), ".test.Service")
 	}
 }
