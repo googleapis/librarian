@@ -42,7 +42,7 @@ func Validate(model *API) error {
 		}
 	}
 	for _, m := range model.Messages {
-		if err := validatePkg(m.Package, m.ID); err != nil {
+		if err := validatePkg(m.packagez, m.id); err != nil {
 			return err
 		}
 	}

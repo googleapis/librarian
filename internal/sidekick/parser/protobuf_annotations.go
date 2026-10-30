@@ -161,11 +161,12 @@ func resolveBodyFieldPath(msgID, body string, model *api.API) string {
 	if msg == nil {
 		return body
 	}
-	idx := slices.IndexFunc(msg.Fields, func(f *api.Field) bool {
+	fields := msg.Fields()
+	idx := slices.IndexFunc(fields, func(f *api.Field) bool {
 		return f.Typez() == api.TypezMessage && f.TypezID() == ".google.api.HttpBody"
 	})
 	if idx != -1 {
-		return msg.Fields[idx].Name()
+		return fields[idx].Name()
 	}
 	return body
 }
@@ -181,7 +182,7 @@ func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, 
 		return params, nil
 	}
 	// Start with all the fields marked as query parameters.
-	for _, field := range msg.Fields {
+	for _, field := range msg.Fields() {
 		params[field.Name()] = true
 	}
 	for _, s := range pathTemplate.Segments() {

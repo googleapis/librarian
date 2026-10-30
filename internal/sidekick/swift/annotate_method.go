@@ -262,7 +262,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	var bodyField string
 	var isHTTPBodyRequest bool
 	var queryParams []*api.Field
-	isHTTPBodyResponse := method.OutputType != nil && method.OutputType.ID == ".google.api.HttpBody"
+	isHTTPBodyResponse := method.OutputType != nil && method.OutputType.ID() == ".google.api.HttpBody"
 
 	var bindings []*api.PathBinding
 	if method.PathInfo != nil {
@@ -293,11 +293,11 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			// Wrapper requests (or body: "*" rules resolved by the protobuf parser)
 			// point BodyFieldPath at a top-level google.api.HttpBody field.
 			if method.InputType != nil {
-				isHTTPBodyRequest = slices.ContainsFunc(method.InputType.Fields, func(f *api.Field) bool {
+				isHTTPBodyRequest = slices.ContainsFunc(method.InputType.Fields(), func(f *api.Field) bool {
 					return f.Name() == method.PathInfo.BodyFieldPath() && f.Typez() == api.TypezMessage && f.TypezID() == ".google.api.HttpBody"
 				})
 			}
-		} else if isBodyWildcard && method.InputType != nil && method.InputType.ID == ".google.api.HttpBody" {
+		} else if isBodyWildcard && method.InputType != nil && method.InputType.ID() == ".google.api.HttpBody" {
 			// When the request message itself is google.api.HttpBody, BodyFieldPath
 			// remains "*".
 			isHTTPBodyRequest = true
@@ -340,8 +340,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	diagnoseSignatureTypes := false
 
 	var pagination *paginationAnnotations
-	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
-		itemField := method.OutputType.Pagination.PageableItem
+	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination() != nil {
+		itemField := method.OutputType.Pagination().PageableItem()
 		itemFieldCodec, ok := itemField.Codec().(*fieldAnnotations)
 		if !ok {
 			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name())
@@ -380,7 +380,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		if err != nil {
 			return err
 		}
-		responseIsEmpty := respMsg.ID == ".google.protobuf.Empty"
+		responseIsEmpty := respMsg.ID() == ".google.protobuf.Empty"
 		if responseIsEmpty {
 			respTypeName = "Swift.Void"
 		}
@@ -391,7 +391,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		}
 		// The LRO signatures return `ReturnType` (or Void if empty).
 		// `MetadataType` needs nothing: no template names it.
-		diagnoseSignatureTypes = diagnoseSignatureTypes || respMsg.Deprecated
+		diagnoseSignatureTypes = diagnoseSignatureTypes || respMsg.Deprecated()
 	}
 
 	var discoveryLRO *discoveryLroAnnotations
@@ -453,8 +453,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 // input nor the output type; `annotateMethod` folds them in separately, where
 // they have already been resolved.
 func diagnoseMethodTypes(method *api.Method) bool {
-	return (method.InputType != nil && method.InputType.Deprecated) ||
-		(method.OutputType != nil && method.OutputType.Deprecated)
+	return (method.InputType != nil && method.InputType.Deprecated()) ||
+		(method.OutputType != nil && method.OutputType.Deprecated())
 }
 
 // diagnoseRequestFields reports whether any field of the request message is
@@ -473,10 +473,10 @@ func diagnoseMethodTypes(method *api.Method) bool {
 // correctness requirement: `diagnoseMethodTypes` already covers that case, and
 // the caller ORs the two together.
 func (c *codec) diagnoseRequestFields(method *api.Method) (bool, error) {
-	if method.InputType == nil || method.InputType.Deprecated {
+	if method.InputType == nil || method.InputType.Deprecated() {
 		return false, nil
 	}
-	for _, field := range method.InputType.Fields {
+	for _, field := range method.InputType.Fields() {
 		if field.Deprecated() {
 			return true, nil
 		}

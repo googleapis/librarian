@@ -21,7 +21,7 @@ import (
 )
 
 func compareMessages(a, b *api.Message) int {
-	return strings.Compare(a.Name, b.Name)
+	return strings.Compare(a.Name(), b.Name())
 }
 
 func compareServices(a, b *api.Service) int {

@@ -66,8 +66,8 @@ func TestPathParams(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []*api.Field{sample.CreateRequest().Fields[0]}
-	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), cmpopts.SortSlices(less)); diff != "" {
+	want := []*api.Field{sample.CreateRequest().Fields()[0]}
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames(".parent"), cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -75,8 +75,8 @@ func TestPathParams(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want = []*api.Field{sample.UpdateRequest().Fields[0]}
-	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), cmpopts.SortSlices(less)); diff != "" {
+	want = []*api.Field{sample.UpdateRequest().Fields()[0]}
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames(".parent"), cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

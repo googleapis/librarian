@@ -407,8 +407,7 @@ func makeRequiredServicesTestModel() *api.API {
 		WithPackage("external").
 		WithMethods(externalMethod)
 
-	placeholder := api.NewTestMessage("zoneOperations")
-	placeholder.ServicePlaceholder = true
+	placeholder := api.NewTestMessage("zoneOperations").WithServicePlaceholder()
 
 	inputType := api.NewTestMessage("GetOperationRequest").
 		WithID(".test.zoneOperations.GetOperationRequest")

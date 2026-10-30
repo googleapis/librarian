@@ -35,20 +35,20 @@ func (model *API) HasDeprecatedEntities() bool {
 }
 
 func (message *Message) hasDeprecatedEntities() bool {
-	if message.Deprecated {
+	if message.deprecated {
 		return true
 	}
-	for _, m := range message.Messages {
+	for _, m := range message.messages {
 		if m.hasDeprecatedEntities() {
 			return true
 		}
 	}
-	for _, e := range message.Enums {
+	for _, e := range message.enums {
 		if e.hasDeprecatedEntities() {
 			return true
 		}
 	}
-	for _, f := range message.Fields {
+	for _, f := range message.fields {
 		if f.deprecated {
 			return true
 		}

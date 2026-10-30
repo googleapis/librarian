@@ -33,7 +33,7 @@ func TestSkipMessages(t *testing.T) {
 	})
 	want := []*Message{m0, m2}
 
-	if diff := cmp.Diff(want, model.Messages); diff != "" {
+	if diff := cmp.Diff(want, model.Messages, allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -65,7 +65,10 @@ func TestSkipNestedMessages(t *testing.T) {
 		SkippedIDs: []string{".test.Message2.Message1"},
 	})
 	want := []*Message{m0}
-	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
+	ignoreCycle := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".messages" || p.Last().String() == ".parent"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(want, m2.Messages(), allowUnexported(), ignoreCycle); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -82,7 +85,10 @@ func TestSkipNestedEnums(t *testing.T) {
 	})
 
 	want := []*Enum{e0, e2}
-	if diff := cmp.Diff(want, m.Enums, allowUnexported(), cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
+	ignoreCycle := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".enums" || p.Last().String() == ".parent"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(want, m.Enums(), allowUnexported(), ignoreCycle); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -179,7 +185,10 @@ func TestIncludeNestedEnums(t *testing.T) {
 	})
 
 	want := []*Enum{e0}
-	if diff := cmp.Diff(want, m.Enums, allowUnexported(), cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
+	ignoreEnums := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".enums" || p.Last().String() == ".parent"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(want, m.Enums(), allowUnexported(), ignoreEnums); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -194,7 +203,10 @@ func TestIncludeNestedMessages(t *testing.T) {
 		IncludedIDs: []string{".test.Message2.Message0"},
 	})
 	want := []*Message{m0}
-	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
+	ignoreMessages := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".messages" || p.Last().String() == ".parent"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(want, m2.Messages(), allowUnexported(), ignoreMessages); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -236,7 +248,7 @@ func TestSkipMessageFields(t *testing.T) {
 	})
 	want := []*Field{f0, f2}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(want, m0.Fields, allowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(want, m0.Fields(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -253,7 +265,7 @@ func TestSkipNestedMessageFields(t *testing.T) {
 	})
 	want := []*Field{f0}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(want, inner.Fields, allowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(want, inner.Fields(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -273,7 +285,7 @@ func TestSkipOneOfField(t *testing.T) {
 	ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
 		return p.Last().String() == ".parent" || p.Last().String() == ".group"
 	}, cmp.Ignore())
-	if diff := cmp.Diff(wantFields, m.Fields, allowUnexported(), ignoreFieldCycle); diff != "" {
+	if diff := cmp.Diff(wantFields, m.Fields(), allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
 	wantOneOfFields := []*Field{f2}
@@ -295,11 +307,11 @@ func TestSkipAllOneOfFields(t *testing.T) {
 	SkipModelElements(model, ModelOverride{
 		SkippedIDs: []string{".test.Message.field1", ".test.Message.field2"},
 	})
-	if len(m.Fields) != 0 {
-		t.Errorf("expected no fields, got %v", m.Fields)
+	if len(m.Fields()) != 0 {
+		t.Errorf("expected no fields, got %v", m.Fields())
 	}
-	if len(m.OneOfs) != 0 {
-		t.Errorf("expected empty oneof to be pruned, got %v", m.OneOfs)
+	if len(m.OneOfs()) != 0 {
+		t.Errorf("expected empty oneof to be pruned, got %v", m.OneOfs())
 	}
 }
 
@@ -318,11 +330,11 @@ func TestSkipOneOfDirectly(t *testing.T) {
 	ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
 		return p.Last().String() == ".parent" || p.Last().String() == ".group"
 	}, cmp.Ignore())
-	if diff := cmp.Diff(wantFields, m.Fields, allowUnexported(), ignoreFieldCycle); diff != "" {
+	if diff := cmp.Diff(wantFields, m.Fields(), allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
-	if len(m.OneOfs) != 0 {
-		t.Errorf("expected oneof to be removed, got %v", m.OneOfs)
+	if len(m.OneOfs()) != 0 {
+		t.Errorf("expected oneof to be removed, got %v", m.OneOfs())
 	}
 }
 
@@ -358,7 +370,7 @@ func TestSkipFieldAffectsPagination(t *testing.T) {
 	model := NewTestAPI([]*Message{req, resp, item}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	CrossReference(model)
-	if method.Pagination == nil || resp.Pagination == nil {
+	if method.Pagination == nil || resp.Pagination() == nil {
 		t.Fatalf("expected pagination to be set before skip")
 	}
 
@@ -381,7 +393,7 @@ func TestIncludeKeepsAllMessageFields(t *testing.T) {
 	})
 	want := []*Field{f0, f1}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(want, m0.Fields, allowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(want, m0.Fields(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
 }

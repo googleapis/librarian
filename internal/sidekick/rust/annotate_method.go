@@ -435,7 +435,7 @@ func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api
 
 func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
-		for _, f := range message.Fields {
+		for _, f := range message.Fields() {
 			if f.Name() == name {
 				return f
 			}
@@ -448,7 +448,7 @@ func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
 		if field == nil {
-			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID())
 		}
 		if field.IsOneOf() {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s())", rustFieldName))
@@ -548,7 +548,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 
 func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
-		for _, f := range message.Fields {
+		for _, f := range message.Fields() {
 			if f.Name() == name {
 				return f
 			}
@@ -561,10 +561,10 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
 		if field == nil {
-			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID())
 		}
 		if field.IsOneOf() {
-			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, message.ID)
+			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, message.ID())
 		}
 		if field.Typez() != api.TypezMessage {
 			clears = append(clears, fmt.Sprintf(".map(|m| std::mem::take(&mut m.%s))", rustFieldName))

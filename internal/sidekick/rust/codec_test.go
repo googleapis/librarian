@@ -749,7 +749,7 @@ func TestFieldType(t *testing.T) {
 		"f_map":                    "std::collections::HashMap<i32,i32>",
 	}
 	c := createRustCodec()
-	for _, field := range message.Fields {
+	for _, field := range message.Fields() {
 		want, ok := expectedTypes[field.Name()]
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name())
@@ -799,7 +799,7 @@ func TestOneOfFieldType(t *testing.T) {
 		"f_map":                    "std::collections::HashMap<i32,i32>",
 	}
 	c := createRustCodec()
-	for _, field := range message.Fields {
+	for _, field := range message.Fields() {
 		want, ok := expectedTypes[field.Name()]
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name())

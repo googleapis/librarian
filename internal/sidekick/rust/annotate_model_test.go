@@ -904,7 +904,7 @@ func TestExternalTypesAnnotations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msgAnn, ok := extMsg.Codec.(*messageAnnotation)
+	msgAnn, ok := extMsg.Codec().(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on extMsg")
 	}
@@ -939,7 +939,7 @@ func TestExternalTypesAnnotations(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		msgAnn2 := extMsg2.Codec.(*messageAnnotation)
+		msgAnn2 := extMsg2.Codec().(*messageAnnotation)
 		if want := "super::prost::google::r#type::LatLng"; msgAnn2.ProstRelativeName != want {
 			t.Errorf("msgAnn2.ProstRelativeName = %q, want %q", msgAnn2.ProstRelativeName, want)
 		}
@@ -984,19 +984,19 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 			options: map[string]string{
 				"default-transport": "grpc",
 			},
-			want: []string{req.ID, resp.ID},
+			want: []string{req.ID(), resp.ID()},
 		},
 		{
 			name:    "streaming method returns root types",
 			methods: []*api.Method{newStreamMethod()},
 			options: map[string]string{},
-			want:    []string{req.ID, resp.ID},
+			want:    []string{req.ID(), resp.ID()},
 		},
 		{
 			name:    "mixed methods with default http returns only streaming root types",
 			methods: []*api.Method{newUnaryMethod(), newStreamMethod()},
 			options: map[string]string{},
-			want:    []string{req.ID, resp.ID},
+			want:    []string{req.ID(), resp.ID()},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

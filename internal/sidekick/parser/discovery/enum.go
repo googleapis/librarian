@@ -20,7 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func makeMessageEnum(model *api.API, message *api.Message, name string, schema *schema) error {
+func makeMessageEnum(model *api.API, mb *api.MessageBuilder, name string, schema *schema) error {
 	if schema.Enums == nil {
 		return nil
 	}
@@ -31,7 +31,8 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 		// The list of deprecated enums is omitted in some cases.
 		return fmt.Errorf("mismatched enum value list vs. enum deprecated values list")
 	}
-	id := fmt.Sprintf("%s.%s", message.ID, name)
+	message := mb.Build()
+	id := fmt.Sprintf("%s.%s", message.ID(), name)
 	var values []*api.EnumValue
 	for number, name := range schema.Enums {
 		deprecated := false
@@ -50,7 +51,7 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 	enum := api.NewEnumBuilder().
 		WithName(name).
 		WithID(id).
-		WithPackage(message.Package).
+		WithPackage(message.Package()).
 		WithDocumentation(fmt.Sprintf("The enumerated type for the [%s][%s] field.", name, id[1:])).
 		WithDeprecated(schema.Deprecated).
 		WithParent(message).
@@ -58,6 +59,6 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 		WithUniqueNumberValues(values...).
 		Build()
 	model.AddEnum(enum)
-	message.Enums = append(message.Enums, enum)
+	mb.AddEnum(enum)
 	return nil
 }

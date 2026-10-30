@@ -77,7 +77,7 @@ func TestFieldAnnotations(t *testing.T) {
 	// We ignore the Parent.Codec and MessageType.Codec fields of Fields,
 	// as those point to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
-	if diff := cmp.Diff(wantMessage, message.Codec, apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantMessage, message.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -137,7 +137,7 @@ func TestFieldAnnotations(t *testing.T) {
 		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, wkt::internal::I64>",
 		SkipIfIsDefault:    true,
 	}
-	if diff := cmp.Diff(wantField, mapField.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent(), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, mapField.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = ""
@@ -162,7 +162,7 @@ func TestFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, boxedField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, boxedField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "TestMessage"
@@ -215,7 +215,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 	// We ignore the Parent.Codec and MessageType.Codec fields of Fields,
 	// as those point to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
-	if diff := cmp.Diff(wantMessage, message.Codec, apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantMessage, message.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -237,7 +237,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, mapField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, mapField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples := "TestMessage"
@@ -263,7 +263,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		OtherFieldsInGroup:    []*api.Field{},
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, oneOfField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, oneOfField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "TestMessage"
@@ -288,7 +288,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, repeatedField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, repeatedField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "TestMessage"
@@ -313,7 +313,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, messageField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, messageField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "TestMessage"
@@ -371,7 +371,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	// We ignore the Parent.Codec and MessageType.Codec fields of Fields,
 	// as those point to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
-	if diff := cmp.Diff(wantMessage, message.Codec, apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantMessage, message.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -392,7 +392,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 		AliasInExamples:    "MapField",
 	}
-	if diff := cmp.Diff(wantField, mapField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, mapField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples := "MapField"
@@ -418,7 +418,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{},
 		AliasInExamples:    "OneofField",
 	}
-	if diff := cmp.Diff(wantField, oneOfField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, oneOfField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "OneofField"
@@ -441,7 +441,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 		AliasInExamples:    "RepeatedField",
 	}
-	if diff := cmp.Diff(wantField, repeatedField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, repeatedField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "RepeatedField"
@@ -464,7 +464,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 		AliasInExamples:    "MessageField",
 	}
-	if diff := cmp.Diff(wantField, messageField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, messageField.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), apitest.IgnoreMessageFields("codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "MessageField"
@@ -609,8 +609,8 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			got, _ := singularField.Codec().(*fieldAnnotations)
-			if got.MessageType.ID != wkt.ID {
-				t.Errorf("mismatch in field annotations MessageType.ID, want %s, got %s", wkt.ID, got.MessageType.ID)
+			if got.MessageType.ID() != wkt.ID() {
+				t.Errorf("mismatch in field annotations MessageType.ID, want %s, got %s", wkt.ID(), got.MessageType.ID())
 			}
 		})
 	}
@@ -666,7 +666,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 	}
 	// We ignore the Parent.Codec field of Fields, as that points to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
-	if diff := cmp.Diff(wantMessage, message.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent(), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantMessage, message.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -748,7 +748,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		ValueField:         valueField,
 		SkipIfIsDefault:    true,
 	}
-	if diff := cmp.Diff(wantField, mapField.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent(), cmpopts.IgnoreFields(api.Message{}, "Codec")); diff != "" {
+	if diff := cmp.Diff(wantField, mapField.Codec(), apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

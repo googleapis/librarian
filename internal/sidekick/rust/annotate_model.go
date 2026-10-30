@@ -235,7 +235,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 	}
 	for m := range model.AllMessages() {
-		if m.Codec == nil {
+		if m.Codec() == nil {
 			if err := codec.annotateMessage(m, model, false); err != nil {
 				return nil, err
 			}
@@ -290,8 +290,8 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 	}
 	for _, m := range model.ExternalMessages {
-		if ann, ok := m.Codec.(*messageAnnotation); ok {
-			ann.ProstRelativeName = prostPrefix + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
+		if ann, ok := m.Codec().(*messageAnnotation); ok {
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(m.Package()) + "::" + prostMessageRelativePath(m)
 		}
 	}
 
@@ -437,14 +437,14 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		for _, id := range deps.Messages {
 			msg := model.Message(id)
 			// Some messages are not annotated (e.g. external messages).
-			if msg == nil || msg.Codec == nil {
+			if msg == nil || msg.Codec() == nil {
 				continue
 			}
-			annotation := msg.Codec.(*messageAnnotation)
+			annotation := msg.Codec().(*messageAnnotation)
 			annotation.FeatureGates = append(annotation.FeatureGates, svcAnn.FeatureName())
 			slices.Sort(annotation.FeatureGates)
 			annotation.FeatureGatesOp = "any"
-			for _, one := range msg.OneOfs {
+			for _, one := range msg.OneOfs() {
 				if one.Codec() == nil {
 					continue
 				}
@@ -460,10 +460,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	// Change them to work only if all features are enabled.
 	slices.Sort(allFeatures)
 	for msg := range model.AllMessages() {
-		if msg.Codec == nil {
+		if msg.Codec() == nil {
 			continue
 		}
-		annotation := msg.Codec.(*messageAnnotation)
+		annotation := msg.Codec().(*messageAnnotation)
 		if len(annotation.FeatureGates) > 0 {
 			continue
 		}

@@ -85,8 +85,8 @@ func MethodCreate() *api.Method {
 		WithBodyFieldPath("body")
 	// Note: InputType and OutputType are intentionally left nil because OpenAPI parser tests
 	// (e.g. TestOpenAPI_MakeAPI) assert against this fixture before CrossReference runs.
-	m.InputTypeID = CreateRequest().ID
-	m.OutputTypeID = Secret().ID
+	m.InputTypeID = CreateRequest().ID()
+	m.OutputTypeID = Secret().ID()
 	return m
 }
 
@@ -170,7 +170,7 @@ func UpdateRequest() *api.Message {
 		WithFields(
 			api.NewTestField("secret").
 				WithType(api.TypezMessage).
-				WithTypezID(Secret().ID),
+				WithTypezID(Secret().ID()),
 			api.NewTestField("field_mask").
 				WithType(api.TypezMessage).
 				WithTypezID(".google.protobuf.FieldMask").
@@ -187,7 +187,7 @@ func ListSecretVersionsRequest() *api.Message {
 		WithFields(
 			api.NewTestField("parent").
 				WithType(api.TypezMessage).
-				WithTypezID(Secret().ID),
+				WithTypezID(Secret().ID()),
 		)
 }
 
@@ -199,7 +199,7 @@ func ListSecretVersionsResponse() *api.Message {
 		WithFields(
 			api.NewTestField("versions").
 				WithType(api.TypezMessage).
-				WithTypezID(SecretVersion().ID).
+				WithTypezID(SecretVersion().ID()).
 				WithRepeated(),
 		)
 }
@@ -214,7 +214,7 @@ func Secret() *api.Message {
 				WithType(api.TypezString),
 			api.NewTestField("replication").
 				WithType(api.TypezMessage).
-				WithTypezID(Replication().ID),
+				WithTypezID(Replication().ID()),
 		)
 }
 
@@ -256,8 +256,8 @@ func Replication() *api.Message {
 				WithTypezID("..Automatic").
 				WithOptional(),
 		)
-	for i, f := range msg.Fields {
-		msg.Fields[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
+	for i, f := range msg.Fields() {
+		msg.Fields()[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
 	}
 	return msg
 }
@@ -275,11 +275,10 @@ func Automatic() *api.Message {
 				WithTypezID("..CustomerManagedEncryption").
 				WithOptional(),
 		)
-	for i, f := range msg.Fields {
-		msg.Fields[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
+	for i, f := range msg.Fields() {
+		msg.Fields()[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
 	}
-	msg.Parent = Replication()
-	return msg
+	return msg.WithParent(Replication())
 }
 
 // CustomerManagedEncryption returns a sample customer managed encryption.
@@ -307,8 +306,8 @@ func SecretPayload() *api.Message {
 				WithTypezID("int64").
 				WithOptional(),
 		)
-	for i, f := range msg.Fields {
-		msg.Fields[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
+	for i, f := range msg.Fields() {
+		msg.Fields()[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
 	}
 	return msg
 }

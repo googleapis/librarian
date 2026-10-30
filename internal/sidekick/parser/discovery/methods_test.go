@@ -211,13 +211,13 @@ func TestMethodEmptyBody(t *testing.T) {
 				WithType(api.TypezString).
 				WithTypezID("string"),
 		)
-	for _, f := range want.Fields {
+	for _, f := range want.Fields() {
 		f.WithParent(nil)
 	}
-	want.SyntheticRequest = true
-	got := model.Message(want.ID)
+	want.WithSyntheticRequest()
+	got := model.Message(want.ID())
 	if got == nil {
-		t.Fatalf("expected message %s in the API model", want.ID)
+		t.Fatalf("expected message %s in the API model", want.ID())
 	}
 	apitest.CheckMessage(t, got, want)
 
@@ -225,7 +225,7 @@ func TestMethodEmptyBody(t *testing.T) {
 	if wantParent == nil {
 		t.Fatalf("expected message %s in the API model", "..zones")
 	}
-	if wantParent != got.Parent {
+	if wantParent != got.Parent() {
 		t.Errorf("mismatched parent for synthetic request message")
 	}
 }
@@ -270,13 +270,13 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				WithTypezID("bool").
 				WithOptional(),
 		)
-	for _, f := range want.Fields {
+	for _, f := range want.Fields() {
 		f.WithParent(nil)
 	}
-	want.SyntheticRequest = true
-	gotListRequest := model.Message(want.ID)
+	want.WithSyntheticRequest()
+	gotListRequest := model.Message(want.ID())
 	if gotListRequest == nil {
-		t.Fatalf("expected message %s in the API model", want.ID)
+		t.Fatalf("expected message %s in the API model", want.ID())
 	}
 	apitest.CheckMessage(t, gotListRequest, want)
 }
@@ -309,13 +309,13 @@ func TestMethodWithBody(t *testing.T) {
 				WithTypezID("string").
 				WithOptional(),
 		)
-	for _, f := range wantInsertRequest.Fields {
+	for _, f := range wantInsertRequest.Fields() {
 		f.WithParent(nil)
 	}
-	wantInsertRequest.SyntheticRequest = true
-	gotGetRequest := model.Message(wantInsertRequest.ID)
+	wantInsertRequest.WithSyntheticRequest()
+	gotGetRequest := model.Message(wantInsertRequest.ID())
 	if gotGetRequest == nil {
-		t.Fatalf("expected message %s in the API model", wantInsertRequest.ID)
+		t.Fatalf("expected message %s in the API model", wantInsertRequest.ID())
 	}
 	apitest.CheckMessage(t, gotGetRequest, wantInsertRequest)
 }
@@ -367,8 +367,7 @@ func TestMakeMethodError(t *testing.T) {
 			}}},
 	} {
 		doc := document{}
-		parent := api.NewTestMessage("Service").
-			WithPackage("test")
+		parent := api.NewMessageBuilderFrom(api.NewTestMessage("Service").WithPackage("test"))
 		if got, err := makeMethod(model, parent, &doc, &test.Input); err == nil {
 			t.Errorf("expected error on method[%s], got=%v", test.Name, got)
 		}

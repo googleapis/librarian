@@ -105,7 +105,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	// and a child message have the same name.
 	// This is solving for unqualified name clashes that affect samples
 	// because we show usings for all types involved.
-	if ann.EnumName == message.Name {
+	if ann.EnumName == message.Name() {
 		ann.AliasInExamples = fmt.Sprintf("%sOneOf", ann.EnumName)
 	}
 	if ann.AliasInExamples == "" {

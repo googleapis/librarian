@@ -53,7 +53,7 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 		if m == nil {
 			return nil, fmt.Errorf("failed to locate message %q", msgName)
 		}
-		for _, f := range m.Fields {
+		for _, f := range m.Fields() {
 			if skipFieldFn(f) {
 				continue
 			}
@@ -88,22 +88,24 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 // createSyntheticMessage builds an api.Message populated with all sorted fields
 // and annotates it using the provided codec.
 func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, error) {
-	msg := &api.Message{
-		ID:               fmt.Sprintf(".%s.%s", m.model.PackageName, name),
-		Name:             name,
-		Package:          m.model.PackageName,
-		SyntheticRequest: true,
-	}
+	var fields []*api.Field
 	for _, f := range m.fields {
 		clone := api.NewFieldBuilderFrom(f).Build()
-		msg.Fields = append(msg.Fields, clone)
+		fields = append(fields, clone)
 	}
+	msg := api.NewMessageBuilder().
+		WithID(fmt.Sprintf(".%s.%s", m.model.PackageName, name)).
+		WithName(name).
+		WithPackage(m.model.PackageName).
+		WithSyntheticRequest(true).
+		WithFields(fields...).
+		Build()
 	if err := m.c.annotateMessage(msg, m.model, true); err != nil {
 		return nil, err
 	}
 	// synthetic messages are not in the model, so we need to set their FQMessageName
 	// to point to crate::model_ext::{name}
-	for _, f := range msg.Fields {
+	for _, f := range msg.Fields() {
 		fAnn, ok := f.Codec().(*fieldAnnotations)
 		if !ok {
 			return nil, fmt.Errorf("expected field annotation for %q", f.ID())
@@ -157,9 +159,9 @@ func createQueryBuilderMessage(m *unifiedMessage) (*api.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	msgAnn, ok := msg.Codec.(*messageAnnotation)
+	msgAnn, ok := msg.Codec().(*messageAnnotation)
 	if !ok {
-		return nil, fmt.Errorf("expected message annotation for %q", msg.ID)
+		return nil, fmt.Errorf("expected message annotation for %q", msg.ID())
 	}
 	for _, f := range msgAnn.BasicFields {
 		fAnn, ok := f.Codec().(*fieldAnnotations)

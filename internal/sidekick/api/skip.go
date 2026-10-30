@@ -66,7 +66,7 @@ func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func
 		skipMessageElements(m, skip, skipField)
 	}
 	model.Enums = slices.DeleteFunc(model.Enums, func(x *Enum) bool { return skip(x.id) })
-	model.Messages = slices.DeleteFunc(model.Messages, func(x *Message) bool { return skip(x.ID) })
+	model.Messages = slices.DeleteFunc(model.Messages, func(x *Message) bool { return skip(x.id) })
 	model.Services = slices.DeleteFunc(model.Services, func(x *Service) bool { return skip(x.ID) })
 
 	for service := range model.AllServices() {
@@ -90,12 +90,12 @@ func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func
 }
 
 func skipMessageElements(message *Message, skip func(id string) bool, skipField func(id string) bool) {
-	for _, m := range message.Messages {
+	for _, m := range message.messages {
 		skipMessageElements(m, skip, skipField)
 	}
-	message.Messages = slices.DeleteFunc(message.Messages, func(x *Message) bool { return skip(x.ID) })
-	message.Enums = slices.DeleteFunc(message.Enums, func(x *Enum) bool { return skip(x.id) })
-	previous := slices.Clone(message.Fields)
+	message.messages = slices.DeleteFunc(message.messages, func(x *Message) bool { return skip(x.id) })
+	message.enums = slices.DeleteFunc(message.enums, func(x *Enum) bool { return skip(x.id) })
+	previous := slices.Clone(message.fields)
 	skipped := func(x *Field) bool {
 		if skipField(x.id) {
 			return true
@@ -105,9 +105,9 @@ func skipMessageElements(message *Message, skip func(id string) bool, skipField 
 		}
 		return false
 	}
-	message.Fields = slices.DeleteFunc(message.Fields, skipped)
-	message.SkippedFields = slices.DeleteFunc(previous, func(x *Field) bool { return !skipped(x) })
-	for _, oneof := range message.OneOfs {
+	message.fields = slices.DeleteFunc(message.fields, skipped)
+	message.skippedFields = slices.DeleteFunc(previous, func(x *Field) bool { return !skipped(x) })
+	for _, oneof := range message.oneOfs {
 		oneof.fields = slices.DeleteFunc(oneof.fields, func(x *Field) bool {
 			return skipField(x.id)
 		})
@@ -115,7 +115,7 @@ func skipMessageElements(message *Message, skip func(id string) bool, skipField 
 			oneof.exampleField = slices.MaxFunc(oneof.fields, sortOneOfFieldForExamples)
 		}
 	}
-	message.OneOfs = slices.DeleteFunc(message.OneOfs, func(x *OneOf) bool {
+	message.oneOfs = slices.DeleteFunc(message.oneOfs, func(x *OneOf) bool {
 		return skipField(x.id) || len(x.fields) == 0
 	})
 }

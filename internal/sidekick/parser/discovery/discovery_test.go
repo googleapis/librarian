@@ -146,7 +146,7 @@ func TestMessage(t *testing.T) {
 				WithTypezID("uint32").
 				WithOptional(),
 		)
-	for _, f := range want.Fields {
+	for _, f := range want.Fields() {
 		f.WithParent(nil)
 	}
 	apitest.CheckMessage(t, got, want)
@@ -162,11 +162,11 @@ func TestDeprecatedField(t *testing.T) {
 	if gotMessage == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
-	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name() == "port" })
+	idx := slices.IndexFunc(gotMessage.Fields(), func(f *api.Field) bool { return f.Name() == "port" })
 	if idx == -1 {
 		t.Fatalf("expected a `port` field in the message, got=%v", gotMessage)
 	}
-	gotField := gotMessage.Fields[idx]
+	gotField := gotMessage.Fields()[idx]
 	wantField := newDiscoveryTestMessage("BackendService").
 		WithFields(
 			api.NewTestField("port").
@@ -175,7 +175,7 @@ func TestDeprecatedField(t *testing.T) {
 				WithType(api.TypezInt32).
 				WithTypezID("int32").
 				WithOptional(),
-		).Fields[0]
+		).Fields()[0]
 	if diff := cmp.Diff(wantField, gotField, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
