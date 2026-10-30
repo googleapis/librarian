@@ -750,28 +750,28 @@ func TestFieldType(t *testing.T) {
 	}
 	c := createRustCodec()
 	for _, field := range message.Fields {
-		want, ok := expectedTypes[field.Name]
+		want, ok := expectedTypes[field.Name()]
 		if !ok {
-			t.Fatalf("missing expected value for %s", field.Name)
+			t.Fatalf("missing expected value for %s", field.Name())
 		}
 		got, err := c.fieldType(field, model, false, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if got != want {
-			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
+			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name(), got, want)
 		}
 
-		want, ok = expectedPrimitiveTypes[field.Name]
+		want, ok = expectedPrimitiveTypes[field.Name()]
 		if !ok {
-			t.Fatalf("missing expected value for %s", field.Name)
+			t.Fatalf("missing expected value for %s", field.Name())
 		}
 		got, err = c.fieldType(field, model, true, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if got != want {
-			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
+			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name(), got, want)
 		}
 	}
 }
@@ -800,16 +800,16 @@ func TestOneOfFieldType(t *testing.T) {
 	}
 	c := createRustCodec()
 	for _, field := range message.Fields {
-		want, ok := expectedTypes[field.Name]
+		want, ok := expectedTypes[field.Name()]
 		if !ok {
-			t.Fatalf("missing expected value for %s", field.Name)
+			t.Fatalf("missing expected value for %s", field.Name())
 		}
 		got, err := c.oneOfFieldType(field, model, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if got != want {
-			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
+			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name(), got, want)
 		}
 	}
 }
@@ -862,7 +862,7 @@ func TestFieldMapTypeValues(t *testing.T) {
 				t.Fatal(err)
 			}
 			if got != test.want {
-				t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
+				t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name(), got, test.want)
 			}
 		})
 	}
@@ -905,7 +905,7 @@ func TestFieldMapTypeKey(t *testing.T) {
 			t.Fatal(err)
 		}
 		if got != test.want {
-			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
+			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name(), got, test.want)
 		}
 	}
 }
@@ -918,7 +918,7 @@ func TestAsQueryParameter(t *testing.T) {
 	renamedField := api.NewTestField("renamed_field").WithType(api.TypezString)
 	options.WithFields(renamedField)
 	c.nameOverrides = map[string]string{
-		renamedField.ID: "custom_field",
+		renamedField.ID(): "custom_field",
 	}
 
 	optionsField := api.NewTestField("options_field").
@@ -955,7 +955,7 @@ func TestAsQueryParameter(t *testing.T) {
 	} {
 		got := c.addQueryParameter(test.field)
 		if test.want != got {
-			t.Errorf("mismatched as query parameter for %s\nwant=%s\n got=%s", test.field.Name, test.want, got)
+			t.Errorf("mismatched as query parameter for %s\nwant=%s\n got=%s", test.field.Name(), test.want, got)
 		}
 	}
 }
@@ -990,7 +990,7 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 		WithPackage("").
 		WithOneOfs(oneof)
 	c.nameOverrides = map[string]string{
-		renamedOneOfField.ID: "custom_oneof",
+		renamedOneOfField.ID(): "custom_oneof",
 	}
 
 	model := api.NewTestAPI(
@@ -1014,7 +1014,7 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 	} {
 		got := c.addQueryParameter(test.field)
 		if test.want != got {
-			t.Errorf("mismatched as query parameter for %s\nwant=%s\n got=%s", test.field.Name, test.want, got)
+			t.Errorf("mismatched as query parameter for %s\nwant=%s\n got=%s", test.field.Name(), test.want, got)
 		}
 	}
 }

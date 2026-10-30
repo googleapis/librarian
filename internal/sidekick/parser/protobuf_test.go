@@ -219,7 +219,7 @@ func TestProtobuf_Proto2Optional(t *testing.T) {
 				WithType(api.TypezString),
 		)
 	for _, f := range choice.Fields {
-		f.Group = nil
+		f.WithGroup(nil)
 	}
 	apitest.CheckMessage(t, message, newTestProtobufFakeMessage(
 		api.NewTestField("f_int32").
@@ -505,7 +505,7 @@ func TestProtobuf_OneOfs(t *testing.T) {
 				WithTypezID(".test.Inner"),
 		)
 	for _, f := range choice.Fields {
-		f.Group = nil
+		f.WithGroup(nil)
 	}
 	wantFake := api.NewTestMessage("Fake").
 		WithPackage("test").
@@ -928,11 +928,11 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 	if pageTokenReq != "" {
 		m.WithPagination(
 			api.NewTestField("page_token").
+				WithID(fmt.Sprintf(".test.%s.page_token", pageTokenReq)).
 				WithJSONName("pageToken").
 				WithType(api.TypezString).
 				WithBehavior(api.FieldBehaviorOptional),
 		)
-		m.Pagination.ID = fmt.Sprintf(".test.%s.page_token", pageTokenReq)
 		m.IsList = false
 	}
 	return m
@@ -1224,7 +1224,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	want := []*api.Field{requestID, requestIDOptional, requestIDWithFieldBehavior}
-	if diff := cmp.Diff(want, method.AutoPopulated, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want, method.AutoPopulated, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -1509,7 +1509,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 
 		field := msg.Fields[0] // simple_field
 		if field.IsResourceReference() {
-			t.Errorf("Expected simple_field not to be ResourceReference, got %v", field.ResourceReference)
+			t.Errorf("Expected simple_field not to be ResourceReference, got %v", field.ResourceReference())
 		}
 	})
 }

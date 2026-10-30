@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestAnnotateField(t *testing.T) {
@@ -87,7 +88,7 @@ func TestAnnotateField(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model")); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec(), cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -175,7 +176,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, test.input.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model")); diff != "" {
+			if diff := cmp.Diff(test.want, test.input.Codec(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent", "codec"), cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -213,7 +214,7 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				ProtoFieldNamePascal: "TestField",
 				PrimitiveFieldType:   test.wantType,
 			}
-			if diff := cmp.Diff(want, field.Codec); diff != "" {
+			if diff := cmp.Diff(want, field.Codec()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -241,7 +242,7 @@ func TestAnnotateField_PackageName(t *testing.T) {
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
-	got := field.Codec.(*fieldAnnotations)
+	got := field.Codec().(*fieldAnnotations)
 	want := &fieldAnnotations{
 		Name:                 "externalMessage",
 		FieldType:            "GoogleCloudExternalV1.SomeMessage",
@@ -354,7 +355,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "PackageName", "Model")); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec(), cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "PackageName", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

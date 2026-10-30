@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func serviceAnnotationsModel() *api.API {
@@ -305,21 +306,21 @@ func TestPathBindingAnnotations(t *testing.T) {
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
-	if diff := cmp.Diff(wantB0, b0.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB0, b0.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(wantB1, b1.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB1, b1.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(wantB2, b2.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	if diff := cmp.Diff(wantB3, b3.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB2, b2.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if diff := cmp.Diff(wantB4, b4.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB3, b3.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	if diff := cmp.Diff(wantB4, b4.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -413,7 +414,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		api.CrossReference(model)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 		annotateModel(model, codec)
-		if diff := cmp.Diff(wantBinding, binding.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+		if diff := cmp.Diff(wantBinding, binding.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 

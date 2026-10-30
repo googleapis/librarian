@@ -69,7 +69,7 @@ impl gaxi::prost::FromProto<crate::model::SimpleMessage> for SimpleMessage {
 					api.NewTestField("field1").WithType(api.TypezString),
 					skippedField,
 				)
-				return msg, []string{skippedField.ID}
+				return msg, []string{skippedField.ID()}
 			},
 			want: `impl gaxi::prost::ToProto<MessageWithSkippedString> for crate::model::MessageWithSkippedString {
     type Output = MessageWithSkippedString;
@@ -99,7 +99,7 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedString> for MessageW
 					api.NewTestField("field1").WithType(api.TypezString),
 					skippedField,
 				)
-				return msg, []string{skippedField.ID}
+				return msg, []string{skippedField.ID()}
 			},
 			want: `impl gaxi::prost::ToProto<MessageWithSkippedAny> for crate::model::MessageWithSkippedAny {
     type Output = MessageWithSkippedAny;

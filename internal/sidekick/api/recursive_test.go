@@ -25,10 +25,10 @@ func TestSimple(t *testing.T) {
 	msg.WithFields(field0, field1)
 	model := NewTestAPI([]*Message{msg}, nil, nil)
 	LabelRecursiveFields(model)
-	if field0.Recursive {
+	if field0.Recursive() {
 		t.Errorf("mismatched IsRecursive field for %v", field0)
 	}
-	if !field1.Recursive {
+	if !field1.Recursive() {
 		t.Errorf("mismatched IsRecursive field for %v", field1)
 	}
 }
@@ -45,12 +45,12 @@ func TestSimpleMap(t *testing.T) {
 	model := NewTestAPI([]*Message{parent}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{value, field0} {
-		if !field.Recursive {
-			t.Errorf("expected IsRecursive to be true for field %s", field.ID)
+		if !field.Recursive() {
+			t.Errorf("expected IsRecursive to be true for field %s", field.ID())
 		}
 	}
-	if key.Recursive {
-		t.Errorf("expected IsRecursive to be false for field %s", key.ID)
+	if key.Recursive() {
+		t.Errorf("expected IsRecursive to be false for field %s", key.ID())
 	}
 }
 
@@ -70,8 +70,8 @@ func TestIndirect(t *testing.T) {
 	model := NewTestAPI([]*Message{msg, child, grandChild}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{field0, field1, field2} {
-		if !field.Recursive {
-			t.Errorf("IsRecursive should be true for field %s", field.Name)
+		if !field.Recursive() {
+			t.Errorf("IsRecursive should be true for field %s", field.Name())
 		}
 	}
 }
@@ -93,12 +93,12 @@ func TestViaMap(t *testing.T) {
 	model := NewTestAPI([]*Message{parent, child}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{value, field0, field1} {
-		if !field.Recursive {
-			t.Errorf("expected IsRecursive to be true for field %s", field.ID)
+		if !field.Recursive() {
+			t.Errorf("expected IsRecursive to be true for field %s", field.ID())
 		}
 	}
-	if key.Recursive {
-		t.Errorf("expected IsRecursive to be false for field %s", key.ID)
+	if key.Recursive() {
+		t.Errorf("expected IsRecursive to be false for field %s", key.ID())
 	}
 }
 
@@ -118,13 +118,13 @@ func TestReferencedCycle(t *testing.T) {
 	model := NewTestAPI([]*Message{holder, parent, child}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{field0, field1} {
-		if !field.Recursive {
-			t.Errorf("expected IsRecursive to be true for field %s", field.ID)
+		if !field.Recursive() {
+			t.Errorf("expected IsRecursive to be true for field %s", field.ID())
 		}
 	}
 	for _, field := range []*Field{field2} {
-		if field.Recursive {
-			t.Errorf("expected IsRecursive to be false for field %s", field.ID)
+		if field.Recursive() {
+			t.Errorf("expected IsRecursive to be false for field %s", field.ID())
 		}
 	}
 }

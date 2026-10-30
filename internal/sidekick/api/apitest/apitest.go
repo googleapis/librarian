@@ -16,6 +16,7 @@
 package apitest
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,13 +24,33 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-// AllowUnexported returns a cmp.Option allowing comparison of unexported fields
-// in read-only api structs.
+// IgnoreFieldNames returns a [cmp.Option] that ignores the named unexported
+// fields on [api.Field].
+func IgnoreFieldNames(names ...string) cmp.Option {
+	set := make(map[string]bool, len(names))
+	for _, n := range names {
+		set["."+n] = true
+	}
+	fieldType := reflect.TypeFor[api.Field]()
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != fieldType {
+			return false
+		}
+		return set[p.Last().String()]
+	}, cmp.Ignore())
+}
+
+// AllowUnexported returns a [cmp.Option] that permits comparing unexported
+// fields on all read-only [api] AST and metadata structs.
 func AllowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
 		api.DiscoveryLro{},
 		api.Enum{},
 		api.EnumValue{},
+		api.Field{},
 		api.MethodSignature{},
 		api.OperationInfo{},
 		api.PathBinding{},
@@ -67,16 +88,24 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 	if diff := cmp.Diff(want, got,
 		AllowUnexported(),
 		cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages", "Enums", "Resource"),
-		cmpopts.IgnoreFields(api.Field{}, "Parent"),
+		IgnoreFieldNames("parent"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Fields, got.Fields, AllowUnexported(), cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	less := func(a, b *api.Field) bool { return a.Name() < b.Name() }
+	if diff := cmp.Diff(want.Fields, got.Fields,
+		AllowUnexported(),
+		cmpopts.SortSlices(less),
+		IgnoreFieldNames("parent"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Ignore parent because types are cyclic
-	if diff := cmp.Diff(want.OneOfs, got.OneOfs, AllowUnexported(), cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want.OneOfs, got.OneOfs,
+		AllowUnexported(),
+		cmpopts.SortSlices(less),
+		IgnoreFieldNames("parent"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -117,7 +146,7 @@ func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 	if diff := cmp.Diff(want.Methods, got.Methods,
 		AllowUnexported(),
 		cmpopts.SortSlices(less),
-		cmpopts.IgnoreFields(api.Field{}, "Parent"),
+		IgnoreFieldNames("parent"),
 		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -141,7 +170,7 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 	}
 	if diff := cmp.Diff(want, got,
 		AllowUnexported(),
-		cmpopts.IgnoreFields(api.Field{}, "Parent"),
+		IgnoreFieldNames("parent"),
 		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -151,7 +180,7 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 // CheckMap compares two `Map` instances.
 func CheckMap(t *testing.T, got *api.Map, want *api.Map) {
 	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want, got, AllowUnexported(), IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

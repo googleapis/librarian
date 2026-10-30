@@ -1938,7 +1938,7 @@ func TestAnnotateField(t *testing.T) {
 			registerMissingWkt(annotate.model)
 
 			annotate.annotateField(field)
-			got := field.Codec.(*fieldAnnotation)
+			got := field.Codec().(*fieldAnnotation)
 			// `FromJson` and `ToJson` have their own tests.
 			// Clear them rather than using `IgnoreFields` so that they do not appear in the diff.
 			got.FromJson = ""
@@ -2077,8 +2077,8 @@ func makeCreateFromJsonTestContext(t *testing.T, field *api.Field) (*annotateMod
 		WithID("..UpdateRequest").
 		WithFields(field)
 	messages := []*api.Message{message}
-	if field.MessageType != nil {
-		messages = append(messages, field.MessageType)
+	if field.MessageType() != nil {
+		messages = append(messages, field.MessageType())
 	}
 	model := api.NewTestAPI(messages, enums, nil)
 	annotate := newAnnotateModel(model)
@@ -2087,7 +2087,7 @@ func makeCreateFromJsonTestContext(t *testing.T, field *api.Field) (*annotateMod
 	if err := annotate.annotateModel(options); err != nil {
 		t.Fatal(err)
 	}
-	return annotate, field.Codec.(*fieldAnnotation)
+	return annotate, field.Codec().(*fieldAnnotation)
 }
 
 func annotateToJsonField(t *testing.T, field *api.Field) *fieldAnnotation {
@@ -2097,8 +2097,8 @@ func annotateToJsonField(t *testing.T, field *api.Field) *fieldAnnotation {
 		WithID("..UpdateRequest").
 		WithFields(field)
 	messages := []*api.Message{message}
-	if field.MessageType != nil {
-		messages = append(messages, field.MessageType)
+	if field.MessageType() != nil {
+		messages = append(messages, field.MessageType())
 	}
 	enums := []*api.Enum{sample.EnumState()}
 	model := api.NewTestAPI(messages, enums, nil)
@@ -2106,5 +2106,5 @@ func annotateToJsonField(t *testing.T, field *api.Field) *fieldAnnotation {
 	if err := annotate.annotateModel(requiredConfig); err != nil {
 		t.Fatal(err)
 	}
-	return field.Codec.(*fieldAnnotation)
+	return field.Codec().(*fieldAnnotation)
 }

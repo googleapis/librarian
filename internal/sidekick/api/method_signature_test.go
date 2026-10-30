@@ -21,8 +21,8 @@ import (
 )
 
 func TestMethodSignature(t *testing.T) {
-	f1 := NewTestField("parent")
-	f2 := NewTestField("book")
+	f1 := NewFieldBuilder().WithName("parent").Build()
+	f2 := NewFieldBuilder().WithName("book").Build()
 
 	got := NewMethodSignatureBuilder().
 		WithNames("parent", "book").

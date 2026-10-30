@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestOneOfAnnotations(t *testing.T) {
@@ -64,7 +65,7 @@ func TestOneOfAnnotations(t *testing.T) {
 	}
 
 	// Stops the recursion when comparing fields.
-	ignore := cmpopts.IgnoreFields(api.Field{}, "Codec")
+	ignore := cmp.Options{apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")}
 	wantFieldCodec := &fieldAnnotations{
 		FieldName:          "oneof_field",
 		SetterName:         "oneof_field",
@@ -80,7 +81,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		ValueType:          "",
 		OtherFieldsInGroup: []*api.Field{repeated, mapField, integerField, boxedField},
 	}
-	if diff := cmp.Diff(wantFieldCodec, singular.Codec, ignore); diff != "" {
+	if diff := cmp.Diff(wantFieldCodec, singular.Codec(), ignore); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -99,7 +100,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		ValueType:          "",
 		OtherFieldsInGroup: []*api.Field{singular, mapField, integerField, boxedField},
 	}
-	if diff := cmp.Diff(wantFieldCodec, repeated.Codec, ignore); diff != "" {
+	if diff := cmp.Diff(wantFieldCodec, repeated.Codec(), ignore); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -121,7 +122,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 		OtherFieldsInGroup: []*api.Field{singular, repeated, integerField, boxedField},
 	}
-	if diff := cmp.Diff(wantFieldCodec, mapField.Codec, ignore); diff != "" {
+	if diff := cmp.Diff(wantFieldCodec, mapField.Codec(), ignore); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -140,7 +141,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 		OtherFieldsInGroup: []*api.Field{singular, repeated, mapField, boxedField},
 	}
-	if diff := cmp.Diff(wantFieldCodec, integerField.Codec, ignore); diff != "" {
+	if diff := cmp.Diff(wantFieldCodec, integerField.Codec(), ignore); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -152,7 +153,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
 		FieldType:          "std::boxed::Box<wkt::DoubleValue>",
-		MessageType:        boxedField.MessageType,
+		MessageType:        boxedField.MessageType(),
 		PrimitiveFieldType: "wkt::DoubleValue",
 		ProstType:          "f64",
 		AddQueryParameter:  `let builder = req.oneof_field_boxed().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofFieldBoxed") });`,
@@ -161,7 +162,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 		OtherFieldsInGroup: []*api.Field{singular, repeated, mapField, integerField},
 	}
-	if diff := cmp.Diff(wantFieldCodec, boxedField.Codec, ignore); diff != "" {
+	if diff := cmp.Diff(wantFieldCodec, boxedField.Codec(), ignore); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -272,7 +273,7 @@ func TestOneOf_ReservedRawIdentifiers(t *testing.T) {
 		}
 	})
 
-	ignoreField := cmpopts.IgnoreFields(api.Field{}, "Codec")
+	ignoreField := cmp.Options{apitest.AllowUnexported(), apitest.IgnoreFieldNames("codec"), cmpopts.IgnoreFields(api.Message{}, "Codec")}
 	wantSelfBranch := &fieldAnnotations{
 		FieldName:          "self_",
 		SetterName:         "self",
@@ -287,7 +288,7 @@ func TestOneOf_ReservedRawIdentifiers(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{branchCrate, branchSuper},
 	}
 	t.Run("branch_self", func(t *testing.T) {
-		if diff := cmp.Diff(wantSelfBranch, branchSelf.Codec, ignoreField); diff != "" {
+		if diff := cmp.Diff(wantSelfBranch, branchSelf.Codec(), ignoreField); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -305,7 +306,7 @@ func TestOneOf_ReservedRawIdentifiers(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{branchSelf, branchSuper},
 	}
 	t.Run("branch_crate", func(t *testing.T) {
-		if diff := cmp.Diff(wantCrateBranch, branchCrate.Codec, ignoreField); diff != "" {
+		if diff := cmp.Diff(wantCrateBranch, branchCrate.Codec(), ignoreField); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -325,7 +326,7 @@ func TestOneOf_ReservedRawIdentifiers(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{branchSelf, branchCrate},
 	}
 	t.Run("branch_super", func(t *testing.T) {
-		if diff := cmp.Diff(wantSuperBranch, branchSuper.Codec, ignoreField); diff != "" {
+		if diff := cmp.Diff(wantSuperBranch, branchSuper.Codec(), ignoreField); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})

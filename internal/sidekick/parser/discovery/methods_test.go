@@ -212,7 +212,7 @@ func TestMethodEmptyBody(t *testing.T) {
 				WithTypezID("string"),
 		)
 	for _, f := range want.Fields {
-		f.Parent = nil
+		f.WithParent(nil)
 	}
 	want.SyntheticRequest = true
 	got := model.Message(want.ID)
@@ -271,7 +271,7 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				WithOptional(),
 		)
 	for _, f := range want.Fields {
-		f.Parent = nil
+		f.WithParent(nil)
 	}
 	want.SyntheticRequest = true
 	gotListRequest := model.Message(want.ID)
@@ -310,7 +310,7 @@ func TestMethodWithBody(t *testing.T) {
 				WithOptional(),
 		)
 	for _, f := range wantInsertRequest.Fields {
-		f.Parent = nil
+		f.WithParent(nil)
 	}
 	wantInsertRequest.SyntheticRequest = true
 	gotGetRequest := model.Message(wantInsertRequest.ID)

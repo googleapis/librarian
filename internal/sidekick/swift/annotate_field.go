@@ -168,7 +168,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	if err != nil {
 		return nil, err
 	}
-	docLines, err := c.formatDocumentation(field.Documentation, field.Scopes())
+	docLines, err := c.formatDocumentation(field.Documentation(), field.Scopes())
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	}
 
 	annotations := &fieldAnnotations{
-		Name:                 camelCase(field.Name),
+		Name:                 camelCase(field.Name()),
 		FieldType:            parts.Full,
 		BaseFieldType:        parts.Base,
 		KeyType:              parts.Key,
@@ -188,8 +188,8 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		Decoding:             DecodingSimple,
 		Encoding:             EncodingSimple,
 		Model:                model,
-		ProtoFieldName:       protoFieldName(field.Name),
-		ProtoFieldNamePascal: protoFieldNamePascal(field.Name),
+		ProtoFieldName:       protoFieldName(field.Name()),
+		ProtoFieldNamePascal: protoFieldNamePascal(field.Name()),
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -199,13 +199,13 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	//    on the heap, so they do not cause compile-time infinite struct size issues.
 	// 3. !field.IsOneOf: Oneof fields are nested inside a Swift enum which handles recursive boxing
 	//    automatically using the native indirect case mechanism.
-	if field.Recursive && field.Singular() && !field.IsOneOf {
+	if field.Recursive() && field.Singular() && !field.IsOneOf() {
 		annotations.Recursive = true
 		annotations.BaseFieldType = fmt.Sprintf("%s.WKTRecursive<%s>", wellKnownSwiftPackage, parts.Base)
 		annotations.FieldType = annotations.BaseFieldType + "?"
 		annotations.Decoding = DecodingOptional
 	}
-	if field.Typez == api.TypezMap {
+	if field.Typez() == api.TypezMap {
 		if !annotations.IsStringKeyed() {
 			annotations.Decoding = DecodingMapCustomKey
 			annotations.Encoding = EncodingMapCustomKey
@@ -215,7 +215,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 			return nil, err
 		}
 		if mapType.Key == nil || mapType.Value == nil {
-			return nil, fmt.Errorf("map field %q missing key or value", field.ID)
+			return nil, fmt.Errorf("map field %q missing key or value", field.ID())
 		}
 		if _, err := c.annotateField(mapType.Key, model); err != nil {
 			return nil, err
@@ -225,19 +225,19 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		}
 		annotations.ValueField = mapType.Value
 	}
-	if field.Optional {
+	if field.Optional() {
 		annotations.Decoding = DecodingOptional
 	}
-	if field.IsOneOf && field.Group != nil {
-		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {
+	if field.IsOneOf() && field.Group() != nil {
+		if oneofAnn, ok := field.Group().Codec.(*oneOfAnnotations); ok {
 			annotations.OneOfChecker = oneofAnn.Checker
 		}
 	}
 	if c.UrlSafeForBytes {
-		if field.Typez == api.TypezBytes {
+		if field.Typez() == api.TypezBytes {
 			annotations.UrlSafeValue = true
 		}
-		if field.Typez == api.TypezMap && annotations.ValueType == "Foundation.Data" {
+		if field.Typez() == api.TypezMap && annotations.ValueType == "Foundation.Data" {
 			annotations.UrlSafeValue = true
 		}
 	}
@@ -245,37 +245,37 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	// For map fields, parts.Base is the full dictionary type `[K: V]`,
 	// (which is not a single primitive/scalar type) so PrimitiveFieldType remains empty
 	// and map entry components are inspected via KeyType, ValueType, and ValueField instead.
-	if field.Typez != api.TypezMap {
+	if field.Typez() != api.TypezMap {
 		annotations.PrimitiveFieldType = parts.Base
 	}
 	deprecatedType, err := c.fieldTypeDeprecated(field)
 	if err != nil {
 		return nil, err
 	}
-	annotations.DiagnoseType = deprecatedType && !field.Deprecated
-	field.Codec = annotations
+	annotations.DiagnoseType = deprecatedType && !field.Deprecated()
+	field.SetAnnotations(annotations)
 	return annotations, nil
 }
 
 // fieldTypeDeprecated reports whether the message or enum naming this field's
 // type is deprecated. For maps it inspects the value type.
 func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
-	if field.Typez == api.TypezMap {
+	if field.Typez() == api.TypezMap {
 		mapType, err := lookupMap(c.Model, field)
 		if err != nil {
 			return false, err
 		}
 		return c.fieldTypeDeprecated(mapType.Value)
 	}
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezMessage:
-		m, err := lookupMessage(c.Model, field.TypezID)
+		m, err := lookupMessage(c.Model, field.TypezID())
 		if err != nil {
 			return false, err
 		}
 		return m.Deprecated, nil
 	case api.TypezEnum:
-		e, err := lookupEnum(c.Model, field.TypezID)
+		e, err := lookupEnum(c.Model, field.TypezID())
 		if err != nil {
 			return false, err
 		}
@@ -285,22 +285,22 @@ func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
 }
 
 func (c *codec) fieldPackage(field *api.Field) (string, error) {
-	if field.Typez == api.TypezMap {
+	if field.Typez() == api.TypezMap {
 		mapType, err := lookupMap(c.Model, field)
 		if err != nil {
 			return "", err
 		}
 		return c.fieldPackage(mapType.Value)
 	}
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezMessage:
-		m, err := lookupMessage(c.Model, field.TypezID)
+		m, err := lookupMessage(c.Model, field.TypezID())
 		if err != nil {
 			return "", err
 		}
 		return m.Package, nil
 	case api.TypezEnum:
-		e, err := lookupEnum(c.Model, field.TypezID)
+		e, err := lookupEnum(c.Model, field.TypezID())
 		if err != nil {
 			return "", err
 		}

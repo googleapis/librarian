@@ -54,22 +54,22 @@ func ProstWktTypes() []ProstWktType {
 // module, used to qualify `gaxi::prost::ToProto::<ProstType>::to_proto` calls in
 // convert-prost templates.
 func (c *codec) prostFieldType(f *api.Field, model *api.API) (string, error) {
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezMessage:
 		for _, wkt := range ProstWktTypes() {
-			if f.TypezID == wkt.ProtoPath {
+			if f.TypezID() == wkt.ProtoPath {
 				return wkt.ToProtoType, nil
 			}
 		}
-		m := model.Message(f.TypezID)
+		m := model.Message(f.TypezID())
 		if m == nil {
-			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
+			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID(), f.ID())
 		}
 		return c.qualifyProstPath(m.Package, prostMessageRelativePath(m), model.PackageName), nil
 	case api.TypezEnum:
-		e := model.Enum(f.TypezID)
+		e := model.Enum(f.TypezID())
 		if e == nil {
-			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
+			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID(), f.ID())
 		}
 		return c.qualifyProstPath(e.Package(), prostEnumRelativePath(e), model.PackageName), nil
 	case api.TypezGroup, api.TypezMap:

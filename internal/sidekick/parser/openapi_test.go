@@ -691,12 +691,12 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		WithQueryParameters("pageSize", "pageToken").
 		WithPagination(
 			api.NewTestField("pageToken").
+				WithID("..Service.ListFoosRequest.pageToken").
 				WithDocumentation("The `{pageToken}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.").
 				WithType(api.TypezString).
 				WithTypezID("string").
 				WithOptional(),
 		)
-	listFoosMethod.Pagination.ID = "..Service.ListFoosRequest.pageToken"
 	listFoosMethod.IsList = false
 	listFoosMethod.InputTypeID = "..Service.ListFoosRequest"
 	listFoosMethod.OutputTypeID = "..ListFoosResponse"
@@ -825,7 +825,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	wantField := []*api.Field{requestID, requestIDExplicit}
-	if diff := cmp.Diff(wantField, method.AutoPopulated, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(wantField, method.AutoPopulated, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

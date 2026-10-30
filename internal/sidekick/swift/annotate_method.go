@@ -231,7 +231,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	}
 	for _, sig := range method.Signatures {
 		for _, field := range sig.Fields() {
-			if field.Codec == nil {
+			if field.Codec() == nil {
 				if _, err := c.annotateField(field, modelAnn); err != nil {
 					return err
 				}
@@ -294,7 +294,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			// point BodyFieldPath at a top-level google.api.HttpBody field.
 			if method.InputType != nil {
 				isHTTPBodyRequest = slices.ContainsFunc(method.InputType.Fields, func(f *api.Field) bool {
-					return f.Name == method.PathInfo.BodyFieldPath() && f.Typez == api.TypezMessage && f.TypezID == ".google.api.HttpBody"
+					return f.Name() == method.PathInfo.BodyFieldPath() && f.Typez() == api.TypezMessage && f.TypezID() == ".google.api.HttpBody"
 				})
 			}
 		} else if isBodyWildcard && method.InputType != nil && method.InputType.ID == ".google.api.HttpBody" {
@@ -342,9 +342,9 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	var pagination *paginationAnnotations
 	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
 		itemField := method.OutputType.Pagination.PageableItem
-		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
+		itemFieldCodec, ok := itemField.Codec().(*fieldAnnotations)
 		if !ok {
-			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name)
+			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name())
 		}
 		pagination = &paginationAnnotations{
 			ItemType: itemFieldCodec.BaseFieldType,
@@ -477,7 +477,7 @@ func (c *codec) diagnoseRequestFields(method *api.Method) (bool, error) {
 		return false, nil
 	}
 	for _, field := range method.InputType.Fields {
-		if field.Deprecated {
+		if field.Deprecated() {
 			return true, nil
 		}
 		deprecatedType, err := c.fieldTypeDeprecated(field)
