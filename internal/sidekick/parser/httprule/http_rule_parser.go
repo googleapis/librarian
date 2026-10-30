@@ -96,10 +96,10 @@ func ParseResourcePattern(pathTemplate string) (*api.PathTemplate, error) {
 	if strings.Contains(pathTemplate, "}.{") ||
 		strings.Contains(pathTemplate, "}~{") {
 		// TODO(https://github.com/googleapis/librarian/issues/3258): support non-standard separators in resource names... somehow.
-		return (&api.PathTemplate{}), nil
+		return api.NewPathTemplateBuilder().Build(), nil
 	}
 	if pathTemplate == api.SingleSegmentWildcard {
-		return (&api.PathTemplate{}), nil
+		return api.NewPathTemplateBuilder().Build(), nil
 	}
 	return parsePathTemplate("/" + pathTemplate)
 }
@@ -143,10 +143,10 @@ func parsePathTemplate(pathTemplate string) (*api.PathTemplate, error) {
 	if pos != len(pathTemplate) {
 		return nil, fmt.Errorf("invalid path template, expected it to end at position %d: %s", pos, pathTemplate)
 	}
-	return &api.PathTemplate{
-		Segments: segments,
-		Verb:     verb,
-	}, nil
+	return api.NewPathTemplateBuilder().
+		WithSegments(segments...).
+		WithVerb(verb).
+		Build(), nil
 
 }
 
