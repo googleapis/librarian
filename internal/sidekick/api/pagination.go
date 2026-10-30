@@ -35,10 +35,26 @@ type PaginationOverride struct {
 
 // PaginationInfo contains information related to pagination aka [AIP-4233](https://google.aip.dev/client-libraries/4233).
 type PaginationInfo struct {
-	// The field that gives us the next page token.
-	NextPageToken *Field
-	// PageableItem is the field to be paginated over.
-	PageableItem *Field
+	nextPageToken *Field
+	pageableItem  *Field
+}
+
+// NewPaginationInfo creates a new [PaginationInfo].
+func NewPaginationInfo(nextPageToken, pageableItem *Field) *PaginationInfo {
+	return &PaginationInfo{
+		nextPageToken: nextPageToken,
+		pageableItem:  pageableItem,
+	}
+}
+
+// NextPageToken returns the field that gives us the next page token.
+func (p *PaginationInfo) NextPageToken() *Field {
+	return p.nextPageToken
+}
+
+// PageableItem returns the field to be paginated over.
+func (p *PaginationInfo) PageableItem() *Field {
+	return p.pageableItem
 }
 
 // UpdateMethodPagination marks all methods that conform to
@@ -57,7 +73,7 @@ func UpdateMethodPagination(overrides []PaginationOverride, a *API) {
 			continue
 		}
 		m.Pagination = pageTokenField
-		respMsg.Pagination = paginationInfo
+		respMsg.pagination = paginationInfo
 	}
 }
 
@@ -72,7 +88,7 @@ func paginationRequestInfo(request *Message) *Field {
 }
 
 func paginationRequestPageSize(request *Message) *Field {
-	for _, field := range request.Fields {
+	for _, field := range request.fields {
 		// Some legacy services (e.g. sqladmin.googleapis.com)
 		// predate AIP-4233 and use `maxResults` instead of
 		// `pageSize` for the field name.
@@ -101,7 +117,7 @@ func isPaginationMaxResultsType(field *Field) bool {
 }
 
 func paginationRequestToken(request *Message) *Field {
-	for _, field := range request.Fields {
+	for _, field := range request.fields {
 		if field.jsonName == pageToken && field.typez == TypezString {
 			return field
 		}
@@ -119,8 +135,8 @@ func paginationResponseInfo(overrides []PaginationOverride, methodID string, res
 		return nil
 	}
 	return &PaginationInfo{
-		PageableItem:  pageableItem,
-		NextPageToken: nextPageToken,
+		pageableItem:  pageableItem,
+		nextPageToken: nextPageToken,
 	}
 }
 
@@ -128,15 +144,15 @@ func paginationResponseItem(overrides []PaginationOverride, methodID string, res
 	idx := slices.IndexFunc(overrides, func(o PaginationOverride) bool { return o.ID == methodID })
 	if idx != -1 {
 		overrideName := overrides[idx].ItemField
-		fieldIdx := slices.IndexFunc(response.Fields, func(f *Field) bool { return f.name == overrideName })
+		fieldIdx := slices.IndexFunc(response.fields, func(f *Field) bool { return f.name == overrideName })
 		if fieldIdx == -1 {
 			return nil
 		}
-		return response.Fields[fieldIdx]
+		return response.fields[fieldIdx]
 	}
 
 	var mapItems *Field
-	for _, field := range response.Fields {
+	for _, field := range response.fields {
 		if field.mapz && mapItems == nil {
 			mapItems = field
 		}
@@ -148,7 +164,7 @@ func paginationResponseItem(overrides []PaginationOverride, methodID string, res
 }
 
 func paginationResponseNextPageToken(response *Message) *Field {
-	for _, field := range response.Fields {
+	for _, field := range response.fields {
 		if field.jsonName == nextPageToken && field.typez == TypezString {
 			return field
 		}

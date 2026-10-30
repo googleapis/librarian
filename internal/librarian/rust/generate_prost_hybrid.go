@@ -110,15 +110,15 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		if m == nil {
 			return
 		}
-		if !reachableMsgs[m.ID] {
-			reachableMsgs[m.ID] = true
+		if !reachableMsgs[m.ID()] {
+			reachableMsgs[m.ID()] = true
 			queue = append(queue, typeItem{
-				id:   m.ID,
+				id:   m.ID(),
 				path: path,
 			})
 		}
-		if m.Parent != nil {
-			enqueueMsg(m.Parent, path)
+		if m.Parent() != nil {
+			enqueueMsg(m.Parent(), path)
 		}
 	}
 
@@ -188,7 +188,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 
 		msg := model.Message(item.id)
 		if msg != nil {
-			reachableMsgs[msg.ID] = true
+			reachableMsgs[msg.ID()] = true
 
 			// Shortcircuit search for google.rpc.Status to avoid inspecting its fields,
 			// which would otherwise error on Status.details (google.protobuf.Any).
@@ -197,10 +197,10 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 				continue
 			}
 			enqueueMsg(msg, item.path)
-			for _, f := range msg.Fields {
+			for _, f := range msg.Fields() {
 				enqueueField(item.path, f)
 			}
-			for _, o := range msg.OneOfs {
+			for _, o := range msg.OneOfs() {
 				for _, f := range o.Fields() {
 					enqueueField(item.path, f)
 				}
@@ -235,13 +235,13 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	// iteration order is randomized by the Go runtime.
 	var externalMessages []*api.Message
 	for m := range model.AllMessages() {
-		if m.ID != "" && reachableMsgs[m.ID] && !isWKT(m.ID) && m.ID != ".google.rpc.Status" && m.Parent == nil {
-			if m.Package != model.PackageName && m.Package != api.ReservedPackageName {
+		if m.ID() != "" && reachableMsgs[m.ID()] && !isWKT(m.ID()) && m.ID() != ".google.rpc.Status" && m.Parent() == nil {
+			if m.Package() != model.PackageName && m.Package() != api.ReservedPackageName {
 				externalMessages = append(externalMessages, m)
 			}
 		}
 	}
-	slices.SortFunc(externalMessages, func(a, b *api.Message) int { return cmp.Compare(a.ID, b.ID) })
+	slices.SortFunc(externalMessages, func(a, b *api.Message) int { return cmp.Compare(a.ID(), b.ID()) })
 
 	// Collect external top-level enums referenced by roots.
 	var externalEnums []*api.Enum
@@ -262,7 +262,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		Description:         model.Description,
 		Revision:            model.Revision,
 		Services:            model.Services,
-		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return reachableMsgs[m.ID] }),
+		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return reachableMsgs[m.ID()] }),
 		ExternalMessages:    externalMessages,
 		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return reachableEnums[e.ID()] }),
 		ExternalEnums:       externalEnums,
@@ -294,8 +294,8 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 
 	var unusedTypes []string
 	for m := range model.AllMessages() {
-		if m.ID != "" && !isWKT(m.ID) && !reachableMsgs[m.ID] {
-			unusedTypes = append(unusedTypes, m.ID)
+		if m.ID() != "" && !isWKT(m.ID()) && !reachableMsgs[m.ID()] {
+			unusedTypes = append(unusedTypes, m.ID())
 		}
 	}
 	for e := range model.AllEnums() {

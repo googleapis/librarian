@@ -51,11 +51,11 @@ func (x *Service) Scopes() []string {
 
 // Scopes returns the scopes for a message.
 func (x *Message) Scopes() []string {
-	localScope := strings.TrimPrefix(x.ID, ".")
-	if x.Parent == nil {
-		return []string{localScope, x.Package} // simplify some test set-up
+	localScope := strings.TrimPrefix(x.id, ".")
+	if x.parent == nil {
+		return []string{localScope, x.packagez} // simplify some test set-up
 	}
-	return append([]string{localScope}, x.Parent.Scopes()...)
+	return append([]string{localScope}, x.parent.Scopes()...)
 }
 
 // Scopes returns the scopes for an enum.

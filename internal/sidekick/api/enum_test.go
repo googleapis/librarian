@@ -70,7 +70,7 @@ func TestEnumValue(t *testing.T) {
 func TestEnum(t *testing.T) {
 	ev := NewEnumValueBuilder().WithName("ACTIVE").WithNumber(1).Build()
 	sv := NewSampleValue(ev, 0)
-	parent := NewTestMessage("Parent")
+	parent := NewMessageBuilder().WithName("Parent").Build()
 
 	got := NewEnumBuilder().
 		WithName("State").
@@ -99,7 +99,7 @@ func TestEnum(t *testing.T) {
 		codec:              "enum-codec",
 	}
 	opts := cmp.Options{
-		cmp.AllowUnexported(Enum{}, EnumValue{}, SampleValue{}),
+		cmp.AllowUnexported(Enum{}, EnumValue{}, SampleValue{}, Message{}),
 		cmp.FilterPath(func(p cmp.Path) bool {
 			return len(p) > 2 && p.Last().String() == ".parent"
 		}, cmp.Ignore()),

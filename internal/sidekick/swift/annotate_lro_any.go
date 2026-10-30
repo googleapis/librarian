@@ -81,7 +81,7 @@ func (c *codec) lroAnyTypes(methods []*api.Method) ([]*lroAnyType, error) {
 			if err != nil {
 				return nil, err
 			}
-			annotations, ok := message.Codec.(*messageAnnotations)
+			annotations, ok := message.Codec().(*messageAnnotations)
 			if !ok {
 				// The message is not generated in this module, so there is no
 				// conversion to call. Leaving it out of the table sends the
@@ -113,10 +113,10 @@ func (c *codec) lroAnyTypes(methods []*api.Method) ([]*lroAnyType, error) {
 // types are not compiled into that module, so they keep the names SwiftProtobuf
 // ships.
 func (c *codec) lroAnyProtoTypeName(m *api.Message, annotations *messageAnnotations) string {
-	if m.Package != wellKnownProtobufPackage {
+	if m.Package() != wellKnownProtobufPackage {
 		return annotations.ProtoTypeName
 	}
-	return fmt.Sprintf("%s.%s%s", swiftProtobufModule, ProtoPackagePrefix(m.Package), pascalCase(m.Name))
+	return fmt.Sprintf("%s.%s%s", swiftProtobufModule, ProtoPackagePrefix(m.Package()), pascalCase(m.Name()))
 }
 
 // annotateLROAnyFields routes the `Any` fields of
@@ -134,7 +134,7 @@ func (c *codec) annotateLROAnyFields() {
 		// This module does not convert `Operation`, so there is nothing to do.
 		return
 	}
-	for _, field := range operation.Fields {
+	for _, field := range operation.Fields() {
 		if field.Typez() != api.TypezMessage || field.TypezID() != protobufAnyID {
 			continue
 		}

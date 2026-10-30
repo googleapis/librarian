@@ -198,16 +198,16 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !syntheticMsg.SyntheticRequest {
+	if !syntheticMsg.SyntheticRequest() {
 		t.Error("expected SyntheticRequest to be true")
 	}
-	if syntheticMsg.Name != "MySyntheticMessage" {
-		t.Errorf("expected name 'MySyntheticMessage', got %q", syntheticMsg.Name)
+	if syntheticMsg.Name() != "MySyntheticMessage" {
+		t.Errorf("expected name 'MySyntheticMessage', got %q", syntheticMsg.Name())
 	}
-	if len(syntheticMsg.Fields) != 40 {
-		t.Fatalf("expected 40 fields, got %d", len(syntheticMsg.Fields))
+	if len(syntheticMsg.Fields()) != 40 {
+		t.Fatalf("expected 40 fields, got %d", len(syntheticMsg.Fields()))
 	}
-	for _, f := range syntheticMsg.Fields {
+	for _, f := range syntheticMsg.Fields() {
 		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name())
 		if f.ID() != wantID {
 			t.Errorf("expected field ID %q, got %q", wantID, f.ID())
@@ -215,7 +215,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	}
 
 	// Verify that synthetic messages point to crate::model_ext
-	for _, f := range syntheticMsg.Fields {
+	for _, f := range syntheticMsg.Fields() {
 		fAnn, ok := f.Codec().(*fieldAnnotations)
 		if !ok {
 			t.Fatalf("expected fieldAnnotations on the field %q", f.ID())
@@ -230,10 +230,10 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if queryBuilder.Name != "Query" {
-		t.Errorf("expected name 'Query', got %q", queryBuilder.Name)
+	if queryBuilder.Name() != "Query" {
+		t.Errorf("expected name 'Query', got %q", queryBuilder.Name())
 	}
-	msgAnn, ok := queryBuilder.Codec.(*messageAnnotation)
+	msgAnn, ok := queryBuilder.Codec().(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on Query msg")
 	}
@@ -255,16 +255,16 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if queryRequest.Name != "QueryRequest" {
-		t.Errorf("expected name 'QueryRequest', got %q", queryRequest.Name)
+	if queryRequest.Name() != "QueryRequest" {
+		t.Errorf("expected name 'QueryRequest', got %q", queryRequest.Name())
 	}
-	for _, f := range queryRequest.Fields {
+	for _, f := range queryRequest.Fields() {
 		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name())
 		if f.ID() != wantID {
 			t.Errorf("expected field ID %q, got %q", wantID, f.ID())
 		}
 	}
-	reqMsgAnn, ok := queryRequest.Codec.(*messageAnnotation)
+	reqMsgAnn, ok := queryRequest.Codec().(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on RunQueryRequest msg")
 	}

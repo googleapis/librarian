@@ -89,7 +89,7 @@ func TestResourceRefs(t *testing.T) {
 }
 
 func TestResource(t *testing.T) {
-	msg := NewTestMessage("Book")
+	msg := NewMessageBuilder().WithName("Book").Build()
 	segProjects := *NewPathSegmentBuilder().WithLiteral("projects").Build()
 	got := NewResourceBuilder().
 		WithType("test.googleapis.com/Book").
@@ -109,7 +109,7 @@ func TestResource(t *testing.T) {
 		patterns: []ResourcePattern{{segProjects}},
 		codec:    "res-codec",
 	}
-	opts := cmp.AllowUnexported(Resource{}, PathSegment{}, PathVariable{})
+	opts := cmp.AllowUnexported(Resource{}, Message{}, PathSegment{}, PathVariable{})
 	if diff := cmp.Diff(want, got, opts); diff != "" {
 		t.Errorf("Resource mismatch (-want +got):\n%s", diff)
 	}

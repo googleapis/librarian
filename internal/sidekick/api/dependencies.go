@@ -107,7 +107,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if message := model.Message(id); message != nil {
-			addFieldDependencies(message.Fields...)
+			addFieldDependencies(message.fields...)
 			continue
 		}
 
@@ -139,18 +139,18 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if message := model.Message(id); message != nil {
-			if message.Parent != nil {
-				add(message.Parent.ID)
+			if message.parent != nil {
+				add(message.parent.id)
 			}
 			// In the current definition of APIState, a message must
 			// includes all of its fields.
-			addFieldDependencies(message.Fields...)
+			addFieldDependencies(message.fields...)
 			continue
 		}
 
 		if enum := model.Enum(id); enum != nil {
 			if enum.parent != nil {
-				add(enum.parent.ID)
+				add(enum.parent.id)
 			}
 			continue
 		}

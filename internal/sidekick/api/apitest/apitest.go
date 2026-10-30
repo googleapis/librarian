@@ -43,6 +43,25 @@ func IgnoreFieldNames(names ...string) cmp.Option {
 	}, cmp.Ignore())
 }
 
+// IgnoreMessageFields returns a [cmp.Option] that ignores the named unexported
+// fields on [api.Message].
+func IgnoreMessageFields(names ...string) cmp.Option {
+	set := make(map[string]bool, len(names))
+	for _, n := range names {
+		set["."+n] = true
+	}
+	msgType := reflect.TypeFor[api.Message]()
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != msgType {
+			return false
+		}
+		return set[p.Last().String()]
+	}, cmp.Ignore())
+}
+
 // AllowUnexported returns a [cmp.Option] that permits comparing unexported
 // fields on all read-only [api] AST and metadata structs.
 func AllowUnexported() cmp.Option {
@@ -52,9 +71,11 @@ func AllowUnexported() cmp.Option {
 		api.EnumValue{},
 		api.Field{},
 		api.Map{},
+		api.Message{},
 		api.MethodSignature{},
 		api.OneOf{},
 		api.OperationInfo{},
+		api.PaginationInfo{},
 		api.PathBinding{},
 		api.PathInfo{},
 		api.PathSegment{},
@@ -87,15 +108,25 @@ func CmpOptions() cmp.Option {
 func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 	t.Helper()
 	// Checking Parent, Messages, Fields, and OneOfs requires special handling.
+	ignoreMessageFields := cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 || p.Index(-2).Type() != reflect.TypeFor[api.Message]() {
+			return false
+		}
+		switch p.Last().String() {
+		case ".fields", ".oneOfs", ".parent", ".messages", ".enums", ".resource":
+			return true
+		}
+		return false
+	}, cmp.Ignore())
 	if diff := cmp.Diff(want, got,
 		AllowUnexported(),
-		cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages", "Enums", "Resource"),
+		ignoreMessageFields,
 		IgnoreFieldNames("parent"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Field) bool { return a.Name() < b.Name() }
-	if diff := cmp.Diff(want.Fields, got.Fields,
+	if diff := cmp.Diff(want.Fields(), got.Fields(),
 		AllowUnexported(),
 		cmpopts.SortSlices(less),
 		IgnoreFieldNames("parent"),
@@ -103,7 +134,7 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Ignore parent because types are cyclic
-	if diff := cmp.Diff(want.OneOfs, got.OneOfs,
+	if diff := cmp.Diff(want.OneOfs(), got.OneOfs(),
 		AllowUnexported(),
 		cmpopts.SortSlices(less),
 		IgnoreFieldNames("parent"),
