@@ -70,3 +70,71 @@ func TestRoutingInfoVariant(t *testing.T) {
 		t.Errorf("RoutingInfoVariant slice getters should return defensive copies")
 	}
 }
+
+func TestRoutingInfo(t *testing.T) {
+	v1 := NewRoutingInfoVariantBuilder().
+		WithFieldPath("table_name").
+		WithMatchingSegments("projects", "*").
+		Build()
+	v2 := NewRoutingInfoVariantBuilder().
+		WithFieldPath("app_profile_id").
+		WithMatchingSegments("Profiles", "*").
+		Build()
+
+	got := NewRoutingInfoBuilder().
+		WithName("project_id").
+		WithVariants(v1).
+		WithVariant(v2).
+		Build()
+
+	want := &RoutingInfo{
+		name:     "project_id",
+		variants: []*RoutingInfoVariant{v1, v2},
+	}
+	opts := cmp.AllowUnexported(RoutingInfo{}, RoutingInfoVariant{}, RoutingPathSpec{})
+	if diff := cmp.Diff(want, got, opts); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if got.Name() != want.name {
+		t.Errorf("Name() = %q, want %q", got.Name(), want.name)
+	}
+	if diff := cmp.Diff(want.variants, got.Variants(), opts); diff != "" {
+		t.Errorf("Variants() mismatch (-want +got):\n%s", diff)
+	}
+
+	got.Variants()[0] = nil
+	if got.Variants()[0] != v1 {
+		t.Errorf("Variants() getter should return a defensive copy")
+	}
+}
+
+func TestRoutingInfoCombo(t *testing.T) {
+	v1 := NewRoutingInfoVariantBuilder().WithFieldPath("table_name").Build()
+	gotItem := NewRoutingInfoComboItem("project_id", v1)
+	wantItem := &RoutingInfoComboItem{
+		name:    "project_id",
+		variant: v1,
+	}
+	opts := cmp.AllowUnexported(RoutingInfoCombo{}, RoutingInfoComboItem{}, RoutingInfoVariant{}, RoutingPathSpec{})
+	if diff := cmp.Diff(wantItem, gotItem, opts); diff != "" {
+		t.Errorf("item mismatch (-want +got):\n%s", diff)
+	}
+	if gotItem.Name() != wantItem.name || gotItem.Variant() != v1 {
+		t.Errorf("unexpected RoutingInfoComboItem getters: (%q, %v)", gotItem.Name(), gotItem.Variant())
+	}
+
+	gotCombo := NewRoutingInfoCombo(gotItem)
+	wantCombo := &RoutingInfoCombo{
+		items: []*RoutingInfoComboItem{gotItem},
+	}
+	if diff := cmp.Diff(wantCombo, gotCombo, opts); diff != "" {
+		t.Errorf("combo mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(wantCombo.items, gotCombo.Items(), opts); diff != "" {
+		t.Errorf("Items() mismatch (-want +got):\n%s", diff)
+	}
+	gotCombo.Items()[0] = nil
+	if gotCombo.Items()[0] != gotItem {
+		t.Errorf("Items() getter should return a defensive copy")
+	}
+}

@@ -27,22 +27,8 @@ func TestRoutingCombosSimpleOr(t *testing.T) {
 	method := NewTestMethod("test").WithRouting(info)
 
 	want := []*RoutingInfoCombo{
-		{
-			Items: []*RoutingInfoComboItem{
-				{
-					Name:    "key",
-					Variant: v1,
-				},
-			},
-		},
-		{
-			Items: []*RoutingInfoComboItem{
-				{
-					Name:    "key",
-					Variant: v2,
-				},
-			},
-		},
+		NewRoutingInfoCombo(NewRoutingInfoComboItem("key", v1)),
+		NewRoutingInfoCombo(NewRoutingInfoComboItem("key", v2)),
 	}
 	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -57,21 +43,20 @@ func TestRoutingCombosSimpleAnd(t *testing.T) {
 	method := NewTestMethod("test").WithRouting(i1, i2)
 
 	want := []*RoutingInfoCombo{
-		{
-			Items: []*RoutingInfoComboItem{
-				{
-					Name:    "key1",
-					Variant: v1,
-				},
-				{
-					Name:    "key2",
-					Variant: v2,
-				},
-			},
-		},
+		NewRoutingInfoCombo(
+			NewRoutingInfoComboItem("key1", v1),
+			NewRoutingInfoComboItem("key2", v2),
+		),
 	}
 	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	combo := method.RoutingCombos()[0]
+	if len(combo.Items()) != 2 {
+		t.Fatalf("len(combo.Items()) = %d, want 2", len(combo.Items()))
+	}
+	if combo.Items()[0].Name() != "key1" || combo.Items()[0].Variant() != v1 {
+		t.Errorf("combo.Items()[0] = (%q, %v), want (%q, %v)", combo.Items()[0].Name(), combo.Items()[0].Variant(), "key1", v1)
 	}
 }
 
@@ -91,22 +76,11 @@ func TestRoutingCombosFull(t *testing.T) {
 	method := NewTestMethod("test").WithRouting(a, b, c)
 
 	make_combo := func(va *RoutingInfoVariant, vb *RoutingInfoVariant, vc *RoutingInfoVariant) *RoutingInfoCombo {
-		return &RoutingInfoCombo{
-			Items: []*RoutingInfoComboItem{
-				{
-					Name:    "a",
-					Variant: va,
-				},
-				{
-					Name:    "b",
-					Variant: vb,
-				},
-				{
-					Name:    "c",
-					Variant: vc,
-				},
-			},
-		}
+		return NewRoutingInfoCombo(
+			NewRoutingInfoComboItem("a", va),
+			NewRoutingInfoComboItem("b", vb),
+			NewRoutingInfoComboItem("c", vc),
+		)
 	}
 	want := []*RoutingInfoCombo{
 		make_combo(va1, vb1, vc1),
