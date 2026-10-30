@@ -43,9 +43,9 @@ func TestAnnotateOneOf(t *testing.T) {
 			if err := c.annotateModel(model); err != nil {
 				t.Fatal(err)
 			}
-			got, ok := test.oneof.Codec.(*oneOfAnnotations)
+			got, ok := test.oneof.Codec().(*oneOfAnnotations)
 			if !ok {
-				t.Fatalf("expected *oneOfAnnotations, got %T", test.oneof.Codec)
+				t.Fatalf("expected *oneOfAnnotations, got %T", test.oneof.Codec())
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(oneOfAnnotations{}, "Message")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

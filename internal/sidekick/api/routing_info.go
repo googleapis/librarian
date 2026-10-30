@@ -14,7 +14,10 @@
 
 package api
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // RoutingInfo contains normalized routing info.
 //
@@ -34,7 +37,7 @@ import "strings"
 //	would be e.g. implicitly from the google.api.http annotation.
 type RoutingInfo struct {
 	// The name in `x-goog-request-params`.
-	Name string
+	name string
 	// Group the possible variants for the given name.
 	//
 	// The variants are parsed into the reverse order of definition. AIP-4222
@@ -46,34 +49,74 @@ type RoutingInfo struct {
 	//
 	// Reversing the order allows us to implement "the first match wins". That
 	// is easier and more efficient in most languages.
-	Variants []*RoutingInfoVariant
+	variants []*RoutingInfoVariant
+}
+
+// Name returns the name in `x-goog-request-params`.
+func (r *RoutingInfo) Name() string {
+	return r.name
+}
+
+// Variants returns the possible variants for the given name.
+func (r *RoutingInfo) Variants() []*RoutingInfoVariant {
+	return slices.Clone(r.variants)
 }
 
 // RoutingInfoVariant represents the routing information stripped of its name.
 type RoutingInfoVariant struct {
 	// The sequence of field names accessed to get the routing information.
-	FieldPath []string
+	fieldPath []string
 	// A path template that must match the beginning of the field value.
-	Prefix RoutingPathSpec
+	prefix RoutingPathSpec
 	// A path template that, if matching, is used in the `x-goog-request-params`.
-	Matching RoutingPathSpec
+	matching RoutingPathSpec
 	// A path template that must match the end of the field value.
-	Suffix RoutingPathSpec
+	suffix RoutingPathSpec
 	// Language specific information
-	Codec any
+	codec any
+}
+
+// FieldPath returns the sequence of field names accessed to get the routing information.
+func (v *RoutingInfoVariant) FieldPath() []string {
+	return slices.Clone(v.fieldPath)
+}
+
+// Prefix returns a path template that must match the beginning of the field value.
+func (v *RoutingInfoVariant) Prefix() RoutingPathSpec {
+	return v.prefix
+}
+
+// Matching returns a path template that, if matching, is used in `x-goog-request-params`.
+func (v *RoutingInfoVariant) Matching() RoutingPathSpec {
+	return v.matching
+}
+
+// Suffix returns a path template that must match the end of the field value.
+func (v *RoutingInfoVariant) Suffix() RoutingPathSpec {
+	return v.suffix
+}
+
+// Codec returns the language-specific annotations.
+func (v *RoutingInfoVariant) Codec() any {
+	return v.codec
+}
+
+// SetAnnotations sets the language-specific annotations.
+func (v *RoutingInfoVariant) SetAnnotations(codec any) {
+	v.codec = codec
 }
 
 // FieldName returns the field path as a string.
 func (v *RoutingInfoVariant) FieldName() string {
-	return strings.Join(v.FieldPath, ".")
+	return strings.Join(v.fieldPath, ".")
 }
 
 // TemplateAsString returns the template as a string.
 func (v *RoutingInfoVariant) TemplateAsString() string {
 	var full []string
-	full = append(full, v.Prefix.Segments...)
-	full = append(full, v.Matching.Segments...)
-	full = append(full, v.Suffix.Segments...)
+	full = append(full, v.prefix.segments...)
+	full = append(full, v.matching.segments...)
+	full = append(full, v.suffix.segments...)
 	return strings.Join(full, "/")
 }
 
@@ -83,5 +126,15 @@ type RoutingPathSpec struct {
 	//
 	// A template like `projects/*/location/*/**` maps to
 	// `["projects", "*", "locations", "*", "**"]`.
-	Segments []string
+	segments []string
+}
+
+// NewRoutingPathSpec creates a new RoutingPathSpec with the given segments.
+func NewRoutingPathSpec(segments ...string) RoutingPathSpec {
+	return RoutingPathSpec{segments: segments}
+}
+
+// Segments returns the sequence of matching segments.
+func (s RoutingPathSpec) Segments() []string {
+	return slices.Clone(s.segments)
 }

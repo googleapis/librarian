@@ -14,6 +14,8 @@
 
 package api
 
+import "maps"
+
 // PathBinding is a binding of a path to a method.
 type PathBinding struct {
 	// HTTP Verb.
@@ -24,14 +26,44 @@ type PathBinding struct {
 	// - PUT
 	// - DELETE
 	// - PATCH
-	Verb string
+	verb string
 	// The path broken by components.
-	PathTemplate *PathTemplate
+	pathTemplate *PathTemplate
 	// Query parameter fields.
-	QueryParameters map[string]bool
-	// TargetResource contains the results of the resource name identification.
+	queryParameters map[string]bool
+	// targetResource contains the results of the resource name identification.
 	// This helps identify which resource this path is likely targeting.
-	TargetResource *TargetResource
+	targetResource *TargetResource
 	// Language specific annotations.
-	Codec any
+	codec any
+}
+
+// Verb returns the HTTP verb for the path binding.
+func (b *PathBinding) Verb() string {
+	return b.verb
+}
+
+// PathTemplate returns the path template for the path binding.
+func (b *PathBinding) PathTemplate() *PathTemplate {
+	return b.pathTemplate
+}
+
+// QueryParameters returns the query parameter fields for the path binding.
+func (b *PathBinding) QueryParameters() map[string]bool {
+	return maps.Clone(b.queryParameters)
+}
+
+// TargetResource returns the target resource identified for the path binding.
+func (b *PathBinding) TargetResource() *TargetResource {
+	return b.targetResource
+}
+
+// Codec returns the language-specific annotations for the path binding.
+func (b *PathBinding) Codec() any {
+	return b.codec
+}
+
+// SetAnnotations sets the language-specific annotations for the path binding.
+func (b *PathBinding) SetAnnotations(codec any) {
+	b.codec = codec
 }

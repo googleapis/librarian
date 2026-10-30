@@ -119,42 +119,44 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 	existing := map[int32]*enumValueAnnotations{}
 	var defaultCaseName string
 	var defaultValue *api.EnumValue
-	for _, ev := range enum.UniqueNumberValues {
+	uniqueValues := enum.UniqueNumberValues()
+	for _, ev := range uniqueValues {
 		if err := c.annotateUniqueEnumValue(ev); err != nil {
 			return err
 		}
-		ann := ev.Codec.(*enumValueAnnotations)
+		ann := ev.Codec().(*enumValueAnnotations)
 		if ann == nil {
-			return fmt.Errorf("unknown annotation format for enum value: %s", ev.ID)
+			return fmt.Errorf("unknown annotation format for enum value: %s", ev.ID())
 		}
 		caseNames[ann.CaseName] = u{}
-		existing[ev.Number] = ann
-		if ev.Number == 0 {
+		existing[ev.Number()] = ann
+		if ev.Number() == 0 {
 			defaultCaseName = ann.CaseName
 			defaultValue = ev
 		}
 	}
 	// Fallback to first case if no 0 value found (should not happen in proto3)
 	if defaultCaseName == "" {
-		if len(enum.UniqueNumberValues) != 0 {
-			ann := enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations)
+		if len(uniqueValues) != 0 {
+			ann := uniqueValues[0].Codec().(*enumValueAnnotations)
 			if ann == nil {
 				panic("mismatched annotation, previously checked, must be a bug")
 			}
 			defaultCaseName = ann.CaseName
-			defaultValue = enum.UniqueNumberValues[0]
+			defaultValue = uniqueValues[0]
 		} else {
-			return fmt.Errorf("cannot determine a default value for enum: %s", enum.ID)
+			return fmt.Errorf("cannot determine a default value for enum: %s", enum.ID())
 		}
 	}
-	for _, ev := range enum.Values {
+	values := enum.Values()
+	for _, ev := range values {
 		if err := c.annotateEnumValue(ev, existing); err != nil {
 			return err
 		}
-		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
+		existing[ev.Number()] = ev.Codec().(*enumValueAnnotations)
 	}
 
-	docLines, err := c.formatDocumentation(enum.Documentation, enum.Scopes())
+	docLines, err := c.formatDocumentation(enum.Documentation(), enum.Scopes())
 	if err != nil {
 		return err
 	}
@@ -174,13 +176,13 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		ProtoTypeName:      c.protoEnumTypeName(enum),
 		UseStringEnums:     c.UseStringEnums,
 	}
-	if !enum.Deprecated {
-		annotations.DiagnoseDefault = defaultValue.Deprecated
-		annotations.DiagnoseValues = slices.ContainsFunc(enum.Values, func(ev *api.EnumValue) bool {
-			return ev.Deprecated
+	if !enum.Deprecated() {
+		annotations.DiagnoseDefault = defaultValue.Deprecated()
+		annotations.DiagnoseValues = slices.ContainsFunc(values, func(ev *api.EnumValue) bool {
+			return ev.Deprecated()
 		})
 	}
 
-	enum.Codec = annotations
+	enum.SetAnnotations(annotations)
 	return nil
 }

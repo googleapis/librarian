@@ -54,11 +54,10 @@ func parseOperationInfo(packagez string, m *descriptorpb.MethodDescriptorProto) 
 		return nil
 	}
 	protobufInfo := proto.GetExtension(m.GetOptions(), extensionId).(*longrunningpb.OperationInfo)
-	operationInfo := &api.OperationInfo{
-		MetadataTypeID: normalizeTypeID(packagez, protobufInfo.GetMetadataType()),
-		ResponseTypeID: normalizeTypeID(packagez, protobufInfo.GetResponseType()),
-	}
-	return operationInfo
+	return api.NewOperationInfoBuilder().
+		WithMetadataTypeID(normalizeTypeID(packagez, protobufInfo.GetMetadataType())).
+		WithResponseTypeID(normalizeTypeID(packagez, protobufInfo.GetResponseType())).
+		Build()
 }
 
 func parsePathInfo(m *descriptorpb.MethodDescriptorProto, model *api.API) (*api.PathInfo, error) {
@@ -73,32 +72,31 @@ func processRule(httpRule *httpRule, model *api.API, mID string) (*api.PathInfo,
 		return nil, err
 	}
 	if binding == nil {
-		return &api.PathInfo{}, nil
+		return api.NewPathInfoBuilder().Build(), nil
 	}
-	pathInfo := &api.PathInfo{
-		BodyFieldPath: body,
-		Bindings:      []*api.PathBinding{binding},
-	}
+	pathInfoBuilder := api.NewPathInfoBuilder().
+		WithBodyFieldPath(body).
+		WithBindings(binding)
 
 	for _, binding := range httpRule.GetAdditionalBindings() {
-		binding, body, err := processRuleShallow(binding, model, mID)
+		binding, additionalBody, err := processRuleShallow(binding, model, mID)
 		if err != nil {
 			return nil, err
 		}
-		if pathInfo.BodyFieldPath != "" && body != "" && body != pathInfo.BodyFieldPath {
+		if body != "" && additionalBody != "" && additionalBody != body {
 			if _, ok := suppressedAip127Warnings[mID]; !ok {
 				// Deviations from AIP-127 can result in bad generated code, but we know it is safe for some specific messages.
 				// Generate a warning if this happens when unexpecfted.
-				slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", pathInfo.BodyFieldPath, "additionalBindingBody", body)
+				slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", body, "additionalBindingBody", additionalBody)
 			}
 		}
 		if binding != nil {
-			pathInfo.Bindings = append(pathInfo.Bindings, binding)
+			pathInfoBuilder.WithBinding(binding)
 		} else {
 			slog.Warn("additional binding without a pattern", "message", mID)
 		}
 	}
-	return pathInfo, nil
+	return pathInfoBuilder.Build(), nil
 }
 
 func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.PathBinding, string, error) {
@@ -136,11 +134,11 @@ func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.Pa
 		return nil, "", err
 	}
 
-	return &api.PathBinding{
-		Verb:            verb,
-		PathTemplate:    pathTemplate,
-		QueryParameters: queryParameters,
-	}, body, nil
+	return api.NewPathBindingBuilder().
+		WithVerb(verb).
+		WithPathTemplate(pathTemplate).
+		WithQueryParameterMap(queryParameters).
+		Build(), body, nil
 }
 
 // resolveBodyFieldPath rewrites wildcard body mappings ("*") to the name of the
@@ -163,11 +161,12 @@ func resolveBodyFieldPath(msgID, body string, model *api.API) string {
 	if msg == nil {
 		return body
 	}
-	idx := slices.IndexFunc(msg.Fields, func(f *api.Field) bool {
-		return f.Typez == api.TypezMessage && f.TypezID == ".google.api.HttpBody"
+	fields := msg.Fields()
+	idx := slices.IndexFunc(fields, func(f *api.Field) bool {
+		return f.Typez() == api.TypezMessage && f.TypezID() == ".google.api.HttpBody"
 	})
 	if idx != -1 {
-		return msg.Fields[idx].Name
+		return fields[idx].Name()
 	}
 	return body
 }
@@ -183,10 +182,10 @@ func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, 
 		return params, nil
 	}
 	// Start with all the fields marked as query parameters.
-	for _, field := range msg.Fields {
-		params[field.Name] = true
+	for _, field := range msg.Fields() {
+		params[field.Name()] = true
 	}
-	for _, s := range pathTemplate.Segments {
+	for _, s := range pathTemplate.Segments() {
 		if s.Variable() != nil {
 			// TODO(#2508) - Note that nested fields are not excluded
 			delete(params, strings.Join(s.Variable().FieldPath(), "."))

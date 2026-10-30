@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestAnnotateService(t *testing.T) {
@@ -83,11 +84,11 @@ func TestAnnotateService(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn", "PublicDependsOn")); diff != "" {
+			if diff := cmp.Diff(test.wantAnnotations, s.Codec(), cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn", "PublicDependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
-			annotations := s.Codec.(*serviceAnnotations)
+			annotations := s.Codec().(*serviceAnnotations)
 			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -102,7 +103,7 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	noBindingMethod := api.NewTestMethod("NoBindingMethod").
 		WithInput(inputType).
 		WithOutput(outputType).
@@ -121,16 +122,16 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	serviceCodec, ok := service.Codec.(*serviceAnnotations)
+	serviceCodec, ok := service.Codec().(*serviceAnnotations)
 	if !ok {
-		t.Fatalf("mismatched service annotations, got=%T", service.Codec)
+		t.Fatalf("mismatched service annotations, got=%T", service.Codec())
 	}
 	if serviceCodec.HasLROs() {
 		t.Errorf("expected HasLROs() == false, annotations=%+v", serviceCodec)
 	}
 	var gotNames []string
 	for _, m := range serviceCodec.Methods {
-		gotNames = append(gotNames, m.Name)
+		gotNames = append(gotNames, m.Name())
 	}
 	wantNames := []string{"ValidMethod"}
 	if diff := cmp.Diff(wantNames, gotNames); diff != "" {
@@ -163,13 +164,12 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 			name: "generated quickstart",
 			quickstartMethod: api.NewTestMethod("Quickstart").
 				WithVerb("GET").
-				WithPathTemplate(&api.PathTemplate{}),
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 			wantQuickstart: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			service := api.NewTestService("TestService")
-			service.QuickstartMethod = test.quickstartMethod
+			service := api.NewTestService("TestService").WithQuickstartMethod(test.quickstartMethod)
 
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
 			codec := newTestCodec(t, model, nil)
@@ -177,7 +177,7 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			annotations, ok := service.Codec.(*serviceAnnotations)
+			annotations, ok := service.Codec().(*serviceAnnotations)
 			if !ok {
 				t.Fatal("service.Codec is not *serviceAnnotations")
 			}
@@ -204,11 +204,11 @@ func TestAnnotateService_Gating(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, service := range model.Services {
-		t.Run(service.Name, func(t *testing.T) {
-			ann, ok := service.Codec.(*serviceAnnotations)
+	for _, service := range model.Services() {
+		t.Run(service.Name(), func(t *testing.T) {
+			ann, ok := service.Codec().(*serviceAnnotations)
 			if !ok {
-				t.Fatalf("expected service.Codec to be *serviceAnnotations, got %T", service.Codec)
+				t.Fatalf("expected service.Codec to be *serviceAnnotations, got %T", service.Codec())
 			}
 			if !ann.IsGated {
 				t.Error("expected IsGated to be true when PerServiceTraits is true")
@@ -233,9 +233,9 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 	if targetService == nil {
 		t.Fatalf("missing target service .test.zoneOperations")
 	}
-	targetCodec, ok := targetService.Codec.(*serviceAnnotations)
+	targetCodec, ok := targetService.Codec().(*serviceAnnotations)
 	if !ok {
-		t.Fatalf("expected targetService.Codec to be *serviceAnnotations, got %T", targetService.Codec)
+		t.Fatalf("expected targetService.Codec to be *serviceAnnotations, got %T", targetService.Codec())
 	}
 
 	sourceService := model.Service(".test.zoneOperations")
@@ -243,9 +243,9 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 		t.Fatalf("missing source service .test.zoneOperations")
 	}
 	wantRequired := map[string]*api.Service{
-		sourceService.ID: sourceService,
+		sourceService.ID(): sourceService,
 	}
-	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, cmpopts.IgnoreFields(api.Method{}, "Model"), cmpopts.IgnoreFields(api.Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), apitest.IgnoreMethodFields("model"), apitest.IgnoreServiceFields("model"), cmpopts.IgnoreFields(modelAnnotations{}, "QuickstartService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -260,11 +260,8 @@ func TestAnnotateService_LRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: lroResponseType.ID,
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
+		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID(), lroMetadataType.ID()))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -294,9 +291,9 @@ func TestAnnotateService_LRO(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations, ok := service.Codec.(*serviceAnnotations)
+	annotations, ok := service.Codec().(*serviceAnnotations)
 	if !ok {
-		t.Fatalf("expected `serviceAnnotations`, got %T", service.Codec)
+		t.Fatalf("expected `serviceAnnotations`, got %T", service.Codec())
 	}
 	if !annotations.HasLROs() {
 		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
@@ -328,13 +325,14 @@ func TestAnnotateService_Pagination(t *testing.T) {
 		WithOutput(outputType).
 		WithPagination(pageToken).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("items").Build())
 
 	service := api.NewTestService("TestService").WithMethods(list)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
-		WithPackageName("test")
-	model.AddMessage(itemType)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName("test")).
+		AddMessage(itemType).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -351,7 +349,7 @@ func TestAnnotateService_Pagination(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	wantImports := []string{"GoogleCloudExternal"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -380,14 +378,15 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 		WithOutput(outputType).
 		WithPagination(pageToken).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("items").Build())
 
 	service := api.NewTestService("TestService").WithMethods(list)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
 		WithPackageName("test").
-		WithMaps(mapType)
-	model.AddMessage(itemType)
+		WithMaps(mapType)).
+		AddMessage(itemType).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -404,7 +403,7 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	wantImports := []string{"GoogleCloudExternal"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -425,17 +424,17 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 		},
 		{
 			name:        "unrealistic, but good for testing",
-			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id"}}},
+			signatures:  []*api.MethodSignature{api.NewTestMethodSignature("parent", "thing_id")},
 			wantImports: []string{},
 		},
 		{
 			name:        "with external field",
-			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "external_thing"}}},
+			signatures:  []*api.MethodSignature{api.NewTestMethodSignature("parent", "thing_id", "external_thing")},
 			wantImports: []string{"GoogleCloudExternal"},
 		},
 		{
 			name:        "with bytes field",
-			signatures:  []*api.MethodSignature{{Names: []string{"parent", "data"}}},
+			signatures:  []*api.MethodSignature{api.NewTestMethodSignature("parent", "data")},
 			wantImports: []string{},
 			wantHasData: true,
 		},
@@ -455,11 +454,12 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 				WithOutput(outputType).
 				WithSignatures(test.signatures...).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build())
 			service := api.NewTestService("TestService").WithMethods(create)
-			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
-				WithPackageName("test")
-			model.AddMessage(thing)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+				WithPackageName("test")).
+				AddMessage(thing).
+				BuildSyntaxTree()
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -473,9 +473,9 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			annotations := service.Codec.(*serviceAnnotations)
+			annotations := service.Codec().(*serviceAnnotations)
 			if annotations == nil {
-				t.Fatalf("service should have a `serviceAnnotations`, got=%+v", service.Codec)
+				t.Fatalf("service should have a `serviceAnnotations`, got=%+v", service.Codec())
 			}
 			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -492,7 +492,7 @@ func TestAnnotateService_WktImports(t *testing.T) {
 	method := api.NewTestMethod("DeleteThing").
 		WithInput(inputType).
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
 		ReturnEmpty()
 	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{inputType}, nil, []*api.Service{service}).
@@ -511,7 +511,7 @@ func TestAnnotateService_WktImports(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	wantImports := []string{"GoogleWKT"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -537,7 +537,7 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("upload").Build()).
 		WithSignatures(signature)
 
 	service := api.NewTestService("MapService").WithMethods(method)
@@ -553,7 +553,7 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	if !annotations.HasData {
 		t.Errorf("expected annotations.HasData to be true for signature with map<string, bytes>")
 	}
@@ -598,7 +598,7 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build())
 
 			var messages []*api.Message
 			messages = append(messages, inputType, outputType)
@@ -618,7 +618,7 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 
 			if test.updateMask {
 				maskField := api.NewTestField("update_mask")
-				method.WithSampleInfo(&api.SampleInfo{UpdateMaskField: maskField})
+				method.WithSampleInfo(api.NewSampleInfoBuilder().WithUpdateMaskField(maskField).Build())
 			}
 
 			codec := newTestCodec(t, model, nil)
@@ -631,7 +631,7 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			annotations := service.Codec.(*serviceAnnotations)
+			annotations := service.Codec().(*serviceAnnotations)
 			if diff := cmp.Diff(test.wantSnippetImports, annotations.SnippetImports(), cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("SnippetImports mismatch (-want +got):\n%s", diff)
 			}
@@ -650,33 +650,32 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("unary"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("unary").Build())
 
 	serverStreaming := api.NewTestMethod("ServerStreaming").
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("serverStreaming")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("serverStreaming").Build()).
 		WithServerSideStreaming()
 
 	clientStreaming := api.NewTestMethod("ClientStreaming").
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("clientStreaming")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("clientStreaming").Build()).
 		WithClientSideStreaming()
 
 	bidiStreaming := api.NewTestMethod("BidiStreaming").
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("bidiStreaming")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("bidiStreaming").Build()).
 		WithServerSideStreaming().
 		WithClientSideStreaming()
 
 	service := api.NewTestService("StreamingTestService").WithMethods(unary, serverStreaming, clientStreaming, bidiStreaming)
-	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).WithPackageName("test")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -686,14 +685,14 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations, ok := service.Codec.(*serviceAnnotations)
+	annotations, ok := service.Codec().(*serviceAnnotations)
 	if !ok {
-		t.Fatalf("expected *serviceAnnotations, got %T", service.Codec)
+		t.Fatalf("expected *serviceAnnotations, got %T", service.Codec())
 	}
 
 	var gotMethods []string
 	for _, m := range annotations.Methods {
-		gotMethods = append(gotMethods, m.Name)
+		gotMethods = append(gotMethods, m.Name())
 	}
 	wantMethods := []string{"Unary"}
 	if diff := cmp.Diff(wantMethods, gotMethods); diff != "" {
@@ -712,11 +711,12 @@ func TestAnnotateService_HTTPBodyRequestImports(t *testing.T) {
 		WithOutput(resp).
 		WithBodyFieldPath("body").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("webhook"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("webhook").Build())
 	service := api.NewTestService("TestService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).
-		WithPackageName("test")
-	model.AddMessage(httpBodyMsg)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).
+		WithPackageName("test")).
+		AddMessage(httpBodyMsg).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -732,7 +732,7 @@ func TestAnnotateService_HTTPBodyRequestImports(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	wantImports := []string{"GoogleApi"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("ServiceImports() mismatch (-want +got):\n%s", diff)

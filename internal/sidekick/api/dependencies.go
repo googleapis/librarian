@@ -72,8 +72,8 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			if field == nil {
 				continue
 			}
-			if field.Typez == TypezEnum || field.Typez == TypezMessage || field.Typez == TypezMap {
-				add(field.TypezID)
+			if field.typez == TypezEnum || field.typez == TypezMessage || field.typez == TypezMap {
+				add(field.typezID)
 			}
 		}
 	}
@@ -90,24 +90,24 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 
 		// Recurse one level, depending on the input type.
 		if service := model.Service(id); service != nil {
-			for _, method := range service.Methods {
-				add(method.ID)
+			for _, method := range service.methods {
+				add(method.id)
 			}
 			continue
 		}
 
 		if method := model.Method(id); method != nil {
-			add(method.InputTypeID)
-			add(method.OutputTypeID)
-			if method.OperationInfo != nil {
-				add(method.OperationInfo.MetadataTypeID)
-				add(method.OperationInfo.ResponseTypeID)
+			add(method.inputTypeID)
+			add(method.outputTypeID)
+			if method.operationInfo != nil {
+				add(method.operationInfo.MetadataTypeID())
+				add(method.operationInfo.ResponseTypeID())
 			}
 			continue
 		}
 
 		if message := model.Message(id); message != nil {
-			addFieldDependencies(message.Fields...)
+			addFieldDependencies(message.fields...)
 			continue
 		}
 
@@ -116,7 +116,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if m := model.Map(id); m != nil {
-			addFieldDependencies(m.Key, m.Value)
+			addFieldDependencies(m.key, m.value)
 			continue
 		}
 
@@ -134,29 +134,29 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 
 		// Recurse one level, depending on the input type.
 		if method := model.Method(id); method != nil {
-			add(method.Service.ID)
+			add(method.service.id)
 			continue
 		}
 
 		if message := model.Message(id); message != nil {
-			if message.Parent != nil {
-				add(message.Parent.ID)
+			if message.parent != nil {
+				add(message.parent.id)
 			}
 			// In the current definition of APIState, a message must
 			// includes all of its fields.
-			addFieldDependencies(message.Fields...)
+			addFieldDependencies(message.fields...)
 			continue
 		}
 
 		if enum := model.Enum(id); enum != nil {
-			if enum.Parent != nil {
-				add(enum.Parent.ID)
+			if enum.parent != nil {
+				add(enum.parent.id)
 			}
 			continue
 		}
 
 		if m := model.Map(id); m != nil {
-			addFieldDependencies(m.Key, m.Value)
+			addFieldDependencies(m.key, m.value)
 			continue
 		}
 	}

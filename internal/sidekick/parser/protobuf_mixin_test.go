@@ -56,9 +56,9 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, service := range test.Services {
-		if service.ID == ".google.cloud.location.Locations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+	for _, service := range test.Services() {
+		if service.ID() == ".google.cloud.location.Locations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	service := test.Service(".test.TestService")
@@ -73,18 +73,19 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 		WithID(".test.TestService.GetLocation").
 		WithDocumentation("Provides the [Locations][google.cloud.location.Locations] service functionality in this service.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithVariable(api.NewPathVariableBuilder("name").
 				WithLiteral("projects").
 				WithMatch().
 				WithLiteral("locations").
 				WithMatch().
-				Build())).
-		WithQueryParameters()
-	want.SourceServiceID = ".google.cloud.location.Locations"
-	want.InputTypeID = ".google.cloud.location.GetLocationRequest"
-	want.OutputTypeID = ".google.cloud.location.Location"
+				Build()).
+			Build()).
+		WithQueryParameters().
+		WithSourceServiceID(".google.cloud.location.Locations").
+		WithInputTypeID(".google.cloud.location.GetLocationRequest").
+		WithOutputTypeID(".google.cloud.location.Location")
 	apitest.CheckMethod(t, service, "GetLocation", want)
 }
 
@@ -121,9 +122,9 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, service := range test.Services {
-		if service.ID == ".google.iam.v1.IAMPolicy" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+	for _, service := range test.Services() {
+		if service.ID() == ".google.iam.v1.IAMPolicy" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 
@@ -138,18 +139,19 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 		WithID(".test.TestService.GetIamPolicy").
 		WithDocumentation("Provides the [IAMPolicy][google.iam.v1.IAMPolicy] service functionality in this service.").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithVariable(api.NewPathVariableBuilder("resource").
 				WithLiteral("services").
 				WithMatch().
 				Build()).
-			WithVerb("getIamPolicy")).
+			WithVerb("getIamPolicy").
+			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	want.SourceServiceID = ".google.iam.v1.IAMPolicy"
-	want.InputTypeID = ".google.iam.v1.GetIamPolicyRequest"
-	want.OutputTypeID = ".google.iam.v1.Policy"
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".google.iam.v1.IAMPolicy").
+		WithInputTypeID(".google.iam.v1.GetIamPolicyRequest").
+		WithOutputTypeID(".google.iam.v1.Policy")
 	apitest.CheckMethod(t, service, "GetIamPolicy", want)
 }
 
@@ -192,9 +194,9 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, service := range test.Services {
-		if service.ID == ".google.longrunning.Operations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+	for _, service := range test.Services() {
+		if service.ID() == ".google.longrunning.Operations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	service := test.Service(".test.TestService")
@@ -209,18 +211,19 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 		WithID(".test.TestService.GetOperation").
 		WithDocumentation("Custom docs.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v2").
 			WithVariable(api.NewPathVariableBuilder("name").
 				WithLiteral("operations").
 				WithMatch().
-				Build())).
+				Build()).
+			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	want.SourceServiceID = ".google.longrunning.Operations"
-	want.InputTypeID = ".google.longrunning.GetOperationRequest"
-	want.OutputTypeID = ".google.longrunning.Operation"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".google.longrunning.Operations").
+		WithInputTypeID(".google.longrunning.GetOperationRequest").
+		WithOutputTypeID(".google.longrunning.Operation").
+		WithRawSignatures(api.NewTestMethodSignature("name"))
 	apitest.CheckMethod(t, service, "GetOperation", want)
 }
 
@@ -274,9 +277,9 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, service := range test.Services {
-		if service.ID == ".google.longrunning.Operations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+	for _, service := range test.Services() {
+		if service.ID() == ".google.longrunning.Operations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	service := test.Service(".test.TestService")
@@ -291,19 +294,20 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 		WithID(".test.TestService.CancelOperation").
 		WithDocumentation("Custom docs.").
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v2").
 			WithVariable(api.NewPathVariableBuilder("name").
 				WithLiteral("operations").
 				WithMatch().
-				Build())).
+				Build()).
+			Build()).
 		WithQueryParameters().
 		WithBodyFieldPath("*").
-		ReturnEmpty()
-	want.SourceServiceID = ".google.longrunning.Operations"
-	want.InputTypeID = ".google.longrunning.CancelOperationRequest"
-	want.OutputTypeID = ".google.protobuf.Empty"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+		ReturnEmpty().
+		WithSourceServiceID(".google.longrunning.Operations").
+		WithInputTypeID(".google.longrunning.CancelOperationRequest").
+		WithOutputTypeID(".google.protobuf.Empty").
+		WithRawSignatures(api.NewTestMethodSignature("name"))
 	apitest.CheckMethod(t, service, "CancelOperation", want)
 	got := test.Message(".google.protobuf.Empty")
 	if got == nil {
@@ -352,9 +356,9 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, service := range test.Services {
-		if service.ID == ".google.longrunning.Operations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+	for _, service := range test.Services() {
+		if service.ID() == ".google.longrunning.Operations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	service := test.Service(".test.LroService")
@@ -369,15 +373,16 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 		WithID(".test.LroService.GetOperation").
 		WithDocumentation("Source file docs.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithVariable(api.NewPathVariableBuilder("name").
 				WithLiteral("operations").
 				WithMatch().
-				Build())).
-		WithQueryParameters()
-	want.SourceServiceID = ".test.LroService"
-	want.InputTypeID = ".google.longrunning.GetOperationRequest"
-	want.OutputTypeID = ".google.longrunning.Operation"
+				Build()).
+			Build()).
+		WithQueryParameters().
+		WithSourceServiceID(".test.LroService").
+		WithInputTypeID(".google.longrunning.GetOperationRequest").
+		WithOutputTypeID(".google.longrunning.Operation")
 	apitest.CheckMethod(t, service, "GetOperation", want)
 }

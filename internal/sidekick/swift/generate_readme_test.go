@@ -37,7 +37,7 @@ func TestGenerateReadme_ServiceLibrary(t *testing.T) {
 	method := api.NewTestMethod("GetSecret").
 		WithInput(inputType).
 		WithOutput(outputType).
-		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("SecretManagerService").
 		WithPackage(pkg).
 		WithMethods(method)
@@ -147,7 +147,7 @@ func TestGenerateReadme_WithTraits(t *testing.T) {
 	method := api.NewTestMethod("Get").
 		WithInput(inputType).
 		WithOutput(outputType).
-		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("Service").
 		WithPackage(pkg).
 		WithMethods(method)
@@ -263,8 +263,8 @@ func TestGenerateReadme_WithRevision(t *testing.T) {
 		WithPackage(pkg)
 	model := api.NewTestAPI([]*api.Message{message}, nil, nil).
 		WithPackageName(pkg).
-		WithTitle("Compute Engine API")
-	model.Revision = "20260101"
+		WithTitle("Compute Engine API").
+		WithRevision("20260101")
 
 	library := &config.Library{
 		Name:    "google-cloud-compute-v1",
@@ -299,11 +299,11 @@ func TestGenerateDoc_UnescapedDescription(t *testing.T) {
 	method := api.NewTestMethod("Get").
 		WithInput(inputType).
 		WithOutput(outputType).
-		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("ExampleService").
 		WithPackage(pkg).
-		WithMethods(method)
-	service.Documentation = "Manages user's & group's private clusters in the Cloud."
+		WithMethods(method).
+		WithDocumentation("Manages user's & group's private clusters in the Cloud.")
 	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
 		WithPackageName(pkg).
 		WithTitle("Example API")
@@ -356,7 +356,7 @@ func TestGenerateReadme_QuickstartServiceOverride(t *testing.T) {
 	method := api.NewTestMethod("Get").
 		WithInput(inputType).
 		WithOutput(outputType).
-		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service1 := api.NewTestService("Service1").
 		WithPackage(pkg).
 		WithMethods(method)

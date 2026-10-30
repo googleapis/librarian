@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestQueryParams(t *testing.T) {
@@ -35,8 +36,10 @@ func TestQueryParams(t *testing.T) {
 			api.NewTestField("used_in_path"),
 			api.NewTestField("used_in_body"),
 		)
-	binding := api.NewTestPathBinding("GET", nil).
-		WithQueryParameters("field1", "field2")
+	binding := api.NewPathBindingBuilder().
+		WithVerb("GET").
+		WithQueryParameters("field1", "field2").
+		Build()
 	method := api.NewTestMethod("Test").
 		WithID("..TestService.Test").
 		WithInput(request).
@@ -44,8 +47,8 @@ func TestQueryParams(t *testing.T) {
 
 	got := QueryParams(method, binding)
 	want := []*api.Field{field1, field2}
-	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
+	less := func(a, b *api.Field) bool { return a.Name() < b.Name() }
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -57,14 +60,14 @@ func TestPathParams(t *testing.T) {
 		[]*api.Service{sample.Service()},
 	)
 
-	less := func(a, b *api.Field) bool { return a.Name < b.Name }
+	less := func(a, b *api.Field) bool { return a.Name() < b.Name() }
 
 	got, err := PathParams(sample.MethodCreate(), test)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []*api.Field{sample.CreateRequest().Fields[0]}
-	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
+	want := []*api.Field{sample.CreateRequest().Fields()[0]}
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames(".parent"), cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -72,8 +75,8 @@ func TestPathParams(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want = []*api.Field{sample.UpdateRequest().Fields[0]}
-	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
+	want = []*api.Field{sample.UpdateRequest().Fields()[0]}
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames(".parent"), cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

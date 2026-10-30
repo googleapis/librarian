@@ -31,34 +31,36 @@ func TestMakeServiceMethods(t *testing.T) {
 		WithID("..zones.get").
 		WithDocumentation("Returns the specified Zone resource.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
-			WithVariableNamed("zone")).
+			WithVariableNamed("zone").
+			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("")
-	m1.InputTypeID = "..zones.getRequest"
-	m1.OutputTypeID = "..Zone"
-	m1.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone"}}}
+		WithBodyFieldPath("").
+		WithInputTypeID("..zones.getRequest").
+		WithOutputTypeID("..Zone").
+		WithRawSignatures(api.NewTestMethodSignature("project", "zone"))
 
 	m2 := api.NewTestMethod("insert").
 		WithID("..firewallPolicies.insert").
 		WithDocumentation("Creates a new policy in the specified project using the data included in the request.").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("locations").
 			WithLiteral("global").
-			WithLiteral("firewallPolicies")).
+			WithLiteral("firewallPolicies").
+			Build()).
 		WithQueryParameters("parentId", "requestId").
-		WithBodyFieldPath("body")
-	m2.InputTypeID = "..firewallPolicies.insertRequest"
-	m2.OutputTypeID = "..Operation"
-	m2.Signatures = []*api.MethodSignature{}
+		WithBodyFieldPath("body").
+		WithInputTypeID("..firewallPolicies.insertRequest").
+		WithOutputTypeID("..Operation").
+		WithRawSignatures()
 
 	for _, test := range []struct {
 		id   string
@@ -99,7 +101,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 		WithID("..zoneOperations.delete").
 		WithDocumentation("Deletes the specified zone-specific Operations resource.").
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
@@ -107,13 +109,14 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 			WithLiteral("zones").
 			WithVariableNamed("zone").
 			WithLiteral("operations").
-			WithVariableNamed("operation")).
+			WithVariableNamed("operation").
+			Build()).
 		WithQueryParameters().
 		WithBodyFieldPath("").
-		ReturnEmpty()
-	want.InputTypeID = "..zoneOperations.deleteRequest"
-	want.OutputTypeID = ".google.protobuf.Empty"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}}
+		ReturnEmpty().
+		WithInputTypeID("..zoneOperations.deleteRequest").
+		WithOutputTypeID(".google.protobuf.Empty").
+		WithRawSignatures(api.NewTestMethodSignature("project", "zone", "operation"))
 	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -134,17 +137,18 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 		WithDocumentation("Moves an instance and its attached persistent disks from one zone to another. *Note*: Moving VMs or disks by using this method might cause unexpected behavior. For more information, see the [known issue](/compute/docs/troubleshooting/known-issues#moving_vms_or_disks_using_the_moveinstance_api_or_the_causes_unexpected_behavior). [Deprecated] This method is deprecated. See [moving instance across zones](/compute/docs/instances/moving-instance-across-zones) instead.").
 		WithDeprecated(true).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
-			WithLiteral("moveInstance")).
+			WithLiteral("moveInstance").
+			Build()).
 		WithQueryParameters("requestId").
-		WithBodyFieldPath("body")
-	want.InputTypeID = "..projects.moveInstanceRequest"
-	want.OutputTypeID = "..Operation"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "body"}}}
+		WithBodyFieldPath("body").
+		WithInputTypeID("..projects.moveInstanceRequest").
+		WithOutputTypeID("..Operation").
+		WithRawSignatures(api.NewTestMethodSignature("project", "body"))
 	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -182,8 +186,8 @@ func TestMakeServiceMethodsApiversion(t *testing.T) {
 			if got == nil {
 				t.Fatalf("expected method %s in the API model", test.id)
 			}
-			if got.APIVersion != test.wantVersion {
-				t.Errorf("method.APIVersion = %q, want = %q", got.APIVersion, test.wantVersion)
+			if got.APIVersion() != test.wantVersion {
+				t.Errorf("method.APIVersion() = %q, want = %q", got.APIVersion(), test.wantVersion)
 			}
 		})
 	}
@@ -207,13 +211,13 @@ func TestMethodEmptyBody(t *testing.T) {
 				WithType(api.TypezString).
 				WithTypezID("string"),
 		)
-	for _, f := range want.Fields {
-		f.Parent = nil
+	for _, f := range want.Fields() {
+		f.WithParent(nil)
 	}
-	want.SyntheticRequest = true
-	got := model.Message(want.ID)
+	want.WithSyntheticRequest()
+	got := model.Message(want.ID())
 	if got == nil {
-		t.Fatalf("expected message %s in the API model", want.ID)
+		t.Fatalf("expected message %s in the API model", want.ID())
 	}
 	apitest.CheckMessage(t, got, want)
 
@@ -221,7 +225,7 @@ func TestMethodEmptyBody(t *testing.T) {
 	if wantParent == nil {
 		t.Fatalf("expected message %s in the API model", "..zones")
 	}
-	if wantParent != got.Parent {
+	if wantParent != got.Parent() {
 		t.Errorf("mismatched parent for synthetic request message")
 	}
 }
@@ -266,13 +270,13 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				WithTypezID("bool").
 				WithOptional(),
 		)
-	for _, f := range want.Fields {
-		f.Parent = nil
+	for _, f := range want.Fields() {
+		f.WithParent(nil)
 	}
-	want.SyntheticRequest = true
-	gotListRequest := model.Message(want.ID)
+	want.WithSyntheticRequest()
+	gotListRequest := model.Message(want.ID())
 	if gotListRequest == nil {
-		t.Fatalf("expected message %s in the API model", want.ID)
+		t.Fatalf("expected message %s in the API model", want.ID())
 	}
 	apitest.CheckMessage(t, gotListRequest, want)
 }
@@ -305,13 +309,13 @@ func TestMethodWithBody(t *testing.T) {
 				WithTypezID("string").
 				WithOptional(),
 		)
-	for _, f := range wantInsertRequest.Fields {
-		f.Parent = nil
+	for _, f := range wantInsertRequest.Fields() {
+		f.WithParent(nil)
 	}
-	wantInsertRequest.SyntheticRequest = true
-	gotGetRequest := model.Message(wantInsertRequest.ID)
+	wantInsertRequest.WithSyntheticRequest()
+	gotGetRequest := model.Message(wantInsertRequest.ID())
 	if gotGetRequest == nil {
-		t.Fatalf("expected message %s in the API model", wantInsertRequest.ID)
+		t.Fatalf("expected message %s in the API model", wantInsertRequest.ID())
 	}
 	apitest.CheckMessage(t, gotGetRequest, wantInsertRequest)
 }
@@ -321,6 +325,7 @@ func TestMakeServiceMethodsError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 	doc := document{}
 	input := &resource{
 		Name: "testResource",
@@ -331,9 +336,11 @@ func TestMakeServiceMethodsError(t *testing.T) {
 			},
 		},
 	}
-	service := api.NewTestService("Service").
-		WithPackage("test")
-	if err := makeServiceMethods(model, service, &doc, input); err == nil {
+	service := api.NewServiceBuilder().
+		WithName("Service").
+		WithPackage("test").
+		WithID(".test.Service")
+	if err := makeServiceMethods(ab, service, &doc, input); err == nil {
 		t.Errorf("expected error on method with media upload, service=%v", service)
 	}
 }
@@ -343,6 +350,7 @@ func TestMakeMethodError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 
 	for _, test := range []struct {
 		Name  string
@@ -363,9 +371,8 @@ func TestMakeMethodError(t *testing.T) {
 			}}},
 	} {
 		doc := document{}
-		parent := api.NewTestMessage("Service").
-			WithPackage("test")
-		if got, err := makeMethod(model, parent, &doc, &test.Input); err == nil {
+		parent := api.NewMessageBuilderFrom(api.NewTestMessage("Service").WithPackage("test"))
+		if got, err := makeMethod(ab, parent, &doc, &test.Input); err == nil {
 			t.Errorf("expected error on method[%s], got=%v", test.Name, got)
 		}
 	}

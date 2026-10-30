@@ -420,20 +420,20 @@ func TestFindDependenciesMapFields(t *testing.T) {
 		WithMaps(msgMap, enumMap)
 	less := func(a, b string) bool { return a < b }
 
-	got, err := FindDependencies(model, []string{container.ID})
+	got, err := FindDependencies(model, []string{container.ID()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{container.ID, msgMap.ID, enumMap.ID, valMsg.ID, valEnum.ID}
+	want := []string{container.ID(), msgMap.ID(), enumMap.ID(), valMsg.ID(), valEnum.ID()}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	gotFromMap, err := FindDependencies(model, []string{msgMap.ID})
+	gotFromMap, err := FindDependencies(model, []string{msgMap.ID()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantFromMap := []string{msgMap.ID, valMsg.ID}
+	wantFromMap := []string{msgMap.ID(), valMsg.ID()}
 	if diff := cmp.Diff(wantFromMap, flatten(gotFromMap), cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

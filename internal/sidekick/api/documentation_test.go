@@ -76,7 +76,7 @@ func TestPatchCommentsMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(m0.Documentation, Want); diff != "" {
+	if diff := cmp.Diff(m0.Documentation(), Want); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -158,7 +158,7 @@ func TestPatchCommentsField(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(f0.Documentation, Want); diff != "" {
+	if diff := cmp.Diff(f0.Documentation(), Want); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -177,7 +177,7 @@ func TestPatchCommentsEnum(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(e0.Documentation, Want); diff != "" {
+	if diff := cmp.Diff(e0.Documentation(), Want); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -197,7 +197,7 @@ func TestPatchCommentsEnumValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(v0.Documentation, Want); diff != "" {
+	if diff := cmp.Diff(v0.Documentation(), Want); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -216,7 +216,7 @@ func TestPatchCommentsService(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(s0.Documentation, Want); diff != "" {
+	if diff := cmp.Diff(s0.Documentation(), Want); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -236,7 +236,7 @@ func TestPatchCommentsMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(m0.Documentation, Want); diff != "" {
+	if diff := cmp.Diff(m0.Documentation(), Want); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

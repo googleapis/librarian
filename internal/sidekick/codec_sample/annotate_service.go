@@ -22,10 +22,10 @@ type serviceAnnotations struct {
 
 func (c *codec) annotateService(s *api.Service) error {
 	sAnn := &serviceAnnotations{
-		Name: s.Name + "Sample",
+		Name: s.Name() + "Sample",
 	}
-	s.Codec = sAnn
-	for _, m := range s.Methods {
+	s.SetAnnotations(sAnn)
+	for _, m := range s.Methods() {
 		if err := c.annotateMethod(m, sAnn); err != nil {
 			return err
 		}

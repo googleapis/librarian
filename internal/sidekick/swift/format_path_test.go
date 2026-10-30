@@ -29,31 +29,35 @@ func TestPathExpression(t *testing.T) {
 	}{
 		{
 			name: "literals only",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithLiteral("operations"),
+				WithLiteral("operations").
+				Build(),
 			want: "/v1/operations",
 		},
 		{
 			name: "with variable",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name"),
+				WithVariableNamed("name").
+				Build(),
 			want: "/v1/\\(pathVariable0)",
 		},
 		{
 			name: "with multiple variables",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name").WithLiteral("separator").WithVariableNamed("second"),
+				WithVariableNamed("name").WithLiteral("separator").WithVariableNamed("second").
+				Build(),
 			want: "/v1/\\(pathVariable0)/separator/\\(pathVariable1)",
 		},
 		{
 			name: "with verb",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("operations").
-				WithVerb("cancel"),
+				WithVerb("cancel").
+				Build(),
 			want: "/v1/operations:cancel",
 		},
 	} {
@@ -87,14 +91,15 @@ func TestPathVariables(t *testing.T) {
 	}{
 		{
 			name:     "no variables",
-			template: (&api.PathTemplate{}).WithLiteral("v1"),
+			template: api.NewPathTemplateBuilder().WithLiteral("v1").Build(),
 			want:     nil,
 		},
 		{
 			name: "one variable",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name"),
+				WithVariableNamed("name").
+				Build(),
 			want: []*pathVariable{
 				{
 					Name:             "pathVariable0",
@@ -109,11 +114,12 @@ func TestPathVariables(t *testing.T) {
 		},
 		{
 			name: "two variables",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariableNamed("name").
 				WithLiteral("sep").
-				WithVariableNamed("second"),
+				WithVariableNamed("second").
+				Build(),
 			want: []*pathVariable{
 				{
 					Name:             "pathVariable0",
@@ -137,9 +143,10 @@ func TestPathVariables(t *testing.T) {
 		},
 		{
 			name: "error - lookup field missing",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("missing"),
+				WithVariableNamed("missing").
+				Build(),
 			wantErr: true,
 		},
 	} {
@@ -320,14 +327,14 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "explicit routing info with custom name",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "bucket",
-					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"name"},
-						},
-					},
-				},
+				api.NewRoutingInfoBuilder().
+					WithName("bucket").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("name").
+							Build(),
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -344,14 +351,14 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "explicit routing info without custom name",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "",
-					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"parent"},
-						},
-					},
-				},
+				api.NewRoutingInfoBuilder().
+					WithName("").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("parent").
+							Build(),
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -368,20 +375,16 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "routing info with pattern and suffix",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "bucket",
-					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"name"},
-							Matching: api.RoutingPathSpec{
-								Segments: []string{"projects", "*", "buckets", "*"},
-							},
-							Suffix: api.RoutingPathSpec{
-								Segments: []string{"**"},
-							},
-						},
-					},
-				},
+				api.NewRoutingInfoBuilder().
+					WithName("bucket").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("name").
+							WithMatchingSegments("projects", "*", "buckets", "*").
+							WithSuffixSegments("**").
+							Build(),
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -400,23 +403,19 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "routing info with multiple fallback variants across different fields",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "routing_id",
-					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"name"},
-							Matching: api.RoutingPathSpec{
-								Segments: []string{"projects", "*"},
-							},
-						},
-						{
-							FieldPath: []string{"parent"},
-							Matching: api.RoutingPathSpec{
-								Segments: []string{"**"},
-							},
-						},
-					},
-				},
+				api.NewRoutingInfoBuilder().
+					WithName("routing_id").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("name").
+							WithMatchingSegments("projects", "*").
+							Build(),
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("parent").
+							WithMatchingSegments("**").
+							Build(),
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -439,23 +438,17 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "routing info with literal prefix and nested field path",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "table",
-					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"table", "parent"},
-							Prefix: api.RoutingPathSpec{
-								Segments: []string{"projects"},
-							},
-							Matching: api.RoutingPathSpec{
-								Segments: []string{"*"},
-							},
-							Suffix: api.RoutingPathSpec{
-								Segments: []string{"tables", "*"},
-							},
-						},
-					},
-				},
+				api.NewRoutingInfoBuilder().
+					WithName("table").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table", "parent").
+							WithPrefixSegments("projects").
+							WithMatchingSegments("*").
+							WithSuffixSegments("tables", "*").
+							Build(),
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -475,20 +468,16 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "routing info with wildcard prefix",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "location",
-					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{"name"},
-							Prefix: api.RoutingPathSpec{
-								Segments: []string{"projects", "*"},
-							},
-							Matching: api.RoutingPathSpec{
-								Segments: []string{"locations", "*"},
-							},
-						},
-					},
-				},
+				api.NewRoutingInfoBuilder().
+					WithName("location").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("name").
+							WithPrefixSegments("projects", "*").
+							WithMatchingSegments("locations", "*").
+							Build(),
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -507,14 +496,14 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "empty routing annotation disables routing",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "",
-					Variants: []*api.RoutingInfoVariant{
-						{
-							FieldPath: []string{},
-						},
-					},
-				},
+				api.NewRoutingInfoBuilder().
+					WithName("").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath([]string{}...).
+							Build(),
+					).
+					Build(),
 			},
 			want: nil,
 		},
@@ -540,9 +529,10 @@ func TestRoutingParamsFromPathTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	template := (&api.PathTemplate{}).
+	template := api.NewPathTemplateBuilder().
 		WithLiteral("v2").
-		WithVariableNamed("name")
+		WithVariableNamed("name").
+		Build()
 
 	got := codec.routingParamsFromPathTemplate(template)
 

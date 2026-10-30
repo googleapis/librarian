@@ -48,7 +48,7 @@ func TestAnnotateModel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 
 	if diff := cmp.Diff("google_cloud_test", codec.PackageName); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -72,7 +72,7 @@ func TestAnnotateModel_HasDocLines(t *testing.T) {
 	if err := annotate1.annotateModel(options); err != nil {
 		t.Fatal(err)
 	}
-	codec1 := modelWithDesc.Codec.(*modelAnnotations)
+	codec1 := modelWithDesc.Codec().(*modelAnnotations)
 	if !codec1.HasDocLines() {
 		t.Errorf("Expected HasDocLines() to be true when description is provided")
 	}
@@ -81,7 +81,7 @@ func TestAnnotateModel_HasDocLines(t *testing.T) {
 	if err := annotate2.annotateModel(options); err != nil {
 		t.Fatal(err)
 	}
-	codec2 := modelWithoutDesc.Codec.(*modelAnnotations)
+	codec2 := modelWithoutDesc.Codec().(*modelAnnotations)
 	if codec2.HasDocLines() {
 		t.Errorf("Expected HasDocLines() to be false when description is empty")
 	}
@@ -100,7 +100,7 @@ func TestAnnotateModel_FakeList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 
 	want := "FakeAccessApprovalService, FakeSecretManagerService"
 	if diff := cmp.Diff(want, codec.FakeList); diff != "" {
@@ -118,7 +118,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"library-path-override": "src/buffers.dart"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("src/buffers.dart", codec.MainFileNameWithExtension); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -127,7 +127,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"package-name-override": "google-cloud-type"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("google-cloud-type", codec.PackageName); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -136,7 +136,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"dev-dependencies": "test,mockito"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff([]string{"mockito", "test"}, codec.DevDependencies); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -148,7 +148,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 				"package:google_cloud_bar": "^1.2.3",
 				"package:google_cloud_foo": "^4.5.6"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if !slices.Contains(codec.PackageDependencies, packageDependency{Name: "google_cloud_foo", Constraint: "^4.5.6"}) {
 					t.Errorf("missing 'google_cloud_foo' in Codec.PackageDependencies, got %v", codec.PackageDependencies)
 				}
@@ -160,7 +160,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"extra-exports": "export 'package:google_cloud_gax/gax.dart' show Any; export 'package:google_cloud_gax/gax.dart' show Status;"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff([]string{
 					"export 'package:google_cloud_gax/gax.dart' show Any",
 					"export 'package:google_cloud_gax/gax.dart' show Status"}, codec.Exports); diff != "" {
@@ -171,7 +171,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"extra-imports": "dart:math; package:my_package/my_file.dart", "package:my_package": "^1.0.0"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if !slices.Contains(codec.Imports, "import 'dart:math';") {
 					t.Errorf("missing 'dart:math' in Codec.Imports, got %v", codec.Imports)
 				}
@@ -183,7 +183,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"version": "1.2.3"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("1.2.3", codec.PackageVersion); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -192,7 +192,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"part-file": "src/test.p.dart"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("src/test.p.dart", codec.PartFileReference); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -201,7 +201,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"readme-after-title-text": "> [!TIP] Still beta!"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("> [!TIP] Still beta!", codec.ReadMeAfterTitleText); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -210,7 +210,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"readme-quickstart-text": "## Getting Started\n..."},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("## Getting Started\n...", codec.ReadMeQuickstartText); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -219,7 +219,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"repository-url": "http://example.com/repo"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("http://example.com/repo", codec.RepositoryURL); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -228,7 +228,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"issue-tracker-url": "http://example.com/issues"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("http://example.com/issues", codec.IssueTrackerURL); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -313,20 +313,19 @@ func TestAnnotateModel_HasMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec1 := serviceWithMethods.Codec.(*serviceAnnotations)
+	codec1 := serviceWithMethods.Codec().(*serviceAnnotations)
 	if !codec1.HasMethods {
 		t.Errorf("Expected HasMethods to be true for ServiceWithMethods")
 	}
 
-	codec2 := serviceWithoutMethods.Codec.(*serviceAnnotations)
+	codec2 := serviceWithoutMethods.Codec().(*serviceAnnotations)
 	if codec2.HasMethods {
 		t.Errorf("Expected HasMethods to be false for ServiceWithoutMethods")
 	}
 }
 
 func TestAnnotateModel_Examples_ValidMethod(t *testing.T) {
-	method := sample.MethodListSecretVersions()
-	method.IsSimple = true
+	method := sample.MethodListSecretVersions().WithIsSimple(true)
 	serviceWithMethods := api.NewTestService("ServiceWithMethods").
 		WithPackage(sample.Package).
 		WithMethods(method)
@@ -344,7 +343,7 @@ func TestAnnotateModel_Examples_ValidMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 
 	if diff := cmp.Diff("ServiceWithMethods", codec.ExampleServiceName); diff != "" {
 		t.Errorf("mismatch ExampleServiceName (-want +got):\n%s", diff)
@@ -378,7 +377,7 @@ func TestAnnotateModel_Examples_NoMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 
 	if diff := cmp.Diff("", codec.ExampleServiceName); diff != "" {
 		t.Errorf("mismatch ExampleServiceName (-want +got):\n%s", diff)
@@ -419,7 +418,7 @@ func TestAnnotateMethod(t *testing.T) {
 	}
 
 	annotate.annotateMethod(method)
-	codec := method.Codec.(*methodAnnotation)
+	codec := method.Codec().(*methodAnnotation)
 
 	got := codec.Name
 	want := "listSecretVersions"
@@ -469,12 +468,12 @@ func TestAnnotateMethod_IsLast(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec1 := notLastMethod.Codec.(*methodAnnotation)
+	codec1 := notLastMethod.Codec().(*methodAnnotation)
 	if codec1.IsLast {
 		t.Errorf("Expected IsLast to be false for method1")
 	}
 
-	codec2 := lastMethod.Codec.(*methodAnnotation)
+	codec2 := lastMethod.Codec().(*methodAnnotation)
 	if !codec2.IsLast {
 		t.Errorf("Expected IsLast to be true for method2")
 	}
@@ -726,10 +725,10 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 		{message: sample.Automatic(), want: 0},
 		{message: withMapMsg, want: 1},
 	} {
-		t.Run(test.message.Name, func(t *testing.T) {
+		t.Run(test.message.Name(), func(t *testing.T) {
 			annotate.annotateMessage(test.message)
 
-			codec := test.message.Codec.(*messageAnnotation)
+			codec := test.message.Codec().(*messageAnnotation)
 			got := codec.ToStringLines
 
 			if len(got) != test.want {
@@ -753,7 +752,7 @@ func TestAnnotateMessage_ToString_MapField(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := msg.Codec.(*messageAnnotation)
+	codec := msg.Codec().(*messageAnnotation)
 	want := []string{
 		"'name=$name',",
 		"if (description != null) 'description=$description',",
@@ -780,7 +779,7 @@ func TestAnnotateMessage_HasFields(t *testing.T) {
 	t.Run("has fields", func(t *testing.T) {
 		secret := sample.Secret()
 		annotate.annotateMessage(secret)
-		codec := secret.Codec.(*messageAnnotation)
+		codec := secret.Codec().(*messageAnnotation)
 		if !codec.HasFields() {
 			t.Errorf("mismatch got = %v, want true", codec.HasFields())
 		}
@@ -788,7 +787,7 @@ func TestAnnotateMessage_HasFields(t *testing.T) {
 
 	t.Run("no fields", func(t *testing.T) {
 		annotate.annotateMessage(emptyMessage)
-		codec := emptyMessage.Codec.(*messageAnnotation)
+		codec := emptyMessage.Codec().(*messageAnnotation)
 		if codec.HasFields() {
 			t.Errorf("mismatch got = %v, want false", codec.HasFields())
 		}
@@ -809,7 +808,7 @@ func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 	annotate := newAnnotateModel(model)
 	annotate.annotateMessage(message)
 
-	codec := message.Codec.(*messageAnnotation)
+	codec := message.Codec().(*messageAnnotation)
 	if !codec.OmitGeneration {
 		t.Errorf("Expected OmitGeneration to be true for .google.longrunning.Operation")
 	}
@@ -845,7 +844,7 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 	})
 	annotate.annotateMessage(message)
 
-	codec := message.Codec.(*messageAnnotation)
+	codec := message.Codec().(*messageAnnotation)
 	if codec.OmitGeneration {
 		t.Errorf("HasMap.OmitGeneration = true, want false")
 	}
@@ -950,7 +949,7 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 		// one ofs
 		{
 			name:  "oneof bool",
-			field: api.NewTestOneOf("oneof").WithFields(api.NewTestField("bool").WithType(api.TypezBool)).Fields[0],
+			field: api.NewTestOneOf("oneof").WithFields(api.NewTestField("bool").WithType(api.TypezBool)).Fields()[0],
 			want:  []string{"if (result.bool$ case final $1?) 'bool': '${$1}'"},
 		},
 
@@ -1279,7 +1278,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 		// one ofs
 		{
 			name:  "oneof bool",
-			field: api.NewTestOneOf("oneof").WithFields(api.NewTestField("bool").WithType(api.TypezBool)).Fields[0],
+			field: api.NewTestOneOf("oneof").WithFields(api.NewTestField("bool").WithType(api.TypezBool)).Fields()[0],
 			want:  "switch (json['bool']) { null => null, Object $1 => decodeBool($1)}",
 		},
 
@@ -1711,7 +1710,7 @@ func TestAnnotateEnum(t *testing.T) {
 	} {
 		t.Run(test.wantEnumName, func(t *testing.T) {
 			annotate.annotateEnum(test.enum)
-			codec := test.enum.Codec.(*enumAnnotation)
+			codec := test.enum.Codec().(*enumAnnotation)
 			gotEnumName := codec.Name
 			gotEnumDefaultValue := codec.DefaultValue
 
@@ -1722,11 +1721,11 @@ func TestAnnotateEnum(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
-			for i, value := range test.enum.Values {
-				testName := fmt.Sprintf("TestAnnotateEnum(%q) [value annotation %d]", test.enum.Name, i)
+			for i, value := range test.enum.Values() {
+				testName := fmt.Sprintf("TestAnnotateEnum(%q) [value annotation %d]", test.enum.Name(), i)
 				t.Run(testName, func(t *testing.T) {
 					wantValueAnnotation := test.wantValueAnnotations[i]
-					gotValueAnnotation := value.Codec.(*enumValueAnnotation)
+					gotValueAnnotation := value.Codec().(*enumValueAnnotation)
 					if diff := cmp.Diff(wantValueAnnotation.wantValueName, gotValueAnnotation.Name); diff != "" {
 						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
@@ -1937,10 +1936,10 @@ func TestAnnotateField(t *testing.T) {
 
 			model := api.NewTestAPI([]*api.Message{message, empty}, []*api.Enum{enumState}, nil).WithMaps(mapEntry)
 			annotate := newAnnotateModel(model)
-			registerMissingWkt(annotate.model)
+			annotate.registerMissingWkt()
 
 			annotate.annotateField(field)
-			got := field.Codec.(*fieldAnnotation)
+			got := field.Codec().(*fieldAnnotation)
 			// `FromJson` and `ToJson` have their own tests.
 			// Clear them rather than using `IgnoreFields` so that they do not appear in the diff.
 			got.FromJson = ""
@@ -1968,35 +1967,34 @@ func TestFindExampleMethod(t *testing.T) {
 		WithPackage("otherpackage").
 		WithFields(api.NewTestField("optional"))
 
-	lroMethod := api.NewTestMethod("LroMethod").WithOperationInfo(&api.OperationInfo{})
+	lroMethod := api.NewTestMethod("LroMethod").WithOperationInfo(api.NewOperationInfoBuilder().Build())
 
-	streamingMethod := api.NewTestMethod("StreamingMethod")
-	streamingMethod.IsSimple = false
+	streamingMethod := api.NewTestMethod("StreamingMethod").WithIsSimple(false)
 
 	voidMethod := api.NewTestMethod("VoidMethod").
 		WithInput(msgWithoutRequired).
-		ReturnEmpty()
-	voidMethod.IsSimple = true
+		ReturnEmpty().
+		WithIsSimple(true)
 
 	requiredInputMethod := api.NewTestMethod("RequiredInputMethod").
 		WithInput(msgWithRequired).
-		WithOutput(msgWithoutRequired)
-	requiredInputMethod.IsSimple = true
+		WithOutput(msgWithoutRequired).
+		WithIsSimple(true)
 
 	requiredOutputMethod := api.NewTestMethod("RequiredOutputMethod").
 		WithInput(msgWithoutRequired).
-		WithOutput(msgWithRequired)
-	requiredOutputMethod.IsSimple = true
+		WithOutput(msgWithRequired).
+		WithIsSimple(true)
 
 	differentPackageMethod := api.NewTestMethod("DifferentPackageMethod").
 		WithInput(differentPackageMsg).
-		WithOutput(differentPackageMsg)
-	differentPackageMethod.IsSimple = true
+		WithOutput(differentPackageMsg).
+		WithIsSimple(true)
 
 	perfectMethod := api.NewTestMethod("PerfectMethod").
 		WithInput(msgWithoutRequired).
-		WithOutput(msgWithoutRequired)
-	perfectMethod.IsSimple = true
+		WithOutput(msgWithoutRequired).
+		WithIsSimple(true)
 
 	for _, test := range []struct {
 		name    string
@@ -2046,18 +2044,18 @@ func TestFindExampleMethod(t *testing.T) {
 				methods[i], methods[j] = methods[j], methods[i]
 			})
 			s := api.NewTestService("Service").WithPackage("mypackage")
-			s.Codec = &serviceAnnotations{
+			s.SetAnnotations(&serviceAnnotations{
 				Methods: methods,
-			}
+			})
 			_, got := findExampleMethod([]*api.Service{s})
 			if got != test.want {
 				gotName := "nil"
 				if got != nil {
-					gotName = got.Name
+					gotName = got.Name()
 				}
 				wantName := "nil"
 				if test.want != nil {
-					wantName = test.want.Name
+					wantName = test.want.Name()
 				}
 				t.Errorf("findExampleMethod() = %v, want %v", gotName, wantName)
 			}
@@ -2079,8 +2077,8 @@ func makeCreateFromJsonTestContext(t *testing.T, field *api.Field) (*annotateMod
 		WithID("..UpdateRequest").
 		WithFields(field)
 	messages := []*api.Message{message}
-	if field.MessageType != nil {
-		messages = append(messages, field.MessageType)
+	if field.MessageType() != nil {
+		messages = append(messages, field.MessageType())
 	}
 	model := api.NewTestAPI(messages, enums, nil)
 	annotate := newAnnotateModel(model)
@@ -2089,7 +2087,7 @@ func makeCreateFromJsonTestContext(t *testing.T, field *api.Field) (*annotateMod
 	if err := annotate.annotateModel(options); err != nil {
 		t.Fatal(err)
 	}
-	return annotate, field.Codec.(*fieldAnnotation)
+	return annotate, field.Codec().(*fieldAnnotation)
 }
 
 func annotateToJsonField(t *testing.T, field *api.Field) *fieldAnnotation {
@@ -2099,8 +2097,8 @@ func annotateToJsonField(t *testing.T, field *api.Field) *fieldAnnotation {
 		WithID("..UpdateRequest").
 		WithFields(field)
 	messages := []*api.Message{message}
-	if field.MessageType != nil {
-		messages = append(messages, field.MessageType)
+	if field.MessageType() != nil {
+		messages = append(messages, field.MessageType())
 	}
 	enums := []*api.Enum{sample.EnumState()}
 	model := api.NewTestAPI(messages, enums, nil)
@@ -2108,5 +2106,5 @@ func annotateToJsonField(t *testing.T, field *api.Field) *fieldAnnotation {
 	if err := annotate.annotateModel(requiredConfig); err != nil {
 		t.Fatal(err)
 	}
-	return field.Codec.(*fieldAnnotation)
+	return field.Codec().(*fieldAnnotation)
 }

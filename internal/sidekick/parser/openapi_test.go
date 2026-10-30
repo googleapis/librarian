@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -67,9 +66,8 @@ func TestOpenAPI_AllOf(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	want := sample.Automatic()
-	want.Package = ""
-	message := test.Message(want.ID)
+	want := api.NewMessageBuilderFrom(sample.Automatic()).WithPackage("").Build()
+	message := test.Message(want.ID())
 	if message == nil {
 		t.Errorf("missing message in MessageByID index")
 		return
@@ -232,7 +230,7 @@ func TestOpenAPI_SimpleObject(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], newTestOpenAPIFakeMessage(
+	apitest.CheckMessage(t, test.Messages()[0], newTestOpenAPIFakeMessage(
 		api.NewTestField("fObject").
 			WithDocumentation("An object field.").
 			WithType(api.TypezMessage).
@@ -267,7 +265,7 @@ func TestOpenAPI_Any(t *testing.T) {
 		t.Errorf("Error in makeAPI() %q", err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], newTestOpenAPIFakeMessage(
+	apitest.CheckMessage(t, test.Messages()[0], newTestOpenAPIFakeMessage(
 		api.NewTestField("fMap").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any").WithOptional(),
 	))
 }
@@ -304,7 +302,7 @@ func TestOpenAPI_MapString(t *testing.T) {
 			api.NewTestField("fMapS32").WithType(api.TypezMap).WithTypezID("$map<string, int32>").WithMap(),
 			api.NewTestField("fMapS64").WithType(api.TypezMap).WithTypezID("$map<string, int64>").WithMap(),
 		)
-	apitest.CheckMessage(t, test.Messages[0], wantMap)
+	apitest.CheckMessage(t, test.Messages()[0], wantMap)
 }
 
 func TestOpenAPI_MapInteger(t *testing.T) {
@@ -337,7 +335,7 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 			api.NewTestField("fMapI32").WithType(api.TypezMap).WithTypezID("$map<string, int32>").WithMap(),
 			api.NewTestField("fMapI64").WithType(api.TypezMap).WithTypezID("$map<string, int64>").WithMap(),
 		)
-	apitest.CheckMessage(t, test.Messages[0], wantMapInteger)
+	apitest.CheckMessage(t, test.Messages()[0], wantMapInteger)
 }
 
 func openapiSecretManagerAPI(t *testing.T) *api.API {
@@ -452,18 +450,18 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				WithTypezID("int32").
 				WithOptional(),
 			pageToken,
-		)
-	want.SyntheticRequest = true
-	listLocationsRequest := test.Message(want.ID)
+		).
+		WithSyntheticRequest()
+	listLocationsRequest := test.Message(want.ID())
 	if listLocationsRequest == nil {
-		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID())
 		return
 	}
 	apitest.CheckMessage(t, listLocationsRequest, want)
 
 	// This message has a weirdly named field that gets tricky to serialize.
 	sp := sample.SecretPayload()
-	got := test.Message(sp.ID)
+	got := test.Message(sp.ID())
 	if got == nil {
 		t.Errorf("missing message (SecretPayload) in MessageByID index")
 		return
@@ -476,11 +474,11 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		return
 	}
 
-	wantService := sample.Service()
-	wantService.Package = ""
-	wantService.Name = "Service"
-	wantService.ID = "..Service"
-	if diff := cmp.Diff(wantService, service, cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
+	wantService := sample.Service().
+		WithPackage("").
+		WithName("Service").
+		WithID("..Service")
+	if diff := cmp.Diff(wantService, service, apitest.AllowUnexported(), apitest.IgnoreServiceFields("methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -488,23 +486,24 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		WithID("..Service.ListLocations").
 		WithDocumentation("Lists information about the supported locations for this service.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
-			WithLiteral("locations")).
+			WithLiteral("locations").
+			Build()).
 		WithQueryParameters("filter", "pageSize", "pageToken").
-		WithPagination(pageToken)
-	wantListLocationsMethod.IsList = false
-	wantListLocationsMethod.InputTypeID = "..Service.ListLocationsRequest"
-	wantListLocationsMethod.OutputTypeID = "..ListLocationsResponse"
+		WithPagination(pageToken).
+		WithIsList(false).
+		WithInputTypeID("..Service.ListLocationsRequest").
+		WithOutputTypeID("..ListLocationsResponse")
 	apitest.CheckMethod(t, service, "ListLocations", wantListLocationsMethod)
 
 	cs := sample.MethodCreate()
-	apitest.CheckMethod(t, service, cs.Name, cs)
+	apitest.CheckMethod(t, service, cs.Name(), cs)
 
 	asv := sample.MethodAddSecretVersion()
-	apitest.CheckMethod(t, service, asv.Name, asv)
+	apitest.CheckMethod(t, service, asv.Name(), asv)
 }
 
 func TestOpenAPI_ServicePlaceholder(t *testing.T) {
@@ -512,8 +511,8 @@ func TestOpenAPI_ServicePlaceholder(t *testing.T) {
 	want := api.NewTestMessage("Service").
 		WithPackage("").
 		WithID("..Service").
-		WithDocumentation("Synthetic messages for the [Service][.Service] service.")
-	want.ServicePlaceholder = true
+		WithDocumentation("Synthetic messages for the [Service][.Service] service.").
+		WithServicePlaceholder()
 	got := test.Message("..Service")
 	if got == nil {
 		t.Errorf("missing service placeholder message in MessageById index")
@@ -536,7 +535,7 @@ func TestOpenAPI_MakeApiWithServiceConfig(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 	want := sample.API()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreAPIFields("services", "messages", "enums", "serviceByID", "methodByID", "messageByID", "enumByID", "resourceByType", "mapByID")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -553,13 +552,12 @@ func TestOpenAPI_MakeApiServiceConfigOverridesDescription(t *testing.T) {
 	}
 	serviceConfig := sample.ServiceConfig()
 	serviceConfig.Documentation.Summary = "Test Only - Override Description."
-	want := sample.API()
-	want.Description = serviceConfig.Documentation.Summary
+	want := sample.API().WithDescription(serviceConfig.Documentation.Summary)
 	got, err := makeAPIForOpenAPI(serviceConfig, model)
 	if err != nil {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreAPIFields("services", "messages", "enums", "serviceByID", "methodByID", "messageByID", "enumByID", "resourceByType", "mapByID")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -582,11 +580,11 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 	want := api.NewTestMessage("Service").
 		WithPackage("").
 		WithID("..Service").
-		WithDocumentation("Synthetic messages for the [Service][.Service] service.")
-	want.ServicePlaceholder = true
-	got := test.Message(want.ID)
+		WithDocumentation("Synthetic messages for the [Service][.Service] service.").
+		WithServicePlaceholder()
+	got := test.Message(want.ID())
 	if got == nil {
-		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID())
 		return
 	}
 	apitest.CheckMessage(t, got, want)
@@ -617,11 +615,11 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID("..SetIamPolicyRequest").
 				WithOptional(),
-		)
-	want.SyntheticRequest = true
-	got = test.Message(want.ID)
+		).
+		WithSyntheticRequest()
+	got = test.Message(want.ID())
 	if got == nil {
-		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID())
 		return
 	}
 	apitest.CheckMessage(t, got, want)
@@ -646,11 +644,11 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID("..SetIamPolicyRequest").
 				WithOptional(),
-		)
-	want.SyntheticRequest = true
-	got = test.Message(want.ID)
+		).
+		WithSyntheticRequest()
+	got = test.Message(want.ID())
 	if got == nil {
-		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID())
 		return
 	}
 	apitest.CheckMessage(t, got, want)
@@ -680,24 +678,25 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		WithID("..Service.ListFoos").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters("pageSize", "pageToken").
 		WithPagination(
 			api.NewTestField("pageToken").
+				WithID("..Service.ListFoosRequest.pageToken").
 				WithDocumentation("The `{pageToken}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.").
 				WithType(api.TypezString).
 				WithTypezID("string").
 				WithOptional(),
-		)
-	listFoosMethod.Pagination.ID = "..Service.ListFoosRequest.pageToken"
-	listFoosMethod.IsList = false
-	listFoosMethod.InputTypeID = "..Service.ListFoosRequest"
-	listFoosMethod.OutputTypeID = "..ListFoosResponse"
+		).
+		WithIsList(false).
+		WithInputTypeID("..Service.ListFoosRequest").
+		WithOutputTypeID("..ListFoosResponse")
 
 	wantService := api.NewTestService("Service").
 		WithPackage("").
@@ -810,11 +809,11 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				WithTypezID("string").
 				WithOptional().
 				WithAutoPopulated(),
-		)
-	wantMessage.SyntheticRequest = true
-	message := test.Message(wantMessage.ID)
+		).
+		WithSyntheticRequest()
+	message := test.Message(wantMessage.ID())
 	if message == nil {
-		t.Fatalf("Cannot find message %s in API State", wantMessage.ID)
+		t.Fatalf("Cannot find message %s in API State", wantMessage.ID())
 	}
 	apitest.CheckMessage(t, message, wantMessage)
 
@@ -823,7 +822,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	wantField := []*api.Field{requestID, requestIDExplicit}
-	if diff := cmp.Diff(wantField, method.AutoPopulated, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(wantField, method.AutoPopulated(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -851,16 +850,17 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		WithID("..Service.RpcA").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("rpc").
-				WithLiteral("a"),
+				WithLiteral("a").
+				Build(),
 		).
-		WithQueryParameters("filter")
-	rpcA.InputTypeID = "..Service.RpcARequest"
-	rpcA.OutputTypeID = "..Response"
+		WithQueryParameters("filter").
+		WithInputTypeID("..Service.RpcARequest").
+		WithOutputTypeID("..Response")
 	apitest.CheckMethod(t, service, "RpcA", rpcA)
 
 	rpcB := api.NewTestMethod("RpcB").
@@ -868,16 +868,17 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		WithDeprecated(true).
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("rpc").
-				WithLiteral("b"),
+				WithLiteral("b").
+				Build(),
 		).
-		WithQueryParameters()
-	rpcB.InputTypeID = "..Service.RpcBRequest"
-	rpcB.OutputTypeID = "..Response"
+		WithQueryParameters().
+		WithInputTypeID("..Service.RpcBRequest").
+		WithOutputTypeID("..Response")
 	apitest.CheckMethod(t, service, "RpcB", rpcB)
 
 	response := test.Message("..Response")

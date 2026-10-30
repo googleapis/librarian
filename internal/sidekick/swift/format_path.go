@@ -24,7 +24,7 @@ import (
 func pathExpression(t *api.PathTemplate) string {
 	count := 0
 	var pathComponents []string
-	for _, segment := range t.Segments {
+	for _, segment := range t.Segments() {
 		if segment.Literal() != "" {
 			pathComponents = append(pathComponents, segment.Literal())
 		} else if segment.Variable() != nil {
@@ -33,8 +33,8 @@ func pathExpression(t *api.PathTemplate) string {
 		}
 	}
 	path := "/" + strings.Join(pathComponents, "/")
-	if t.Verb != "" {
-		path += ":" + t.Verb
+	if t.Verb() != "" {
+		path += ":" + t.Verb()
 	}
 	return path
 }
@@ -42,7 +42,7 @@ func pathExpression(t *api.PathTemplate) string {
 func (c *codec) pathVariables(message *api.Message, t *api.PathTemplate) ([]*pathVariable, error) {
 	count := 0
 	var variables []*pathVariable
-	for _, segment := range t.Segments {
+	for _, segment := range t.Segments() {
 		if segment.Variable() != nil {
 			pathVar, err := c.newPathVariable(message, segment.Variable(), count)
 			if err != nil {
@@ -63,7 +63,8 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 	current := message
 	var lastField *api.Field
 	var jsonNames []string
-	for _, v := range variable.FieldPath() {
+	fieldPath := variable.FieldPath()
+	for _, v := range fieldPath {
 		field, err := lookupField(current, v)
 		if err != nil {
 			return nil, err
@@ -75,38 +76,39 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 			return nil, err
 		}
 		expression.WriteString(expr)
-		optional = field.Optional
-		switch field.Typez {
+		optional = field.Optional()
+		switch field.Typez() {
 		case api.TypezMessage:
-			if !field.Optional {
+			if !field.Optional() {
 				// Panics are the right way to deal with bugs in other parts of the code.
-				panic(fmt.Sprintf("invalid state: field %s in message %s has message type but is not optional", field.Name, current.ID))
+				panic(fmt.Sprintf("invalid state: field %s in message %s has message type but is not optional", field.Name(), current.ID()))
 			}
-			current, err = lookupMessage(c.Model, field.TypezID)
+			current, err = lookupMessage(c.Model, field.TypezID())
 			if err != nil {
 				return nil, err
 			}
 		case api.TypezString:
 			test = fmt.Sprintf("!%s.isEmpty", name)
 		case api.TypezBytes:
-			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez.String(), message.ID, strings.Join(variable.FieldPath(), "."))
+			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez().String(), message.ID(), strings.Join(fieldPath, "."))
 		default:
 			test = ""
 		}
 	}
 	var matchingSegments []string
 	var templateString string
-	if lastField != nil && lastField.Typez == api.TypezString {
-		matchingSegments = annotateSegments(variable.Segments(), false, false)
-		if len(variable.Segments()) > 0 {
-			templateString = strings.Join(variable.Segments(), "/")
+	if lastField != nil && lastField.Typez() == api.TypezString {
+		segments := variable.Segments()
+		matchingSegments = annotateSegments(segments, false, false)
+		if len(segments) > 0 {
+			templateString = strings.Join(segments, "/")
 		}
 	}
 	pathVar := &pathVariable{
 		Name:             name,
 		Expression:       expression.String(),
 		Test:             test,
-		FieldPath:        strings.Join(variable.FieldPath(), "."),
+		FieldPath:        strings.Join(fieldPath, "."),
 		JSONFieldPath:    strings.Join(jsonNames, "."),
 		MatchingSegments: matchingSegments,
 		TemplateString:   templateString,
@@ -119,27 +121,27 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 // The generated `CodingKeys` use this name. Some models (mostly in tests) leave `JSONName` unset,
 // in that case the Swift property name is also the ProtoJSON name.
 func jsonFieldName(field *api.Field) string {
-	if field.JSONName != "" {
-		return field.JSONName
+	if field.JSONName() != "" {
+		return field.JSONName()
 	}
-	return camelCase(field.Name)
+	return camelCase(field.Name())
 }
 
 func (*codec) fieldPathParameterExpression(optional bool, field *api.Field) (string, error) {
-	if field.IsOneOf {
-		return "", fmt.Errorf("unsupported path parameter: field %s", field.ID)
+	if field.IsOneOf() {
+		return "", fmt.Errorf("unsupported path parameter: field %s", field.ID())
 	}
-	fieldCodec, ok := field.Codec.(*fieldAnnotations)
+	fieldCodec, ok := field.Codec().(*fieldAnnotations)
 	if !ok {
-		return "", fmt.Errorf("internal error: field %s does not have swift fieldAnnotations", field.ID)
+		return "", fmt.Errorf("internal error: field %s does not have swift fieldAnnotations", field.ID())
 	}
-	if optional && field.Optional {
+	if optional && field.Optional() {
 		return fmt.Sprintf(".flatMap({ $0.%s })", fieldCodec.Name), nil
 	}
 	if optional {
 		return fmt.Sprintf(".map({ $0.%s })", fieldCodec.Name), nil
 	}
-	if field.Optional {
+	if field.Optional() {
 		return fmt.Sprintf(".%s", fieldCodec.Name), nil
 	}
 	return fmt.Sprintf(".%s as %s?", fieldCodec.Name, fieldCodec.FieldType), nil
@@ -229,25 +231,27 @@ func annotateSegments(segments []string, isPrefix bool, isSuffix bool) []string 
 func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*routingParam {
 	var params []*routingParam
 	for _, info := range routingInfos {
-		if info.Name == "" && len(info.Variants) > 0 && len(info.Variants[0].FieldPath) == 0 {
+		infoVariants := info.Variants()
+		if info.Name() == "" && len(infoVariants) > 0 && len(infoVariants[0].FieldPath()) == 0 {
 			// Explicit empty routing annotation disables routing headers per AIP-4222.
 			continue
 		}
-		routingKey := info.Name
+		routingKey := info.Name()
 
 		var variants []*routingParamVariant
-		for _, variant := range info.Variants {
-			if len(variant.FieldPath) == 0 {
+		for _, variant := range infoVariants {
+			fieldPath := variant.FieldPath()
+			if len(fieldPath) == 0 {
 				continue
 			}
 			if routingKey == "" {
-				routingKey = strings.Join(variant.FieldPath, ".")
+				routingKey = strings.Join(fieldPath, ".")
 			}
 			variants = append(variants, &routingParamVariant{
-				FieldAccessor:    formatFieldAccessor(variant.FieldPath),
-				PrefixSegments:   annotateSegments(variant.Prefix.Segments, true, false),
-				MatchingSegments: annotateSegments(variant.Matching.Segments, false, false),
-				SuffixSegments:   annotateSegments(variant.Suffix.Segments, false, true),
+				FieldAccessor:    formatFieldAccessor(fieldPath),
+				PrefixSegments:   annotateSegments(variant.Prefix().Segments(), true, false),
+				MatchingSegments: annotateSegments(variant.Matching().Segments(), false, false),
+				SuffixSegments:   annotateSegments(variant.Suffix().Segments(), false, true),
 			})
 		}
 
@@ -268,7 +272,7 @@ func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*rou
 // google.api.routing annotations are absent per AIP-4222.
 func (c *codec) routingParamsFromPathTemplate(t *api.PathTemplate) []*routingParam {
 	var params []*routingParam
-	for _, segment := range t.Segments {
+	for _, segment := range t.Segments() {
 		if segment.Variable() != nil {
 			fieldPath := segment.Variable().FieldPath()
 			if len(fieldPath) == 0 {

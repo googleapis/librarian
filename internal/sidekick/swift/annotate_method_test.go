@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestAnnotateMethod(t *testing.T) {
@@ -34,7 +35,7 @@ func TestAnnotateMethod(t *testing.T) {
 			methodFunc: func() *api.Method {
 				return api.NewTestMethod("GetOperation").
 					WithVerb("GET").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("operations").Build()).
 					WithDocumentation("Gets a thing.\n\nTest multiple comment lines.\n")
 			},
 			wantFunc: func(*api.Field) *methodAnnotations {
@@ -54,7 +55,7 @@ func TestAnnotateMethod(t *testing.T) {
 			methodFunc: func() *api.Method {
 				return api.NewTestMethod("CreateKey").
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("keys")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("keys").Build()).
 					WithBodyFieldPath("key")
 			},
 			wantFunc: func(*api.Field) *methodAnnotations {
@@ -75,7 +76,7 @@ func TestAnnotateMethod(t *testing.T) {
 			methodFunc: func() *api.Method {
 				return api.NewTestMethod("UploadData").
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("data")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("data").Build()).
 					WithBodyFieldPath("*")
 			},
 			wantFunc: func(*api.Field) *methodAnnotations {
@@ -95,7 +96,7 @@ func TestAnnotateMethod(t *testing.T) {
 			methodFunc: func() *api.Method {
 				return api.NewTestMethod("ListThings").
 					WithVerb("GET").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
 					WithQueryParameters("key").
 					WithDocumentation("Lists things.")
 			},
@@ -129,9 +130,9 @@ func TestAnnotateMethod(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			got := method.Codec.(*methodAnnotations)
+			got := method.Codec().(*methodAnnotations)
 			want := test.wantFunc(keyField)
-			if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
+			if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent", "codec"), cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if !got.PlainRPC() {
@@ -154,8 +155,8 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "wildcard body with multiple bindings",
 			bodyFieldPath: "*",
 			bindings: []*api.PathBinding{
-				api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")),
-				api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("secret", "name")),
+				api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()).Build(),
+				api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("secret", "name").Build()).Build(),
 			},
 			want:                  [][]string{{"parent"}, {"secret.name"}},
 			wantHasOmitted:        true,
@@ -165,7 +166,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "wildcard body without path variables",
 			bodyFieldPath: "*",
 			bindings: []*api.PathBinding{
-				api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")),
+				api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("secrets").Build()).Build(),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -175,7 +176,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "named body field",
 			bodyFieldPath: "secret",
 			bindings: []*api.PathBinding{
-				api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")),
+				api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()).Build(),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -185,7 +186,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "no body",
 			bodyFieldPath: "",
 			bindings: []*api.PathBinding{
-				api.NewTestPathBinding("GET", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")),
+				api.NewPathBindingBuilder().WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()).Build(),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -218,7 +219,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			got := method.Codec.(*methodAnnotations)
+			got := method.Codec().(*methodAnnotations)
 			var gotOmitted [][]string
 			var gotExpressions []string
 			for _, binding := range got.PathBindings {
@@ -256,7 +257,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			method := api.NewTestMethod(test.methodName).
 				WithInput(inputType).
 				WithOutput(outputType).
-				WithVerb("GET").WithPathTemplate(&api.PathTemplate{}).
+				WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 				WithDocumentation("Test documentation.")
 			service := api.NewTestService("TestService").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
@@ -278,7 +279,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				ResponseEncoding: "json;enum-encoding=int",
 			}
 
-			if diff := cmp.Diff(want, method.Codec, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
+			if diff := cmp.Diff(want, method.Codec(), cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -294,12 +295,13 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		WithInput(inputMessage).
 		WithOutput(outputMessage).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("TestService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service}).
-		WithPackageName("google.cloud.test.v1")
-	model.AddMessage(inputMessage)
-	model.AddMessage(outputMessage)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service}).
+		WithPackageName("google.cloud.test.v1")).
+		AddMessage(inputMessage).
+		AddMessage(outputMessage).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -315,10 +317,10 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if inputMessage.Codec == nil {
+	if inputMessage.Codec() == nil {
 		t.Error("expected input message to be annotated")
 	}
-	if outputMessage.Codec == nil {
+	if outputMessage.Codec() == nil {
 		t.Error("expected output message to be annotated")
 	}
 }
@@ -342,7 +344,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 		WithPagination(pageTokenField)
 
 	service := api.NewTestService("TestService").WithMethods(method)
@@ -359,7 +361,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	}
 
 	// Verify method annotations
-	gotMethod := method.Codec.(*methodAnnotations)
+	gotMethod := method.Codec().(*methodAnnotations)
 	wantMethod := &methodAnnotations{
 		Name:           "listItems",
 		PathExpression: "/",
@@ -378,7 +380,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	}
 
 	// Verify request message annotations
-	gotRequest := inputType.Codec.(*messageAnnotations)
+	gotRequest := inputType.Codec().(*messageAnnotations)
 	wantRequest := &messageAnnotations{
 		Name:              "ListRequest",
 		TypeURL:           "type.googleapis.com/test.ListRequest",
@@ -394,7 +396,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	}
 
 	// Verify response message annotations
-	gotResponse := outputType.Codec.(*messageAnnotations)
+	gotResponse := outputType.Codec().(*messageAnnotations)
 	wantResponse := &messageAnnotations{
 		Name:                "ListResponse",
 		TypeURL:             "type.googleapis.com/test.ListResponse",
@@ -424,11 +426,8 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: lroResponseType.ID,
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
+		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID(), lroMetadataType.ID()))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -443,7 +442,7 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotMethod := method.Codec.(*methodAnnotations)
+	gotMethod := method.Codec().(*methodAnnotations)
 	wantMethod := &methodAnnotations{
 		Name:           "lroMethod",
 		PathExpression: "/",
@@ -473,11 +472,8 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", lroMetadataType.ID()))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -492,7 +488,7 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotMethod := method.Codec.(*methodAnnotations)
+	gotMethod := method.Codec().(*methodAnnotations)
 	wantMethod := &methodAnnotations{
 		Name:           "lroMethod",
 		PathExpression: "/",
@@ -525,13 +521,21 @@ func TestAnnotateMethod_MultipleBindings(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithBindings(
-			api.NewTestPathBinding("GET", (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("name")),
-			api.NewTestPathBinding("POST", (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("project").
-				WithLiteral("resources")),
+			api.NewPathBindingBuilder().
+				WithVerb("GET").
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("v1").
+					WithVariableNamed("name").
+					Build()).
+				Build(),
+			api.NewPathBindingBuilder().
+				WithVerb("POST").
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("v1").
+					WithVariableNamed("project").
+					WithLiteral("resources").
+					Build()).
+				Build(),
 		)
 	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
@@ -542,7 +546,7 @@ func TestAnnotateMethod_MultipleBindings(t *testing.T) {
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
-	got := method.Codec.(*methodAnnotations)
+	got := method.Codec().(*methodAnnotations)
 	if !got.HasMultipleBindings {
 		t.Errorf("got.HasMultipleBindings = false, want true")
 	}
@@ -582,9 +586,9 @@ type methodDiagnoseFlags struct {
 
 func getMethodDiagnoseFlags(t *testing.T, method *api.Method) methodDiagnoseFlags {
 	t.Helper()
-	ann, ok := method.Codec.(*methodAnnotations)
+	ann, ok := method.Codec().(*methodAnnotations)
 	if !ok {
-		t.Fatalf("method %q is not annotated", method.Name)
+		t.Fatalf("method %q is not annotated", method.Name())
 	}
 	return methodDiagnoseFlags{
 		Types:      ann.DiagnoseTypes,
@@ -685,7 +689,7 @@ func TestAnnotateMethod_Diagnose(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("POST").
-				WithPathTemplate(&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 				WithDeprecated(test.methodDeprecated)
 			service := api.NewTestService("TestService").
 				WithDeprecated(test.serviceDeprecated).
@@ -750,7 +754,7 @@ func TestAnnotateMethod_DiagnosePaginationItemType(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("GET").
-				WithPathTemplate(&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 				WithPagination(pageTokenField)
 			service := api.NewTestService("TestService").WithMethods(method)
 
@@ -818,11 +822,8 @@ func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("POST").
-				WithPathTemplate(&api.PathTemplate{}).
-				WithOperationInfo(&api.OperationInfo{
-					ResponseTypeID: lroResponseType.ID,
-					MetadataTypeID: lroMetadataType.ID,
-				})
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()).
+				WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID(), lroMetadataType.ID()))
 			service := api.NewTestService("TestService").WithMethods(method)
 
 			model := api.NewTestAPI(
@@ -886,7 +887,7 @@ func TestAnnotateMethod_AutoPopulated(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb(test.verb).
-				WithPathTemplate(&api.PathTemplate{})
+				WithPathTemplate(api.NewPathTemplateBuilder().Build())
 			if test.autoPopulated {
 				method.WithAutoPopulated(reqIDField)
 			}
@@ -901,9 +902,9 @@ func TestAnnotateMethod_AutoPopulated(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ann, ok := method.Codec.(*methodAnnotations)
+			ann, ok := method.Codec().(*methodAnnotations)
 			if !ok {
-				t.Fatalf("method.Codec is not *methodAnnotations")
+				t.Fatalf("method.Codec() is not *methodAnnotations")
 			}
 			if ann.HasAutoPopulatedFields != test.wantHasAutoPopulated {
 				t.Errorf("ann.HasAutoPopulatedFields = %v, want %v", ann.HasAutoPopulatedFields, test.wantHasAutoPopulated)
@@ -946,7 +947,7 @@ func TestAnnotateMethodIdempotencyHook(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("POST").
-				WithPathTemplate(&api.PathTemplate{})
+				WithPathTemplate(api.NewPathTemplateBuilder().Build())
 			service := api.NewTestService("Storage").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
 				WithPackageName("test")
@@ -957,9 +958,9 @@ func TestAnnotateMethodIdempotencyHook(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			ann, ok := method.Codec.(*methodAnnotations)
+			ann, ok := method.Codec().(*methodAnnotations)
 			if !ok {
-				t.Fatalf("expected method.Codec to be *methodAnnotations, got %T", method.Codec)
+				t.Fatalf("expected method.Codec() to be *methodAnnotations, got %T", method.Codec())
 			}
 			if ann.HasIdempotencyHook != test.wantHasIdempotencyHook {
 				t.Errorf("got HasIdempotencyHook = %v, want %v", ann.HasIdempotencyHook, test.wantHasIdempotencyHook)
@@ -1068,12 +1069,13 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 				WithInput(test.input).
 				WithOutput(test.output).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("test")).
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("test").Build()).
 				WithBodyFieldPath(test.bodyFieldPath)
 			service := api.NewTestService("TestService").WithMethods(method)
-			model := api.NewTestAPI([]*api.Message{wrapperReq, regularMsg}, nil, []*api.Service{service}).
-				WithPackageName("test")
-			model.AddMessage(httpBodyMsg)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{wrapperReq, regularMsg}, nil, []*api.Service{service}).
+				WithPackageName("test")).
+				AddMessage(httpBodyMsg).
+				BuildSyntaxTree()
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -1087,7 +1089,7 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			got := method.Codec.(*methodAnnotations)
+			got := method.Codec().(*methodAnnotations)
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

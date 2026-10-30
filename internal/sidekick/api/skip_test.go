@@ -15,12 +15,81 @@
 package api
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
+
+func ignoreMethodFields(names ...string) cmp.Option {
+	ignore := make(map[string]bool, len(names))
+	for _, n := range names {
+		ignore[n] = true
+	}
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != reflect.TypeFor[Method]() {
+			return false
+		}
+		sf, ok := p.Last().(cmp.StructField)
+		return ok && ignore[sf.Name()]
+	}, cmp.Ignore())
+}
+
+func ignoreServiceFields(names ...string) cmp.Option {
+	ignore := make(map[string]bool, len(names))
+	for _, n := range names {
+		ignore[n] = true
+	}
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != reflect.TypeFor[Service]() {
+			return false
+		}
+		sf, ok := p.Last().(cmp.StructField)
+		return ok && ignore[sf.Name()]
+	}, cmp.Ignore())
+}
+
+func allowUnexported() cmp.Option {
+	return cmp.AllowUnexported(
+		API{},
+		Service{},
+		Method{},
+		Message{},
+		Field{},
+		Map{},
+		OneOf{},
+		Enum{},
+		EnumValue{},
+		PathVariable{},
+		PathSegment{},
+		PathTemplate{},
+		PathBinding{},
+		PathInfo{},
+		RoutingPathSpec{},
+		RoutingInfoVariant{},
+		RoutingInfo{},
+		RoutingInfoCombo{},
+		RoutingInfoComboItem{},
+		OperationInfo{},
+		DiscoveryLro{},
+		MethodSignature{},
+		Resource{},
+		ResourceReference{},
+		ResourceNamePattern{},
+		ResourceNameSegment{},
+		TargetResource{},
+		SampleInfo{},
+		SampleValue{},
+		PaginationInfo{},
+	)
+}
 
 func TestSkipMessages(t *testing.T) {
 	m0 := NewTestMessage("Message0")
@@ -33,7 +102,7 @@ func TestSkipMessages(t *testing.T) {
 	})
 	want := []*Message{m0, m2}
 
-	if diff := cmp.Diff(want, model.Messages); diff != "" {
+	if diff := cmp.Diff(want, model.Messages(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -50,7 +119,7 @@ func TestSkipEnums(t *testing.T) {
 
 	want := []*Enum{e0, e2}
 
-	if diff := cmp.Diff(want, model.Enums); diff != "" {
+	if diff := cmp.Diff(want, model.Enums(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -65,7 +134,10 @@ func TestSkipNestedMessages(t *testing.T) {
 		SkippedIDs: []string{".test.Message2.Message1"},
 	})
 	want := []*Message{m0}
-	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
+	ignoreCycle := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".messages" || p.Last().String() == ".parent"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(want, m2.Messages(), allowUnexported(), ignoreCycle); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -82,7 +154,10 @@ func TestSkipNestedEnums(t *testing.T) {
 	})
 
 	want := []*Enum{e0, e2}
-	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
+	ignoreCycle := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".enums" || p.Last().String() == ".parent"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(want, m.Enums(), allowUnexported(), ignoreCycle); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -99,33 +174,33 @@ func TestSkipServices(t *testing.T) {
 
 	want := []*Service{s0, s2}
 
-	if diff := cmp.Diff(want, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(want, model.Services(), allowUnexported(), ignoreServiceFields("model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 var methodIgnoreFields = []string{
-	"Model",
-	"Service",
-	"SourceService",
-	"InputType",
-	"OutputType",
-	"InputTypeID",
-	"OutputTypeID",
-	"IsSimple",
-	"IsLRO",
-	"LongRunningResponseType",
-	"LongRunningReturnsEmpty",
-	"IsList",
-	"IsStreaming",
-	"IsAIPStandard",
-	"IsAIPStandardGet",
-	"IsAIPStandardDelete",
-	"IsAIPStandardUndelete",
-	"IsAIPStandardCreate",
-	"IsAIPStandardUpdate",
-	"IsAIPStandardList",
-	"SampleInfo",
+	"model",
+	"service",
+	"sourceService",
+	"inputType",
+	"outputType",
+	"inputTypeID",
+	"outputTypeID",
+	"isSimple",
+	"isLRO",
+	"longRunningResponseType",
+	"longRunningReturnsEmpty",
+	"isList",
+	"isStreaming",
+	"isAIPStandard",
+	"isAIPStandardGet",
+	"isAIPStandardDelete",
+	"isAIPStandardUndelete",
+	"isAIPStandardCreate",
+	"isAIPStandardUpdate",
+	"isAIPStandardList",
+	"sampleInfo",
 }
 
 func TestSkipMethods(t *testing.T) {
@@ -142,12 +217,12 @@ func TestSkipMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s0, s1, s2}
-	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services(), allowUnexported(), ignoreServiceFields("model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{m0, m2}
-	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods(), allowUnexported(), ignoreMethodFields(methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -179,7 +254,10 @@ func TestIncludeNestedEnums(t *testing.T) {
 	})
 
 	want := []*Enum{e0}
-	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
+	ignoreEnums := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".enums" || p.Last().String() == ".parent"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(want, m.Enums(), allowUnexported(), ignoreEnums); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -194,7 +272,10 @@ func TestIncludeNestedMessages(t *testing.T) {
 		IncludedIDs: []string{".test.Message2.Message0"},
 	})
 	want := []*Message{m0}
-	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
+	ignoreMessages := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".messages" || p.Last().String() == ".parent"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(want, m2.Messages(), allowUnexported(), ignoreMessages); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -214,12 +295,12 @@ func TestIncludeMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s1}
-	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...), cmpopts.IgnoreFields(Service{}, "Model", "QuickstartMethod")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services(), allowUnexported(), ignoreMethodFields(methodIgnoreFields...), ignoreServiceFields("model", "quickstartMethod")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{m1, m2}
-	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods(), allowUnexported(), ignoreMethodFields(methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -235,7 +316,8 @@ func TestSkipMessageFields(t *testing.T) {
 		SkippedIDs: []string{".test.Message0.field1"},
 	})
 	want := []*Field{f0, f2}
-	if diff := cmp.Diff(want, m0.Fields, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(want, m0.Fields(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -251,7 +333,8 @@ func TestSkipNestedMessageFields(t *testing.T) {
 		SkippedIDs: []string{".test.Outer.Inner.field1"},
 	})
 	want := []*Field{f0}
-	if diff := cmp.Diff(want, inner.Fields, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(want, inner.Fields(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -268,15 +351,18 @@ func TestSkipOneOfField(t *testing.T) {
 		SkippedIDs: []string{".test.Message.field1"},
 	})
 	wantFields := []*Field{f0, f2}
-	if diff := cmp.Diff(wantFields, m.Fields, cmpopts.IgnoreFields(Field{}, "Parent", "Group")); diff != "" {
+	ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".parent" || p.Last().String() == ".group"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(wantFields, m.Fields(), allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
 	wantOneOfFields := []*Field{f2}
-	if diff := cmp.Diff(wantOneOfFields, oneof.Fields, cmpopts.IgnoreFields(Field{}, "Parent", "Group")); diff != "" {
+	if diff := cmp.Diff(wantOneOfFields, oneof.Fields(), allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in oneof fields (-want +got):\n%s", diff)
 	}
-	if oneof.ExampleField != f2 {
-		t.Errorf("expected ExampleField to be %v, got %v", f2, oneof.ExampleField)
+	if oneof.ExampleField() != f2 {
+		t.Errorf("expected ExampleField to be %v, got %v", f2, oneof.ExampleField())
 	}
 }
 
@@ -290,11 +376,11 @@ func TestSkipAllOneOfFields(t *testing.T) {
 	SkipModelElements(model, ModelOverride{
 		SkippedIDs: []string{".test.Message.field1", ".test.Message.field2"},
 	})
-	if len(m.Fields) != 0 {
-		t.Errorf("expected no fields, got %v", m.Fields)
+	if len(m.Fields()) != 0 {
+		t.Errorf("expected no fields, got %v", m.Fields())
 	}
-	if len(m.OneOfs) != 0 {
-		t.Errorf("expected empty oneof to be pruned, got %v", m.OneOfs)
+	if len(m.OneOfs()) != 0 {
+		t.Errorf("expected empty oneof to be pruned, got %v", m.OneOfs())
 	}
 }
 
@@ -310,11 +396,14 @@ func TestSkipOneOfDirectly(t *testing.T) {
 		SkippedIDs: []string{".test.Message.choice"},
 	})
 	wantFields := []*Field{f0}
-	if diff := cmp.Diff(wantFields, m.Fields, cmpopts.IgnoreFields(Field{}, "Parent", "Group")); diff != "" {
+	ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".parent" || p.Last().String() == ".group"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(wantFields, m.Fields(), allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
-	if len(m.OneOfs) != 0 {
-		t.Errorf("expected oneof to be removed, got %v", m.OneOfs)
+	if len(m.OneOfs()) != 0 {
+		t.Errorf("expected oneof to be removed, got %v", m.OneOfs())
 	}
 }
 
@@ -350,7 +439,7 @@ func TestSkipFieldAffectsPagination(t *testing.T) {
 	model := NewTestAPI([]*Message{req, resp, item}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	CrossReference(model)
-	if method.Pagination == nil || resp.Pagination == nil {
+	if method.Pagination() == nil || resp.Pagination() == nil {
 		t.Fatalf("expected pagination to be set before skip")
 	}
 
@@ -372,7 +461,8 @@ func TestIncludeKeepsAllMessageFields(t *testing.T) {
 		IncludedIDs: []string{".test.Message0"},
 	})
 	want := []*Field{f0, f1}
-	if diff := cmp.Diff(want, m0.Fields, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(want, m0.Fields(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
 }
@@ -383,7 +473,7 @@ func TestSkipPreservesExternalAndDependencyMessagesInSymbolTable(t *testing.T) {
 	f1 := NewTestField("field1").WithType(TypezString)
 	m0 := NewTestMessage("Message0").WithFields(f0, f1)
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
-	model.AddMessage(timestamp)
+	model.addMessage(timestamp)
 	CrossReference(model)
 
 	if err := SkipModelElements(model, ModelOverride{

@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
@@ -39,58 +38,66 @@ func TestLroAnnotations(t *testing.T) {
 	want := api.NewTestMethod("insert").
 		WithID("..instances.insert").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
 			WithVariableNamed("zone").
-			WithLiteral("instances")).
+			WithLiteral("instances").
+			Build()).
 		WithQueryParameters(
 			"requestId",
 			"sourceInstanceTemplate",
 			"sourceMachineImage",
 		).
 		WithBodyFieldPath("body").
-		WithDiscoveryLro(&api.DiscoveryLro{
-			PollingPathParameters: []string{"project", "zone"},
-		})
-	want.InputTypeID = "..instances.insertRequest"
-	want.OutputTypeID = "..Operation"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}}
-	got := model.Method(want.ID)
+		WithDiscoveryLro(api.NewDiscoveryLroBuilder().
+			WithPollingPathParameters("project", "zone").
+			Build()).
+		WithInputTypeID("..instances.insertRequest").
+		WithOutputTypeID("..Operation").
+		WithRawSignatures(api.NewTestMethodSignature("project", "zone", "body"))
+	got := model.Method(want.ID())
 	if got == nil {
-		t.Fatalf("missing method %s in model", want.ID)
+		t.Fatalf("missing method %s in model", want.ID())
 	}
-	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Documentation")); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreMethodFields("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// The parser should have injected a mixin method.
-	wantMixin := api.NewTestMethod("getOperation").
+	wantMixin := api.NewMethodBuilder().
+		WithName("getOperation").
 		WithID("..instances.getOperation").
-		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
-			WithLiteral("compute").
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("project").
-			WithLiteral("zones").
-			WithVariableNamed("zone").
-			WithLiteral("operations").
-			WithVariableNamed("operation")).
-		WithQueryParameters().
-		WithBodyFieldPath("")
-	wantMixin.InputTypeID = "..zoneOperations.getRequest"
-	wantMixin.OutputTypeID = "..Operation"
-	wantMixin.SourceServiceID = "..zoneOperations"
-	wantMixin.IsLroPoller = true
-	gotMixin := model.Method(wantMixin.ID)
+		WithPathInfo(api.NewPathInfoBuilder().
+			WithBindings(api.NewPathBindingBuilder().
+				WithVerb("GET").
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("compute").
+					WithLiteral("v1").
+					WithLiteral("projects").
+					WithVariableNamed("project").
+					WithLiteral("zones").
+					WithVariableNamed("zone").
+					WithLiteral("operations").
+					WithVariableNamed("operation").
+					Build()).
+				WithQueryParameters().
+				Build()).
+			WithBodyFieldPath("").
+			Build()).
+		WithInputTypeID("..zoneOperations.getRequest").
+		WithOutputTypeID("..Operation").
+		WithSourceServiceID("..zoneOperations").
+		WithIsLroPoller(true).
+		Build()
+	gotMixin := model.Method(wantMixin.ID())
 	if gotMixin == nil {
-		t.Fatalf("missing method %s in model", wantMixin.ID)
+		t.Fatalf("missing method %s in model", wantMixin.ID())
 	}
-	if diff := cmp.Diff(wantMixin, gotMixin, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Documentation", "Service")); diff != "" {
+	if diff := cmp.Diff(wantMixin, gotMixin, apitest.AllowUnexported(), apitest.IgnoreMethodFields("documentation", "service")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -112,24 +119,26 @@ func TestLroAnnotationsError(t *testing.T) {
 			api.NewTestMethod("create_foo").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("zone").
 					WithLiteral("foo").
-					WithVariableNamed("id")).
+					WithVariableNamed("id").
+					Build()).
 				WithQueryParameters(),
 			api.NewTestMethod("create_bar").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("region").
 					WithLiteral("foo").
-					WithVariableNamed("id")).
+					WithVariableNamed("id").
+					Build()).
 				WithQueryParameters(),
 		)
 	pollerService := newDiscoveryTestService("Operations").
@@ -137,29 +146,31 @@ func TestLroAnnotationsError(t *testing.T) {
 			api.NewTestMethod("get_1").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("zone").
 					WithLiteral("operations").
-					WithVariableNamed("operation")).
+					WithVariableNamed("operation").
+					Build()).
 				WithQueryParameters(),
 			api.NewTestMethod("get_2").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("region").
 					WithLiteral("operations").
-					WithVariableNamed("operation")).
+					WithVariableNamed("operation").
+					Build()).
 				WithQueryParameters(),
 		)
 
 	model := api.NewTestAPI([]*api.Message{operation}, nil, []*api.Service{badService, pollerService})
-	if lroAnnotations(model, discoveryConfig) == nil {
+	if api.AddDiscoveryLroAnnotations(model, discoveryConfig) == nil {
 		t.Errorf("expected an error, got %v", badService)
 	}
 }

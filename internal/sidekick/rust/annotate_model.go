@@ -133,7 +133,7 @@ func (m *modelAnnotations) HasServices() bool {
 // HasGrpc returns true if any service in the model has at least one gRPC method.
 func (m *modelAnnotations) HasGrpc() bool {
 	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
-		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+		if ann, ok := s.Codec().(*serviceAnnotations); ok {
 			return ann.HasGrpc()
 		}
 		return false
@@ -143,7 +143,7 @@ func (m *modelAnnotations) HasGrpc() bool {
 // HasHttp returns true if any service in the model has at least one HTTP method.
 func (m *modelAnnotations) HasHttp() bool {
 	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
-		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+		if ann, ok := s.Codec().(*serviceAnnotations); ok {
 			return ann.HasHttp()
 		}
 		return false
@@ -165,7 +165,7 @@ func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 // GrpcServices returns the subset of services that have at least one gRPC method.
 func (m *modelAnnotations) GrpcServices() []*api.Service {
 	return language.FilterSlice(m.Services, func(s *api.Service) bool {
-		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+		if ann, ok := s.Codec().(*serviceAnnotations); ok {
 			return ann.HasGrpc()
 		}
 		return false
@@ -175,14 +175,14 @@ func (m *modelAnnotations) GrpcServices() []*api.Service {
 // GrpcRootTypeIDs returns the root message type IDs for all generated gRPC methods in the model.
 func GrpcRootTypeIDs(model *api.API) []string {
 	var rootTypeIDs []string
-	for _, s := range model.Services {
-		for _, m := range s.Methods {
-			if ann, ok := m.Codec.(*methodAnnotation); ok && ann.IsGrpc {
-				if m.InputTypeID != "" {
-					rootTypeIDs = append(rootTypeIDs, m.InputTypeID)
+	for _, s := range model.Services() {
+		for _, m := range s.Methods() {
+			if ann, ok := m.Codec().(*methodAnnotation); ok && ann.IsGrpc {
+				if m.InputTypeID() != "" {
+					rootTypeIDs = append(rootTypeIDs, m.InputTypeID())
 				}
-				if m.OutputTypeID != "" {
-					rootTypeIDs = append(rootTypeIDs, m.OutputTypeID)
+				if m.OutputTypeID() != "" {
+					rootTypeIDs = append(rootTypeIDs, m.OutputTypeID())
 				}
 			}
 		}
@@ -196,29 +196,32 @@ func GrpcRootTypeIDs(model *api.API) []string {
 // actions. For example, the template action {{ range .Services }} uses the
 // [modelAnnotations.Services] field.
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
-	codec.hasServices = len(model.Services) > 0
+	services := model.Services()
+	externalEnums := model.ExternalEnums()
+	externalMessages := model.ExternalMessages()
+	codec.hasServices = len(services) > 0
 
 	resolveUsedPackages(model, codec.extraPackages, codec.hasGrpc(model))
 	// Annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of
 	// packages used by this API.
 	// This API's enums and messages get full annotations.
-	for _, e := range model.Enums {
+	for _, e := range model.Enums() {
 		if err := codec.annotateEnum(e, model, true); err != nil {
 			return nil, err
 		}
 	}
-	for _, e := range model.ExternalEnums {
+	for _, e := range externalEnums {
 		if err := codec.annotateEnum(e, model, true); err != nil {
 			return nil, err
 		}
 	}
-	for _, m := range model.Messages {
+	for _, m := range model.Messages() {
 		if err := codec.annotateMessage(m, model, true); err != nil {
 			return nil, err
 		}
 	}
-	for _, m := range model.ExternalMessages {
+	for _, m := range externalMessages {
 		if err := codec.annotateMessage(m, model, true); err != nil {
 			return nil, err
 		}
@@ -228,14 +231,14 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	// External enums and messages are the ones that have yet
 	// to be annotated.
 	for e := range model.AllEnums() {
-		if e.Codec == nil {
+		if e.Codec() == nil {
 			if err := codec.annotateEnum(e, model, false); err != nil {
 				return nil, err
 			}
 		}
 	}
 	for m := range model.AllMessages() {
-		if m.Codec == nil {
+		if m.Codec() == nil {
 			if err := codec.annotateMessage(m, model, false); err != nil {
 				return nil, err
 			}
@@ -243,31 +246,31 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	}
 	hasLROs := false
 	hasDiscoveryLROs := false
-	for _, s := range model.Services {
-		for _, m := range s.Methods {
+	for _, s := range services {
+		for _, m := range s.Methods() {
 			if !codec.generateMethod(m) {
 				continue
 			}
-			if m.OperationInfo != nil || m.DiscoveryLro != nil || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
+			if m.OperationInfo() != nil || m.DiscoveryLro() != nil || m.ID() == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
-			if m.DiscoveryLro != nil {
+			if m.DiscoveryLro() != nil {
 				hasDiscoveryLROs = true
 			}
 			if _, err := codec.annotateMethod(m); err != nil {
 				return nil, err
 			}
-			if m := m.InputType; m != nil {
+			if m := m.InputType(); m != nil {
 				if err := codec.annotateMessage(m, model, true); err != nil {
 					return nil, err
 				}
 			}
-			if m := m.OutputType; m != nil {
+			if m := m.OutputType(); m != nil {
 				if err := codec.annotateMessage(m, model, true); err != nil {
 					return nil, err
 				}
 			}
-			if si := m.SampleInfo; si != nil {
+			if si := m.SampleInfo(); si != nil {
 				codec.annotateSampleInfo(si, m)
 			}
 		}
@@ -284,19 +287,19 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	if codec.prostPath != "" {
 		prostPrefix = codec.prostPath + "::"
 	}
-	for _, e := range model.ExternalEnums {
-		if ann, ok := e.Codec.(*enumAnnotation); ok {
-			ann.ProstRelativeName = prostPrefix + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
+	for _, e := range externalEnums {
+		if ann, ok := e.Codec().(*enumAnnotation); ok {
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(e.Package()) + "::" + prostEnumRelativePath(e)
 		}
 	}
-	for _, m := range model.ExternalMessages {
-		if ann, ok := m.Codec.(*messageAnnotation); ok {
-			ann.ProstRelativeName = prostPrefix + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
+	for _, m := range externalMessages {
+		if ann, ok := m.Codec().(*messageAnnotation); ok {
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(m.Package()) + "::" + prostMessageRelativePath(m)
 		}
 	}
 
-	servicesSubset := language.FilterSlice(model.Services, func(s *api.Service) bool {
-		return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return codec.generateMethod(m) })
+	servicesSubset := language.FilterSlice(services, func(s *api.Service) bool {
+		return slices.ContainsFunc(s.Methods(), func(m *api.Method) bool { return codec.generateMethod(m) })
 	})
 	// The maximum (15) was chosen more or less arbitrarily circa 2025-06. At
 	// the time, only a handful of services exceeded this number of services.
@@ -308,8 +311,8 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	// used.
 	findUsedPackages(model, codec)
 	defaultHost := func() string {
-		if len(model.Services) > 0 {
-			return model.Services[0].DefaultHost
+		if len(services) > 0 {
+			return services[0].DefaultHost()
 		}
 		return ""
 	}()
@@ -324,21 +327,21 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	var quickstartService *api.Service
 	if codec.quickstartServiceOverride != "" {
 		idx := slices.IndexFunc(servicesSubset, func(s *api.Service) bool {
-			return strings.EqualFold(codec.ServiceName(s), codec.quickstartServiceOverride) || strings.EqualFold(s.Name, codec.quickstartServiceOverride)
+			return strings.EqualFold(codec.ServiceName(s), codec.quickstartServiceOverride) || strings.EqualFold(s.Name(), codec.quickstartServiceOverride)
 		})
 		if idx != -1 {
 			quickstartService = servicesSubset[idx]
 		} else {
 			return nil, fmt.Errorf("%w: %q not found in generated services for package %q", errQuickstartServiceNotFound, codec.quickstartServiceOverride, codec.packageName(model))
 		}
-	} else if model.QuickstartService != nil {
-		if slices.ContainsFunc(servicesSubset, func(s *api.Service) bool { return s == model.QuickstartService }) {
-			quickstartService = model.QuickstartService
+	} else if model.QuickstartService() != nil {
+		if slices.ContainsFunc(servicesSubset, func(s *api.Service) bool { return s == model.QuickstartService() }) {
+			quickstartService = model.QuickstartService()
 		}
 	}
 
 	hasGrpc := slices.ContainsFunc(servicesSubset, func(s *api.Service) bool {
-		if sAnn, ok := s.Codec.(*serviceAnnotations); ok {
+		if sAnn, ok := s.Codec().(*serviceAnnotations); ok {
 			return sAnn.HasGrpc()
 		}
 		return false
@@ -354,7 +357,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	}
 
 	includeRpcStatusConversion := codec.includeRpcStatusConversion
-	if codecMap, ok := model.Codec.(map[string]string); ok && codecMap["include-rpc-status-conversion"] == "true" {
+	if codecMap, ok := model.Codec().(map[string]string); ok && codecMap["include-rpc-status-conversion"] == "true" {
 		includeRpcStatusConversion = true
 	}
 
@@ -372,7 +375,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 
 	ann := &modelAnnotations{
 		PackageName:                codec.packageName(model),
-		PackageModuleName:          packageToModuleName(model.PackageName),
+		PackageModuleName:          packageToModuleName(model.PackageName()),
 		PackageNamespace:           codec.rootModuleName(model),
 		PackageVersion:             codec.version,
 		ReleaseLevel:               codec.releaseLevel,
@@ -388,7 +391,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		DefaultHost:             defaultHost,
 		DefaultHostShort:        defaultHostShort,
 		Services:                servicesSubset,
-		NameToLower:             strings.ToLower(model.Name),
+		NameToLower:             strings.ToLower(model.Name()),
 		NotForPublication:       codec.doNotPublish,
 		DisabledRustdocWarnings: codec.disabledRustdocWarnings,
 		DisabledClippyWarnings:  codec.disabledClippyWarnings,
@@ -396,8 +399,8 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		ExtraFeatures:           extraFeatures,
 		ExtraModules:            extraModules,
 		InternalModules:         codec.internalModules,
-		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
-			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
+		Incomplete: slices.ContainsFunc(services, func(s *api.Service) bool {
+			return slices.ContainsFunc(s.Methods(), func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),
 		GenerateSetterSamples:     codec.generateSetterSamples,
 		GenerateRpcSamples:        codec.generateRpcSamples,
@@ -410,7 +413,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 
 	codec.addFeatureAnnotations(model, ann)
 
-	model.Codec = ann
+	model.SetAnnotations(ann)
 	return ann, nil
 }
 
@@ -420,16 +423,16 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	}
 	var allFeatures []string
 	for _, service := range ann.Services {
-		svcAnn := service.Codec.(*serviceAnnotations)
+		svcAnn := service.Codec().(*serviceAnnotations)
 		allFeatures = append(allFeatures, svcAnn.FeatureName())
-		deps := api.FindServiceDependencies(model, service.ID)
+		deps := api.FindServiceDependencies(model, service.ID())
 		for _, id := range deps.Enums {
 			enum := model.Enum(id)
 			// Some messages are not annotated (e.g. external messages).
-			if enum == nil || enum.Codec == nil {
+			if enum == nil || enum.Codec() == nil {
 				continue
 			}
-			annotation := enum.Codec.(*enumAnnotation)
+			annotation := enum.Codec().(*enumAnnotation)
 			annotation.FeatureGates = append(annotation.FeatureGates, svcAnn.FeatureName())
 			slices.Sort(annotation.FeatureGates)
 			annotation.FeatureGatesOp = "any"
@@ -437,18 +440,18 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		for _, id := range deps.Messages {
 			msg := model.Message(id)
 			// Some messages are not annotated (e.g. external messages).
-			if msg == nil || msg.Codec == nil {
+			if msg == nil || msg.Codec() == nil {
 				continue
 			}
-			annotation := msg.Codec.(*messageAnnotation)
+			annotation := msg.Codec().(*messageAnnotation)
 			annotation.FeatureGates = append(annotation.FeatureGates, svcAnn.FeatureName())
 			slices.Sort(annotation.FeatureGates)
 			annotation.FeatureGatesOp = "any"
-			for _, one := range msg.OneOfs {
-				if one.Codec == nil {
+			for _, one := range msg.OneOfs() {
+				if one.Codec() == nil {
 					continue
 				}
-				annotation := one.Codec.(*oneOfAnnotation)
+				annotation := one.Codec().(*oneOfAnnotation)
 				annotation.FeatureGates = append(annotation.FeatureGates, svcAnn.FeatureName())
 				slices.Sort(annotation.FeatureGates)
 				annotation.FeatureGatesOp = "any"
@@ -460,10 +463,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	// Change them to work only if all features are enabled.
 	slices.Sort(allFeatures)
 	for msg := range model.AllMessages() {
-		if msg.Codec == nil {
+		if msg.Codec() == nil {
 			continue
 		}
-		annotation := msg.Codec.(*messageAnnotation)
+		annotation := msg.Codec().(*messageAnnotation)
 		if len(annotation.FeatureGates) > 0 {
 			continue
 		}
@@ -471,10 +474,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		annotation.FeatureGates = allFeatures
 	}
 	for enum := range model.AllEnums() {
-		if enum.Codec == nil {
+		if enum.Codec() == nil {
 			continue
 		}
-		annotation := enum.Codec.(*enumAnnotation)
+		annotation := enum.Codec().(*enumAnnotation)
 		if len(annotation.FeatureGates) > 0 {
 			continue
 		}

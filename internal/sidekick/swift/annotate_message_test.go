@@ -117,12 +117,8 @@ func TestAnnotateMessage(t *testing.T) {
 			wantImports: []*dependencyImport{{Module: "GoogleGax"}, {Module: "GoogleWKT"}},
 		},
 		{
-			name: "service placeholder",
-			message: func() *api.Message {
-				m := api.NewTestMessage("Service")
-				m.ServicePlaceholder = true
-				return m
-			}(),
+			name:    "service placeholder",
+			message: api.NewTestMessage("Service").WithServicePlaceholder(),
 			want: &messageAnnotations{
 				Name:              "Service",
 				TypeURL:           "type.googleapis.com/test.Service",
@@ -141,10 +137,10 @@ func TestAnnotateMessage(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec(), cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
+			if diff := cmp.Diff(test.wantImports, test.message.Codec().(*messageAnnotations).MessageImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -214,15 +210,15 @@ func TestAnnotateMessage_ImportAttributes(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			for _, f := range test.message.Fields {
-				f.Parent = test.message
+			for _, f := range test.message.Fields() {
+				f.WithParent(test.message)
 			}
 			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
 			codec := newTestCodec(t, model, test.config)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
+			if diff := cmp.Diff(test.wantImports, test.message.Codec().(*messageAnnotations).MessageImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -277,7 +273,7 @@ func TestAnnotateMessage_ConvertImports(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).ConvertImports()); diff != "" {
+			if diff := cmp.Diff(test.wantImports, test.message.Codec().(*messageAnnotations).ConvertImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -370,7 +366,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec(), cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -387,11 +383,7 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 		{
 			name:    "basic message",
 			service: api.NewTestService("Service"),
-			request: func() *api.Message {
-				m := api.NewTestMessage("getRequest").WithID(".test.Service.getRequest")
-				m.SyntheticRequest = true
-				return m
-			}(),
+			request: api.NewTestMessage("getRequest").WithID(".test.Service.getRequest").WithSyntheticRequest(),
 			want: &messageAnnotations{
 				Name:              "GetRequest",
 				TypeURL:           "type.googleapis.com/test.Service.getRequest",
@@ -404,11 +396,7 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 		{
 			name:    "service with reserved name",
 			service: api.NewTestService("Protocol"),
-			request: func() *api.Message {
-				m := api.NewTestMessage("listRequest").WithID(".test.Protocol.listRequest")
-				m.SyntheticRequest = true
-				return m
-			}(),
+			request: api.NewTestMessage("listRequest").WithID(".test.Protocol.listRequest").WithSyntheticRequest(),
 			want: &messageAnnotations{
 				Name:              "ListRequest",
 				TypeURL:           "type.googleapis.com/test.Protocol.listRequest",
@@ -423,18 +411,19 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 			// Discovery requests are synthetic. The messages are injected into the data
 			// model by sidekick. To avoid clashes, sidekick puts the request messages
 			// within a placeholder named after the service.
-			servicePlaceholder := api.NewTestMessage(test.service.Name).
-				WithPackage(test.service.Package).
-				WithID(test.service.ID).
-				WithMessages(test.request)
-			servicePlaceholder.ServicePlaceholder = true
-			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, nil, []*api.Service{test.service})
-			model.AddMessage(test.request)
+			servicePlaceholder := api.NewTestMessage(test.service.Name()).
+				WithPackage(test.service.Package()).
+				WithID(test.service.ID()).
+				WithMessages(test.request).
+				WithServicePlaceholder()
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{servicePlaceholder}, nil, []*api.Service{test.service})).
+				AddMessage(test.request).
+				BuildSyntaxTree()
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.request.Codec(), cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -462,7 +451,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("secrets").Build()).
 		WithPagination(pageTokenField)
 
 	iam := api.NewTestService("SecretManagerService").
@@ -478,7 +467,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	}
 
 	// Verify annotations on request message
-	gotRequest := inputType.Codec.(*messageAnnotations)
+	gotRequest := inputType.Codec().(*messageAnnotations)
 	wantRequest := &messageAnnotations{
 		Name:              "ListSecretsRequest",
 		TypeURL:           "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
@@ -496,7 +485,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	}
 
 	// Verify annotations on response message
-	gotResponse := outputType.Codec.(*messageAnnotations)
+	gotResponse := outputType.Codec().(*messageAnnotations)
 	wantResponse := &messageAnnotations{
 		Name:                "ListSecretsResponse",
 		TypeURL:             "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsResponse",
@@ -541,7 +530,7 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotOuter := outerMessage.Codec.(*messageAnnotations)
+	gotOuter := outerMessage.Codec().(*messageAnnotations)
 	wantOuter := &messageAnnotations{
 		Name:              "OuterMessage",
 		TypeURL:           "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
@@ -584,9 +573,9 @@ func TestAnnotateMessage_Gating(t *testing.T) {
 			if msg == nil {
 				t.Fatalf("message %s not found", test.msgName)
 			}
-			ann, ok := msg.Codec.(*messageAnnotations)
+			ann, ok := msg.Codec().(*messageAnnotations)
 			if !ok {
-				t.Fatalf("expected msg.Codec to be *messageAnnotations, got %T", msg.Codec)
+				t.Fatalf("expected msg.Codec() to be *messageAnnotations, got %T", msg.Codec())
 			}
 
 			if diff := cmp.Diff(test.wantExpression, ann.GateExpression()); diff != "" {
@@ -625,9 +614,9 @@ func TestAnnotateMessage_PlaceholderGating(t *testing.T) {
 			if msg == nil {
 				t.Fatalf("message %s not found", test.msgID)
 			}
-			ann, ok := msg.Codec.(*messageAnnotations)
+			ann, ok := msg.Codec().(*messageAnnotations)
 			if !ok {
-				t.Fatalf("expected msg.Codec for %s to be *messageAnnotations, got %T", msg.ID, msg.Codec)
+				t.Fatalf("expected msg.Codec() for %s to be *messageAnnotations, got %T", msg.ID(), msg.Codec())
 			}
 
 			if diff := cmp.Diff(test.want, ann.GateExpression()); diff != "" {
@@ -696,9 +685,9 @@ func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
 		{"external deep-nested", extDeepChild, "GoogleType.ExtParent.ExtChild.ExtDeepChild"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			ann, ok := tc.msg.Codec.(*messageAnnotations)
+			ann, ok := tc.msg.Codec().(*messageAnnotations)
 			if !ok {
-				t.Fatalf("expected msg.Codec to be *messageAnnotations, got %T", tc.msg.Codec)
+				t.Fatalf("expected msg.Codec() to be *messageAnnotations, got %T", tc.msg.Codec())
 			}
 			if ann.ParameterTypeName != tc.wantExt {
 				t.Errorf("ParameterTypeName = %q, want %q", ann.ParameterTypeName, tc.wantExt)
@@ -725,7 +714,7 @@ func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
 	if err := extModuleCodec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
-	extAnn := extParent.Codec.(*messageAnnotations)
+	extAnn := extParent.Codec().(*messageAnnotations)
 	if extAnn.ParameterTypeName != "GoogleType.ExtParent" {
 		t.Errorf("module conversion ParameterTypeName = %q, want %q", extAnn.ParameterTypeName, "GoogleType.ExtParent")
 	}
@@ -742,9 +731,9 @@ type messageDiagnoseFlags struct {
 
 func getMessageDiagnoseFlags(t *testing.T, message *api.Message) messageDiagnoseFlags {
 	t.Helper()
-	ann, ok := message.Codec.(*messageAnnotations)
+	ann, ok := message.Codec().(*messageAnnotations)
 	if !ok {
-		t.Fatalf("message %q is not annotated", message.Name)
+		t.Fatalf("message %q is not annotated", message.Name())
 	}
 	return messageDiagnoseFlags{
 		Codable:    ann.DiagnoseCodable,

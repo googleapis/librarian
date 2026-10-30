@@ -43,31 +43,33 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 		WithDocumentation("A create method.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v7").
-				WithLiteral("thing"),
+				WithLiteral("thing").
+				Build(),
 		).
 		WithQueryParameters("parent").
-		WithAPIVersion("v7_20260206")
-	createMethod.SourceServiceID = ".test.Service"
-	createMethod.InputTypeID = ".test.Request"
-	createMethod.OutputTypeID = ".test.Response"
+		WithAPIVersion("v7_20260206").
+		WithSourceServiceID(".test.Service").
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response")
 
 	makeMethod := api.NewTestMethod("Make").
 		WithID(".test.Service.Make").
 		WithDocumentation("Another sort of method.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v7").
 				WithLiteral("thing").
-				WithVerb("make"),
+				WithVerb("make").
+				Build(),
 		).
 		WithQueryParameters("parent").
-		WithAPIVersion("v7_20260206")
-	makeMethod.SourceServiceID = ".test.Service"
-	makeMethod.InputTypeID = ".test.Request"
-	makeMethod.OutputTypeID = ".test.Response"
+		WithAPIVersion("v7_20260206").
+		WithSourceServiceID(".test.Service").
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response")
 
 	want := api.NewTestService("Service").
 		WithPackage("test").

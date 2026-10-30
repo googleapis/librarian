@@ -38,14 +38,14 @@ func TestAnnotateSampleInfo(t *testing.T) {
 				field := api.NewTestField("secret").
 					WithType(api.TypezString).
 					WithResourceNamePattern(api.NewTestResourceNamePattern(
-						api.ResourceNameSegment{Literal: "projects"},
-						api.ResourceNameSegment{Variable: "project"},
-						api.ResourceNameSegment{Literal: "secrets"},
-						api.ResourceNameSegment{Variable: "secret"},
+						api.NewResourceNameSegment("projects", ""),
+						api.NewResourceNameSegment("", "project"),
+						api.NewResourceNameSegment("secrets", ""),
+						api.NewResourceNameSegment("", "secret"),
 					))
-				field.Codec = &fieldAnnotations{
+				field.SetAnnotations(&fieldAnnotations{
 					Name: "secretField",
-				}
+				})
 				return api.NewTestMethod("TestMethod").
 					WithSampleInfo(api.NewTestSampleInfo(field))
 			}(),
@@ -59,13 +59,13 @@ func TestAnnotateSampleInfo(t *testing.T) {
 			name: "ResourceNameField without pattern",
 			method: func() *api.Method {
 				field := api.NewTestField("secret").WithType(api.TypezString)
-				field.Codec = &fieldAnnotations{
+				field.SetAnnotations(&fieldAnnotations{
 					Name: "secretField",
-				}
+				})
 				return api.NewTestMethod("TestMethod").
-					WithSampleInfo(&api.SampleInfo{
-						ResourceNameField: field,
-					})
+					WithSampleInfo(api.NewSampleInfoBuilder().
+						WithResourceNameField(field).
+						Build())
 			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"secretField"},
@@ -76,10 +76,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		{
 			name: "AIP standard update",
 			method: func() *api.Method {
-				m := api.NewTestMethod("TestMethod").
-					WithSampleInfo(&api.SampleInfo{})
-				m.IsAIPStandardUpdate = true
-				return m
+				return api.NewTestMethod("TestMethod").
+					WithSampleInfo(api.NewSampleInfoBuilder().Build()).
+					WithIsAIPStandardUpdate(true)
 			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"name"},
@@ -93,9 +92,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 			codec.annotateSampleInfo(test.method)
 
 			var got *sampleInfoAnnotation
-			if test.method.SampleInfo != nil {
-				if test.method.SampleInfo.Codec != nil {
-					got = test.method.SampleInfo.Codec.(*sampleInfoAnnotation)
+			if test.method.SampleInfo() != nil {
+				if test.method.SampleInfo().Codec() != nil {
+					got = test.method.SampleInfo().Codec().(*sampleInfoAnnotation)
 				}
 			}
 

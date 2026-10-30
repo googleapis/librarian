@@ -72,7 +72,7 @@ func (m *methodAnnotation) IsBidiStreaming() bool {
 
 // FullBody returns true if the HTTP body is configured as "*".
 func (m *methodAnnotation) FullBody() bool {
-	return m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
+	return m.PathInfo != nil && m.PathInfo.BodyFieldPath() == "*"
 }
 
 // IsServerStreaming returns true if the method is a server-side streaming RPC
@@ -88,7 +88,7 @@ func (m *methodAnnotation) HasGrpcResourceNameArgs() bool {
 
 // HasBindings returns true if the method has path bindings.
 func (m *methodAnnotation) HasBindings() bool {
-	return m.PathInfo != nil && len(m.PathInfo.Bindings) > 0
+	return m.PathInfo != nil && len(m.PathInfo.Bindings()) > 0
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -253,7 +253,7 @@ func (b *pathBindingAnnotation) HasResourceNameArgs() bool {
 // returns a `Result<>`.
 func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
 	for _, f := range b.QueryParams {
-		if f.Typez == api.TypezMessage {
+		if f.Typez() == api.TypezMessage {
 			return true
 		}
 	}
@@ -292,8 +292,8 @@ type sampleInfoAnnotation struct {
 
 // HasBindingSubstitutions returns true if the method has binding substitutions.
 func (m *methodAnnotation) HasBindingSubstitutions() bool {
-	for _, b := range m.PathInfo.Bindings {
-		for _, s := range b.PathTemplate.Segments {
+	for _, b := range m.PathInfo.Bindings() {
+		for _, s := range b.PathTemplate().Segments() {
 			if s.Variable() != nil {
 				return true
 			}
@@ -306,50 +306,50 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	if err := c.annotatePathInfo(m); err != nil {
 		return nil, err
 	}
-	for _, routing := range m.Routing {
-		for _, variant := range routing.Variants {
+	for _, routing := range m.Routing() {
+		for _, variant := range routing.Variants() {
 			fieldAccessors, err := c.annotateRoutingAccessors(variant, m)
 			if err != nil {
 				return nil, err
 			}
 			routingVariantAnnotations := &routingVariantAnnotations{
 				FieldAccessors:   fieldAccessors,
-				PrefixSegments:   annotateSegments(variant.Prefix.Segments),
-				MatchingSegments: annotateSegments(variant.Matching.Segments),
-				SuffixSegments:   annotateSegments(variant.Suffix.Segments),
+				PrefixSegments:   annotateSegments(variant.Prefix().Segments()),
+				MatchingSegments: annotateSegments(variant.Matching().Segments()),
+				SuffixSegments:   annotateSegments(variant.Suffix().Segments()),
 			}
-			variant.Codec = routingVariantAnnotations
+			variant.SetAnnotations(routingVariantAnnotations)
 		}
 	}
-	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model, m.Model.PackageName)
+	returnType, err := c.methodInOutTypeName(m.OutputTypeID(), m.Model(), m.Model().PackageName())
 	if err != nil {
 		return nil, err
 	}
-	if m.ReturnsEmpty {
+	if m.ReturnsEmpty() {
 		returnType = "()"
 	}
-	serviceName := c.ServiceName(m.Service)
+	serviceName := c.ServiceName(m.Service())
 	systemParameters := slices.Clone(c.systemParameters)
-	if m.APIVersion != "" {
+	if m.APIVersion() != "" {
 		systemParameters = append(systemParameters, systemParameter{
 			Name:  "$apiVersion",
-			Value: m.APIVersion,
+			Value: m.APIVersion(),
 		})
 	}
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation(), m.ID(), m.Model(), m.Scopes())
 	if err != nil {
 		return nil, err
 	}
-	hasVeneer := c.serviceHasVeneer(m.Service.ID)
-	internalBuilders := c.serviceInternalBuilders(m.Service.ID)
-	generateRpcSamples := c.serviceGenerateRpcSamples(m.Service.ID)
+	hasVeneer := c.serviceHasVeneer(m.Service().ID())
+	internalBuilders := c.serviceInternalBuilders(m.Service().ID())
+	generateRpcSamples := c.serviceGenerateRpcSamples(m.Service().ID())
 	annotation := &methodAnnotation{
-		Name:                      toSnake(m.Name),
-		NameNoMangling:            toSnakeNoMangling(m.Name),
-		BuilderName:               toPascal(m.Name),
+		Name:                      toSnake(m.Name()),
+		NameNoMangling:            toSnakeNoMangling(m.Name()),
+		BuilderName:               toPascal(m.Name()),
 		Body:                      bodyAccessor(m),
 		DocLines:                  docLines,
-		PathInfo:                  m.PathInfo,
+		PathInfo:                  m.PathInfo(),
 		ServiceNameToPascal:       toPascal(serviceName),
 		ServiceNameToCamel:        toCamel(serviceName),
 		ServiceNameToSnake:        toSnake(serviceName),
@@ -360,11 +360,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          internalBuilders,
 		GenerateRpcSamples:        generateRpcSamples,
-		IsLroPoller:               m.IsLroPoller,
+		IsLroPoller:               m.IsLroPoller(),
 		IsDiscoveryLro:            isDiscoveryLro(m),
-		ExtensibleBuilder:         slices.Contains(c.extensibleBuilders, m.ID),
-		ClientSideStreaming:       m.ClientSideStreaming,
-		ServerSideStreaming:       m.ServerSideStreaming,
+		ExtensibleBuilder:         slices.Contains(c.extensibleBuilders, m.ID()),
+		ClientSideStreaming:       m.ClientSideStreaming(),
+		ServerSideStreaming:       m.ServerSideStreaming(),
 		IsGrpc:                    c.methodUsesGrpc(m),
 	}
 
@@ -381,87 +381,87 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		// a recommendation that is not applicable to generated code.
 		annotation.Attributes = []string{"#[allow(clippy::should_implement_trait)]"}
 	}
-	if m.OperationInfo != nil {
-		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model, m.Model.PackageName)
+	if m.OperationInfo() != nil {
+		metadataType, err := c.methodInOutTypeName(m.OperationInfo().MetadataTypeID(), m.Model(), m.Model().PackageName())
 		if err != nil {
 			return nil, err
 		}
-		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model, m.Model.PackageName)
+		responseType, err := c.methodInOutTypeName(m.OperationInfo().ResponseTypeID(), m.Model(), m.Model().PackageName())
 		if err != nil {
 			return nil, err
 		}
 		opInfo := &operationInfo{
 			MetadataType:     metadataType,
 			ResponseType:     responseType,
-			PackageNamespace: c.rootModuleName(m.Model),
+			PackageNamespace: c.rootModuleName(m.Model()),
 		}
-		m.OperationInfo.Codec = opInfo
+		m.OperationInfo().SetAnnotations(opInfo)
 		annotation.OperationInfo = opInfo
 	}
-	if m.DiscoveryLro != nil {
+	if m.DiscoveryLro() != nil {
 		lroAnnotation := &discoveryLroAnnotations{
 			MethodName:          annotation.Name,
 			ReturnType:          returnType,
 			ServiceNameToPascal: annotation.ServiceNameToPascal,
 		}
-		for _, p := range m.DiscoveryLro.PollingPathParameters {
+		for _, p := range m.DiscoveryLro().PollingPathParameters() {
 			a := discoveryLroPathParameter{
 				Name:       toSnake(p),
 				SetterName: toSnakeNoMangling(p),
 			}
 			lroAnnotation.PollingPathParameters = append(lroAnnotation.PollingPathParameters, a)
 		}
-		m.DiscoveryLro.Codec = lroAnnotation
+		m.DiscoveryLro().SetAnnotations(lroAnnotation)
 	}
-	m.Codec = annotation
+	m.SetAnnotations(annotation)
 	return annotation, nil
 }
 
 func isDiscoveryLro(m *api.Method) bool {
-	if !m.IsLroPoller {
+	if !m.IsLroPoller() {
 		return false
 	}
-	if m.Service == nil {
+	if m.Service() == nil {
 		return false
 	}
-	return slices.ContainsFunc(m.Service.Methods, func(meth *api.Method) bool {
-		return meth.DiscoveryLro != nil
+	return slices.ContainsFunc(m.Service().Methods(), func(meth *api.Method) bool {
+		return meth.DiscoveryLro() != nil
 	})
 }
 
 func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) ([]string, error) {
-	return makeAccessors(variant.FieldPath, m)
+	return makeAccessors(variant.FieldPath(), m)
 }
 
 func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
-		for _, f := range message.Fields {
-			if f.Name == name {
+		for _, f := range message.Fields() {
+			if f.Name() == name {
 				return f
 			}
 		}
 		return nil
 	}
 	var accessors []string
-	message := m.InputType
+	message := m.InputType()
 	for _, name := range fields {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
 		if field == nil {
-			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID())
 		}
-		if field.IsOneOf {
+		if field.IsOneOf() {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s())", rustFieldName))
-		} else if field.Optional {
+		} else if field.Optional() {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", rustFieldName))
 		} else {
 			accessors = append(accessors, fmt.Sprintf(".map(|m| &m.%s)", rustFieldName))
 		}
-		if field.Typez == api.TypezString {
+		if field.Typez() == api.TypezString {
 			accessors = append(accessors, ".map(|s| s.as_str())")
 		}
-		if field.Typez == api.TypezMessage {
-			if fieldMessage := m.Model.Message(field.TypezID); fieldMessage != nil {
+		if field.Typez() == api.TypezMessage {
+			if fieldMessage := m.Model().Message(field.TypezID()); fieldMessage != nil {
 				message = fieldMessage
 			}
 		}
@@ -509,7 +509,8 @@ func annotateSegments(segments []string) []string {
 }
 
 func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubstitution, error) {
-	accessors, err := makeAccessors(v.FieldPath(), m)
+	fieldPath := v.FieldPath()
+	accessors, err := makeAccessors(fieldPath, m)
 	if err != nil {
 		return nil, err
 	}
@@ -519,13 +520,13 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		fieldAccessor.WriteString(a)
 	}
 	var rustNames []string
-	for _, n := range v.FieldPath() {
+	for _, n := range fieldPath {
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	var pathExtraction *PathExtraction
-	fullBody := m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
+	fullBody := m.PathInfo() != nil && m.PathInfo().BodyFieldPath() == "*"
 	if fullBody {
-		clears, err := makeClearAccessors(v.FieldPath(), m)
+		clears, err := makeClearAccessors(fieldPath, m)
 		if err != nil {
 			return nil, err
 		}
@@ -547,35 +548,35 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 
 func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
-		for _, f := range message.Fields {
-			if f.Name == name {
+		for _, f := range message.Fields() {
+			if f.Name() == name {
 				return f
 			}
 		}
 		return nil
 	}
 	var clears []string
-	message := m.InputType
+	message := m.InputType()
 	for _, name := range fields {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
 		if field == nil {
-			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID())
 		}
-		if field.IsOneOf {
-			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, message.ID)
+		if field.IsOneOf() {
+			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, message.ID())
 		}
-		if field.Typez != api.TypezMessage {
+		if field.Typez() != api.TypezMessage {
 			clears = append(clears, fmt.Sprintf(".map(|m| std::mem::take(&mut m.%s))", rustFieldName))
 		} else {
-			if field.Optional {
+			if field.Optional() {
 				clears = append(clears, fmt.Sprintf(".and_then(|m| m.%s.as_mut())", rustFieldName))
 			} else {
 				clears = append(clears, fmt.Sprintf(".map(|m| &mut m.%s)", rustFieldName))
 			}
 		}
-		if field.Typez == api.TypezMessage {
-			if fieldMessage := m.Model.Message(field.TypezID); fieldMessage != nil {
+		if field.Typez() == api.TypezMessage {
+			if fieldMessage := m.Model().Message(field.TypezID()); fieldMessage != nil {
 				message = fieldMessage
 			}
 		}
@@ -585,7 +586,7 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 
 func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBindingAnnotation, error) {
 	var subs []*bindingSubstitution
-	for _, s := range b.PathTemplate.Segments {
+	for _, s := range b.PathTemplate().Segments() {
 		if s.Variable() != nil {
 			sub, err := makeBindingSubstitution(s.Variable(), m)
 			if err != nil {
@@ -595,7 +596,7 @@ func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBin
 		}
 	}
 	binding := &pathBindingAnnotation{
-		PathFmt:                   httpPathFmt(b.PathTemplate),
+		PathFmt:                   httpPathFmt(b.PathTemplate()),
 		QueryParams:               language.QueryParams(m, b),
 		Substitutions:             subs,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
@@ -604,14 +605,14 @@ func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBin
 }
 
 func (c *codec) annotatePathInfo(m *api.Method) error {
-	if m.PathInfo == nil {
+	if m.PathInfo() == nil {
 		return nil
 	}
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
 
-	for _, b := range m.PathInfo.Bindings {
-		if b.PathTemplate == nil {
+	for _, b := range m.PathInfo().Bindings() {
+		if b.PathTemplate() == nil {
 			continue
 		}
 		ann, err := c.annotatePathBinding(b, m)
@@ -626,29 +627,29 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 			}
 		}
 
-		b.Codec = ann
+		b.SetAnnotations(ann)
 	}
 
-	m.PathInfo.Codec = &pathInfoAnnotation{
-		HasBody:          m.PathInfo.BodyFieldPath != "",
+	m.PathInfo().SetAnnotations(&pathInfoAnnotation{
+		HasBody:          m.PathInfo().BodyFieldPath() != "",
 		UniqueParameters: uniqueParameters,
-		IsIdempotent:     isIdempotent(m.PathInfo),
-	}
+		IsIdempotent:     isIdempotent(m.PathInfo()),
+	})
 	return nil
 }
 
 func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 	var parameters []string
 	var formatResourceName bool
-	if rn := si.ResourceNameField; rn != nil {
-		fieldAnn := rn.Codec.(*fieldAnnotations)
+	if rn := si.ResourceNameField(); rn != nil {
+		fieldAnn := rn.Codec().(*fieldAnnotations)
 		if fieldAnn.FormattedResource != nil && len(fieldAnn.FormattedResource.FormatArgs) > 0 {
 			parameters = fieldAnn.FormattedResource.FormatArgs
 			formatResourceName = true
 		} else {
 			parameters = []string{fieldAnn.SetterName}
 		}
-	} else if m.IsAIPStandardUpdate {
+	} else if m.IsAIPStandardUpdate() {
 		parameters = []string{"name"}
 	} else {
 		parameters = []string{}
@@ -658,17 +659,18 @@ func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 		StringParameters:   parameters,
 		FormatResourceName: formatResourceName,
 	}
-	si.Codec = ann
+	si.SetAnnotations(ann)
 }
 
 func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
 	if !annotation.DetailedTracingAttributes {
 		return nil
 	}
-	if m.PathInfo != nil {
+	if m.PathInfo() != nil {
+		bindings := m.PathInfo().Bindings()
 		var firstBindingWithTargetResource *api.PathBinding
-		for _, b := range m.PathInfo.Bindings {
-			if b.TargetResource != nil {
+		for _, b := range bindings {
+			if b.TargetResource() != nil {
 				annotation.HasResourceNameGeneration = true
 				firstBindingWithTargetResource = b
 				break
@@ -683,7 +685,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 			annotation.ResourceNameTemplateGrpc = tmpl
 
 			var grpcArgs []string
-			for _, path := range firstBindingWithTargetResource.TargetResource.FieldPaths {
+			for _, path := range firstBindingWithTargetResource.TargetResource().FieldPaths() {
 				accessors, err := makeAccessors(path, m)
 				if err != nil {
 					return err
@@ -697,20 +699,20 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 			}
 			annotation.GrpcResourceNameArgs = grpcArgs
 
-			for _, b := range m.PathInfo.Bindings {
-				bAnn, ok := b.Codec.(*pathBindingAnnotation)
+			for _, b := range bindings {
+				bAnn, ok := b.Codec().(*pathBindingAnnotation)
 				if !ok {
 					continue
 				}
 				bAnn.HasResourceNameGeneration = true
 
-				if b.TargetResource != nil {
+				if b.TargetResource() != nil {
 					tmpl, err := formatResourceNameTemplateFromPath(m, b)
 					if err != nil {
 						return err
 					}
 					bAnn.ResourceNameTemplate = tmpl
-					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
+					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource().FieldPaths())
 				} else {
 					bAnn.ResourceNameTemplate = ""
 					bAnn.ResourceNameArgs = nil
@@ -722,12 +724,16 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 }
 
 func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
-	if b.TargetResource == nil || len(b.TargetResource.Template) == 0 {
-		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
+	if b.TargetResource() == nil {
+		return "", fmt.Errorf("missing target resource template for method %s", m.ID())
+	}
+	template := b.TargetResource().Template()
+	if len(template) == 0 {
+		return "", fmt.Errorf("missing target resource template for method %s", m.ID())
 	}
 
 	var sb strings.Builder
-	for i, seg := range b.TargetResource.Template {
+	for i, seg := range template {
 		if i > 0 {
 			sb.WriteString("/")
 		}
@@ -754,11 +760,12 @@ func formatResourceNameArgs(fieldPaths [][]string) []string {
 }
 
 func isIdempotent(p *api.PathInfo) string {
-	if len(p.Bindings) == 0 {
+	bindings := p.Bindings()
+	if len(bindings) == 0 {
 		return "false"
 	}
-	for _, b := range p.Bindings {
-		if b.Verb == "POST" || b.Verb == "PATCH" {
+	for _, b := range bindings {
+		if b.Verb() == "POST" || b.Verb() == "PATCH" {
 			return "false"
 		}
 	}
@@ -770,12 +777,12 @@ func (c *codec) methodUsesGrpc(m *api.Method) bool {
 		return false
 	}
 	// TODO(googleapis/google-cloud-rust#6470): Support LROs on gRPC transport in default template.
-	if c.templateOverride != "templates/grpc-client" && (m.OperationInfo != nil || m.IsLroPoller || isDiscoveryLro(m)) {
+	if c.templateOverride != "templates/grpc-client" && (m.OperationInfo() != nil || m.IsLroPoller() || isDiscoveryLro(m)) {
 		return false
 	}
 	if c.defaultTransport == "grpc" {
 		return true
 	}
 	// Client side only streaming is not yet supported, only include if specifically enabled.
-	return m.ServerSideStreaming || c.includeStreamingMethods
+	return m.ServerSideStreaming() || c.includeStreamingMethods
 }

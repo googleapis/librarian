@@ -49,9 +49,9 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 		"get", "list", "create", "update", "delete", "patch", "insert",
 	}
 
-	for _, service := range model.Services {
-		for _, m := range service.Methods {
-			nameLower := strings.ToLower(m.Name)
+	for _, service := range model.services {
+		for _, m := range service.methods {
+			nameLower := strings.ToLower(m.name)
 
 			var isCRUDPrefix bool
 			for _, prefix := range crudPrefixes {
@@ -77,21 +77,26 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 				continue
 			}
 
-			if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+			if m.pathInfo == nil {
+				continue
+			}
+			bindings := m.pathInfo.Bindings()
+			if len(bindings) == 0 {
 				continue
 			}
 
 			// Parse the path template of the primary binding
-			tmpl := m.PathInfo.Bindings[0].PathTemplate
+			tmpl := bindings[0].PathTemplate()
 			if tmpl == nil {
 				continue
 			}
 
 			// Iterate backwards.
-			for i, seg := range slices.Backward(tmpl.Segments) {
+			segments := tmpl.Segments()
+			for i, seg := range slices.Backward(segments) {
 				if seg.Variable() != nil {
-					if i > 0 && tmpl.Segments[i-1].Literal() != "" {
-						token := tmpl.Segments[i-1].Literal()
+					if i > 0 && segments[i-1].Literal() != "" {
+						token := segments[i-1].Literal()
 						// Do not add API version strings (e.g., v1, v1beta1) to the vocabulary
 						if isVersionString(token) {
 							continue
