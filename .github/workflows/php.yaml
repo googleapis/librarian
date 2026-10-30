@@ -34,6 +34,7 @@ jobs:
         with:
           repository: googleapis/google-cloud-php
           path: google-cloud-php
+          depth: 1
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
@@ -51,11 +52,16 @@ jobs:
         with:
           path: |
             ~/.cache/librarian
-          key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
+            google-cloud-php/dev/vendor
+            ${{ env.pythonLocation }}/lib/python3.14/site-packages
+          key: librarian-php-tools-v3-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
+          restore-keys: |
+            librarian-php-tools-v3-${{ runner.os }}-
       - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-php
         run: |
-          librarian install
+          librarian -v install
       - name: Run internal/librarian/php tests and check coverage
         run: go run ./tool/cmd/coverage ./internal/librarian/php
   smoke-test:
@@ -76,6 +82,7 @@ jobs:
         with:
           repository: googleapis/google-cloud-php
           path: google-cloud-php
+          depth: 1
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
@@ -95,11 +102,16 @@ jobs:
         with:
           path: |
             ~/.cache/librarian
-          key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
+            google-cloud-php/dev/vendor
+            ${{ env.pythonLocation }}/lib/python3.14/site-packages
+          key: librarian-php-tools-v3-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
+          restore-keys: |
+            librarian-php-tools-v3-${{ runner.os }}-
       - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-php
         run: |
-          librarian install
+          librarian -v install
       - name: Generate a single library (smoke test)
         working-directory: google-cloud-php
         run: librarian generate secretmanager
@@ -133,11 +145,16 @@ jobs:
         with:
           path: |
             ~/.cache/librarian
-          key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
+            google-cloud-php/dev/vendor
+            ${{ env.pythonLocation }}/lib/python3.14/site-packages
+          key: librarian-php-tools-v3-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
+          restore-keys: |
+            librarian-php-tools-v3-${{ runner.os }}-
       - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-php
         run: |
-          librarian install
+          librarian -v install
       - name: Generate all libraries (integration test)
         working-directory: google-cloud-php
         run: librarian generate --all
