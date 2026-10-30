@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
@@ -46,7 +45,7 @@ func TestProtobuf_Signatures(t *testing.T) {
 	}
 	var names []string
 	for _, f := range gotMessage.Fields {
-		names = append(names, f.Name)
+		names = append(names, f.Name())
 	}
 	if diff := cmp.Diff([]string{"parent", "foo_id", "flags"}, names); diff != "" {
 		t.Fatalf("mismatch (-want +got):\n%s", diff)
@@ -72,7 +71,7 @@ func TestProtobuf_Signatures(t *testing.T) {
 		gotMethod.Signatures,
 		apitest.AllowUnexported(),
 		cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".method" }, cmp.Ignore()),
-		cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+		apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

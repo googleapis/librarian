@@ -162,7 +162,10 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 			}
 
 			got := group.ExampleField
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
+				return p.Last().String() == ".parent" || p.Last().String() == ".group"
+			}, cmp.Ignore())
+			if diff := cmp.Diff(test.want, got, allowUnexported(), ignoreFieldCycle); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -188,7 +191,7 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		got := field.ResourceNamePattern
+		got := field.ResourceNamePattern()
 		want := NewTestResourceNamePattern(NewResourceNameSegment("resources", "resource"))
 		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -214,7 +217,7 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		got := field.ResourceNamePattern
+		got := field.ResourceNamePattern()
 		want := NewTestResourceNamePattern(NewResourceNameSegment("parents", "parent"))
 		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -231,14 +234,14 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 		message := NewTestMessage("ResourceMessage").
 			WithFields(field).
 			WithResource(res)
-		field.MessageType = message
+		field.WithMessageType(message)
 		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
 
 		if err := CrossReference(model); err != nil {
 			t.Fatal(err)
 		}
 
-		got := field.ResourceNamePattern
+		got := field.ResourceNamePattern()
 		want := NewTestResourceNamePattern(NewResourceNameSegment("resources", "resource"))
 		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)

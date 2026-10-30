@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestAnnotateMethod(t *testing.T) {
@@ -131,7 +132,7 @@ func TestAnnotateMethod(t *testing.T) {
 			}
 			got := method.Codec.(*methodAnnotations)
 			want := test.wantFunc(keyField)
-			if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
+			if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent", "codec"), cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if !got.PlainRPC() {

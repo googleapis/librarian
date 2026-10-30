@@ -22,9 +22,9 @@ type fieldAnnotations struct {
 }
 
 func (c *codec) annotateField(f *api.Field, mAnn *messageAnnotations) error {
-	f.Codec = &fieldAnnotations{
+	f.SetAnnotations(&fieldAnnotations{
 		Message: mAnn,
-		Name:    f.Name + "Sample",
-	}
+		Name:    f.Name() + "Sample",
+	})
 	return nil
 }

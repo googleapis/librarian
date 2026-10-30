@@ -48,7 +48,7 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 	duplicate := map[string]bool{}
 	for _, name := range pathNames {
 		for _, field := range msg.Fields {
-			if field.Name == name && !duplicate[name] {
+			if field.Name() == name && !duplicate[name] {
 				params = append(params, field)
 				duplicate[name] = true
 				break
@@ -63,7 +63,7 @@ func QueryParams(m *api.Method, b *api.PathBinding) []*api.Field {
 	var queryParams []*api.Field
 	qp := b.QueryParameters()
 	for _, field := range m.InputType.Fields {
-		if !qp[field.Name] {
+		if !qp[field.Name()] {
 			continue
 		}
 		queryParams = append(queryParams, field)

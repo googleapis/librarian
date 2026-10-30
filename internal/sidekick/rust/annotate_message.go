@@ -112,7 +112,7 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 		}
 	}
 	basicFields := language.FilterSlice(m.Fields, func(f *api.Field) bool {
-		return !f.IsOneOf
+		return !f.IsOneOf()
 	})
 
 	docLines, err := c.formatDocComments(m.Documentation, m.ID, model, m.Scopes())

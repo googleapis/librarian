@@ -143,19 +143,18 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		if f == nil {
 			return
 		}
-		fieldPath := parentPath + "." + f.Name
-		if isAnyType(f.TypezID) {
-			if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
-				f.SkipProtoConversion = true
+		fieldPath := parentPath + "." + f.Name()
+		if isAnyType(f.TypezID()) {
+			if api.MarkSkipProtoConversionIfAllowed(f, fieldPath, allowGrpcAnyFields) {
 				return
 			}
 			unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
 			return
 		}
-		if f.Typez == api.TypezMap {
-			mapType := f.MapType
+		if f.Typez() == api.TypezMap {
+			mapType := f.MapType()
 			if mapType == nil {
-				mapType = model.Map(f.TypezID)
+				mapType = model.Map(f.TypezID())
 			}
 			if mapType != nil {
 				enqueueField(fieldPath, mapType.Key)
@@ -163,14 +162,14 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 			}
 			return
 		}
-		if f.Typez == api.TypezMessage && f.TypezID != "" {
+		if f.Typez() == api.TypezMessage && f.TypezID() != "" {
 			queue = append(queue, typeItem{
-				id:   f.TypezID,
+				id:   f.TypezID(),
 				path: fieldPath,
 			})
 		}
-		if f.Typez == api.TypezEnum && f.TypezID != "" {
-			enqueueEnum(model.Enum(f.TypezID), fieldPath)
+		if f.Typez() == api.TypezEnum && f.TypezID() != "" {
+			enqueueEnum(model.Enum(f.TypezID()), fieldPath)
 		}
 	}
 
@@ -307,16 +306,6 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	slices.Sort(unusedTypes)
 
 	return &hybridModel, slices.Compact(unusedTypes), hasGoogleRpcStatus, nil
-}
-
-func matchesAllowedAnyField(id string, allowGrpcAnyFields []string) bool {
-	idTrimmed := strings.TrimPrefix(id, ".")
-	for _, allowed := range allowGrpcAnyFields {
-		if strings.TrimPrefix(allowed, ".") == idTrimmed {
-			return true
-		}
-	}
-	return false
 }
 
 func isAnyType(id string) bool {

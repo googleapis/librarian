@@ -92,18 +92,18 @@ func TestSetterSampleAnnotations(t *testing.T) {
 	}
 
 	enumField := message.Fields[0]
-	if enumField.Parent != message {
+	if enumField.Parent() != message {
 		t.Errorf("mismatch in enum_field.Parent")
 	}
-	if enumField.EnumType != enum {
+	if enumField.EnumType() != enum {
 		t.Errorf("mismatch in enum_field.EnumType")
 	}
 
 	messageField := message.Fields[1]
-	if messageField.Parent != message {
+	if messageField.Parent() != message {
 		t.Errorf("mismatch in message_field.Parent")
 	}
-	if messageField.MessageType != message {
+	if messageField.MessageType() != message {
 		t.Errorf("mismatch in message_field.MessageType")
 	}
 }

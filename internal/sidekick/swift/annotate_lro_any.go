@@ -135,10 +135,10 @@ func (c *codec) annotateLROAnyFields() {
 		return
 	}
 	for _, field := range operation.Fields {
-		if field.Typez != api.TypezMessage || field.TypezID != protobufAnyID {
+		if field.Typez() != api.TypezMessage || field.TypezID() != protobufAnyID {
 			continue
 		}
-		annotations, ok := field.Codec.(*fieldAnnotations)
+		annotations, ok := field.Codec().(*fieldAnnotations)
 		if !ok {
 			continue
 		}

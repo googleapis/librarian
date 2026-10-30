@@ -527,32 +527,34 @@ func protobufUpdateFileOption(current, got string) (string, error) {
 	return "", fmt.Errorf("mismatched file option value, want=%s got=%s", current, got)
 }
 
-func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, field *api.Field) {
-	field.Typez = descriptorpbToTypez[in.GetType()]
-	field.TypezID = in.GetTypeName()
-	field.Repeated = in.Label != nil && *in.Label == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
+func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, isOneOf bool, fb *api.FieldBuilder) {
+	typezID := in.GetTypeName()
+	repeated := in.Label != nil && *in.Label == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
+	fb.WithTypez(descriptorpbToTypez[in.GetType()]).
+		WithTypezID(typezID).
+		WithRepeated(repeated)
 
 	switch in.GetType() {
 	case descriptorpb.FieldDescriptorProto_TYPE_GROUP:
-		field.TypezID = in.GetTypeName()
+		fb.WithTypezID(in.GetTypeName())
 	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
-		field.TypezID = in.GetTypeName()
+		fb.WithTypezID(typezID)
 		// Repeated fields are not optional, they can be empty, but always have
 		// presence. Oneof fields are also not optional because presence is
 		// managed by the oneof itself.
-		field.Optional = !field.Repeated && !field.IsOneOf
-		if model.Map(field.TypezID) != nil {
+		fb.WithOptional(!repeated && !isOneOf)
+		if model.Map(typezID) != nil {
 			// Map fields appear as repeated in Protobuf. This is confusing,
 			// as they typically are represented by a single `map<k, v>`-like
 			// datatype. Protobuf leaks the wire-representation of maps, i.e.,
 			// repeated pairs.
-			field.Typez = api.TypezMap
-			field.Map = true
-			field.Repeated = false
-			field.Optional = false
+			fb.WithTypez(api.TypezMap).
+				WithMap(true).
+				WithRepeated(false).
+				WithOptional(false)
 		}
 	case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
-		field.TypezID = in.GetTypeName()
+		fb.WithTypezID(in.GetTypeName())
 
 	case
 		descriptorpb.FieldDescriptorProto_TYPE_DOUBLE,
@@ -672,16 +674,14 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		}
 		message.OneOfs = append(message.OneOfs, oneOfs)
 	}
-	for _, mf := range m.Field {
-		field, err := processField(model, mf, mFQN)
+	for i, mf := range m.Field {
+		doc := lookupComment(comments, append(pathPrefix, messageDescriptorField, int32(i)))
+		field, err := processField(model, mf, mFQN, proto2, doc)
 		if err != nil {
 			return nil, err
 		}
-		field.Proto2Optional = proto2 && !field.IsOneOf &&
-			mf.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL &&
-			field.Typez != api.TypezMessage && field.Typez != api.TypezGroup
 		message.Fields = append(message.Fields, field)
-		if field.IsOneOf {
+		if field.IsOneOf() {
 			message.OneOfs[*mf.OneofIndex].Fields = append(message.OneOfs[*mf.OneofIndex].Fields, field)
 		}
 	}
@@ -703,33 +703,39 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	return message, nil
 }
 
-func processField(model *api.API, mf *descriptorpb.FieldDescriptorProto, mFQN string) (*api.Field, error) {
+func processField(model *api.API, mf *descriptorpb.FieldDescriptorProto, mFQN string, proto2 bool, doc string) (*api.Field, error) {
 	isProtoOptional := mf.Proto3Optional != nil && *mf.Proto3Optional
-	field := &api.Field{
-		Name:          mf.GetName(),
-		ID:            mFQN + "." + mf.GetName(),
-		JSONName:      mf.GetJsonName(),
-		Deprecated:    mf.GetOptions().GetDeprecated(),
-		Optional:      isProtoOptional,
-		IsOneOf:       mf.OneofIndex != nil && !isProtoOptional,
-		AutoPopulated: protobufIsAutoPopulated(mf),
-		Behavior:      protobufFieldBehavior(mf),
-	}
-	if err := processResourceReference(mf, field); err != nil {
+	isOneOf := mf.OneofIndex != nil && !isProtoOptional
+	fieldID := mFQN + "." + mf.GetName()
+	fb := api.NewFieldBuilder().
+		WithName(mf.GetName()).
+		WithID(fieldID).
+		WithJSONName(mf.GetJsonName()).
+		WithDocumentation(doc).
+		WithDeprecated(mf.GetOptions().GetDeprecated()).
+		WithOptional(isProtoOptional).
+		WithIsOneOf(isOneOf).
+		WithAutoPopulated(protobufIsAutoPopulated(mf)).
+		WithBehavior(protobufFieldBehavior(mf)...)
+	if err := processResourceReference(mf, fieldID, fb); err != nil {
 		return nil, err
 	}
-	normalizeTypes(model, mf, field)
-	return field, nil
+	normalizeTypes(model, mf, isOneOf, fb)
+	fieldTypez := descriptorpbToTypez[mf.GetType()]
+	fb.WithProto2Optional(proto2 && !isOneOf &&
+		mf.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL &&
+		fieldTypez != api.TypezMessage && fieldTypez != api.TypezGroup)
+	return fb.Build(), nil
 }
 
 func processMapEntry(model *api.API, nm *descriptorpb.DescriptorProto, nmFQN string) error {
 	var keyField, valueField *api.Field
 	for _, mf := range nm.Field {
-		field, err := processField(model, mf, nmFQN)
+		field, err := processField(model, mf, nmFQN, false, "")
 		if err != nil {
 			return err
 		}
-		switch field.Name {
+		switch field.Name() {
 		case "key":
 			keyField = field
 		case "value":
@@ -815,7 +821,7 @@ func processFileResourceDefinitions(f *descriptorpb.FileDescriptorProto) ([]*api
 // distinction correctly. Future work should involve creating a more robust
 // model that correctly determines the primary resource for a method, using
 // `child_type` when it is present for collection-based methods.
-func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.Field) error {
+func processResourceReference(f *descriptorpb.FieldDescriptorProto, fieldID string, fb *api.FieldBuilder) error {
 	if f.Options == nil {
 		return nil
 	}
@@ -825,12 +831,12 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.F
 	ext := proto.GetExtension(f.Options, eResourceReference)
 	ref, ok := ext.(*resourceReference)
 	if !ok {
-		return fmt.Errorf("in field %q: unexpected type for eResourceReference extension: %T", field.ID, ext)
+		return fmt.Errorf("in field %q: unexpected type for eResourceReference extension: %T", fieldID, ext)
 	}
-	field.ResourceReference = api.NewResourceReferenceBuilder().
+	fb.WithResourceReference(api.NewResourceReferenceBuilder().
 		WithType(ref.Type).
 		WithChildType(ref.ChildType).
-		Build()
+		Build())
 	return nil
 }
 
@@ -942,10 +948,9 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 		}
 		nmFQN := mFQN + "." + nmsg.GetName()
 		addMessageDocumentation(model, nmsg, p[2:], doc, nmFQN)
-	case p[0] == messageDescriptorField && len(p) == 2:
-		message.Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorOneOf && len(p) == 2:
 		message.OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+	case p[0] == messageDescriptorField:
 	case p[0] == messageDescriptorEnum:
 	case p[0] == messageDescriptorExtensionRange:
 	case p[0] == messageDescriptorOptions:
