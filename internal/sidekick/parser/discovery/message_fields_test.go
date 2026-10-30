@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestMakeMessageFields(t *testing.T) {
@@ -114,8 +115,8 @@ func TestMakeMessageFields(t *testing.T) {
 				WithTypezID(".package.AnotherMessage").
 				WithRepeated(),
 		).Fields
-	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want, message.Fields, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	less := func(a, b *api.Field) bool { return a.Name() < b.Name() }
+	if diff := cmp.Diff(want, message.Fields, apitest.AllowUnexported(), cmpopts.SortSlices(less), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

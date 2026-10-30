@@ -22,7 +22,7 @@ import (
 
 func makeMessageFields(model *api.API, message *api.Message, schema *schema) error {
 	for _, input := range schema.Properties {
-		field, err := makeField(model, message, input)
+		field, err := makeField(model, message, input, true)
 		if err != nil {
 			return err
 		}
@@ -31,41 +31,32 @@ func makeMessageFields(model *api.API, message *api.Message, schema *schema) err
 	return nil
 }
 
-func makeField(model *api.API, message *api.Message, input *property) (*api.Field, error) {
+func makeField(model *api.API, message *api.Message, input *property, optional bool) (*api.Field, error) {
 	if input.Schema.Type == "array" {
 		return makeArrayField(model, message, input)
 	}
 	if field, err := maybeMapField(model, message, input); err != nil || field != nil {
 		return field, err
 	}
-	if field, err := maybeInlineObjectField(model, message, input.Name, input.Schema); err != nil || field != nil {
+	if field, err := makeInlineObjectField(model, message, input.Name, input.Schema, input.Schema.Description, optional, false); err != nil || field != nil {
 		return field, err
 	}
-	return makeScalarField(model, message, input.Name, input.Schema)
+	return makeScalarFieldWithOptions(model, message, input.Name, input.Schema, input.Schema.Description, optional, false)
 }
 
 func makeArrayField(model *api.API, message *api.Message, input *property) (*api.Field, error) {
-	field, err := maybeInlineObjectField(model, message, input.Name, input.Schema.ItemSchema)
-	if err != nil {
-		return nil, err
+	field, err := makeInlineObjectField(model, message, input.Name, input.Schema.ItemSchema, input.Schema.Description, false, true)
+	if err != nil || field != nil {
+		return field, err
 	}
-	if field != nil {
-		field.Documentation = input.Schema.Description
-		field.Repeated = true
-		field.Optional = false
-		return field, nil
-	}
-	field, err = makeScalarField(model, message, input.Name, input.Schema.ItemSchema)
-	if err != nil {
-		return nil, err
-	}
-	field.Documentation = input.Schema.Description
-	field.Repeated = true
-	field.Optional = false
-	return field, nil
+	return makeScalarFieldWithOptions(model, message, input.Name, input.Schema.ItemSchema, input.Schema.Description, false, true)
 }
 
 func makeScalarField(model *api.API, message *api.Message, name string, schema *schema) (*api.Field, error) {
+	return makeScalarFieldWithOptions(model, message, name, schema, schema.Description, true, false)
+}
+
+func makeScalarFieldWithOptions(model *api.API, message *api.Message, name string, schema *schema, description string, optional, repeated bool) (*api.Field, error) {
 	if err := makeMessageEnum(model, message, name, schema); err != nil {
 		return nil, err
 	}
@@ -73,16 +64,17 @@ func makeScalarField(model *api.API, message *api.Message, name string, schema *
 	if err != nil {
 		return nil, err
 	}
-	return &api.Field{
-		Name:          name,
-		JSONName:      name, // Discovery doc field names are always camelCase
-		ID:            fmt.Sprintf("%s.%s", message.ID, name),
-		Documentation: schema.Description,
-		Typez:         typez,
-		TypezID:       typezID,
-		Deprecated:    schema.Deprecated,
-		Optional:      true,
-	}, nil
+	return api.NewFieldBuilder().
+		WithName(name).
+		WithJSONName(name). // Discovery doc field names are always camelCase
+		WithID(fmt.Sprintf("%s.%s", message.ID, name)).
+		WithDocumentation(description).
+		WithTypez(typez).
+		WithTypezID(typezID).
+		WithDeprecated(schema.Deprecated).
+		WithOptional(optional).
+		WithRepeated(repeated).
+		Build(), nil
 }
 
 func scalarType(model *api.API, messageID, name string, input *schema) (api.Typez, string, error) {

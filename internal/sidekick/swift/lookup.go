@@ -42,7 +42,7 @@ func lookupEnum(model *api.API, id string) (*api.Enum, error) {
 // lookupField finds a field in a message.
 func lookupField(message *api.Message, name string) (*api.Field, error) {
 	idx := slices.IndexFunc(message.Fields, func(f *api.Field) bool {
-		return f.Name == name
+		return f.Name() == name
 	})
 	if idx == -1 {
 		return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, message.ID)
@@ -52,13 +52,13 @@ func lookupField(message *api.Message, name string) (*api.Field, error) {
 
 // lookupMap finds the map definition for a map field.
 func lookupMap(model *api.API, f *api.Field) (*api.Map, error) {
-	if f.MapType != nil {
-		return f.MapType, nil
+	if f.MapType() != nil {
+		return f.MapType(), nil
 	}
 	if model != nil {
-		if m := model.Map(f.TypezID); m != nil {
+		if m := model.Map(f.TypezID()); m != nil {
 			return m, nil
 		}
 	}
-	return nil, fmt.Errorf("unable to lookup map %q for field %q", f.TypezID, f.ID)
+	return nil, fmt.Errorf("unable to lookup map %q for field %q", f.TypezID(), f.ID())
 }

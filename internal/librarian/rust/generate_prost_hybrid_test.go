@@ -339,12 +339,12 @@ func TestFilterModelToTypesAllowedAny(t *testing.T) {
 	if len(msg.Fields) != 2 {
 		t.Errorf("expected msg.Fields to retain all 2 fields, got: %v", msg.Fields)
 	}
-	detailsField := slices.IndexFunc(msg.Fields, func(f *api.Field) bool { return f.Name == "details" })
-	if detailsField == -1 || !msg.Fields[detailsField].SkipProtoConversion {
+	detailsField := slices.IndexFunc(msg.Fields, func(f *api.Field) bool { return f.Name() == "details" })
+	if detailsField == -1 || !msg.Fields[detailsField].SkipProtoConversion() {
 		t.Errorf("expected 'details' field to have SkipProtoConversion == true")
 	}
-	nameField := slices.IndexFunc(msg.Fields, func(f *api.Field) bool { return f.Name == "name" })
-	if nameField == -1 || msg.Fields[nameField].SkipProtoConversion {
+	nameField := slices.IndexFunc(msg.Fields, func(f *api.Field) bool { return f.Name() == "name" })
+	if nameField == -1 || msg.Fields[nameField].SkipProtoConversion() {
 		t.Errorf("expected 'name' field to have SkipProtoConversion == false")
 	}
 }

@@ -226,7 +226,7 @@ func findField(msg *Message, path []string) (*Field, error) {
 
 	for i, name := range path {
 		idx := slices.IndexFunc(current.Fields, func(f *Field) bool {
-			return f.Name == name
+			return f.name == name
 		})
 		if idx == -1 {
 			return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, current.Name)
@@ -234,10 +234,10 @@ func findField(msg *Message, path []string) (*Field, error) {
 		field = current.Fields[idx]
 
 		if i < len(path)-1 {
-			if field.MessageType == nil {
-				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.Name, current.Name)
+			if field.messageType == nil {
+				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.name, current.Name)
 			}
-			current = field.MessageType
+			current = field.messageType
 		}
 	}
 

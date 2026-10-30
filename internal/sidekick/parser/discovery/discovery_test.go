@@ -147,7 +147,7 @@ func TestMessage(t *testing.T) {
 				WithOptional(),
 		)
 	for _, f := range want.Fields {
-		f.Parent = nil
+		f.WithParent(nil)
 	}
 	apitest.CheckMessage(t, got, want)
 }
@@ -162,7 +162,7 @@ func TestDeprecatedField(t *testing.T) {
 	if gotMessage == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
-	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name == "port" })
+	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name() == "port" })
 	if idx == -1 {
 		t.Fatalf("expected a `port` field in the message, got=%v", gotMessage)
 	}
@@ -171,12 +171,12 @@ func TestDeprecatedField(t *testing.T) {
 		WithFields(
 			api.NewTestField("port").
 				WithDeprecated(true).
-				WithDocumentation(gotField.Documentation).
+				WithDocumentation(gotField.Documentation()).
 				WithType(api.TypezInt32).
 				WithTypezID("int32").
 				WithOptional(),
 		).Fields[0]
-	if diff := cmp.Diff(wantField, gotField, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(wantField, gotField, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
