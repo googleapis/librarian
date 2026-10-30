@@ -14,8 +14,6 @@
 
 package api
 
-import "slices"
-
 // PathVariableBuilder builds a [PathVariable].
 type PathVariableBuilder struct {
 	fieldPath     []string
@@ -25,12 +23,12 @@ type PathVariableBuilder struct {
 
 // NewPathVariableBuilder creates a new [PathVariableBuilder] with the given field path.
 func NewPathVariableBuilder(fields ...string) *PathVariableBuilder {
-	return &PathVariableBuilder{fieldPath: slices.Clone(fields)}
+	return &PathVariableBuilder{fieldPath: fields}
 }
 
 // WithFieldPath sets the field path for the path variable.
 func (b *PathVariableBuilder) WithFieldPath(fields ...string) *PathVariableBuilder {
-	b.fieldPath = slices.Clone(fields)
+	b.fieldPath = fields
 	return b
 }
 
@@ -67,8 +65,8 @@ func (b *PathVariableBuilder) WithAllowReserved() *PathVariableBuilder {
 // Build constructs a [PathVariable] from the builder.
 func (b *PathVariableBuilder) Build() *PathVariable {
 	return &PathVariable{
-		fieldPath:     slices.Clone(b.fieldPath),
-		segments:      slices.Clone(b.segments),
+		fieldPath:     b.fieldPath,
+		segments:      b.segments,
 		allowReserved: b.allowReserved,
 	}
 }
