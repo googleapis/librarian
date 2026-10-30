@@ -246,12 +246,12 @@ func (c *codec) generateSnippets(outdir string, model *api.API) error {
 			return err
 		}
 		for _, m := range s.Methods {
-			if !c.shouldGenerateMethod(m) || m.IsLroPoller {
+			if !c.shouldGenerateMethod(m) || m.IsLroPoller() {
 				continue
 			}
 			mGenerated := language.GeneratedFile{
 				TemplatePath: "templates/common/method_snippet.swift.gotmpl",
-				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name, m.Name)),
+				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name, m.Name())),
 			}
 			if err := parsedTemplates.GenerateElement(outdir, m, mGenerated); err != nil {
 				return err

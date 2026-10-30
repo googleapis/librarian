@@ -288,7 +288,7 @@ func TestExamples(t *testing.T) {
 			if got == nil {
 				t.Fatalf("Cannot find method %s in API State", test.methodID)
 			}
-			if diff := cmp.Diff(test.want, got.Routing, apitest.AllowUnexported()); diff != "" {
+			if diff := cmp.Diff(test.want, got.Routing(), apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

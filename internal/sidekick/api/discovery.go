@@ -15,6 +15,7 @@
 package api
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -110,4 +111,84 @@ func (p *Poller) serviceID() string {
 		return p.MethodID
 	}
 	return p.MethodID[:idx]
+}
+
+// AddDiscoveryLroAnnotations attaches Discovery LRO metadata to LRO-returning
+// methods and injects synthetic `getOperation` polling methods onto services.
+func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
+	if discoveryConfig == nil {
+		return nil
+	}
+	lroServices := discoveryConfig.LroServices()
+	for _, svc := range model.Services {
+		if _, ok := lroServices[svc.ID]; ok {
+			continue
+		}
+		var svcMixin *Method
+		for _, method := range svc.Methods {
+			if method.outputTypeID != discoveryConfig.OperationID {
+				continue
+			}
+			mixin, pathParams := findDiscoveryLroPoller(method, model, discoveryConfig)
+			if mixin == nil {
+				continue
+			}
+			method.discoveryLro = NewDiscoveryLroBuilder().
+				WithPollingPathParameters(pathParams...).
+				Build()
+			if svcMixin != nil && mixin != svcMixin {
+				return fmt.Errorf("mismatched LRO mixin, want=%v, got=%v", svcMixin, mixin)
+			}
+			svcMixin = mixin
+		}
+		if svcMixin == nil {
+			continue
+		}
+		sourceID := ""
+		if l := strings.LastIndex(svcMixin.id, "."); l != -1 {
+			sourceID = svcMixin.id[0:l]
+		}
+		method := &Method{
+			name:            "getOperation",
+			id:              fmt.Sprintf("%s.getOperation", svc.ID),
+			documentation:   svcMixin.documentation,
+			inputTypeID:     svcMixin.inputTypeID,
+			outputTypeID:    svcMixin.outputTypeID,
+			returnsEmpty:    svcMixin.returnsEmpty,
+			pathInfo:        svcMixin.pathInfo,
+			pagination:      svcMixin.pagination,
+			routing:         svcMixin.routing,
+			autoPopulated:   svcMixin.autoPopulated,
+			service:         svc,
+			sourceServiceID: sourceID,
+			isLroPoller:     true,
+		}
+		svc.Methods = append(svc.Methods, method)
+		model.AddMethod(method)
+	}
+	return nil
+}
+
+func findDiscoveryLroPoller(method *Method, model *API, discoveryConfig *Discovery) (*Method, []string) {
+	if method.pathInfo == nil {
+		return nil, nil
+	}
+	var flatPath []string
+	for _, binding := range method.pathInfo.Bindings() {
+		if binding.PathTemplate() == nil {
+			continue
+		}
+		flatPath = append(flatPath, binding.PathTemplate().FlatPath())
+	}
+	for _, candidate := range discoveryConfig.Pollers {
+		for _, path := range flatPath {
+			if !strings.HasPrefix(path, candidate.Prefix) {
+				continue
+			}
+			if method := model.Method(candidate.MethodID); method != nil {
+				return method, candidate.PathParameters()
+			}
+		}
+	}
+	return nil, nil
 }

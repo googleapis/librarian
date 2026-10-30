@@ -35,12 +35,12 @@ type sampleInfoAnnotation struct {
 }
 
 func (c *codec) annotateSampleInfo(method *api.Method) {
-	si := method.SampleInfo
+	si := method.SampleInfo()
 	if si == nil {
 		return
 	}
 	var ann *sampleInfoAnnotation
-	if field := si.ResourceNameField; field != nil {
+	if field := si.ResourceNameField(); field != nil {
 		fieldAnn := field.Codec().(*fieldAnnotations)
 		if field.ResourceNamePattern() != nil && len(field.ResourceNamePattern().Segments()) > 0 {
 			ann = c.resourceNameToSampleInfo(field.ResourceNamePattern(), fieldAnn)
@@ -51,14 +51,14 @@ func (c *codec) annotateSampleInfo(method *api.Method) {
 				FormatString: fmt.Sprintf("\\(%s)", fieldAnn.Name),
 			}
 		}
-	} else if method.IsAIPStandardUpdate {
+	} else if method.IsAIPStandardUpdate() {
 		ann = &sampleInfoAnnotation{
 			Parameters:   []string{"name"},
 			Name:         "name",
 			FormatString: "\\(name)",
 		}
 	}
-	si.Codec = ann
+	si.SetAnnotations(ann)
 }
 
 func (c *codec) resourceNameToSampleInfo(pattern *api.ResourceNamePattern, fieldAnn *fieldAnnotations) *sampleInfoAnnotation {

@@ -15,12 +15,30 @@
 package api
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
+
+func ignoreMethodFields(names ...string) cmp.Option {
+	ignore := make(map[string]bool, len(names))
+	for _, n := range names {
+		ignore[n] = true
+	}
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != reflect.TypeFor[Method]() {
+			return false
+		}
+		sf, ok := p.Last().(cmp.StructField)
+		return ok && ignore[sf.Name()]
+	}, cmp.Ignore())
+}
 
 func TestSkipMessages(t *testing.T) {
 	m0 := NewTestMessage("Message0")
@@ -111,27 +129,27 @@ func TestSkipServices(t *testing.T) {
 }
 
 var methodIgnoreFields = []string{
-	"Model",
-	"Service",
-	"SourceService",
-	"InputType",
-	"OutputType",
-	"InputTypeID",
-	"OutputTypeID",
-	"IsSimple",
-	"IsLRO",
-	"LongRunningResponseType",
-	"LongRunningReturnsEmpty",
-	"IsList",
-	"IsStreaming",
-	"IsAIPStandard",
-	"IsAIPStandardGet",
-	"IsAIPStandardDelete",
-	"IsAIPStandardUndelete",
-	"IsAIPStandardCreate",
-	"IsAIPStandardUpdate",
-	"IsAIPStandardList",
-	"SampleInfo",
+	"model",
+	"service",
+	"sourceService",
+	"inputType",
+	"outputType",
+	"inputTypeID",
+	"outputTypeID",
+	"isSimple",
+	"isLRO",
+	"longRunningResponseType",
+	"longRunningReturnsEmpty",
+	"isList",
+	"isStreaming",
+	"isAIPStandard",
+	"isAIPStandardGet",
+	"isAIPStandardDelete",
+	"isAIPStandardUndelete",
+	"isAIPStandardCreate",
+	"isAIPStandardUpdate",
+	"isAIPStandardList",
+	"sampleInfo",
 }
 
 func TestSkipMethods(t *testing.T) {
@@ -153,7 +171,7 @@ func TestSkipMethods(t *testing.T) {
 	}
 
 	wantMethods := []*Method{m0, m2}
-	if diff := cmp.Diff(wantMethods, s1.Methods, allowUnexported(), cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods, allowUnexported(), ignoreMethodFields(methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -226,12 +244,12 @@ func TestIncludeMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s1}
-	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), cmpopts.IgnoreFields(Method{}, methodIgnoreFields...), cmpopts.IgnoreFields(Service{}, "Model", "QuickstartMethod")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), ignoreMethodFields(methodIgnoreFields...), cmpopts.IgnoreFields(Service{}, "Model", "QuickstartMethod")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{m1, m2}
-	if diff := cmp.Diff(wantMethods, s1.Methods, allowUnexported(), cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods, allowUnexported(), ignoreMethodFields(methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -370,7 +388,7 @@ func TestSkipFieldAffectsPagination(t *testing.T) {
 	model := NewTestAPI([]*Message{req, resp, item}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	CrossReference(model)
-	if method.Pagination == nil || resp.Pagination() == nil {
+	if method.Pagination() == nil || resp.Pagination() == nil {
 		t.Fatalf("expected pagination to be set before skip")
 	}
 

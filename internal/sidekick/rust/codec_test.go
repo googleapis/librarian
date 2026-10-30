@@ -1660,8 +1660,8 @@ func TestFormatDocCommentsSkippedMethodsAndServices(t *testing.T) {
 		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithLiteral("skipped").
-			Build())
-	skippedMethod.Service = someService
+			Build()).
+		WithService(someService)
 
 	skippedServiceMethod := api.NewTestMethod("SomeMethod").
 		WithVerb("GET").

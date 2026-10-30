@@ -145,20 +145,20 @@ func (c *codec) tryEnumValueDocLink(id string) (string, error) {
 func (c *codec) methodDocLink(m *api.Method) (string, error) {
 	// Swift does not yet support streaming RPCs.
 	// See https://github.com/googleapis/google-cloud-swift/issues/451
-	if m.ClientSideStreaming || m.ServerSideStreaming {
+	if m.ClientSideStreaming() || m.ServerSideStreaming() {
 		return "", nil
 	}
-	idx := strings.LastIndex(m.ID, ".")
+	idx := strings.LastIndex(m.ID(), ".")
 	if idx == -1 {
 		return "", nil
 	}
-	serviceId := m.ID[0:idx]
+	serviceId := m.ID()[0:idx]
 	s := c.Model.Service(serviceId)
 	if s == nil {
 		return "", nil
 	}
 	serviceName := c.ServiceName(s)
-	name := fmt.Sprintf("%sClient/%s(request:options:)", pascalCaseNoMangling(serviceName), camelCase(m.Name))
+	name := fmt.Sprintf("%sClient/%s(request:options:)", pascalCaseNoMangling(serviceName), camelCase(m.Name()))
 	return c.docLink(s.Package, name), nil
 }
 

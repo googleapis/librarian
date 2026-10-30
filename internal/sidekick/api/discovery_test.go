@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestLroServices(t *testing.T) {
@@ -66,6 +67,138 @@ func TestPathParameters(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestAddDiscoveryLroAnnotations(t *testing.T) {
+	discoveryConfig := &Discovery{
+		OperationID: "..Operation",
+		Pollers: []*Poller{
+			{Prefix: "compute/v1/projects/{project}/zones/{zone}", MethodID: "..zoneOperations.get"},
+		},
+	}
+	operation := NewTestMessage("Operation").WithPackage("")
+	service := NewTestService("instances").WithPackage("").WithMethods(
+		NewTestMethod("insert").
+			WithID("..instances.insert").
+			WithOutput(operation).
+			WithVerb("POST").
+			WithPathTemplate(NewPathTemplateBuilder().
+				WithLiteral("compute").
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("zones").
+				WithVariableNamed("zone").
+				WithLiteral("instances").
+				Build()).
+			WithQueryParameters(),
+	)
+	pollerService := NewTestService("zoneOperations").WithPackage("").WithMethods(
+		NewTestMethod("get").
+			WithID("..zoneOperations.get").
+			WithOutput(operation).
+			WithVerb("GET").
+			WithPathTemplate(NewPathTemplateBuilder().
+				WithLiteral("compute").
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("zones").
+				WithVariableNamed("zone").
+				WithLiteral("operations").
+				WithVariableNamed("operation").
+				Build()).
+			WithQueryParameters(),
+	)
+	model := NewTestAPI([]*Message{operation}, nil, []*Service{service, pollerService})
+	if err := AddDiscoveryLroAnnotations(model, discoveryConfig); err != nil {
+		t.Fatal(err)
+	}
+	gotInsert := model.Method("..instances.insert")
+	wantLro := NewDiscoveryLroBuilder().WithPollingPathParameters("project", "zone").Build()
+	if diff := cmp.Diff(wantLro, gotInsert.DiscoveryLro(), allowUnexported()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	gotPoller := model.Method("..instances.getOperation")
+	if gotPoller == nil {
+		t.Fatal("missing injected ..instances.getOperation method")
+	}
+	if !gotPoller.IsLroPoller() {
+		t.Errorf("expected IsLroPoller to be true")
+	}
+	if diff := cmp.Diff("..zoneOperations", gotPoller.SourceServiceID()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(pollerService.Methods[0].PathInfo(), gotPoller.PathInfo(), allowUnexported(), cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAddDiscoveryLroAnnotationsError(t *testing.T) {
+	discoveryConfig := &Discovery{
+		OperationID: "..Operation",
+		Pollers: []*Poller{
+			{Prefix: "p/{project}/l/{zone}", MethodID: "..Operations.get_1"},
+			{Prefix: "p/{project}/l/{region}", MethodID: "..Operations.get_2"},
+		},
+	}
+	operation := NewTestMessage("Operation").WithPackage("")
+	badService := NewTestService("Service").WithPackage("").WithMethods(
+		NewTestMethod("create_foo").
+			WithOutput(operation).
+			WithVerb("GET").
+			WithPathTemplate(NewPathTemplateBuilder().
+				WithLiteral("p").
+				WithVariableNamed("project").
+				WithLiteral("l").
+				WithVariableNamed("zone").
+				WithLiteral("foo").
+				WithVariableNamed("id").
+				Build()).
+			WithQueryParameters(),
+		NewTestMethod("create_bar").
+			WithOutput(operation).
+			WithVerb("GET").
+			WithPathTemplate(NewPathTemplateBuilder().
+				WithLiteral("p").
+				WithVariableNamed("project").
+				WithLiteral("l").
+				WithVariableNamed("region").
+				WithLiteral("foo").
+				WithVariableNamed("id").
+				Build()).
+			WithQueryParameters(),
+	)
+	pollerService := NewTestService("Operations").WithPackage("").WithMethods(
+		NewTestMethod("get_1").
+			WithOutput(operation).
+			WithVerb("GET").
+			WithPathTemplate(NewPathTemplateBuilder().
+				WithLiteral("p").
+				WithVariableNamed("project").
+				WithLiteral("l").
+				WithVariableNamed("zone").
+				WithLiteral("operations").
+				WithVariableNamed("operation").
+				Build()).
+			WithQueryParameters(),
+		NewTestMethod("get_2").
+			WithOutput(operation).
+			WithVerb("GET").
+			WithPathTemplate(NewPathTemplateBuilder().
+				WithLiteral("p").
+				WithVariableNamed("project").
+				WithLiteral("l").
+				WithVariableNamed("region").
+				WithLiteral("operations").
+				WithVariableNamed("operation").
+				Build()).
+			WithQueryParameters(),
+	)
+	model := NewTestAPI([]*Message{operation}, nil, []*Service{badService, pollerService})
+	if err := AddDiscoveryLroAnnotations(model, discoveryConfig); err == nil {
+		t.Errorf("expected error for mismatched LRO mixin, got nil")
 	}
 }
 
