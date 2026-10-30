@@ -34,26 +34,26 @@ func parseRoutingAnnotations(methodID string, m *descriptorpb.MethodDescriptorPr
 
 	rule := proto.GetExtension(m.GetOptions(), extensionId).(*routingRule)
 	var errs []error
-	collect := map[string]*api.RoutingInfo{}
+	collect := map[string]*api.RoutingInfoBuilder{}
+	collectVariants := map[string][]*api.RoutingInfoVariant{}
 	for _, routing := range rule.GetRoutingParameters() {
-		new, err := parseRoutingInfo(methodID, routing)
+		newInfo, err := parseRoutingInfo(methodID, routing)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		current, ok := collect[new.Name]
-		if !ok {
-			collect[new.Name] = new
-			continue
+		name := newInfo.Name()
+		if _, ok := collect[name]; !ok {
+			collect[name] = api.NewRoutingInfoBuilder().WithName(name)
 		}
-		current.Variants = append(new.Variants, current.Variants...)
+		collectVariants[name] = append(newInfo.Variants(), collectVariants[name]...)
 	}
 	if len(errs) != 0 {
 		return nil, errors.Join(errs...)
 	}
 	var info []*api.RoutingInfo
 	for _, k := range slices.Sorted(maps.Keys(collect)) {
-		info = append(info, collect[k])
+		info = append(info, collect[k].WithVariants(collectVariants[k]...).Build())
 	}
 	return info, nil
 }
@@ -71,28 +71,24 @@ func parseRoutingInfo(methodID string, routing *routingParameter) (*api.RoutingI
 func parseRoutingPathTemplate(fieldName, pathTemplate string) (*api.RoutingInfo, error) {
 	if fieldName == "" && pathTemplate == "" {
 		// AIP-4222: empty routing infos mean something special.
-		info := &api.RoutingInfo{
-			Name: fieldName,
-			Variants: []*api.RoutingInfoVariant{
-				api.NewRoutingInfoVariantBuilder().
-					WithFieldPath([]string{}...).
-					WithMatchingSegments([]string{}...).
-					Build(),
-			},
-		}
+		info := api.NewRoutingInfoBuilder().
+			WithName(fieldName).
+			WithVariant(api.NewRoutingInfoVariantBuilder().
+				WithFieldPath([]string{}...).
+				WithMatchingSegments([]string{}...).
+				Build()).
+			Build()
 		return info, nil
 	}
 	fieldPath := strings.Split(fieldName, ".")
 	if pathTemplate == "" {
-		info := &api.RoutingInfo{
-			Name: fieldName,
-			Variants: []*api.RoutingInfoVariant{
-				api.NewRoutingInfoVariantBuilder().
-					WithFieldPath(fieldPath...).
-					WithMatchingSegments(api.MultiSegmentWildcard).
-					Build(),
-			},
-		}
+		info := api.NewRoutingInfoBuilder().
+			WithName(fieldName).
+			WithVariant(api.NewRoutingInfoVariantBuilder().
+				WithFieldPath(fieldPath...).
+				WithMatchingSegments(api.MultiSegmentWildcard).
+				Build()).
+			Build()
 		return info, nil
 	}
 	if strings.Count(pathTemplate, api.MultiSegmentWildcard) > 1 {
@@ -136,17 +132,15 @@ func parseRoutingPathTemplate(fieldName, pathTemplate string) (*api.RoutingInfo,
 	if pathTemplate[pos:] != "" {
 		return nil, fmt.Errorf("unexpected trailer in pathTemplate trailer=%s", pathTemplate[pos:])
 	}
-	info := &api.RoutingInfo{
-		Name: name,
-		Variants: []*api.RoutingInfoVariant{
-			api.NewRoutingInfoVariantBuilder().
-				WithFieldPath(fieldPath...).
-				WithPrefix(prefix).
-				WithMatching(match).
-				WithSuffix(suffix).
-				Build(),
-		},
-	}
+	info := api.NewRoutingInfoBuilder().
+		WithName(name).
+		WithVariant(api.NewRoutingInfoVariantBuilder().
+			WithFieldPath(fieldPath...).
+			WithPrefix(prefix).
+			WithMatching(match).
+			WithSuffix(suffix).
+			Build()).
+		Build()
 	return info, nil
 }
 

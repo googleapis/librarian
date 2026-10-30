@@ -307,7 +307,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		return nil, err
 	}
 	for _, routing := range m.Routing {
-		for _, variant := range routing.Variants {
+		for _, variant := range routing.Variants() {
 			fieldAccessors, err := c.annotateRoutingAccessors(variant, m)
 			if err != nil {
 				return nil, err

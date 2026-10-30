@@ -975,7 +975,7 @@ func NewTestResourceNamePattern(segments ...ResourceNameSegment) *ResourceNamePa
 
 // NewTestRoutingInfo creates a RoutingInfo struct with variants.
 func NewTestRoutingInfo(name string, variants ...*RoutingInfoVariant) *RoutingInfo {
-	return &RoutingInfo{Name: name, Variants: variants}
+	return NewRoutingInfoBuilder().WithName(name).WithVariants(variants...).Build()
 }
 
 // NewTestRoutingInfoVariant creates a RoutingInfoVariant with a field path.
