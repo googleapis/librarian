@@ -374,7 +374,7 @@ func TestService_FluentSetters(t *testing.T) {
 
 func TestMethod_FluentSetters(t *testing.T) {
 	reqID := api.NewTestField("request_id").WithType(api.TypezString)
-	routing := &api.RoutingInfo{Name: "bucket"}
+	routing := api.NewRoutingInfoBuilder().WithName("bucket").Build()
 	m := api.NewTestMethod("Create").
 		WithID(".custom.Service.Create").
 		WithAPIVersion("v1_20260101").
@@ -469,21 +469,6 @@ func TestResourceNamePattern_Builder(t *testing.T) {
 	}
 	if p.Segments[0].Literal != "projects" || p.Segments[1].Variable != "project" {
 		t.Errorf("unexpected segments: %+v", p.Segments)
-	}
-}
-
-func TestRoutingInfo_Builders(t *testing.T) {
-	v := api.NewTestRoutingInfoVariant("name", "id")
-	r := api.NewTestRoutingInfo("routing", v)
-
-	if r.Name != "routing" {
-		t.Errorf("r.Name = %q, want 'routing'", r.Name)
-	}
-	if len(r.Variants) != 1 || r.Variants[0] != v {
-		t.Errorf("r.Variants = %v, want [%v]", r.Variants, v)
-	}
-	if diff := cmp.Diff([]string{"name", "id"}, v.FieldPath()); diff != "" {
-		t.Errorf("mismatch in FieldPath (-want +got):\n%s", diff)
 	}
 }
 

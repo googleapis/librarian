@@ -327,14 +327,14 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "explicit routing info with custom name",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "bucket",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("bucket").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("name").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -351,14 +351,14 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "explicit routing info without custom name",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("parent").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -375,16 +375,16 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "routing info with pattern and suffix",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "bucket",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("bucket").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("name").
 							WithMatchingSegments("projects", "*", "buckets", "*").
 							WithSuffixSegments("**").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -403,9 +403,9 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "routing info with multiple fallback variants across different fields",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "routing_id",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("routing_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("name").
 							WithMatchingSegments("projects", "*").
@@ -414,8 +414,8 @@ func TestRoutingParams(t *testing.T) {
 							WithFieldPath("parent").
 							WithMatchingSegments("**").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -438,17 +438,17 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "routing info with literal prefix and nested field path",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "table",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("table").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("table", "parent").
 							WithPrefixSegments("projects").
 							WithMatchingSegments("*").
 							WithSuffixSegments("tables", "*").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -468,16 +468,16 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "routing info with wildcard prefix",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "location",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("location").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("name").
 							WithPrefixSegments("projects", "*").
 							WithMatchingSegments("locations", "*").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 			want: []*routingParam{
 				{
@@ -496,14 +496,14 @@ func TestRoutingParams(t *testing.T) {
 		{
 			name: "empty routing annotation disables routing",
 			routingInfos: []*api.RoutingInfo{
-				{
-					Name: "",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath([]string{}...).
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 			want: nil,
 		},
