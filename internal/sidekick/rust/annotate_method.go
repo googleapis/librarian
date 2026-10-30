@@ -294,7 +294,7 @@ type sampleInfoAnnotation struct {
 func (m *methodAnnotation) HasBindingSubstitutions() bool {
 	for _, b := range m.PathInfo.Bindings {
 		for _, s := range b.PathTemplate.Segments {
-			if s.Variable != nil {
+			if s.Variable() != nil {
 				return true
 			}
 		}
@@ -586,8 +586,8 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBindingAnnotation, error) {
 	var subs []*bindingSubstitution
 	for _, s := range b.PathTemplate.Segments {
-		if s.Variable != nil {
-			sub, err := makeBindingSubstitution(s.Variable, m)
+		if s.Variable() != nil {
+			sub, err := makeBindingSubstitution(s.Variable(), m)
 			if err != nil {
 				return nil, err
 			}
@@ -731,9 +731,9 @@ func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (stri
 		if i > 0 {
 			sb.WriteString("/")
 		}
-		if seg.Literal != "" {
-			sb.WriteString(seg.Literal)
-		} else if seg.Variable != nil {
+		if seg.Literal() != "" {
+			sb.WriteString(seg.Literal())
+		} else if seg.Variable() != nil {
 			sb.WriteString("{}")
 		}
 	}

@@ -1322,10 +1322,10 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		shelfResourceDef := api.NewTestResource("library.googleapis.com/Shelf").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
 				},
 			)
 		// Find Shelf in the slice
@@ -1347,12 +1347,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		bookResourceDef := api.NewTestResource("library.googleapis.com/Book").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()),
-					*(&api.PathSegment{}).WithLiteral("books"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("book").WithMatch().Build()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("books").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("book").WithMatch().Build()).Build(),
 				},
 			).
 			WithPlural("books").
@@ -1402,12 +1402,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		wantBookResource := api.NewTestResource("library.googleapis.com/Book").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()),
-					*(&api.PathSegment{}).WithLiteral("books"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("book").WithMatch().Build()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("books").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("book").WithMatch().Build()).Build(),
 				},
 			).
 			WithPlural("books").
@@ -1563,14 +1563,14 @@ func TestParseResourcePatterns(t *testing.T) {
 		}
 		want := []api.ResourcePattern{
 			{
-				*(&api.PathSegment{}).WithLiteral("publishers"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()),
-				*(&api.PathSegment{}).WithLiteral("shelves"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()),
+				*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+				*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
 			},
 			{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariableBuilder("project").WithMatch().Build()),
+				*api.NewPathSegmentBuilder().WithLiteral("projects").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("project").WithMatch().Build()).Build(),
 			},
 		}
 		got, err := parseResourcePatterns(patterns)

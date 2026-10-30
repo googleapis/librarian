@@ -39,8 +39,8 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 	pathNames := []string{}
 	t := m.PathInfo.Bindings[0].PathTemplate
 	for _, s := range t.Segments {
-		if s.Variable != nil {
-			pathNames = append(pathNames, s.Variable.FieldPath()[0])
+		if s.Variable() != nil {
+			pathNames = append(pathNames, s.Variable().FieldPath()[0])
 		}
 	}
 

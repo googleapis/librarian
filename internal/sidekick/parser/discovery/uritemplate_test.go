@@ -104,7 +104,7 @@ func TestParseExpression(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariableBuilder(test.want).WithMatch().Build()}, gotSegment, apitest.AllowUnexported()); diff != "" {
+			if diff := cmp.Diff(api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder(test.want).WithMatch().Build()).Build(), gotSegment, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if len(test.want)+2 != gotWidth {
@@ -146,7 +146,7 @@ func TestParseLiteral(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(&api.PathSegment{Literal: test.want}, gotSegment); diff != "" {
+			if diff := cmp.Diff(api.NewPathSegmentBuilder().WithLiteral(test.want).Build(), gotSegment, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if len(test.want) != gotWidth {

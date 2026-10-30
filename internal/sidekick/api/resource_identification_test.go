@@ -135,7 +135,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(PathVariable{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(PathSegment{}, PathVariable{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -463,7 +463,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(PathVariable{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(PathSegment{}, PathVariable{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

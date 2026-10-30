@@ -70,7 +70,7 @@ func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
 			return nil, err
 		}
 		pos += width
-		template.Verb = literal.Literal
+		template.Verb = literal.Literal()
 	}
 	if pos != len(uriTemplate) {
 		return nil, fmt.Errorf("trailing data (%q) cannot be parsed as a URI template", uriTemplate[pos:])
@@ -119,7 +119,7 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 	} else {
 		variable.WithMatch()
 	}
-	return &api.PathSegment{Variable: variable.Build()}, end + 2, nil
+	return api.NewPathSegmentBuilder().WithVariable(variable.Build()).Build(), end + 2, nil
 }
 
 // parseLiteral() extracts a literal value from `input`.
@@ -150,5 +150,5 @@ func parseLiteral(input string) (*api.PathSegment, int, error) {
 	if tail != "" && tail[0] != slash {
 		return nil, index, fmt.Errorf("found unexpected character %v in literal %q, stopped at position %v", tail[0], input, index)
 	}
-	return &api.PathSegment{Literal: literal}, width, nil
+	return api.NewPathSegmentBuilder().WithLiteral(literal).Build(), width, nil
 }

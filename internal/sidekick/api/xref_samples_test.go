@@ -173,8 +173,8 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 	t.Run("resource type resolution", func(t *testing.T) {
 		res := NewTestResource("test.googleapis.com/Resource").
 			WithPatterns(ResourcePattern{
-				*(&PathSegment{}).WithLiteral("resources"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("resource").WithMatch().Build()),
+				*NewPathSegmentBuilder().WithLiteral("resources").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("resource").WithMatch().Build()).Build(),
 			})
 		field := NewTestField("notName").
 			WithType(TypezString).
@@ -198,10 +198,10 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 	t.Run("child type resolution", func(t *testing.T) {
 		res := NewTestResource("test.googleapis.com/Child").
 			WithPatterns(ResourcePattern{
-				*(&PathSegment{}).WithLiteral("parents"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("parent").WithMatch().Build()),
-				*(&PathSegment{}).WithLiteral("children"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("child").WithMatch().Build()),
+				*NewPathSegmentBuilder().WithLiteral("parents").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("parent").WithMatch().Build()).Build(),
+				*NewPathSegmentBuilder().WithLiteral("children").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("child").WithMatch().Build()).Build(),
 			})
 		field := NewTestField("parent").
 			WithType(TypezString).
@@ -224,8 +224,8 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 	t.Run("name field resolution", func(t *testing.T) {
 		res := NewTestResource("test.googleapis.com/Resource").
 			WithPatterns(ResourcePattern{
-				*(&PathSegment{}).WithLiteral("resources"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("resource").WithMatch().Build()),
+				*NewPathSegmentBuilder().WithLiteral("resources").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("resource").WithMatch().Build()).Build(),
 			})
 		field := NewTestField("name").WithType(TypezString)
 		message := NewTestMessage("ResourceMessage").
@@ -256,8 +256,8 @@ func TestToResourceNamePattern(t *testing.T) {
 		{
 			name: "simple",
 			pattern: ResourcePattern{
-				*(&PathSegment{}).WithLiteral("projects"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("project").WithMatch().Build()),
+				*NewPathSegmentBuilder().WithLiteral("projects").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("project").WithMatch().Build()).Build(),
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
@@ -267,10 +267,10 @@ func TestToResourceNamePattern(t *testing.T) {
 		{
 			name: "multi-segment",
 			pattern: ResourcePattern{
-				*(&PathSegment{}).WithLiteral("projects"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("project").WithMatch().Build()),
-				*(&PathSegment{}).WithLiteral("secrets"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("secret").WithMatch().Build()),
+				*NewPathSegmentBuilder().WithLiteral("projects").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("project").WithMatch().Build()).Build(),
+				*NewPathSegmentBuilder().WithLiteral("secrets").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("secret").WithMatch().Build()).Build(),
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
@@ -281,10 +281,10 @@ func TestToResourceNamePattern(t *testing.T) {
 		{
 			name: "multi-segment-skip-last",
 			pattern: ResourcePattern{
-				*(&PathSegment{}).WithLiteral("projects"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("project").WithMatch().Build()),
-				*(&PathSegment{}).WithLiteral("secrets"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("secret").WithMatch().Build()),
+				*NewPathSegmentBuilder().WithLiteral("projects").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("project").WithMatch().Build()).Build(),
+				*NewPathSegmentBuilder().WithLiteral("secrets").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("secret").WithMatch().Build()).Build(),
 			},
 			skipLast: true,
 			want: NewTestResourceNamePattern(
@@ -294,9 +294,9 @@ func TestToResourceNamePattern(t *testing.T) {
 		{
 			name: "with trailing literal",
 			pattern: ResourcePattern{
-				*(&PathSegment{}).WithLiteral("projects"),
-				*(&PathSegment{}).WithVariable(NewPathVariableBuilder("project").WithMatch().Build()),
-				*(&PathSegment{}).WithLiteral("config"),
+				*NewPathSegmentBuilder().WithLiteral("projects").Build(),
+				*NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder("project").WithMatch().Build()).Build(),
+				*NewPathSegmentBuilder().WithLiteral("config").Build(),
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
