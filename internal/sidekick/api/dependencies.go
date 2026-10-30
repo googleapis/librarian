@@ -72,8 +72,8 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			if field == nil {
 				continue
 			}
-			if field.Typez == TypezEnum || field.Typez == TypezMessage || field.Typez == TypezMap {
-				add(field.TypezID)
+			if field.typez == TypezEnum || field.typez == TypezMessage || field.typez == TypezMap {
+				add(field.typezID)
 			}
 		}
 	}

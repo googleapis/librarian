@@ -76,10 +76,10 @@ func paginationRequestPageSize(request *Message) *Field {
 		// Some legacy services (e.g. sqladmin.googleapis.com)
 		// predate AIP-4233 and use `maxResults` instead of
 		// `pageSize` for the field name.
-		if field.JSONName == pageSize && isPaginationPageSizeType(field) {
+		if field.jsonName == pageSize && isPaginationPageSizeType(field) {
 			return field
 		}
-		if field.JSONName == maxResults && isPaginationMaxResultsType(field) {
+		if field.jsonName == maxResults && isPaginationMaxResultsType(field) {
 			return field
 		}
 	}
@@ -87,7 +87,7 @@ func paginationRequestPageSize(request *Message) *Field {
 }
 
 func isPaginationPageSizeType(field *Field) bool {
-	return field.Typez == TypezInt32 || field.Typez == TypezUint32
+	return field.typez == TypezInt32 || field.typez == TypezUint32
 }
 
 func isPaginationMaxResultsType(field *Field) bool {
@@ -95,14 +95,14 @@ func isPaginationMaxResultsType(field *Field) bool {
 	if isPaginationPageSizeType(field) {
 		return true
 	}
-	return field.Typez == TypezMessage &&
-		(field.TypezID == ".google.protobuf.Int32Value" ||
-			field.TypezID == ".google.protobuf.UInt32Value")
+	return field.typez == TypezMessage &&
+		(field.typezID == ".google.protobuf.Int32Value" ||
+			field.typezID == ".google.protobuf.UInt32Value")
 }
 
 func paginationRequestToken(request *Message) *Field {
 	for _, field := range request.Fields {
-		if field.JSONName == pageToken && field.Typez == TypezString {
+		if field.jsonName == pageToken && field.typez == TypezString {
 			return field
 		}
 	}
@@ -128,7 +128,7 @@ func paginationResponseItem(overrides []PaginationOverride, methodID string, res
 	idx := slices.IndexFunc(overrides, func(o PaginationOverride) bool { return o.ID == methodID })
 	if idx != -1 {
 		overrideName := overrides[idx].ItemField
-		fieldIdx := slices.IndexFunc(response.Fields, func(f *Field) bool { return f.Name == overrideName })
+		fieldIdx := slices.IndexFunc(response.Fields, func(f *Field) bool { return f.name == overrideName })
 		if fieldIdx == -1 {
 			return nil
 		}
@@ -137,10 +137,10 @@ func paginationResponseItem(overrides []PaginationOverride, methodID string, res
 
 	var mapItems *Field
 	for _, field := range response.Fields {
-		if field.Map && mapItems == nil {
+		if field.mapz && mapItems == nil {
 			mapItems = field
 		}
-		if field.Repeated && field.Typez == TypezMessage {
+		if field.repeated && field.typez == TypezMessage {
 			return field
 		}
 	}
@@ -149,7 +149,7 @@ func paginationResponseItem(overrides []PaginationOverride, methodID string, res
 
 func paginationResponseNextPageToken(response *Message) *Field {
 	for _, field := range response.Fields {
-		if field.JSONName == nextPageToken && field.Typez == TypezString {
+		if field.jsonName == nextPageToken && field.typez == TypezString {
 			return field
 		}
 	}

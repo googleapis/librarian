@@ -256,8 +256,8 @@ func Replication() *api.Message {
 				WithTypezID("..Automatic").
 				WithOptional(),
 		)
-	for _, f := range msg.Fields {
-		f.Parent = nil
+	for i, f := range msg.Fields {
+		msg.Fields[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
 	}
 	return msg
 }
@@ -275,8 +275,8 @@ func Automatic() *api.Message {
 				WithTypezID("..CustomerManagedEncryption").
 				WithOptional(),
 		)
-	for _, f := range msg.Fields {
-		f.Parent = nil
+	for i, f := range msg.Fields {
+		msg.Fields[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
 	}
 	msg.Parent = Replication()
 	return msg
@@ -307,8 +307,8 @@ func SecretPayload() *api.Message {
 				WithTypezID("int64").
 				WithOptional(),
 		)
-	for _, f := range msg.Fields {
-		f.Parent = nil
+	for i, f := range msg.Fields {
+		msg.Fields[i] = api.NewFieldBuilderFrom(f).WithParent(nil).Build()
 	}
 	return msg
 }

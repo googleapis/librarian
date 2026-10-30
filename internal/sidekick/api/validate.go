@@ -59,10 +59,10 @@ func Validate(model *API) error {
 		if m.Key == nil || m.Value == nil {
 			return fmt.Errorf("map %q must have non-nil key and value fields", m.ID)
 		}
-		if m.Key.Typez == TypezMap || m.Key.Map || m.Key.Repeated {
+		if m.Key.typez == TypezMap || m.Key.mapz || m.Key.repeated {
 			return fmt.Errorf("map %q key cannot be a map or repeated field", m.ID)
 		}
-		if m.Value.Typez == TypezMap || m.Value.Map || m.Value.Repeated {
+		if m.Value.typez == TypezMap || m.Value.mapz || m.Value.repeated {
 			return fmt.Errorf("map %q value cannot be a map or repeated field", m.ID)
 		}
 	}

@@ -208,28 +208,28 @@ func TestFieldTypePredicates(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		if tc.field.IsString() != tc.isString {
-			t.Errorf("IsString() for %v should be %v", tc.field.Typez, tc.isString)
+			t.Errorf("IsString() for %v should be %v", tc.field.Typez(), tc.isString)
 		}
 		if tc.field.IsBytes() != tc.isBytes {
-			t.Errorf("IsBytes() for %v should be %v", tc.field.Typez, tc.isBytes)
+			t.Errorf("IsBytes() for %v should be %v", tc.field.Typez(), tc.isBytes)
 		}
 		if tc.field.IsBool() != tc.isBool {
-			t.Errorf("IsBool() for %v should be %v", tc.field.Typez, tc.isBool)
+			t.Errorf("IsBool() for %v should be %v", tc.field.Typez(), tc.isBool)
 		}
 		if tc.field.IsLikeInt() != tc.isInt {
-			t.Errorf("IsLikeInt() for %v should be %v", tc.field.Typez, tc.isInt)
+			t.Errorf("IsLikeInt() for %v should be %v", tc.field.Typez(), tc.isInt)
 		}
 		if tc.field.IsLikeUInt() != tc.isUInt {
-			t.Errorf("IsLikeUInt() for %v should be %v", tc.field.Typez, tc.isUInt)
+			t.Errorf("IsLikeUInt() for %v should be %v", tc.field.Typez(), tc.isUInt)
 		}
 		if tc.field.IsLikeFloat() != tc.isFloat {
-			t.Errorf("IsLikeFloat() for %v should be %v", tc.field.Typez, tc.isFloat)
+			t.Errorf("IsLikeFloat() for %v should be %v", tc.field.Typez(), tc.isFloat)
 		}
 		if tc.field.IsEnum() != tc.isEnum {
-			t.Errorf("IsEnum() for %v should be %v", tc.field.Typez, tc.isEnum)
+			t.Errorf("IsEnum() for %v should be %v", tc.field.Typez(), tc.isEnum)
 		}
 		if tc.field.IsObject() != tc.isObject {
-			t.Errorf("IsObject() for %v should be %v", tc.field.Typez, tc.isObject)
+			t.Errorf("IsObject() for %v should be %v", tc.field.Typez(), tc.isObject)
 		}
 	}
 }

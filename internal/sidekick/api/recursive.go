@@ -19,16 +19,16 @@ func LabelRecursiveFields(model *API) {
 	for message := range model.AllMessages() {
 		for _, field := range message.Fields {
 			visited := map[string]bool{message.ID: true}
-			field.Recursive = field.recursivelyReferences(message.ID, model, visited)
+			field.recursive = field.recursivelyReferences(message.ID, model, visited)
 		}
 	}
 }
 
 func (field *Field) recursivelyReferences(messageID string, model *API, visited map[string]bool) bool {
-	if field.Typez == TypezMap {
-		mapType := field.MapType
+	if field.typez == TypezMap {
+		mapType := field.mapType
 		if mapType == nil {
-			mapType = model.Map(field.TypezID)
+			mapType = model.Map(field.typezID)
 		}
 		if mapType == nil || visited[mapType.ID] {
 			return false
@@ -37,28 +37,28 @@ func (field *Field) recursivelyReferences(messageID string, model *API, visited 
 		defer delete(visited, mapType.ID)
 		recursive := false
 		if mapType.Key != nil && mapType.Key.recursivelyReferences(messageID, model, visited) {
-			mapType.Key.Recursive = true
+			mapType.Key.recursive = true
 			recursive = true
 		}
 		if mapType.Value != nil && mapType.Value.recursivelyReferences(messageID, model, visited) {
-			mapType.Value.Recursive = true
+			mapType.Value.recursive = true
 			recursive = true
 		}
 		if recursive {
-			field.Recursive = true
+			field.recursive = true
 		}
 		return recursive
 	}
-	if field.Typez != TypezMessage {
+	if field.typez != TypezMessage {
 		return false
 	}
-	if field.TypezID == messageID {
+	if field.typezID == messageID {
 		return true
 	}
-	if _, ok := visited[field.TypezID]; ok {
+	if _, ok := visited[field.typezID]; ok {
 		return false
 	}
-	if fieldMessage := model.Message(field.TypezID); fieldMessage != nil {
+	if fieldMessage := model.Message(field.typezID); fieldMessage != nil {
 		return fieldMessage.recursivelyReferences(messageID, model, visited)
 	}
 	return false

@@ -107,8 +107,8 @@ func TestMethod_WithDocumentation(t *testing.T) {
 
 func TestField_WithJSONName(t *testing.T) {
 	f := api.NewTestField("foo_bar").WithJSONName("customName")
-	if f.JSONName != "customName" {
-		t.Errorf("expected JSONName 'customName', got %q", f.JSONName)
+	if f.JSONName() != "customName" {
+		t.Errorf("expected JSONName 'customName', got %q", f.JSONName())
 	}
 }
 
@@ -128,7 +128,7 @@ func TestOneOf_WithDocumentation(t *testing.T) {
 
 func TestField_WithRecursive(t *testing.T) {
 	f := api.NewTestField("child").WithRecursive()
-	if !f.Recursive {
+	if !f.Recursive() {
 		t.Errorf("expected Recursive to be true")
 	}
 }
@@ -224,18 +224,18 @@ func TestNewTestMap(t *testing.T) {
 	got := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
 	want := &api.Map{
 		ID: ".test.TestMap",
-		Key: &api.Field{
-			Name:     "key",
-			JSONName: "key",
-			ID:       ".test.TestMap.key",
-			Typez:    api.TypezString,
-		},
-		Value: &api.Field{
-			Name:     "value",
-			JSONName: "value",
-			ID:       ".test.TestMap.value",
-			Typez:    api.TypezInt32,
-		},
+		Key: api.NewFieldBuilder().
+			WithName("key").
+			WithJSONName("key").
+			WithID(".test.TestMap.key").
+			WithTypez(api.TypezString).
+			Build(),
+		Value: api.NewFieldBuilder().
+			WithName("value").
+			WithJSONName("value").
+			WithID(".test.TestMap.value").
+			WithTypez(api.TypezInt32).
+			Build(),
 	}
 	apitest.CheckMap(t, got, want)
 }
@@ -247,20 +247,20 @@ func TestNewTestMapWithFields(t *testing.T) {
 	got := api.NewTestMapWithFields(".custom.package.MyMap", key, val)
 	want := &api.Map{
 		ID: ".custom.package.MyMap",
-		Key: &api.Field{
-			Name:     "custom_key",
-			JSONName: "customKey",
-			ID:       ".custom.package.MyMap.custom_key",
-			Typez:    api.TypezString,
-		},
-		Value: &api.Field{
-			Name:        "custom_val",
-			JSONName:    "customVal",
-			ID:          ".custom.package.MyMap.custom_val",
-			Typez:       api.TypezMessage,
-			TypezID:     valMsg.ID,
-			MessageType: valMsg,
-		},
+		Key: api.NewFieldBuilder().
+			WithName("custom_key").
+			WithJSONName("customKey").
+			WithID(".custom.package.MyMap.custom_key").
+			WithTypez(api.TypezString).
+			Build(),
+		Value: api.NewFieldBuilder().
+			WithName("custom_val").
+			WithJSONName("customVal").
+			WithID(".custom.package.MyMap.custom_val").
+			WithTypez(api.TypezMessage).
+			WithTypezID(valMsg.ID).
+			WithMessageType(valMsg).
+			Build(),
 	}
 	apitest.CheckMap(t, got, want)
 }
@@ -271,50 +271,50 @@ func TestMap_WithID(t *testing.T) {
 	if got, want := m.ID, ".new.package.TestMap"; got != want {
 		t.Errorf("m.ID = %q, want %q", got, want)
 	}
-	if got, want := m.Key.ID, ".new.package.TestMap.key"; got != want {
-		t.Errorf("m.Key.ID = %q, want %q", got, want)
+	if got, want := m.Key.ID(), ".new.package.TestMap.key"; got != want {
+		t.Errorf("m.Key.ID() = %q, want %q", got, want)
 	}
-	if got, want := m.Value.ID, ".new.package.TestMap.value"; got != want {
-		t.Errorf("m.Value.ID = %q, want %q", got, want)
+	if got, want := m.Value.ID(), ".new.package.TestMap.value"; got != want {
+		t.Errorf("m.Value.ID() = %q, want %q", got, want)
 	}
 }
 
 func TestField_WithMap(t *testing.T) {
 	f := api.NewTestField("test_field").WithRepeated().WithOptional().WithMap()
-	if got, want := f.Typez, api.TypezMap; got != want {
-		t.Errorf("f.Typez = %v, want %v", got, want)
+	if got, want := f.Typez(), api.TypezMap; got != want {
+		t.Errorf("f.Typez() = %v, want %v", got, want)
 	}
-	if !f.Map {
-		t.Errorf("f.Map = %v, want true", f.Map)
+	if !f.Map() {
+		t.Errorf("f.Map() = %v, want true", f.Map())
 	}
-	if f.Repeated {
-		t.Errorf("f.Repeated = %v, want false", f.Repeated)
+	if f.Repeated() {
+		t.Errorf("f.Repeated() = %v, want false", f.Repeated())
 	}
-	if f.Optional {
-		t.Errorf("f.Optional = %v, want false", f.Optional)
+	if f.Optional() {
+		t.Errorf("f.Optional() = %v, want false", f.Optional())
 	}
 }
 
 func TestField_WithMapType(t *testing.T) {
 	m := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
 	f := api.NewTestField("test_field").WithRepeated().WithOptional().WithMapType(m)
-	if got := f.MapType; got != m {
-		t.Errorf("f.MapType = %v, want %v", got, m)
+	if got := f.MapType(); got != m {
+		t.Errorf("f.MapType() = %v, want %v", got, m)
 	}
-	if got, want := f.Typez, api.TypezMap; got != want {
-		t.Errorf("f.Typez = %v, want %v", got, want)
+	if got, want := f.Typez(), api.TypezMap; got != want {
+		t.Errorf("f.Typez() = %v, want %v", got, want)
 	}
-	if !f.Map {
-		t.Errorf("f.Map = %v, want true", f.Map)
+	if !f.Map() {
+		t.Errorf("f.Map() = %v, want true", f.Map())
 	}
-	if f.Repeated {
-		t.Errorf("f.Repeated = %v, want false", f.Repeated)
+	if f.Repeated() {
+		t.Errorf("f.Repeated() = %v, want false", f.Repeated())
 	}
-	if f.Optional {
-		t.Errorf("f.Optional = %v, want false", f.Optional)
+	if f.Optional() {
+		t.Errorf("f.Optional() = %v, want false", f.Optional())
 	}
-	if got, want := f.TypezID, m.ID; got != want {
-		t.Errorf("f.TypezID = %q, want %q", got, want)
+	if got, want := f.TypezID(), m.ID; got != want {
+		t.Errorf("f.TypezID() = %q, want %q", got, want)
 	}
 }
 
@@ -397,8 +397,8 @@ func TestMethod_FluentSetters(t *testing.T) {
 	if len(m.AutoPopulated) != 1 || m.AutoPopulated[0] != reqID {
 		t.Errorf("m.AutoPopulated = %v, want [%v]", m.AutoPopulated, reqID)
 	}
-	if !reqID.AutoPopulated {
-		t.Errorf("reqID.AutoPopulated = false, want true")
+	if !reqID.AutoPopulated() {
+		t.Errorf("reqID.AutoPopulated() = false, want true")
 	}
 }
 
@@ -410,20 +410,20 @@ func TestField_FluentSetters(t *testing.T) {
 		WithAutoPopulated().
 		WithResourceNamePattern(pattern)
 
-	if f.EnumType != enum {
-		t.Errorf("f.EnumType = %v, want %v", f.EnumType, enum)
+	if f.EnumType() != enum {
+		t.Errorf("f.EnumType() = %v, want %v", f.EnumType(), enum)
 	}
-	if f.Typez != api.TypezEnum {
-		t.Errorf("f.Typez = %v, want %v", f.Typez, api.TypezEnum)
+	if f.Typez() != api.TypezEnum {
+		t.Errorf("f.Typez() = %v, want %v", f.Typez(), api.TypezEnum)
 	}
-	if got, want := f.TypezID, enum.ID(); got != want {
-		t.Errorf("f.TypezID = %q, want %q", got, want)
+	if got, want := f.TypezID(), enum.ID(); got != want {
+		t.Errorf("f.TypezID() = %q, want %q", got, want)
 	}
-	if !f.AutoPopulated {
-		t.Errorf("f.AutoPopulated = false, want true")
+	if !f.AutoPopulated() {
+		t.Errorf("f.AutoPopulated() = false, want true")
 	}
-	if f.ResourceNamePattern != pattern {
-		t.Errorf("f.ResourceNamePattern = %v, want %v", f.ResourceNamePattern, pattern)
+	if f.ResourceNamePattern() != pattern {
+		t.Errorf("f.ResourceNamePattern() = %v, want %v", f.ResourceNamePattern(), pattern)
 	}
 }
 

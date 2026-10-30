@@ -235,7 +235,8 @@ func TestSkipMessageFields(t *testing.T) {
 		SkippedIDs: []string{".test.Message0.field1"},
 	})
 	want := []*Field{f0, f2}
-	if diff := cmp.Diff(want, m0.Fields, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(want, m0.Fields, allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -251,7 +252,8 @@ func TestSkipNestedMessageFields(t *testing.T) {
 		SkippedIDs: []string{".test.Outer.Inner.field1"},
 	})
 	want := []*Field{f0}
-	if diff := cmp.Diff(want, inner.Fields, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(want, inner.Fields, allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -268,11 +270,14 @@ func TestSkipOneOfField(t *testing.T) {
 		SkippedIDs: []string{".test.Message.field1"},
 	})
 	wantFields := []*Field{f0, f2}
-	if diff := cmp.Diff(wantFields, m.Fields, cmpopts.IgnoreFields(Field{}, "Parent", "Group")); diff != "" {
+	ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".parent" || p.Last().String() == ".group"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(wantFields, m.Fields, allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
 	wantOneOfFields := []*Field{f2}
-	if diff := cmp.Diff(wantOneOfFields, oneof.Fields, cmpopts.IgnoreFields(Field{}, "Parent", "Group")); diff != "" {
+	if diff := cmp.Diff(wantOneOfFields, oneof.Fields, allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in oneof fields (-want +got):\n%s", diff)
 	}
 	if oneof.ExampleField != f2 {
@@ -310,7 +315,10 @@ func TestSkipOneOfDirectly(t *testing.T) {
 		SkippedIDs: []string{".test.Message.choice"},
 	})
 	wantFields := []*Field{f0}
-	if diff := cmp.Diff(wantFields, m.Fields, cmpopts.IgnoreFields(Field{}, "Parent", "Group")); diff != "" {
+	ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".parent" || p.Last().String() == ".group"
+	}, cmp.Ignore())
+	if diff := cmp.Diff(wantFields, m.Fields, allowUnexported(), ignoreFieldCycle); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
 	if len(m.OneOfs) != 0 {
@@ -372,7 +380,8 @@ func TestIncludeKeepsAllMessageFields(t *testing.T) {
 		IncludedIDs: []string{".test.Message0"},
 	})
 	want := []*Field{f0, f1}
-	if diff := cmp.Diff(want, m0.Fields, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(want, m0.Fields, allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch in fields (-want +got):\n%s", diff)
 	}
 }

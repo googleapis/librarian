@@ -84,10 +84,10 @@ func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 
 func patchFieldDocs(msg *Message, fieldName string, override *DocumentationOverride) error {
 	for _, field := range msg.Fields {
-		if field.Name != fieldName {
+		if field.name != fieldName {
 			continue
 		}
-		if err := patchElementDocs(&field.Documentation, override); err != nil {
+		if err := patchElementDocs(&field.documentation, override); err != nil {
 			return err
 		}
 		return nil

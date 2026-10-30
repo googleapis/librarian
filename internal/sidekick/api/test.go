@@ -44,8 +44,8 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 			model.resourceByType[m.Resource.typez] = m.Resource
 		}
 		for _, f := range m.Fields {
-			if f.MapType != nil {
-				model.AddMap(f.MapType)
+			if f.mapType != nil {
+				model.AddMap(f.mapType)
 			}
 		}
 		for _, e := range m.Enums {
@@ -188,10 +188,10 @@ func (m *Message) WithID(id string) *Message {
 // WithFields adds fields to the message and updates their parent/ID.
 func (m *Message) WithFields(fields ...*Field) *Message {
 	for _, f := range fields {
-		f.Parent = m
+		f.parent = m
 		// If field ID is generic/default, re-scope it to the message.
-		if strings.HasPrefix(f.ID, ".test.") || f.ID == "" {
-			f.ID = fmt.Sprintf("%s.%s", m.ID, f.Name)
+		if strings.HasPrefix(f.id, ".test.") || f.id == "" {
+			f.id = fmt.Sprintf("%s.%s", m.ID, f.name)
 		}
 	}
 	m.Fields = append(m.Fields, fields...)
@@ -221,8 +221,8 @@ func (m *Message) withParentRecursive(parent *Message) {
 		m.ID = fmt.Sprintf("%s.%s", parent.ID, m.Name)
 	}
 	for _, f := range m.Fields {
-		if strings.HasPrefix(f.ID, ".test.") || f.ID == "" {
-			f.ID = fmt.Sprintf("%s.%s", m.ID, f.Name)
+		if strings.HasPrefix(f.id, ".test.") || f.id == "" {
+			f.id = fmt.Sprintf("%s.%s", m.ID, f.name)
 		}
 	}
 	for _, o := range m.OneOfs {
@@ -258,10 +258,10 @@ func (m *Message) WithEnums(enums ...*Enum) *Message {
 
 // WithPagination items and page token fields for a pagination response.
 func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
-	if nextPageToken.Parent != m {
+	if nextPageToken.parent != m {
 		m.WithFields(nextPageToken)
 	}
-	if items.Parent != m {
+	if items.parent != m {
 		m.WithFields(items)
 	}
 	m.Pagination = &PaginationInfo{
@@ -307,11 +307,11 @@ func NewTestMapWithFields(name string, key, value *Field) *Map {
 	if !strings.HasPrefix(name, ".") && !strings.HasPrefix(name, "$") {
 		id = fmt.Sprintf(".test.%s", name)
 	}
-	if key != nil && (strings.HasPrefix(key.ID, ".test.") || key.ID == "") {
-		key.ID = fmt.Sprintf("%s.%s", id, key.Name)
+	if key != nil && (strings.HasPrefix(key.id, ".test.") || key.id == "") {
+		key.id = fmt.Sprintf("%s.%s", id, key.name)
 	}
-	if value != nil && (strings.HasPrefix(value.ID, ".test.") || value.ID == "") {
-		value.ID = fmt.Sprintf("%s.%s", id, value.Name)
+	if value != nil && (strings.HasPrefix(value.id, ".test.") || value.id == "") {
+		value.id = fmt.Sprintf("%s.%s", id, value.name)
 	}
 	return &Map{ID: id, Key: key, Value: value}
 }
@@ -320,11 +320,11 @@ func NewTestMapWithFields(name string, key, value *Field) *Map {
 func (m *Map) WithID(id string) *Map {
 	oldID := m.ID
 	m.ID = id
-	if m.Key != nil && (strings.HasPrefix(m.Key.ID, oldID+".") || strings.HasPrefix(m.Key.ID, ".test.") || m.Key.ID == "") {
-		m.Key.ID = fmt.Sprintf("%s.%s", id, m.Key.Name)
+	if m.Key != nil && (strings.HasPrefix(m.Key.id, oldID+".") || strings.HasPrefix(m.Key.id, ".test.") || m.Key.id == "") {
+		m.Key.id = fmt.Sprintf("%s.%s", id, m.Key.name)
 	}
-	if m.Value != nil && (strings.HasPrefix(m.Value.ID, oldID+".") || strings.HasPrefix(m.Value.ID, ".test.") || m.Value.ID == "") {
-		m.Value.ID = fmt.Sprintf("%s.%s", id, m.Value.Name)
+	if m.Value != nil && (strings.HasPrefix(m.Value.id, oldID+".") || strings.HasPrefix(m.Value.id, ".test.") || m.Value.id == "") {
+		m.Value.id = fmt.Sprintf("%s.%s", id, m.Value.name)
 	}
 	return m
 }
@@ -418,7 +418,7 @@ func (m *Method) WithRouting(routing ...*RoutingInfo) *Method {
 // WithAutoPopulated adds auto-populated fields to the method and marks them as auto-populated.
 func (m *Method) WithAutoPopulated(fields ...*Field) *Method {
 	for _, f := range fields {
-		f.AutoPopulated = true
+		f.autoPopulated = true
 	}
 	m.AutoPopulated = append(m.AutoPopulated, fields...)
 	return m
@@ -587,7 +587,7 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 		s.method = m
 		for _, name := range s.names {
 			for _, f := range m.InputType.Fields {
-				if name != f.Name {
+				if name != f.name {
 					continue
 				}
 				s.fields = append(s.fields, f)
@@ -631,8 +631,8 @@ func NewTestOneOf(name string) *OneOf {
 // message too.
 func (o *OneOf) WithFields(fields ...*Field) *OneOf {
 	for _, f := range fields {
-		f.IsOneOf = true
-		f.Group = o
+		f.isOneOf = true
+		f.group = o
 		o.Fields = append(o.Fields, f)
 	}
 	return o
@@ -647,95 +647,95 @@ func (o *OneOf) WithDocumentation(doc string) *OneOf {
 // NewTestField creates a field with defaults for testing.
 // JSONName is automatically camelCased.
 func NewTestField(name string) *Field {
-	return &Field{
-		Name:     name,
-		JSONName: strcase.ToLowerCamel(name),
-		ID:       fmt.Sprintf(".test.%s", name),
-	}
+	return NewFieldBuilder().
+		WithName(name).
+		WithJSONName(strcase.ToLowerCamel(name)).
+		WithID(fmt.Sprintf(".test.%s", name)).
+		Build()
 }
 
 // WithID overrides the field's ID.
 func (f *Field) WithID(id string) *Field {
-	f.ID = id
+	f.id = id
 	return f
 }
 
 // WithOneOf marks the field as belonging to a oneof.
 func (f *Field) WithOneOf() *Field {
-	f.IsOneOf = true
+	f.isOneOf = true
 	return f
 }
 
 // WithType sets the type of the field.
 func (f *Field) WithType(t Typez) *Field {
-	f.Typez = t
+	f.typez = t
 	return f
 }
 
 // WithRepeated marks the field as repeated.
 func (f *Field) WithRepeated() *Field {
-	f.Repeated = true
-	f.Optional = false
-	f.Map = false
+	f.repeated = true
+	f.optional = false
+	f.mapz = false
 	return f
 }
 
 // WithOptional marks the field as optional.
 func (f *Field) WithOptional() *Field {
-	f.Optional = true
-	f.Repeated = false
-	f.Map = false
+	f.optional = true
+	f.repeated = false
+	f.mapz = false
 	return f
 }
 
 // WithProto2Optional marks the field as a proto2 optional field.
 func (f *Field) WithProto2Optional() *Field {
-	f.Proto2Optional = true
+	f.proto2Optional = true
 	return f
 }
 
 // WithMap marks the field as a map.
 func (f *Field) WithMap() *Field {
-	f.Typez = TypezMap
-	f.Map = true
-	f.Repeated = false
-	f.Optional = false
+	f.typez = TypezMap
+	f.mapz = true
+	f.repeated = false
+	f.optional = false
 	return f
 }
 
 // WithMapType sets the field's map type.
 // It sets MapType, Typez=TypezMap, Map=true, and TypezID.
 func (f *Field) WithMapType(m *Map) *Field {
-	f.MapType = m
-	f.Typez = TypezMap
-	f.Map = true
-	f.Repeated = false
-	f.Optional = false
+	f.mapType = m
+	f.typez = TypezMap
+	f.mapz = true
+	f.repeated = false
+	f.optional = false
 	if m != nil {
-		f.TypezID = m.ID
+		f.typezID = m.ID
 	}
 	return f
 }
 
 // WithRecursive marks the field as recursive.
 func (f *Field) WithRecursive() *Field {
-	f.Recursive = true
+	f.recursive = true
 	return f
 }
 
 // WithBehavior adds behavior(s) to the field.
 func (f *Field) WithBehavior(behaviors ...FieldBehavior) *Field {
-	f.Behavior = append(f.Behavior, behaviors...)
+	f.behavior = append(f.behavior, behaviors...)
 	return f
 }
 
 // WithMessageType sets the field's message type.
 // It sets MessageType, Typez=TypezMessage, and TypezID.
 func (f *Field) WithMessageType(msg *Message) *Field {
-	f.MessageType = msg
-	f.Typez = TypezMessage
+	f.messageType = msg
+	f.typez = TypezMessage
 	if msg != nil {
-		f.TypezID = msg.ID
+		f.typezID = msg.ID
 	}
 	return f
 }
@@ -743,65 +743,77 @@ func (f *Field) WithMessageType(msg *Message) *Field {
 // WithEnumType sets the field's enum type.
 // It sets EnumType, Typez=TypezEnum, and TypezID.
 func (f *Field) WithEnumType(enum *Enum) *Field {
-	f.EnumType = enum
-	f.Typez = TypezEnum
+	f.enumType = enum
+	f.typez = TypezEnum
 	if enum != nil {
-		f.TypezID = enum.id
+		f.typezID = enum.id
 	}
 	return f
 }
 
 // WithAutoPopulated marks the field as auto-populated.
 func (f *Field) WithAutoPopulated() *Field {
-	f.AutoPopulated = true
+	f.autoPopulated = true
 	return f
 }
 
 // WithResourceNamePattern sets the resource name pattern on the field.
 func (f *Field) WithResourceNamePattern(pattern *ResourceNamePattern) *Field {
-	f.ResourceNamePattern = pattern
+	f.resourceNamePattern = pattern
 	return f
 }
 
 // WithTypezID sets the field's TypezID.
 func (f *Field) WithTypezID(id string) *Field {
-	f.TypezID = id
+	f.typezID = id
 	return f
 }
 
 // WithJSONName sets the JSON name of the field.
 func (f *Field) WithJSONName(name string) *Field {
-	f.JSONName = name
+	f.jsonName = name
 	return f
 }
 
 // WithSkipProtoConversion marks the field as skipping proto conversion.
 func (f *Field) WithSkipProtoConversion() *Field {
-	f.SkipProtoConversion = true
+	f.skipProtoConversion = true
 	return f
 }
 
 // WithResourceReference sets the resource reference on a field.
 func (f *Field) WithResourceReference(refType string) *Field {
-	f.ResourceReference = NewResourceReferenceBuilder().WithType(refType).Build()
+	f.resourceReference = NewResourceReferenceBuilder().WithType(refType).Build()
 	return f
 }
 
 // WithChildTypeReference sets the child type resource reference on a field.
 func (f *Field) WithChildTypeReference(childType string) *Field {
-	f.ResourceReference = NewResourceReferenceBuilder().WithChildType(childType).Build()
+	f.resourceReference = NewResourceReferenceBuilder().WithChildType(childType).Build()
 	return f
 }
 
 // WithDeprecated sets whether the field is deprecated.
 func (f *Field) WithDeprecated(deprecated bool) *Field {
-	f.Deprecated = deprecated
+	f.deprecated = deprecated
 	return f
 }
 
 // WithDocumentation sets the documentation of the field.
 func (f *Field) WithDocumentation(documentation string) *Field {
-	f.Documentation = documentation
+	f.documentation = documentation
+	return f
+}
+
+// WithParent sets the parent message for the field.
+func (f *Field) WithParent(parent *Message) *Field {
+	f.parent = parent
+	return f
+}
+
+// WithGroup sets the OneOf group for the field.
+func (f *Field) WithGroup(group *OneOf) *Field {
+	f.group = group
 	return f
 }
 

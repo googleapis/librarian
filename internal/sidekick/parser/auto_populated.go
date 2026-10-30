@@ -43,10 +43,10 @@ func updateAutoPopulatedFields(serviceConfig *serviceconfig.Service, model *api.
 
 		for _, name := range m.GetAutoPopulatedFields() {
 			for _, field := range message.Fields {
-				if field.Name != name {
+				if field.Name() != name {
 					continue
 				}
-				if field.AutoPopulated {
+				if field.AutoPopulated() {
 					method.AutoPopulated = append(method.AutoPopulated, field)
 				}
 				break

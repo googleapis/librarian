@@ -74,7 +74,7 @@ func TestLookupField(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(field, got); diff != "" {
+	if diff := cmp.Diff(field, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -96,7 +96,7 @@ func TestLookupMap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(mapType, got); diff != "" {
+	if diff := cmp.Diff(mapType, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -110,7 +110,7 @@ func TestLookupMap_FromModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(mapType, got); diff != "" {
+	if diff := cmp.Diff(mapType, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

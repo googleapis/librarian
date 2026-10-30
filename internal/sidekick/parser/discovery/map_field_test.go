@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
@@ -36,7 +35,7 @@ func newTestDiscoveryMessage(fields ...*api.Field) *api.Message {
 		WithPackage("package").
 		WithFields(fields...)
 	for _, f := range m.Fields {
-		f.Parent = nil
+		f.WithParent(nil)
 	}
 	return m
 }
@@ -249,13 +248,13 @@ func TestMapScalarTypes(t *testing.T) {
 						WithMap(),
 				).Fields[0],
 		}
-		if diff := cmp.Diff(wantFields, message.Fields, cmpopts.IgnoreFields(api.Field{}, "TypezID", "Parent")); diff != "" {
+		if diff := cmp.Diff(wantFields, message.Fields, apitest.AllowUnexported(), apitest.IgnoreFieldNames("typezID", "parent")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 			continue
 		}
-		mapEntity := model.Map(message.Fields[0].TypezID)
+		mapEntity := model.Map(message.Fields[0].TypezID())
 		if mapEntity == nil {
-			t.Errorf("missing map %s", message.Fields[0].TypezID)
+			t.Errorf("missing map %s", message.Fields[0].TypezID())
 			continue
 		}
 		wantMap := newTestDiscoveryMap(mapEntity.ID, test.WantTypez, test.WantTypeID)

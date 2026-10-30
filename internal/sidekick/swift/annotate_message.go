@@ -164,7 +164,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	}
 	sampleField := "<placeholder>"
 	if len(message.Fields) != 0 {
-		sampleField = camelCase(message.Fields[0].Name)
+		sampleField = camelCase(message.Fields[0].Name())
 	}
 	parameterTypeName, err := c.messageTypeName(message)
 	if err != nil {
@@ -217,7 +217,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			return err
 		}
 		// `message.Fields` includes the oneof variants, so this covers them too.
-		if !message.Deprecated && (field.Deprecated || fieldCodec.DiagnoseType) {
+		if !message.Deprecated && (field.Deprecated() || fieldCodec.DiagnoseType) {
 			annotations.DiagnoseCodable = true
 		}
 		// A deprecated message suppresses deprecation diagnostics in its whole
@@ -251,15 +251,15 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		annotations.DependsOn[paginationDep.Name] = paginationDep
 
 		itemField := message.Pagination.PageableItem
-		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
+		itemFieldCodec, ok := itemField.Codec().(*fieldAnnotations)
 		if !ok {
-			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name)
+			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name())
 		}
 		annotations.PageableItemField = itemFieldCodec.Name
 		switch {
-		case itemField.Repeated:
+		case itemField.Repeated():
 			annotations.PageableItemType = itemFieldCodec.BaseFieldType
-		case itemField.Typez == api.TypezMap:
+		case itemField.Typez() == api.TypezMap:
 			keyType, valueType, err := c.mapFieldTypeComponents(itemField)
 			if err != nil {
 				return err
@@ -277,9 +277,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			return err
 		}
 		tokenDeprecated := message.Pagination.NextPageToken != nil &&
-			message.Pagination.NextPageToken.Deprecated
+			message.Pagination.NextPageToken.Deprecated()
 		annotations.DiagnosePagination = !message.Deprecated &&
-			(itemField.Deprecated || itemTypeDeprecated || tokenDeprecated)
+			(itemField.Deprecated() || itemTypeDeprecated || tokenDeprecated)
 	}
 
 	for _, nested := range message.Messages {

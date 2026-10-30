@@ -463,7 +463,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool
 
 func scalarFieldType(f *api.Field) (string, error) {
 	var out string
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezDouble:
 		out = "f64"
 	case api.TypezFloat:
@@ -496,7 +496,7 @@ func scalarFieldType(f *api.Field) (string, error) {
 		out = "i64"
 
 	default:
-		return "", fmt.Errorf("unexpected type for field %q", f.ID)
+		return "", fmt.Errorf("unexpected type for field %q", f.ID())
 	}
 	return out, nil
 }
@@ -511,11 +511,11 @@ func (c *codec) oneOfFieldType(f *api.Field, model *api.API, sourceSpecification
 
 func oneOfFieldTypeFormatter(f *api.Field, baseType string) string {
 	switch {
-	case f.Repeated:
+	case f.Repeated():
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType)
-	case f.Typez == api.TypezMessage:
+	case f.Typez() == api.TypezMessage:
 		return fmt.Sprintf("std::boxed::Box<%s>", baseType)
-	case f.Optional:
+	case f.Optional():
 		return fmt.Sprintf("std::option::Option<%s>", baseType)
 	default:
 		return baseType
@@ -530,20 +530,20 @@ func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSp
 	switch {
 	case primitive:
 		return baseType, nil
-	case f.IsOneOf:
+	case f.IsOneOf():
 		return c.oneOfFieldType(f, model, sourceSpecificationPackageName)
-	case f.Repeated:
+	case f.Repeated():
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType), nil
-	case f.Recursive:
-		if f.Optional {
+	case f.Recursive():
+		if f.Optional() {
 			return fmt.Sprintf("std::option::Option<std::boxed::Box<%s>>", baseType), nil
 		}
-		if f.Typez == api.TypezMap {
+		if f.Typez() == api.TypezMap {
 			// Maps are never boxed.
 			return baseType, nil
 		}
 		return fmt.Sprintf("std::boxed::Box<%s>", baseType), nil
-	case f.Optional:
+	case f.Optional():
 		return fmt.Sprintf("std::option::Option<%s>", baseType), nil
 	default:
 		return baseType, nil
@@ -551,12 +551,12 @@ func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSp
 }
 
 func (c *codec) mapType(f *api.Field, model *api.API) (string, error) {
-	mapType := f.MapType
+	mapType := f.MapType()
 	if mapType == nil {
-		mapType = model.Map(f.TypezID)
+		mapType = model.Map(f.TypezID())
 	}
 	if mapType == nil || mapType.Key == nil || mapType.Value == nil {
-		return "", fmt.Errorf("missing map type for field %s (%s)", f.ID, f.TypezID)
+		return "", fmt.Errorf("missing map type for field %s (%s)", f.ID(), f.TypezID())
 	}
 	key, err := c.fieldType(mapType.Key, model, true, model.PackageName)
 	if err != nil {
@@ -572,19 +572,19 @@ func (c *codec) mapType(f *api.Field, model *api.API) (string, error) {
 // baseFieldType returns the field type, ignoring any repeated or optional
 // attributes.
 func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezMap:
 		return c.mapType(f, model)
 	case api.TypezMessage:
-		m := model.Message(f.TypezID)
+		m := model.Message(f.TypezID())
 		if m == nil {
-			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
+			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID(), f.ID())
 		}
 		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 	case api.TypezEnum:
-		e := model.Enum(f.TypezID)
+		e := model.Enum(f.TypezID())
 		if e == nil {
-			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
+			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID(), f.ID())
 		}
 		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
 	case api.TypezGroup:
@@ -595,48 +595,48 @@ func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationP
 }
 
 func (c *codec) addQueryParameter(f *api.Field) string {
-	if f.IsOneOf {
+	if f.IsOneOf() {
 		return c.addQueryParameterOneOf(f)
 	}
 	fieldName := toSnake(c.FieldName(f))
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezEnum:
-		if f.Optional || f.Repeated {
-			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
+		if f.Optional() || f.Repeated() {
+			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName())
 		}
-		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName, fieldName)
+		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName(), fieldName)
 	case api.TypezMessage, api.TypezMap:
 		// Query parameters in nested messages are first converted to a
 		// `serde_json::Value`` and then recursively merged into the request
 		// query. The conversion to `serde_json::Value` is expensive, but very
 		// few requests use nested objects as query parameters. Furthermore,
 		// the conversion is skipped if the object field is `None`.`
-		if f.Optional || f.Repeated {
-			return fmt.Sprintf(`let builder = req.%s.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "%s") });`, fieldName, f.JSONName)
+		if f.Optional() || f.Repeated() {
+			return fmt.Sprintf(`let builder = req.%s.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "%s") });`, fieldName, f.JSONName())
 		}
-		return fmt.Sprintf(`let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.%s).map_err(Error::ser)?.add(builder, "%s") };`, fieldName, f.JSONName)
+		return fmt.Sprintf(`let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.%s).map_err(Error::ser)?.add(builder, "%s") };`, fieldName, f.JSONName())
 	default:
-		if f.Optional || f.Repeated {
-			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
+		if f.Optional() || f.Repeated() {
+			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName())
 		}
-		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName, fieldName)
+		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName(), fieldName)
 	}
 }
 
 func (c *codec) addQueryParameterOneOf(f *api.Field) string {
 	fieldName := toSnake(c.FieldName(f))
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezEnum:
-		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
+		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName())
 	case api.TypezMessage, api.TypezMap:
 		// Query parameters in nested messages are first converted to a
 		// `serde_json::Value`` and then recursively merged into the request
 		// query. The conversion to `serde_json::Value` is expensive, but very
 		// few requests use nested objects as query parameters. Furthermore,
 		// the conversion is skipped if the object field is `None`.`
-		return fmt.Sprintf(`let builder = req.%s().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "%s") });`, fieldName, f.JSONName)
+		return fmt.Sprintf(`let builder = req.%s().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "%s") });`, fieldName, f.JSONName())
 	default:
-		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
+		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName())
 	}
 }
 
@@ -1435,8 +1435,8 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 		return "", nil
 	}
 	for _, f := range m.Fields {
-		if f.Name == fieldName || c.FieldName(f) == fieldName {
-			if !f.IsOneOf {
+		if f.Name() == fieldName || c.FieldName(f) == fieldName {
+			if !f.IsOneOf() {
 				p, err := c.fullyQualifiedMessageName(m, scope)
 				if err != nil {
 					return "", err
@@ -1461,7 +1461,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 func (c *codec) tryOneOfRustdocLink(field *api.Field, message *api.Message, scope string) (string, error) {
 	for _, o := range message.OneOfs {
 		for _, f := range o.Fields {
-			if f.ID == field.ID {
+			if f.ID() == field.ID() {
 				p, err := c.fullyQualifiedMessageName(message, scope)
 				if err != nil {
 					return "", err
@@ -1557,10 +1557,10 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 	if f == nil {
 		return
 	}
-	if f.Typez == api.TypezMap {
-		mapType := f.MapType
+	if f.Typez() == api.TypezMap {
+		mapType := f.MapType()
 		if mapType == nil {
-			mapType = model.Map(f.TypezID)
+			mapType = model.Map(f.TypezID())
 		}
 		if mapType != nil {
 			findUsedPackagesField(mapType.Key, model, c)
@@ -1568,13 +1568,13 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 		}
 		return
 	}
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezMessage:
-		if fm := model.Message(f.TypezID); fm != nil {
+		if fm := model.Message(f.TypezID()); fm != nil {
 			usePackage(fm.Package, model, c)
 		}
 	case api.TypezEnum:
-		if fe := model.Enum(f.TypezID); fe != nil {
+		if fe := model.Enum(f.TypezID()); fe != nil {
 			usePackage(fe.Package(), model, c)
 		}
 	}
@@ -1693,10 +1693,10 @@ func (c *codec) OneOfEnumName(oneof *api.OneOf) string {
 
 // FieldName returns the field name.
 func (c *codec) FieldName(field *api.Field) string {
-	if override, ok := c.nameOverrides[field.ID]; ok {
+	if override, ok := c.nameOverrides[field.ID()]; ok {
 		return override
 	}
-	return field.Name
+	return field.Name()
 }
 
 // MessageModuleName returns the module name for a message in model.rs, taking message_module_name_overrides into account.

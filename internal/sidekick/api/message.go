@@ -83,7 +83,7 @@ func (m *Message) HasSkippedFields() bool {
 // HasSkippedProtoConversionFields returns true if any field in the message has SkipProtoConversion = true.
 func (m *Message) HasSkippedProtoConversionFields() bool {
 	for _, f := range m.Fields {
-		if f.SkipProtoConversion {
+		if f.skipProtoConversion {
 			return true
 		}
 	}

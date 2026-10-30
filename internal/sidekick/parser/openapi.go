@@ -274,18 +274,18 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 					"\n"+
 					"The full target path will be in the form `%s`.", p.Name, template)
 		}
-		field := &api.Field{
-			Name:          p.Name,
-			ID:            fmt.Sprintf("%s.%s", message.ID, p.Name),
-			JSONName:      p.Name, // OpenAPI fields are already camelCase
-			Documentation: documentation,
-			Deprecated:    p.Deprecated,
-			Optional:      openapiFieldIsOptional(p),
-			Typez:         typez,
-			TypezID:       typezID,
-			AutoPopulated: openapiIsAutoPopulated(typez, schema, p),
-			Behavior:      openapiParameterBehavior(p),
-		}
+		field := api.NewFieldBuilder().
+			WithName(p.Name).
+			WithID(fmt.Sprintf("%s.%s", message.ID, p.Name)).
+			WithJSONName(p.Name). // OpenAPI fields are already camelCase
+			WithDocumentation(documentation).
+			WithDeprecated(p.Deprecated).
+			WithOptional(openapiFieldIsOptional(p)).
+			WithTypez(typez).
+			WithTypezID(typezID).
+			WithAutoPopulated(openapiIsAutoPopulated(typez, schema, p)).
+			WithBehavior(openapiParameterBehavior(p)...).
+			Build()
 		message.Fields = append(message.Fields, field)
 		fieldNames[p.Name] = true
 	}
@@ -305,15 +305,15 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 			return nil, "", err
 		}
 		bodyFieldPath = name
-		field := &api.Field{
-			Name:          name,
-			ID:            fmt.Sprintf("%s.%s", message.ID, name),
-			JSONName:      name,
-			Documentation: "The request body.",
-			Typez:         api.TypezMessage,
-			TypezID:       bid,
-			Optional:      true,
-		}
+		field := api.NewFieldBuilder().
+			WithName(name).
+			WithID(fmt.Sprintf("%s.%s", message.ID, name)).
+			WithJSONName(name).
+			WithDocumentation("The request body.").
+			WithTypez(api.TypezMessage).
+			WithTypezID(bid).
+			WithOptional(true).
+			Build()
 		message.Fields = append(message.Fields, field)
 	}
 	// Add the message to the symbol table and the parent.
@@ -400,16 +400,16 @@ func makeMessageFields(model *api.API, packageName, messageName string, message 
 func makeField(model *api.API, packageName, messageName, name string, optional bool, field *base.Schema) (*api.Field, error) {
 	if len(field.AllOf) != 0 {
 		// Simple object fields name an AllOf attribute, but no `Type` attribute.
-		return makeObjectField(model, packageName, messageName, name, field)
+		return makeObjectField(model, packageName, messageName, name, false, field)
 	}
 	if len(field.Type) == 0 {
 		return nil, fmt.Errorf("missing field type for field %s.%s", messageName, name)
 	}
 	switch field.Type[0] {
 	case "boolean", "integer", "number", "string":
-		return makeScalarField(packageName, messageName, name, field, optional, field)
+		return makeScalarField(packageName, messageName, name, field, optional, false, field)
 	case "object":
-		return makeObjectField(model, packageName, messageName, name, field)
+		return makeObjectField(model, packageName, messageName, name, false, field)
 	case "array":
 		return makeArrayField(model, packageName, messageName, name, field)
 	default:
@@ -417,26 +417,27 @@ func makeField(model *api.API, packageName, messageName, name string, optional b
 	}
 }
 
-func makeScalarField(packageName, messageName, name string, schema *base.Schema, optional bool, field *base.Schema) (*api.Field, error) {
+func makeScalarField(packageName, messageName, name string, schema *base.Schema, optional, repeated bool, field *base.Schema) (*api.Field, error) {
 	typez, typezID, err := scalarType(messageName, name, schema)
 	if err != nil {
 		return nil, err
 	}
-	return &api.Field{
-		Name:          name,
-		ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
-		JSONName:      name, // OpenAPI field names are always camelCase
-		Documentation: field.Description,
-		Typez:         typez,
-		TypezID:       typezID,
-		Deprecated:    field.Deprecated != nil && *field.Deprecated,
-		Optional:      optional || (typez == api.TypezMessage),
-	}, nil
+	return api.NewFieldBuilder().
+		WithName(name).
+		WithID(fmt.Sprintf(".%s.%s.%s", packageName, messageName, name)).
+		WithJSONName(name). // OpenAPI field names are always camelCase
+		WithDocumentation(field.Description).
+		WithTypez(typez).
+		WithTypezID(typezID).
+		WithDeprecated(field.Deprecated != nil && *field.Deprecated).
+		WithOptional(!repeated && (optional || (typez == api.TypezMessage))).
+		WithRepeated(repeated).
+		Build(), nil
 }
 
-func makeObjectField(model *api.API, packageName, messageName, name string, field *base.Schema) (*api.Field, error) {
+func makeObjectField(model *api.API, packageName, messageName, name string, repeated bool, field *base.Schema) (*api.Field, error) {
 	if len(field.AllOf) != 0 {
-		return makeObjectFieldAllOf(packageName, messageName, name, field)
+		return makeObjectFieldAllOf(packageName, messageName, name, repeated, field)
 	}
 	if field.AdditionalProperties != nil && field.AdditionalProperties.IsA() {
 		// This indicates we have a map<K, T> field. In OpenAPI, these are
@@ -448,47 +449,49 @@ func makeObjectField(model *api.API, packageName, messageName, name string, fiel
 
 		if len(schema.Type) == 0 {
 			// Untyped message fields are .google.protobuf.Any
-			return &api.Field{
-				Name:          name,
-				ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
-				JSONName:      name, // OpenAPI field names are always camelCase
-				Documentation: field.Description,
-				Deprecated:    field.Deprecated != nil && *field.Deprecated,
-				Typez:         api.TypezMessage,
-				TypezID:       ".google.protobuf.Any",
-				Optional:      true,
-			}, nil
+			return api.NewFieldBuilder().
+				WithName(name).
+				WithID(fmt.Sprintf(".%s.%s.%s", packageName, messageName, name)).
+				WithJSONName(name). // OpenAPI field names are always camelCase
+				WithDocumentation(field.Description).
+				WithDeprecated(field.Deprecated != nil && *field.Deprecated).
+				WithTypez(api.TypezMessage).
+				WithTypezID(".google.protobuf.Any").
+				WithOptional(!repeated).
+				WithRepeated(repeated).
+				Build(), nil
 		}
 		mapEntry, err := makeMap(model, messageName, name, schema)
 		if err != nil {
 			return nil, err
 		}
-		return &api.Field{
-			Name:          name,
-			ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
-			JSONName:      name, // OpenAPI field names are always camelCase
-			Documentation: field.Description,
-			Deprecated:    field.Deprecated != nil && *field.Deprecated,
-			Typez:         api.TypezMap,
-			TypezID:       mapEntry.ID,
-			Optional:      false,
-			Repeated:      false,
-			Map:           true,
-		}, nil
+		return api.NewFieldBuilder().
+			WithName(name).
+			WithID(fmt.Sprintf(".%s.%s.%s", packageName, messageName, name)).
+			WithJSONName(name). // OpenAPI field names are always camelCase
+			WithDocumentation(field.Description).
+			WithDeprecated(field.Deprecated != nil && *field.Deprecated).
+			WithTypez(api.TypezMap).
+			WithTypezID(mapEntry.ID).
+			WithOptional(false).
+			WithRepeated(repeated).
+			WithMap(!repeated).
+			Build(), nil
 	}
 	if field.Items != nil && field.Items.IsA() {
 		proxy := field.Items.A
 		typezID := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(proxy.GetReference(), "#/components/schemas/"))
-		return &api.Field{
-			Name:          name,
-			ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
-			JSONName:      name, // OpenAPI field names are always camelCase
-			Documentation: field.Description,
-			Deprecated:    field.Deprecated != nil && *field.Deprecated,
-			Typez:         api.TypezMessage,
-			TypezID:       typezID,
-			Optional:      true,
-		}, nil
+		return api.NewFieldBuilder().
+			WithName(name).
+			WithID(fmt.Sprintf(".%s.%s.%s", packageName, messageName, name)).
+			WithJSONName(name). // OpenAPI field names are always camelCase
+			WithDocumentation(field.Description).
+			WithDeprecated(field.Deprecated != nil && *field.Deprecated).
+			WithTypez(api.TypezMessage).
+			WithTypezID(typezID).
+			WithOptional(!repeated).
+			WithRepeated(repeated).
+			Build(), nil
 	}
 	return nil, fmt.Errorf("unknown object field type for field %s.%s", messageName, name)
 }
@@ -505,51 +508,43 @@ func makeArrayField(model *api.API, packageName, messageName, name string, field
 	if len(schema.Type) != 1 {
 		return nil, fmt.Errorf("the items for field  %s.%s should have a single type", messageName, name)
 	}
-	var result *api.Field
 	switch schema.Type[0] {
 	case "boolean", "integer", "number", "string":
-		result, err = makeScalarField(packageName, messageName, name, schema, false, field)
+		return makeScalarField(packageName, messageName, name, schema, false, true, field)
 	case "object":
-		typezID := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
-		if len(typezID) > 0 {
-			new := &api.Field{
-				Name:          name,
-				ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
-				JSONName:      name, // OpenAPI field names are always camelCase
-				Documentation: field.Description,
-				Deprecated:    field.Deprecated != nil && *field.Deprecated,
-				Typez:         api.TypezMessage,
-				TypezID:       typezID,
-			}
-			result = new
-		} else {
-			result, err = makeObjectField(model, packageName, messageName, name, schema)
+		if reference != "" {
+			typezID := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
+			return api.NewFieldBuilder().
+				WithName(name).
+				WithID(fmt.Sprintf(".%s.%s.%s", packageName, messageName, name)).
+				WithJSONName(name). // OpenAPI field names are always camelCase
+				WithDocumentation(field.Description).
+				WithDeprecated(field.Deprecated != nil && *field.Deprecated).
+				WithTypez(api.TypezMessage).
+				WithTypezID(typezID).
+				WithRepeated(true).
+				Build(), nil
 		}
+		return makeObjectField(model, packageName, messageName, name, true, schema)
 	default:
 		return nil, fmt.Errorf("unknown array field type for %s.%s %q", messageName, name, schema.Type[0])
 	}
-	if err != nil {
-		return nil, err
-	}
-	result.Repeated = true
-	result.Map = false
-	result.Optional = false
-	return result, nil
 }
 
-func makeObjectFieldAllOf(packageName, messageName, name string, field *base.Schema) (*api.Field, error) {
+func makeObjectFieldAllOf(packageName, messageName, name string, repeated bool, field *base.Schema) (*api.Field, error) {
 	for _, proxy := range field.AllOf {
 		typezID := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(proxy.GetReference(), "#/components/schemas/"))
-		return &api.Field{
-			Name:          name,
-			ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
-			JSONName:      name, // OpenAPI field names are always camelCase
-			Documentation: field.Description,
-			Deprecated:    field.Deprecated != nil && *field.Deprecated,
-			Typez:         api.TypezMessage,
-			TypezID:       typezID,
-			Optional:      true,
-		}, nil
+		return api.NewFieldBuilder().
+			WithName(name).
+			WithID(fmt.Sprintf(".%s.%s.%s", packageName, messageName, name)).
+			WithJSONName(name). // OpenAPI field names are always camelCase
+			WithDocumentation(field.Description).
+			WithDeprecated(field.Deprecated != nil && *field.Deprecated).
+			WithTypez(api.TypezMessage).
+			WithTypezID(typezID).
+			WithOptional(!repeated).
+			WithRepeated(repeated).
+			Build(), nil
 	}
 	return nil, fmt.Errorf("cannot build any AllOf schema for field %s.%s", messageName, name)
 }
@@ -563,18 +558,18 @@ func makeMap(model *api.API, messageName, name string, schema *base.Schema) (*ap
 	mapEntry := model.Map(id)
 	if mapEntry == nil {
 		// The map was not found, insert the type.
-		key := &api.Field{
-			Name:    "key",
-			ID:      id + ".key",
-			Typez:   api.TypezString,
-			TypezID: "string",
-		}
-		value := &api.Field{
-			Name:    "value",
-			ID:      valueID,
-			Typez:   valueTypez,
-			TypezID: valueID,
-		}
+		key := api.NewFieldBuilder().
+			WithName("key").
+			WithID(id + ".key").
+			WithTypez(api.TypezString).
+			WithTypezID("string").
+			Build()
+		value := api.NewFieldBuilder().
+			WithName("value").
+			WithID(valueID).
+			WithTypez(valueTypez).
+			WithTypezID(valueID).
+			Build()
 		placeholder := &api.Map{
 			ID:    id,
 			Key:   key,
