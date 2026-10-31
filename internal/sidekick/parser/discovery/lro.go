@@ -78,7 +78,7 @@ func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 func lroFindPoller(method *api.Method, model *api.API, discoveryConfig *api.Discovery) (*api.Method, []string) {
 	var flatPath []string
 	for _, binding := range method.PathInfo.Bindings {
-		flatPath = append(flatPath, binding.PathTemplate.FlatPath())
+		flatPath = append(flatPath, binding.PathTemplate().FlatPath())
 	}
 	for _, candidate := range discoveryConfig.Pollers {
 		for _, path := range flatPath {
