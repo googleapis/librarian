@@ -1729,7 +1729,7 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
 		return false
 	}
-	return m.PathInfo.Bindings[0].PathTemplate != nil
+	return m.PathInfo.Bindings[0].PathTemplate() != nil
 }
 
 func (c *codec) templateSupportsGrpc() bool {
