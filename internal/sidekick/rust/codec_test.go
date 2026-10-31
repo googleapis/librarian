@@ -1647,25 +1647,28 @@ func TestFormatDocCommentsSkippedMethodsAndServices(t *testing.T) {
 
 	createFoo := api.NewTestMethod("CreateFoo").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("foo"))
+			WithLiteral("foo").
+			Build())
 	someService := api.NewTestService("SomeService").
 		WithPackage("test.v1").
 		WithMethods(createFoo)
 	skippedMethod := api.NewTestMethod("SkippedMethod").
 		WithID(fmt.Sprintf("%s.SkippedMethod", someService.ID)).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("skipped"))
+			WithLiteral("skipped").
+			Build())
 	skippedMethod.Service = someService
 
 	skippedServiceMethod := api.NewTestMethod("SomeMethod").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("bar"))
+			WithLiteral("bar").
+			Build())
 	skippedService := api.NewTestService("SkippedService").
 		WithPackage("test.v1").
 		WithMethods(skippedServiceMethod)
@@ -1876,9 +1879,10 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 
 	createFoo := api.NewTestMethod("CreateFoo").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("foo"))
+			WithLiteral("foo").
+			Build())
 	createBar := api.NewTestMethod("CreateBar").WithPathInfo(nil)
 	someService := api.NewTestService("SomeService").
 		WithPackage("test.v1").
@@ -1886,18 +1890,20 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 
 	renamedCreateFoo := api.NewTestMethod("CreateFoo").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("foo"))
+			WithLiteral("foo").
+			Build())
 	renamedService := api.NewTestService("RenamedService").
 		WithPackage("test.v1").
 		WithMethods(renamedCreateFoo)
 
 	yellCreateThing := api.NewTestMethod("CreateThing").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("thing"))
+			WithLiteral("thing").
+			Build())
 	yellyService := api.NewTestService("YELL").
 		WithPackage("test.v1").
 		WithMethods(yellCreateThing)
@@ -2144,37 +2150,41 @@ func TestPathFmt(t *testing.T) {
 	}{
 		{
 			"/v1/fixed",
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithLiteral("fixed"),
+				WithLiteral("fixed").
+				Build(),
 		},
 		{
 			"/v1/{}",
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("parent"),
+				WithVariableNamed("parent").
+				Build(),
 		},
 		{
 			"/v1/{}",
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("locations").
 					WithMatch().
-					Build()),
+					Build()).
+				Build(),
 		},
 		{
 			"/v1/{}:action",
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariableNamed("parent").
-				WithVerb("action"),
+				WithVerb("action").
+				Build(),
 		},
 		{
 			"/v1/projects/{}/locations/{}/secrets/{}:action",
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
@@ -2182,7 +2192,8 @@ func TestPathFmt(t *testing.T) {
 				WithVariableNamed("location").
 				WithLiteral("secrets").
 				WithVariableNamed("secret").
-				WithVerb("action"),
+				WithVerb("action").
+				Build(),
 		},
 	} {
 		got := httpPathFmt(test.template)

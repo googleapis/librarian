@@ -488,11 +488,12 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		WithID("..Service.ListLocations").
 		WithDocumentation("Lists information about the supported locations for this service.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
-			WithLiteral("locations")).
+			WithLiteral("locations").
+			Build()).
 		WithQueryParameters("filter", "pageSize", "pageToken").
 		WithPagination(pageToken)
 	wantListLocationsMethod.IsList = false
@@ -680,11 +681,12 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		WithID("..Service.ListFoos").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters("pageSize", "pageToken").
 		WithPagination(
@@ -851,12 +853,13 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		WithID("..Service.RpcA").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("rpc").
-				WithLiteral("a"),
+				WithLiteral("a").
+				Build(),
 		).
 		WithQueryParameters("filter")
 	rpcA.InputTypeID = "..Service.RpcARequest"
@@ -868,12 +871,13 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		WithDeprecated(true).
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("rpc").
-				WithLiteral("b"),
+				WithLiteral("b").
+				Build(),
 		).
 		WithQueryParameters()
 	rpcB.InputTypeID = "..Service.RpcBRequest"

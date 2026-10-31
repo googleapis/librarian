@@ -52,7 +52,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		WithOutput(response).
 		WithBidiStreaming().
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("Protocol").WithPackage("test.v1").WithMethods(bidiMethod)
 
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service}).
@@ -327,7 +327,7 @@ func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
 		WithOutput(response).
 		WithBidiStreaming().
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("Protocol").WithPackage("test.v1").WithMethods(bidiMethod)
 
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service}).

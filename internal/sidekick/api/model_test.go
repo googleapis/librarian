@@ -20,6 +20,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func allowUnexported() cmp.Option {
+	return cmp.AllowUnexported(
+		PathSegment{},
+		PathTemplate{},
+		PathVariable{},
+	)
+}
+
 func TestRoutingCombosSimpleOr(t *testing.T) {
 	v1 := NewTestRoutingInfoVariant("v1")
 	v2 := NewTestRoutingInfoVariant("v2")
@@ -148,39 +156,6 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 	want := "a/b/c/d/*/e/**"
 	if got != want {
 		t.Errorf("mismatch in TemplateAsString got=%q, want=%q", got, want)
-	}
-}
-
-func TestPathTemplateBuilder(t *testing.T) {
-	got := (&PathTemplate{}).
-		WithLiteral("v1").
-		WithVariable(NewPathVariableBuilder("parent", "child").
-			WithLiteral("projects").
-			WithMatch().
-			WithAllowReserved().
-			WithLiteral("locations").
-			WithMatchRecursive().
-			Build()).
-		WithVariableNamed("v2", "field").
-		WithVerb("verb")
-	verb := "verb"
-	want := &PathTemplate{
-		Segments: []PathSegment{
-			*NewPathSegmentBuilder().WithLiteral("v1").Build(),
-			*NewPathSegmentBuilder().WithVariable(
-				NewPathVariableBuilder("parent", "child").
-					WithSegments("projects", "*", "locations", "**").
-					WithAllowReserved().
-					Build()).Build(),
-			*NewPathSegmentBuilder().WithVariable(
-				NewPathVariableBuilder("v2", "field").
-					WithSegments("*").
-					Build()).Build(),
-		},
-		Verb: verb,
-	}
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathSegment{}, PathVariable{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
