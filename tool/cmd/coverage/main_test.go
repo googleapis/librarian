@@ -15,6 +15,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -87,5 +89,112 @@ total:					(statements)	89.6%`,
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestPackageCoverage(t *testing.T) {
+	profile := `mode: atomic
+example.com/a/x.go:1.1,2.2 3 1
+example.com/a/y.go:1.1,2.2 1 0
+example.com/b/z.go:1.1,2.2 2 0
+example.com/b/z.go:3.1,4.2 2 5
+`
+	got, err := packageCoverage(profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []pkgCoverage{
+		{pkg: "example.com/a", covered: 3, total: 4},
+		{pkg: "example.com/b", covered: 2, total: 4},
+	}
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(pkgCoverage{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestPackageCoverage_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		profile string
+	}{
+		{"wrong field count", "example.com/a/x.go:1.1,2.2 3\n"},
+		{"missing colon", "example.com/a/x.go 3 1\n"},
+		{"bad statements", "example.com/a/x.go:1.1,2.2 x 1\n"},
+		{"bad count", "example.com/a/x.go:1.1,2.2 3 x\n"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := packageCoverage(test.profile); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
+func TestFormatSummary(t *testing.T) {
+	pkgs := []pkgCoverage{
+		{pkg: "example.com/a", covered: 3, total: 4},
+		{pkg: "example.com/empty"},
+	}
+	for _, test := range []struct {
+		name  string
+		total float64
+		want  string
+	}{
+		{
+			name:  "pass",
+			total: 85,
+			want: "### Coverage: 85.0% (target: 80%) ✅ PASS\n\n" +
+				"<details><summary>Per-package statement coverage</summary>\n\n" +
+				"| Package | Coverage | Statements |\n|---|---:|---:|\n" +
+				"| `example.com/a` | 75.0% | 3/4 |\n" +
+				"| `example.com/empty` | 0.0% | 0/0 |\n" +
+				"\n</details>\n\n",
+		},
+		{
+			name:  "fail",
+			total: 79.9,
+			want: "### Coverage: 79.9% (target: 80%) ❌ FAIL\n\n" +
+				"<details><summary>Per-package statement coverage</summary>\n\n" +
+				"| Package | Coverage | Statements |\n|---|---:|---:|\n" +
+				"| `example.com/a` | 75.0% | 3/4 |\n" +
+				"| `example.com/empty` | 0.0% | 0/0 |\n" +
+				"\n</details>\n\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatSummary(test.total, 80, pkgs)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestWriteStepSummary(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.WriteFile("coverage.out", []byte("mode: atomic\nexample.com/a/x.go:1.1,2.2 1 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	summary := filepath.Join(t.TempDir(), "summary.md")
+	t.Setenv("GITHUB_STEP_SUMMARY", summary)
+	if err := writeStepSummary(100, 80); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(summary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := formatSummary(100, 80, []pkgCoverage{{pkg: "example.com/a", covered: 1, total: 1}})
+	if diff := cmp.Diff(want, string(got)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWriteStepSummary_Unset(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("GITHUB_STEP_SUMMARY", "")
+	// No coverage.out exists, so any attempt to read it would fail.
+	if err := writeStepSummary(100, 80); err != nil {
+		t.Fatal(err)
 	}
 }
