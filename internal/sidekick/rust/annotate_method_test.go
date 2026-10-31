@@ -271,10 +271,10 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 					WithLiteral("types").
 					WithVariableNamed("type").
 					Build()).
-				WithTargetResource(&api.TargetResource{
-					Template:   api.ParseTemplateForTest(template),
-					FieldPaths: fields,
-				}).
+				WithTargetResource(api.NewTargetResource(
+					fields,
+					api.ParseTemplateForTest(template),
+				)).
 				Build()
 		}
 	}
@@ -295,10 +295,10 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				WithLiteral("v1").
 				WithVariableNamed("name").
 				Build()).
-			WithTargetResource(&api.TargetResource{
-				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
-				FieldPaths: [][]string{{"name"}},
-			}).
+			WithTargetResource(api.NewTargetResource(
+				[][]string{{"name"}},
+				api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
+			)).
 			Build(),
 		api.NewPathBindingBuilder().
 			WithVerb("GET").
@@ -311,10 +311,10 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				WithLiteral("clusters").
 				WithVariableNamed("cluster").
 				Build()).
-			WithTargetResource(&api.TargetResource{
-				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
-				FieldPaths: [][]string{{"project"}, {"location"}, {"cluster"}},
-			}).
+			WithTargetResource(api.NewTargetResource(
+				[][]string{{"project"}, {"location"}, {"cluster"}},
+				api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
+			)).
 			Build(),
 		api.NewPathBindingBuilder().
 			WithVerb("GET").
@@ -413,18 +413,20 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 		{
 			name: "Basic",
 			binding: api.NewPathBindingBuilder().
-				WithTargetResource(&api.TargetResource{
-					Template: api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
-				}).
+				WithTargetResource(api.NewTargetResource(
+					nil,
+					api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
+				)).
 				Build(),
 			want: "//test.googleapis.com/projects/{}/zones/{}",
 		},
 		{
 			name: "With Extended Field Path",
 			binding: api.NewPathBindingBuilder().
-				WithTargetResource(&api.TargetResource{
-					Template: api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
-				}).
+				WithTargetResource(api.NewTargetResource(
+					nil,
+					api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
+				)).
 				Build(),
 			want: "//test.googleapis.com/items/{}",
 		},
@@ -439,10 +441,11 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 					WithLiteral("zones").
 					WithVariableNamed("zone").
 					Build()).
-				WithTargetResource(&api.TargetResource{
+				WithTargetResource(api.NewTargetResource(
+					nil,
 					// Notice that constructTemplate already stripped out "compute/v1"
-					Template: api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),
-				}).
+					api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),
+				)).
 				Build(),
 			want: "//compute.googleapis.com/projects/{}/zones/{}",
 		},

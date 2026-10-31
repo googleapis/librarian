@@ -171,10 +171,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		if err != nil {
 			return nil, err
 		}
-		return &TargetResource{
-			FieldPaths: fieldPaths,
-			Template:   template,
-		}, nil
+		return NewTargetResource(fieldPaths, template), nil
 	}
 	return nil, nil
 }
@@ -215,10 +212,7 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 	if err != nil {
 		return nil, err
 	}
-	return &TargetResource{
-		FieldPaths: fieldPaths,
-		Template:   template,
-	}, nil
+	return NewTargetResource(fieldPaths, template), nil
 }
 
 // findField traverses the (nested) message structure to find a field by its field path.

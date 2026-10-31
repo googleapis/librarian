@@ -22,10 +22,7 @@ import (
 
 func TestPathBinding(t *testing.T) {
 	pt := NewPathTemplateBuilder().WithLiteral("v1").Build()
-	tr := &TargetResource{
-		FieldPaths: [][]string{{"parent"}},
-		Template:   []PathSegment{*NewPathSegmentBuilder().WithLiteral("items").Build()},
-	}
+	tr := NewTargetResource([][]string{{"parent"}}, []PathSegment{*NewPathSegmentBuilder().WithLiteral("items").Build()})
 	got := NewPathBindingBuilder().
 		WithQueryParameter("initial").
 		WithQueryParameterMap(map[string]bool{"overwritten": true}).

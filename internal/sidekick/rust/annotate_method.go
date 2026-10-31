@@ -684,7 +684,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 			annotation.ResourceNameTemplateGrpc = tmpl
 
 			var grpcArgs []string
-			for _, path := range firstBindingWithTargetResource.TargetResource().FieldPaths {
+			for _, path := range firstBindingWithTargetResource.TargetResource().FieldPaths() {
 				accessors, err := makeAccessors(path, m)
 				if err != nil {
 					return err
@@ -711,7 +711,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 						return err
 					}
 					bAnn.ResourceNameTemplate = tmpl
-					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource().FieldPaths)
+					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource().FieldPaths())
 				} else {
 					bAnn.ResourceNameTemplate = ""
 					bAnn.ResourceNameArgs = nil
@@ -723,12 +723,16 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 }
 
 func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
-	if b.TargetResource() == nil || len(b.TargetResource().Template) == 0 {
+	if b.TargetResource() == nil {
+		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
+	}
+	template := b.TargetResource().Template()
+	if len(template) == 0 {
 		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
 	}
 
 	var sb strings.Builder
-	for i, seg := range b.TargetResource().Template {
+	for i, seg := range template {
 		if i > 0 {
 			sb.WriteString("/")
 		}

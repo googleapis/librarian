@@ -54,10 +54,10 @@ func TestIdentifyTargetResources(t *testing.T) {
 					WithType(TypezString).
 					WithResourceReference("cloudresourcemanager.googleapis.com/Project"),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
+			),
 		},
 		{
 			name:      "explicit: multiple resource references",
@@ -74,10 +74,10 @@ func TestIdentifyTargetResources(t *testing.T) {
 					WithType(TypezString).
 					WithResourceReference("locations.googleapis.com/Location"),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}, {"location"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}, {"location"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
+			),
 		},
 		{
 			name:      "explicit: nested field reference",
@@ -94,10 +94,10 @@ func TestIdentifyTargetResources(t *testing.T) {
 					),
 				),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"parent", "project"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{parent.project}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"parent", "project"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{parent.project}"),
+			),
 		},
 		{
 			name:      "explicit: complex variable pattern treated as full name",
@@ -111,10 +111,10 @@ func TestIdentifyTargetResources(t *testing.T) {
 					WithType(TypezString).
 					WithResourceReference("example.googleapis.com/Resource"),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"name"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/{name}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"name"}},
+				ParseTemplateForTest("//test-api.googleapis.com/{name}"),
+			),
 		},
 		{
 			name:      "explicit: crop trailing literals (API Keys keyString case)",
@@ -129,10 +129,10 @@ func TestIdentifyTargetResources(t *testing.T) {
 					WithType(TypezString).
 					WithResourceReference("apikeys.googleapis.com/Key"),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"name"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/{name}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"name"}},
+				ParseTemplateForTest("//test-api.googleapis.com/{name}"),
+			),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -213,10 +213,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				NewTestField("project").WithType(TypezString),
 				NewTestField("location").WithType(TypezString),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}, {"location"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}, {"location"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
+			),
 		},
 		{
 			name:      "heuristic: learns custom tokens from GET methods",
@@ -238,10 +238,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("instances").WithVariableNamed("instance").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}, {"zone"}, {"instance"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
+			),
 		},
 		{
 			name:      "heuristic: paths with standalone literals without variables (e.g. global)",
@@ -262,10 +262,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("backendServices").WithVariableNamed("backend_service").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}, {"backend_service"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/global/backendServices/{backend_service}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}, {"backend_service"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/global/backendServices/{backend_service}"),
+			),
 		},
 		{
 			name:      "heuristic: path with non-variable standalone literal",
@@ -289,10 +289,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("foos").WithVariableNamed("foo").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"foo"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/xyz/global/foos/{foo}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"foo"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/xyz/global/foos/{foo}"),
+			),
 		},
 		{
 			name:      "heuristic: paths with un-grouped variable after version string",
@@ -311,10 +311,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("children").WithVariableNamed("child").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"resource"}, {"child"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/{resource}/children/{child}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"resource"}, {"child"}},
+				ParseTemplateForTest("//test-api.googleapis.com/{resource}/children/{child}"),
+			),
 		},
 		{
 			name:      "heuristic: valid compute path with version string",
@@ -328,10 +328,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				NewTestField("project").WithType(TypezString),
 				NewTestField("location").WithType(TypezString),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}, {"location"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}, {"location"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
+			),
 		},
 		{
 			name:      "heuristic: stops at trailing action",
@@ -355,10 +355,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("instances").WithVariableNamed("instance").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}, {"zone"}, {"instance"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
+			),
 		},
 		{
 			name:      "heuristic: stops at unknown segment",
@@ -380,10 +380,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("instances").WithVariableNamed("instance").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
+			),
 		},
 		{
 			name:      "heuristic: skips if input field missing",
@@ -424,10 +424,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}, {"cross_site_network"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/global/crossSiteNetworks/{cross_site_network}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}, {"cross_site_network"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/global/crossSiteNetworks/{cross_site_network}"),
+			),
 		},
 		{
 			name:      "heuristic: unknown custom resource falls back to parent",
@@ -446,10 +446,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("projects").WithVariableNamed("project").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"project"}},
+				ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
+			),
 		},
 		{
 			name:      "heuristic: multiple standalone literals before known resource",
@@ -469,10 +469,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					WithLiteral("firewallPolicies").WithVariableNamed("resource").
 					Build(),
 			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"resource"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/locations/global/firewallPolicies/{resource}"),
-			},
+			want: NewTargetResource(
+				[][]string{{"resource"}},
+				ParseTemplateForTest("//test-api.googleapis.com/locations/global/firewallPolicies/{resource}"),
+			),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
