@@ -395,15 +395,21 @@ func TestGenerateStub_MultipleBindings(t *testing.T) {
 		WithInput(request).
 		WithOutput(response).
 		WithBindings(
-			api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().
-				WithLiteral("v1").
-				WithVariableNamed("name").
-				Build()),
-			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
-				WithLiteral("v1").
-				WithVariableNamed("parent").
-				WithLiteral("resources").
-				Build()),
+			api.NewPathBindingBuilder().
+				WithVerb("GET").
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("v1").
+					WithVariableNamed("name").
+					Build()).
+				Build(),
+			api.NewPathBindingBuilder().
+				WithVerb("POST").
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("v1").
+					WithVariableNamed("parent").
+					WithLiteral("resources").
+					Build()).
+				Build(),
 		)
 
 	service := api.NewTestService("Service").

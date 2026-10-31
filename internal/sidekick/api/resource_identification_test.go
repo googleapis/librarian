@@ -22,7 +22,7 @@ import (
 
 // setupTestModel helper creates a minimal API model for testing resource identification.
 func setupTestModel(serviceID string, pathTemplate *PathTemplate, fields []*Field) (*API, *PathBinding) {
-	binding := NewTestPathBinding("", pathTemplate)
+	binding := NewPathBindingBuilder().WithPathTemplate(pathTemplate).Build()
 	method := NewTestMethod("TestMethod").
 		WithInput(NewTestMessage("TestMethodRequest").WithFields(fields...)).
 		WithBindings(binding)
@@ -139,7 +139,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
 			IdentifyTargetResources(model, true)
 
-			got := binding.TargetResource
+			got := binding.TargetResource()
 			if diff := cmp.Diff(test.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -183,7 +183,7 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
 			IdentifyTargetResources(model, false)
 
-			got := binding.TargetResource
+			got := binding.TargetResource()
 			if got != nil {
 				t.Errorf("IdentifyTargetResources() = %v, want nil", got)
 			}
@@ -484,14 +484,14 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			// Add Get methods to populate vocabulary
 			for _, p := range test.getPaths {
 				m := NewTestMethod("GetSomething").
-					WithBindings(NewTestPathBinding("", p))
+					WithBindings(NewPathBindingBuilder().WithPathTemplate(p).Build())
 				m.IsAIPStandard = true
 				m.Service = model.Services[0]
 				model.Services[0].Methods = append(model.Services[0].Methods, m)
 			}
 			IdentifyTargetResources(model, true)
 
-			got := binding.TargetResource
+			got := binding.TargetResource()
 			if diff := cmp.Diff(test.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -517,7 +517,7 @@ func TestIdentifyTargetResources_HeuristicsDisabled(t *testing.T) {
 	IdentifyTargetResources(model, false)
 
 	// Since heuristics are disabled, it should not find the target resource
-	if binding.TargetResource != nil {
-		t.Errorf("IdentifyTargetResources(model, false) populated TargetResource %v, want nil", binding.TargetResource)
+	if binding.TargetResource() != nil {
+		t.Errorf("IdentifyTargetResources(model, false) populated TargetResource %v, want nil", binding.TargetResource())
 	}
 }

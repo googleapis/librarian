@@ -136,11 +136,11 @@ func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.Pa
 		return nil, "", err
 	}
 
-	return &api.PathBinding{
-		Verb:            verb,
-		PathTemplate:    pathTemplate,
-		QueryParameters: queryParameters,
-	}, body, nil
+	return api.NewPathBindingBuilder().
+		WithVerb(verb).
+		WithPathTemplate(pathTemplate).
+		WithQueryParameterMap(queryParameters).
+		Build(), body, nil
 }
 
 // resolveBodyFieldPath rewrites wildcard body mappings ("*") to the name of the
