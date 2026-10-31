@@ -419,19 +419,20 @@ type packagez struct {
 }
 
 func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool) {
-	hasServices := len(model.Services) > 0
+	services := model.Services()
+	hasServices := len(services) > 0
 	hasLROs := false
 	hasAutoPopulation := false
-	for _, s := range model.Services {
+	for _, s := range services {
 		// In practice, barely any services have auto-population. We are
 		// almost always performing the full loop. `break`ing early does
 		// not save us any computations.
 
-		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.IsLroPoller || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
+		for _, m := range s.Methods() {
+			if m.OperationInfo() != nil || m.IsLroPoller() || m.ID() == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
-			if len(m.AutoPopulated) != 0 {
+			if len(m.AutoPopulated()) != 0 {
 				hasAutoPopulation = true
 			}
 		}
@@ -463,7 +464,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool
 
 func scalarFieldType(f *api.Field) (string, error) {
 	var out string
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezDouble:
 		out = "f64"
 	case api.TypezFloat:
@@ -496,7 +497,7 @@ func scalarFieldType(f *api.Field) (string, error) {
 		out = "i64"
 
 	default:
-		return "", fmt.Errorf("unexpected type for field %q", f.ID)
+		return "", fmt.Errorf("unexpected type for field %q", f.ID())
 	}
 	return out, nil
 }
@@ -511,11 +512,11 @@ func (c *codec) oneOfFieldType(f *api.Field, model *api.API, sourceSpecification
 
 func oneOfFieldTypeFormatter(f *api.Field, baseType string) string {
 	switch {
-	case f.Repeated:
+	case f.Repeated():
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType)
-	case f.Typez == api.TypezMessage:
+	case f.Typez() == api.TypezMessage:
 		return fmt.Sprintf("std::boxed::Box<%s>", baseType)
-	case f.Optional:
+	case f.Optional():
 		return fmt.Sprintf("std::option::Option<%s>", baseType)
 	default:
 		return baseType
@@ -530,20 +531,20 @@ func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSp
 	switch {
 	case primitive:
 		return baseType, nil
-	case f.IsOneOf:
+	case f.IsOneOf():
 		return c.oneOfFieldType(f, model, sourceSpecificationPackageName)
-	case f.Repeated:
+	case f.Repeated():
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType), nil
-	case f.Recursive:
-		if f.Optional {
+	case f.Recursive():
+		if f.Optional() {
 			return fmt.Sprintf("std::option::Option<std::boxed::Box<%s>>", baseType), nil
 		}
-		if f.Typez == api.TypezMap {
+		if f.Typez() == api.TypezMap {
 			// Maps are never boxed.
 			return baseType, nil
 		}
 		return fmt.Sprintf("std::boxed::Box<%s>", baseType), nil
-	case f.Optional:
+	case f.Optional():
 		return fmt.Sprintf("std::option::Option<%s>", baseType), nil
 	default:
 		return baseType, nil
@@ -551,18 +552,18 @@ func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSp
 }
 
 func (c *codec) mapType(f *api.Field, model *api.API) (string, error) {
-	mapType := f.MapType
+	mapType := f.MapType()
 	if mapType == nil {
-		mapType = model.Map(f.TypezID)
+		mapType = model.Map(f.TypezID())
 	}
-	if mapType == nil || mapType.Key == nil || mapType.Value == nil {
-		return "", fmt.Errorf("missing map type for field %s (%s)", f.ID, f.TypezID)
+	if mapType == nil || mapType.Key() == nil || mapType.Value() == nil {
+		return "", fmt.Errorf("missing map type for field %s (%s)", f.ID(), f.TypezID())
 	}
-	key, err := c.fieldType(mapType.Key, model, true, model.PackageName)
+	key, err := c.fieldType(mapType.Key(), model, true, model.PackageName())
 	if err != nil {
 		return "", err
 	}
-	val, err := c.fieldType(mapType.Value, model, true, model.PackageName)
+	val, err := c.fieldType(mapType.Value(), model, true, model.PackageName())
 	if err != nil {
 		return "", err
 	}
@@ -572,19 +573,19 @@ func (c *codec) mapType(f *api.Field, model *api.API) (string, error) {
 // baseFieldType returns the field type, ignoring any repeated or optional
 // attributes.
 func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezMap:
 		return c.mapType(f, model)
 	case api.TypezMessage:
-		m := model.Message(f.TypezID)
+		m := model.Message(f.TypezID())
 		if m == nil {
-			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
+			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID(), f.ID())
 		}
 		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 	case api.TypezEnum:
-		e := model.Enum(f.TypezID)
+		e := model.Enum(f.TypezID())
 		if e == nil {
-			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
+			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID(), f.ID())
 		}
 		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
 	case api.TypezGroup:
@@ -595,48 +596,48 @@ func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationP
 }
 
 func (c *codec) addQueryParameter(f *api.Field) string {
-	if f.IsOneOf {
+	if f.IsOneOf() {
 		return c.addQueryParameterOneOf(f)
 	}
 	fieldName := toSnake(c.FieldName(f))
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezEnum:
-		if f.Optional || f.Repeated {
-			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
+		if f.Optional() || f.Repeated() {
+			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName())
 		}
-		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName, fieldName)
+		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName(), fieldName)
 	case api.TypezMessage, api.TypezMap:
 		// Query parameters in nested messages are first converted to a
 		// `serde_json::Value`` and then recursively merged into the request
 		// query. The conversion to `serde_json::Value` is expensive, but very
 		// few requests use nested objects as query parameters. Furthermore,
 		// the conversion is skipped if the object field is `None`.`
-		if f.Optional || f.Repeated {
-			return fmt.Sprintf(`let builder = req.%s.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "%s") });`, fieldName, f.JSONName)
+		if f.Optional() || f.Repeated() {
+			return fmt.Sprintf(`let builder = req.%s.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "%s") });`, fieldName, f.JSONName())
 		}
-		return fmt.Sprintf(`let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.%s).map_err(Error::ser)?.add(builder, "%s") };`, fieldName, f.JSONName)
+		return fmt.Sprintf(`let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.%s).map_err(Error::ser)?.add(builder, "%s") };`, fieldName, f.JSONName())
 	default:
-		if f.Optional || f.Repeated {
-			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
+		if f.Optional() || f.Repeated() {
+			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName())
 		}
-		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName, fieldName)
+		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName(), fieldName)
 	}
 }
 
 func (c *codec) addQueryParameterOneOf(f *api.Field) string {
 	fieldName := toSnake(c.FieldName(f))
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezEnum:
-		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
+		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName())
 	case api.TypezMessage, api.TypezMap:
 		// Query parameters in nested messages are first converted to a
 		// `serde_json::Value`` and then recursively merged into the request
 		// query. The conversion to `serde_json::Value` is expensive, but very
 		// few requests use nested objects as query parameters. Furthermore,
 		// the conversion is skipped if the object field is `None`.`
-		return fmt.Sprintf(`let builder = req.%s().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "%s") });`, fieldName, f.JSONName)
+		return fmt.Sprintf(`let builder = req.%s().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "%s") });`, fieldName, f.JSONName())
 	default:
-		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
+		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName())
 	}
 }
 
@@ -678,14 +679,14 @@ func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecifi
 	if m == nil {
 		return rustPkg(childPackageName)
 	}
-	if m.Parent == nil {
-		p, err := rustPkg(m.Package)
+	if m.Parent() == nil {
+		p, err := rustPkg(m.Package())
 		if err != nil {
 			return "", err
 		}
 		return p + "::" + c.MessageModuleName(m), nil
 	}
-	p, err := c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName)
+	p, err := c.messageScopeName(m.Parent(), m.Package(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
@@ -693,33 +694,33 @@ func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecifi
 }
 
 func (c *codec) enumScopeName(e *api.Enum, sourceSpecificationPackageName string) (string, error) {
-	return c.messageScopeName(e.Parent, e.Package, sourceSpecificationPackageName)
+	return c.messageScopeName(e.Parent(), e.Package(), sourceSpecificationPackageName)
 }
 
 func (c *codec) fullyQualifiedMessageName(m *api.Message, sourceSpecificationPackageName string) (string, error) {
-	p, err := c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName)
+	p, err := c.messageScopeName(m.Parent(), m.Package(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return p + "::" + toPascal(m.Name), nil
+	return p + "::" + toPascal(m.Name()), nil
 }
 
 func enumName(e *api.Enum) string {
-	return toPascal(e.Name)
+	return toPascal(e.Name())
 }
 
 func (c *codec) fullyQualifiedEnumName(e *api.Enum, sourceSpecificationPackageName string) (string, error) {
-	p, err := c.messageScopeName(e.Parent, e.Package, sourceSpecificationPackageName)
+	p, err := c.messageScopeName(e.Parent(), e.Package(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return p + "::" + toPascal(e.Name), nil
+	return p + "::" + toPascal(e.Name()), nil
 }
 
 func enumValueName(e *api.EnumValue) string {
 	// The Protobuf naming convention is to use SCREAMING_SNAKE_CASE, but
 	// sometimes it is not followed.
-	return escapeKeyword(toScreamingSnake(e.Name))
+	return escapeKeyword(toScreamingSnake(e.Name()))
 }
 
 // enumValueVariantName returns the name of the Rust enumeration variant for a
@@ -764,35 +765,35 @@ func enumValueVariantName(e *api.EnumValue) string {
 	// `INSTANCE_PRIVATE_IPV6_GOOGLE_ACCESS` in enum values, while the automatic
 	// transformation would map it as `INSTANCE_PRIVATE_IPV_6_GOOGLE_ACCESS`.
 	// Note the extra `_` in `IPV_6` in the second case.
-	prefix := toScreamingSnake(e.Parent.Name) + "_"
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	prefix := toScreamingSnake(e.Parent().Name()) + "_"
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
 	trimNumbers := regexp.MustCompile(`_([0-9])`)
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
-	return toPascal(e.Name)
+	return toPascal(e.Name())
 }
 
 func (c *codec) fullyQualifiedEnumValueName(v *api.EnumValue, sourceSpecificationPackageName string) (string, error) {
-	p, err := c.enumScopeName(v.Parent, sourceSpecificationPackageName)
+	p, err := c.enumScopeName(v.Parent(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s::%s::%s", p, enumName(v.Parent), enumValueVariantName(v)), nil
+	return fmt.Sprintf("%s::%s::%s", p, enumName(v.Parent()), enumValueVariantName(v)), nil
 }
 
 func bodyAccessor(m *api.Method) string {
-	if m.PathInfo.BodyFieldPath == "" {
+	if m.PathInfo().BodyFieldPath() == "" {
 		return "None::<gaxi::http::NoBody>"
 	}
-	if m.PathInfo.BodyFieldPath == "*" {
+	if m.PathInfo().BodyFieldPath() == "*" {
 		// use the whole request
 		return "Some(req)"
 	}
-	return "req." + toSnake(m.PathInfo.BodyFieldPath)
+	return "req." + toSnake(m.PathInfo().BodyFieldPath())
 }
 
 func httpPathFmt(t *api.PathTemplate) string {
@@ -956,8 +957,8 @@ func prostMessageModulePath(m *api.Message) string {
 		return ""
 	}
 	var segments []string
-	for curr := m; curr != nil; curr = curr.Parent {
-		segments = append(segments, toProstSnake(curr.Name))
+	for curr := m; curr != nil; curr = curr.Parent() {
+		segments = append(segments, toProstSnake(curr.Name()))
 	}
 	slices.Reverse(segments)
 	return strings.Join(segments, "::")
@@ -966,21 +967,21 @@ func prostMessageModulePath(m *api.Message) string {
 // prostMessageRelativePath returns the type name of the message relative to the package's prost module.
 // E.g., `VertexAiSearch` for top-level, or `parent::NestedType` for nested messages.
 func prostMessageRelativePath(m *api.Message) string {
-	name := toProstPascal(m.Name)
-	if m.Parent == nil {
+	name := toProstPascal(m.Name())
+	if m.Parent() == nil {
 		return name
 	}
-	return prostMessageModulePath(m.Parent) + "::" + name
+	return prostMessageModulePath(m.Parent()) + "::" + name
 }
 
 // prostEnumRelativePath returns the type name of the enum relative to the package's prost module.
 // E.g., `TopEnum` for top-level, or `parent::NestedEnum` for nested enums.
 func prostEnumRelativePath(e *api.Enum) string {
-	name := toProstPascal(e.Name)
-	if e.Parent == nil {
+	name := toProstPascal(e.Name())
+	if e.Parent() == nil {
 		return name
 	}
-	return prostMessageModulePath(e.Parent) + "::" + name
+	return prostMessageModulePath(e.Parent()) + "::" + name
 }
 
 // toScreamingSnake converts a name to `SCREAMING_SNAKE_CASE`. The Rust naming
@@ -1434,9 +1435,9 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 	if m == nil {
 		return "", nil
 	}
-	for _, f := range m.Fields {
-		if f.Name == fieldName || c.FieldName(f) == fieldName {
-			if !f.IsOneOf {
+	for _, f := range m.Fields() {
+		if f.Name() == fieldName || c.FieldName(f) == fieldName {
+			if !f.IsOneOf() {
 				p, err := c.fullyQualifiedMessageName(m, scope)
 				if err != nil {
 					return "", err
@@ -1446,27 +1447,27 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 			return c.tryOneOfRustdocLink(f, m, scope)
 		}
 	}
-	for _, o := range m.OneOfs {
-		if o.Name == fieldName {
+	for _, o := range m.OneOfs() {
+		if o.Name() == fieldName {
 			p, err := c.fullyQualifiedMessageName(m, scope)
 			if err != nil {
 				return "", err
 			}
-			return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name), "r#")), nil
+			return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name()), "r#")), nil
 		}
 	}
 	return "", nil
 }
 
 func (c *codec) tryOneOfRustdocLink(field *api.Field, message *api.Message, scope string) (string, error) {
-	for _, o := range message.OneOfs {
-		for _, f := range o.Fields {
-			if f.ID == field.ID {
+	for _, o := range message.OneOfs() {
+		for _, f := range o.Fields() {
+			if f.ID() == field.ID() {
 				p, err := c.fullyQualifiedMessageName(message, scope)
 				if err != nil {
 					return "", err
 				}
-				return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name), "r#")), nil
+				return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name()), "r#")), nil
 			}
 		}
 	}
@@ -1484,8 +1485,8 @@ func (c *codec) tryEnumValueRustdocLink(id string, model *api.API, scope string)
 	if e == nil {
 		return "", nil
 	}
-	for _, v := range e.Values {
-		if v.Name == valueName {
+	for _, v := range e.Values() {
+		if v.Name() == valueName {
 			return c.fullyQualifiedEnumValueName(v, scope)
 		}
 	}
@@ -1498,32 +1499,32 @@ func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 	if !c.generateMethod(m) {
 		return ""
 	}
-	idx := strings.LastIndex(m.ID, ".")
+	idx := strings.LastIndex(m.ID(), ".")
 	if idx == -1 {
 		return ""
 	}
-	serviceId := m.ID[0:idx]
+	serviceId := m.ID()[0:idx]
 	s := model.Service(serviceId)
 	if s == nil {
 		return ""
 	}
-	if !slices.Contains(s.Methods, m) {
+	if !slices.Contains(s.Methods(), m) {
 		return ""
 	}
 	serviceLink := c.serviceRustdocLink(s, model)
 	if serviceLink == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s::%s", serviceLink, toSnake(m.Name))
+	return fmt.Sprintf("%s::%s", serviceLink, toSnake(m.Name()))
 }
 
 func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
-	mapped, ok := c.packageMapping[s.Package]
+	mapped, ok := c.packageMapping[s.Package()]
 	name := c.ServiceName(s)
 	if ok {
 		return fmt.Sprintf("%s::client::%s", mapped.name, toPascal(name))
 	}
-	if !slices.Contains(model.Services, s) {
+	if !slices.Contains(model.Services(), s) {
 		return ""
 	}
 	return fmt.Sprintf("crate::client::%s", toPascal(name))
@@ -1531,24 +1532,24 @@ func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
 
 func usePackage(source string, model *api.API, c *codec) {
 	mapped, ok := c.packageMapping[source]
-	if ok && source != model.PackageName {
+	if ok && source != model.PackageName() {
 		mapped.used = true
 	}
 }
 
 func findUsedPackagesMessage(message *api.Message, model *api.API, c *codec, visited map[string]bool) {
-	if _, ok := visited[message.ID]; ok {
+	if _, ok := visited[message.ID()]; ok {
 		return
 	}
-	visited[message.ID] = true
-	usePackage(message.Package, model, c)
-	for _, e := range message.Enums {
-		usePackage(e.Package, model, c)
+	visited[message.ID()] = true
+	usePackage(message.Package(), model, c)
+	for _, e := range message.Enums() {
+		usePackage(e.Package(), model, c)
 	}
-	for _, m := range message.Messages {
+	for _, m := range message.Messages() {
 		findUsedPackagesMessage(m, model, c, visited)
 	}
-	for _, f := range message.Fields {
+	for _, f := range message.Fields() {
 		findUsedPackagesField(f, model, c)
 	}
 }
@@ -1557,50 +1558,50 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 	if f == nil {
 		return
 	}
-	if f.Typez == api.TypezMap {
-		mapType := f.MapType
+	if f.Typez() == api.TypezMap {
+		mapType := f.MapType()
 		if mapType == nil {
-			mapType = model.Map(f.TypezID)
+			mapType = model.Map(f.TypezID())
 		}
 		if mapType != nil {
-			findUsedPackagesField(mapType.Key, model, c)
-			findUsedPackagesField(mapType.Value, model, c)
+			findUsedPackagesField(mapType.Key(), model, c)
+			findUsedPackagesField(mapType.Value(), model, c)
 		}
 		return
 	}
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezMessage:
-		if fm := model.Message(f.TypezID); fm != nil {
-			usePackage(fm.Package, model, c)
+		if fm := model.Message(f.TypezID()); fm != nil {
+			usePackage(fm.Package(), model, c)
 		}
 	case api.TypezEnum:
-		if fe := model.Enum(f.TypezID); fe != nil {
-			usePackage(fe.Package, model, c)
+		if fe := model.Enum(f.TypezID()); fe != nil {
+			usePackage(fe.Package(), model, c)
 		}
 	}
 }
 
 func findUsedPackages(model *api.API, c *codec) {
-	for _, message := range model.Messages {
+	for _, message := range model.Messages() {
 		findUsedPackagesMessage(message, model, c, map[string]bool{})
 	}
-	for _, enum := range model.Enums {
-		usePackage(enum.Package, model, c)
+	for _, enum := range model.Enums() {
+		usePackage(enum.Package(), model, c)
 	}
-	for _, s := range model.Services {
-		for _, method := range s.Methods {
-			if m := model.Message(method.InputTypeID); m != nil {
+	for _, s := range model.Services() {
+		for _, method := range s.Methods() {
+			if m := model.Message(method.InputTypeID()); m != nil {
 				findUsedPackagesMessage(m, model, c, map[string]bool{})
 			}
-			if m := model.Message(method.OutputTypeID); m != nil {
-				usePackage(m.Package, model, c)
+			if m := model.Message(method.OutputTypeID()); m != nil {
+				usePackage(m.Package(), model, c)
 			}
-			if method.OperationInfo != nil {
-				if m := model.Message(method.OperationInfo.MetadataTypeID); m != nil {
-					usePackage(m.Package, model, c)
+			if method.OperationInfo() != nil {
+				if m := model.Message(method.OperationInfo().MetadataTypeID()); m != nil {
+					usePackage(m.Package(), model, c)
 				}
-				if m := model.Message(method.OperationInfo.ResponseTypeID); m != nil {
-					usePackage(m.Package, model, c)
+				if m := model.Message(method.OperationInfo().ResponseTypeID()); m != nil {
+					usePackage(m.Package(), model, c)
 				}
 			}
 		}
@@ -1647,11 +1648,11 @@ func PackageName(api *api.API, packageNameOverride string) string {
 	if len(packageNameOverride) > 0 {
 		return packageNameOverride
 	}
-	name := strings.TrimPrefix(api.PackageName, "google.cloud.")
+	name := strings.TrimPrefix(api.PackageName(), "google.cloud.")
 	name = strings.TrimPrefix(name, "google.")
 	name = strings.ReplaceAll(name, ".", "-")
 	if name == "" {
-		name = api.Name
+		name = api.Name()
 	}
 	return "google-cloud-" + name
 }
@@ -1677,34 +1678,34 @@ func (c *codec) nameInExamplesFromQualifiedName(qualifiedName string, model *api
 
 // ServiceName returns the service name.
 func (c *codec) ServiceName(service *api.Service) string {
-	if override, ok := c.nameOverrides[service.ID]; ok {
+	if override, ok := c.nameOverrides[service.ID()]; ok {
 		return override
 	}
-	return service.Name
+	return service.Name()
 }
 
 // OneOfEnumName returns the oneof enum name.
 func (c *codec) OneOfEnumName(oneof *api.OneOf) string {
-	if override, ok := c.nameOverrides[oneof.ID]; ok {
+	if override, ok := c.nameOverrides[oneof.ID()]; ok {
 		return override
 	}
-	return toPascal(oneof.Name)
+	return toPascal(oneof.Name())
 }
 
 // FieldName returns the field name.
 func (c *codec) FieldName(field *api.Field) string {
-	if override, ok := c.nameOverrides[field.ID]; ok {
+	if override, ok := c.nameOverrides[field.ID()]; ok {
 		return override
 	}
-	return field.Name
+	return field.Name()
 }
 
 // MessageModuleName returns the module name for a message in model.rs, taking message_module_name_overrides into account.
 func (c *codec) MessageModuleName(m *api.Message) string {
-	if override, ok := c.messageModuleNameOverrides[m.ID]; ok {
+	if override, ok := c.messageModuleNameOverrides[m.ID()]; ok {
 		return override
 	}
-	return toSnake(m.Name)
+	return toSnake(m.Name())
 }
 
 func (c *codec) generateMethod(m *api.Method) bool {
@@ -1712,24 +1713,28 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	// RPCs for them.
 	// TODO(#499) - switch to explicitly excluding such functions. Easier to
 	//     find them and fix them that way.
-	if m.ClientSideStreaming || m.ServerSideStreaming {
-		if m.ClientSideStreaming && m.ServerSideStreaming {
+	if m.ClientSideStreaming() || m.ServerSideStreaming() {
+		if m.ClientSideStreaming() && m.ServerSideStreaming() {
 			return true
 		}
-		if !m.ClientSideStreaming && m.ServerSideStreaming {
+		if !m.ClientSideStreaming() && m.ServerSideStreaming() {
 			return true
 		}
-		if m.ClientSideStreaming && !m.ServerSideStreaming {
+		if m.ClientSideStreaming() && !m.ServerSideStreaming() {
 			return c.includeStreamingMethods || c.includeGrpcOnlyMethods
 		}
 	}
 	if c.includeGrpcOnlyMethods || c.defaultTransport == "grpc" {
 		return true
 	}
-	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+	if m.PathInfo() == nil {
 		return false
 	}
-	return m.PathInfo.Bindings[0].PathTemplate != nil
+	bindings := m.PathInfo().Bindings()
+	if len(bindings) == 0 {
+		return false
+	}
+	return bindings[0].PathTemplate() != nil
 }
 
 func (c *codec) templateSupportsGrpc() bool {
@@ -1737,11 +1742,11 @@ func (c *codec) templateSupportsGrpc() bool {
 }
 
 func (c *codec) hasBidiStreaming(model *api.API) bool {
-	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services(), (*api.Service).HasBidiStreaming)
 }
 
 func (c *codec) hasServerStreaming(model *api.API) bool {
-	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services(), (*api.Service).HasServerSideStreaming)
 }
 
 func (c *codec) hasStreaming(model *api.API) bool {
@@ -1753,7 +1758,7 @@ func (c *codec) hasGrpc(model *api.API) bool {
 		return false
 	}
 	if c.defaultTransport == "grpc" {
-		return len(model.Services) > 0
+		return len(model.Services()) > 0
 	}
 	return c.hasStreaming(model)
 }

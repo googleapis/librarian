@@ -31,12 +31,12 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 	// Build the set of known resource names for the heuristic.
 	vocabulary := BuildHeuristicVocabulary(model)
 
-	for _, service := range model.Services {
-		for _, method := range service.Methods {
-			if method.PathInfo == nil {
+	for _, service := range model.services {
+		for _, method := range service.methods {
+			if method.pathInfo == nil {
 				continue
 			}
-			for _, binding := range method.PathInfo.Bindings {
+			for _, binding := range method.pathInfo.Bindings() {
 				if err := identifyTargetResourceForBinding(method, binding, vocabulary, enableHeuristics); err != nil {
 					return err
 				}
@@ -48,7 +48,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
 func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
-	if binding.PathTemplate == nil {
+	if binding.pathTemplate == nil {
 		return nil
 	}
 
@@ -59,7 +59,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 			return err
 		}
 		if target != nil {
-			binding.TargetResource = target
+			binding.targetResource = target
 			return nil
 		}
 	}
@@ -69,7 +69,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		return err
 	}
 	if target != nil {
-		binding.TargetResource = target
+		binding.targetResource = target
 		return nil
 	}
 	return nil
@@ -77,7 +77,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 
 func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
 
-	tmpl := binding.PathTemplate
+	tmpl := binding.pathTemplate
 	if tmpl == nil {
 		return nil, nil
 	}
@@ -138,8 +138,8 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 			}
 		}
 
-		if method.InputType == nil {
-			return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
+		if method.inputType == nil {
+			return nil, fmt.Errorf("consistency error: method %q has no InputType", method.name)
 		}
 
 		// Verify the chain connects properly to the root of the path.
@@ -159,45 +159,44 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		targetSegments := segments[firstIndex : i+1]
 		for _, s := range targetSegments {
 			if s.Variable() != nil {
-				_, err := findField(method.InputType, s.Variable().FieldPath())
+				fieldPath := s.Variable().FieldPath()
+				_, err := findField(method.inputType, fieldPath)
 				if err != nil {
 					return nil, err
 				}
-				fieldPaths = append(fieldPaths, s.Variable().FieldPath())
+				fieldPaths = append(fieldPaths, fieldPath)
 			}
 		}
 		template, err := constructTemplate(method, targetSegments)
 		if err != nil {
 			return nil, err
 		}
-		return &TargetResource{
-			FieldPaths: fieldPaths,
-			Template:   template,
-		}, nil
+		return NewTargetResource(fieldPaths, template), nil
 	}
 	return nil, nil
 }
 
 func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResource, error) {
 	var fieldPaths [][]string
-	if method.InputType == nil {
-		return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
+	if method.inputType == nil {
+		return nil, fmt.Errorf("consistency error: method %q has no InputType", method.name)
 	}
 
 	var lastVarIndex = -1
+	segments := binding.pathTemplate.Segments()
 	// Collect field paths corresponding to variable segments in the path template
-	for i, segment := range binding.PathTemplate.Segments() {
+	for i, segment := range segments {
 		if segment.Variable() == nil {
 			continue
 		}
 
 		fieldPath := segment.Variable().FieldPath()
-		field, err := findField(method.InputType, fieldPath)
+		field, err := findField(method.inputType, fieldPath)
 		if err != nil {
 			return nil, err
 		}
 		if field == nil {
-			return nil, fmt.Errorf("consistency error: field %v not found in message %q", fieldPath, method.InputType.Name)
+			return nil, fmt.Errorf("consistency error: field %v not found in message %q", fieldPath, method.inputType.name)
 		}
 		if !field.IsResourceReference() {
 			return nil, nil
@@ -209,39 +208,36 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
-	template, err := constructTemplate(method, binding.PathTemplate.Segments()[:lastVarIndex+1])
+	template, err := constructTemplate(method, segments[:lastVarIndex+1])
 	if err != nil {
 		return nil, err
 	}
-	return &TargetResource{
-		FieldPaths: fieldPaths,
-		Template:   template,
-	}, nil
+	return NewTargetResource(fieldPaths, template), nil
 }
 
 // findField traverses the (nested) message structure to find a field by its field path.
 func findField(msg *Message, path []string) (*Field, error) {
 	if len(path) == 0 {
-		return nil, fmt.Errorf("consistency error: empty field path in msg: %s", msg.ID)
+		return nil, fmt.Errorf("consistency error: empty field path in msg: %s", msg.id)
 	}
 
 	current := msg
 	var field *Field
 
 	for i, name := range path {
-		idx := slices.IndexFunc(current.Fields, func(f *Field) bool {
-			return f.Name == name
+		idx := slices.IndexFunc(current.fields, func(f *Field) bool {
+			return f.name == name
 		})
 		if idx == -1 {
-			return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, current.Name)
+			return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, current.name)
 		}
-		field = current.Fields[idx]
+		field = current.fields[idx]
 
 		if i < len(path)-1 {
-			if field.MessageType == nil {
-				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.Name, current.Name)
+			if field.messageType == nil {
+				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.name, current.name)
 			}
-			current = field.MessageType
+			current = field.messageType
 		}
 	}
 
@@ -276,13 +272,13 @@ func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, e
 }
 
 func getServiceHost(method *Method) (string, error) {
-	if method.Service != nil && method.Service.DefaultHost != "" {
-		return method.Service.DefaultHost, nil
+	if method.service != nil && method.service.defaultHost != "" {
+		return method.service.defaultHost, nil
 	}
-	if method.Model != nil && method.Model.Name != "" {
-		return method.Model.Name + ".googleapis.com", nil
+	if method.model != nil && method.model.name != "" {
+		return method.model.name + ".googleapis.com", nil
 	}
-	return "", fmt.Errorf("consistency error: no service host found for method %q", method.Name)
+	return "", fmt.Errorf("consistency error: no service host found for method %q", method.name)
 }
 
 // isVersionString checks if a string appears to be an API version segment,

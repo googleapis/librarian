@@ -131,11 +131,11 @@ func (ann *serviceAnnotations) needsWktImport() bool {
 
 func (ann *serviceAnnotations) hasUpdateMask() bool {
 	for _, m := range ann.Methods {
-		if m.SampleInfo != nil && m.SampleInfo.UpdateMaskField != nil {
+		if m.SampleInfo() != nil && m.SampleInfo().UpdateMaskField() != nil {
 			return true
 		}
 	}
-	if ann.QuickstartMethod != nil && ann.QuickstartMethod.SampleInfo != nil && ann.QuickstartMethod.SampleInfo.UpdateMaskField != nil {
+	if ann.QuickstartMethod != nil && ann.QuickstartMethod.SampleInfo() != nil && ann.QuickstartMethod.SampleInfo().UpdateMaskField() != nil {
 		return true
 	}
 	return false
@@ -144,32 +144,32 @@ func (ann *serviceAnnotations) hasUpdateMask() bool {
 // HasLROs returns true if one of the methods is an LRO.
 func (ann *serviceAnnotations) HasLROs() bool {
 	return slices.ContainsFunc(ann.Methods, func(m *api.Method) bool {
-		ma := m.Codec.(*methodAnnotations)
+		ma := m.Codec().(*methodAnnotations)
 		return ma != nil && (ma.LRO != nil || ma.DiscoveryLRO != nil)
 	})
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (*serviceAnnotations, error) {
-	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
+	docLines, err := c.formatDocumentation(service.Documentation(), service.Scopes())
 	if err != nil {
 		return nil, err
 	}
 	requiredServices := make(map[string]*api.Service)
 	var methods []*api.Method
-	for _, method := range service.Methods {
+	for _, method := range service.Methods() {
 		if c.shouldGenerateMethod(method) {
 			if err := c.annotateMethod(method, model); err != nil {
 				return nil, err
 			}
 			methods = append(methods, method)
-			if method.IsLroPoller && method.SourceService != nil && method.SourceService.Package == service.Package {
-				requiredServices[method.SourceService.ID] = method.SourceService
+			if method.IsLroPoller() && method.SourceService() != nil && method.SourceService().Package() == service.Package() {
+				requiredServices[method.SourceService().ID()] = method.SourceService()
 			}
 		}
 	}
 	var quickstartMethod *api.Method
-	if service.QuickstartMethod != nil && c.shouldGenerateMethod(service.QuickstartMethod) {
-		quickstartMethod = service.QuickstartMethod
+	if service.QuickstartMethod() != nil && c.shouldGenerateMethod(service.QuickstartMethod()) {
+		quickstartMethod = service.QuickstartMethod()
 	}
 	// The client snippet creates the client and then runs the body of the
 	// quickstart method's snippet, so it names whatever either of them names.
@@ -179,21 +179,21 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	// separate field, and a service can name a method that is not in
 	// `service.Methods`. In that case the client snippet falls back to the
 	// service's own deprecation, which is all it can name anyway.
-	diagnoseClientSnippet := service.Deprecated
+	diagnoseClientSnippet := service.Deprecated()
 	if quickstartMethod != nil {
-		if ann, ok := quickstartMethod.Codec.(*methodAnnotations); ok {
+		if ann, ok := quickstartMethod.Codec().(*methodAnnotations); ok {
 			diagnoseClientSnippet = diagnoseClientSnippet || ann.DiagnoseSnippet
 		}
 	}
 
-	desc := extractServiceDescription(service.Documentation, service.Name)
+	desc := extractServiceDescription(service.Documentation(), service.Name())
 
 	name := c.traitName(service)
 	annotations := &serviceAnnotations{
 		Name:                  name,
-		ClientName:            pascalCase(service.Name + "Client"),
-		StubPrefix:            pascalCaseNoMangling(service.Name),
-		HostnameShort:         strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
+		ClientName:            pascalCase(service.Name() + "Client"),
+		StubPrefix:            pascalCaseNoMangling(service.Name()),
+		HostnameShort:         strings.TrimSuffix(service.DefaultHost(), ".googleapis.com"),
 		DocLines:              docLines,
 		Description:           desc,
 		Methods:               methods,
@@ -205,7 +205,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		ModulePath:            c.ModulePath,
 		IsGrpc:                c.isGrpc(),
 		DiagnoseClientSnippet: diagnoseClientSnippet,
-		DiagnoseSnippetRunner: service.Deprecated,
+		DiagnoseSnippetRunner: service.Deprecated(),
 	}
 	if c.PerServiceTraits {
 		annotations.IsGated = true
@@ -216,7 +216,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	// If the dependency is marked as "required_by_services", then we force it
 	// as an import for the generated service files.
 	for _, p := range c.Dependencies {
-		if p.ApiPackage == c.Model.PackageName || p.Name == c.LibraryName {
+		if p.ApiPackage == c.Model.PackageName() || p.Name == c.LibraryName {
 			continue
 		}
 		if p.RequiredByServices {
@@ -233,9 +233,9 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	}
 
 	for _, method := range methods {
-		if method.InputType != nil {
-			if method.InputType.Package != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(method.InputType.Package)
+		if method.InputType() != nil {
+			if method.InputType().Package() != c.Model.PackageName() {
+				dep, err := c.addApiPackageDependency(method.InputType().Package())
 				if err != nil {
 					return nil, err
 				}
@@ -245,26 +245,26 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				}
 			}
 		}
-		if method.OutputType != nil {
-			if method.OutputType.Package != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(method.OutputType.Package)
+		if method.OutputType() != nil {
+			if method.OutputType().Package() != c.Model.PackageName() {
+				dep, err := c.addApiPackageDependency(method.OutputType().Package())
 				if err != nil {
 					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
-					if !method.ReturnsEmpty && method.OutputType.ID != ".google.protobuf.Empty" {
+					if !method.ReturnsEmpty() && method.OutputType().ID() != ".google.protobuf.Empty" {
 						annotations.PublicDependsOn[dep.Name] = dep
 					}
 				}
 			}
 		}
-		if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
+		if method.Pagination() != nil && method.OutputType() != nil && method.OutputType().Pagination() != nil {
 			if err := c.addPaginationDependencies(annotations, method); err != nil {
 				return nil, err
 			}
 		}
-		if method.IsLRO && method.OperationInfo != nil {
+		if method.IsLRO() && method.OperationInfo() != nil {
 			if err := c.addLroDependencies(annotations, method); err != nil {
 				return nil, err
 			}
@@ -274,7 +274,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		// body.contentType directly. Swift's MemberImportVisibility requires
 		// importing the defining module (GoogleApi) in the transport file even if
 		// GoogleApi does not appear in the service's public signatures.
-		if ma, ok := method.Codec.(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName != "google.api" {
+		if ma, ok := method.Codec().(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName() != "google.api" {
 			dep, err := c.addApiPackageDependency("google.api")
 			if err != nil {
 				return nil, err
@@ -283,14 +283,14 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				annotations.DependsOn[dep.Name] = dep
 			}
 		}
-		for _, signature := range method.Signatures {
+		for _, signature := range method.Signatures() {
 			if err := c.addSignatureDependencies(annotations, signature); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	service.Codec = annotations
+	service.SetAnnotations(annotations)
 	if err := c.addFeatureAnnotations(service); err != nil {
 		return nil, err
 	}
@@ -298,39 +298,39 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 }
 
 func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, method *api.Method) error {
-	itemsField := method.OutputType.Pagination.PageableItem
+	itemsField := method.OutputType().Pagination().PageableItem()
 	if itemsField == nil {
-		return fmt.Errorf("inconsistent pagination info for method: %s", method.ID)
+		return fmt.Errorf("inconsistent pagination info for method: %s", method.ID())
 	}
-	if itemsField.Repeated {
+	if itemsField.Repeated() {
 		return c.addFieldDependencies(annotations, itemsField)
 	}
-	if itemsField.Typez == api.TypezMap {
+	if itemsField.Typez() == api.TypezMap {
 		mapType, err := lookupMap(c.Model, itemsField)
 		if err != nil {
 			return err
 		}
-		return c.addFieldDependencies(annotations, mapType.Value)
+		return c.addFieldDependencies(annotations, mapType.Value())
 	}
 	return nil
 }
 
 func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api.Field) error {
-	if field.Typez == api.TypezMap {
+	if field.Typez() == api.TypezMap {
 		mapType, err := lookupMap(c.Model, field)
 		if err != nil {
 			return err
 		}
-		return c.addFieldDependencies(annotations, mapType.Value)
+		return c.addFieldDependencies(annotations, mapType.Value())
 	}
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezMessage:
-		item, err := lookupMessage(c.Model, field.TypezID)
+		item, err := lookupMessage(c.Model, field.TypezID())
 		if err != nil {
 			return err
 		}
-		if item.Package != c.Model.PackageName {
-			dep, err := c.addApiPackageDependency(item.Package)
+		if item.Package() != c.Model.PackageName() {
+			dep, err := c.addApiPackageDependency(item.Package())
 			if err != nil {
 				return err
 			}
@@ -341,12 +341,12 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 		}
 		return nil
 	case api.TypezEnum:
-		item, err := lookupEnum(c.Model, field.TypezID)
+		item, err := lookupEnum(c.Model, field.TypezID())
 		if err != nil {
 			return err
 		}
-		if item.Package != c.Model.PackageName {
-			dep, err := c.addApiPackageDependency(item.Package)
+		if item.Package() != c.Model.PackageName() {
+			dep, err := c.addApiPackageDependency(item.Package())
 			if err != nil {
 				return err
 			}
@@ -384,28 +384,28 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 	}
 
 	// Ensure we have the necessary dependencies for the LRO response and metadata types.
-	respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
+	respMsg, err := lookupMessage(c.Model, method.OperationInfo().ResponseTypeID())
 	if err != nil {
 		return err
 	}
-	if respMsg.Package != c.Model.PackageName {
-		dep, err := c.addApiPackageDependency(respMsg.Package)
+	if respMsg.Package() != c.Model.PackageName() {
+		dep, err := c.addApiPackageDependency(respMsg.Package())
 		if err != nil {
 			return err
 		}
 		if dep != nil {
 			annotations.DependsOn[dep.Name] = dep
-			if respMsg.ID != ".google.protobuf.Empty" {
+			if respMsg.ID() != ".google.protobuf.Empty" {
 				annotations.PublicDependsOn[dep.Name] = dep
 			}
 		}
 	}
-	metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
+	metaMsg, err := lookupMessage(c.Model, method.OperationInfo().MetadataTypeID())
 	if err != nil {
 		return err
 	}
-	if metaMsg.Package != c.Model.PackageName {
-		dep, err := c.addApiPackageDependency(metaMsg.Package)
+	if metaMsg.Package() != c.Model.PackageName() {
+		dep, err := c.addApiPackageDependency(metaMsg.Package())
 		if err != nil {
 			return err
 		}
@@ -417,7 +417,7 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 }
 
 func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signature *api.MethodSignature) error {
-	for _, field := range signature.Fields {
+	for _, field := range signature.Fields() {
 		if err := c.addFieldDependencies(annotations, field); err != nil {
 			return err
 		}
@@ -428,13 +428,13 @@ func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signat
 func (c *codec) shouldGenerateMethod(method *api.Method) bool {
 	// Swift does not yet support streaming RPCs.
 	// See https://github.com/googleapis/google-cloud-swift/issues/451
-	if method.ClientSideStreaming || method.ServerSideStreaming {
+	if method.ClientSideStreaming() || method.ServerSideStreaming() {
 		return false
 	}
 	if c.isGrpc() {
 		return true
 	}
-	return method.PathInfo != nil && len(method.PathInfo.Bindings) != 0
+	return method.PathInfo() != nil && len(method.PathInfo().Bindings()) != 0
 }
 
 func (c *codec) addFeatureAnnotations(
@@ -443,14 +443,14 @@ func (c *codec) addFeatureAnnotations(
 		return nil
 	}
 	traitName := c.traitName(service)
-	deps := api.FindServiceDependencies(c.Model, service.ID)
+	deps := api.FindServiceDependencies(c.Model, service.ID())
 	for _, id := range deps.Enums {
 		enum := c.Model.Enum(id)
 		// Some messages are not annotated (e.g. external messages).
-		if enum == nil || enum.Codec == nil {
+		if enum == nil || enum.Codec() == nil {
 			continue
 		}
-		annotation, ok := enum.Codec.(*enumAnnotations)
+		annotation, ok := enum.Codec().(*enumAnnotations)
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}
@@ -460,14 +460,14 @@ func (c *codec) addFeatureAnnotations(
 	for _, id := range deps.Messages {
 		msg := c.Model.Message(id)
 		// Some messages are not annotated (e.g. external messages).
-		if msg == nil || msg.Codec == nil {
+		if msg == nil || msg.Codec() == nil {
 			continue
 		}
-		annotation, ok := msg.Codec.(*messageAnnotations)
+		annotation, ok := msg.Codec().(*messageAnnotations)
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}
-		if !msg.ServicePlaceholder {
+		if !msg.ServicePlaceholder() {
 			// Messages that are placeholders for services just get the same
 			// gating traits as the service.
 			annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
@@ -478,7 +478,7 @@ func (c *codec) addFeatureAnnotations(
 }
 
 func (c *codec) traitName(service *api.Service) string {
-	return pascalCase(service.Name)
+	return pascalCase(service.Name())
 }
 
 func insertGatingTrait(gatedBy []string, traitName string) []string {

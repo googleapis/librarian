@@ -36,19 +36,19 @@ func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 	for _, override := range overrides {
 		id := override.ID
 		if msg := model.Message(id); msg != nil {
-			if err := patchElementDocs(&msg.Documentation, &override); err != nil {
+			if err := patchElementDocs(&msg.documentation, &override); err != nil {
 				return err
 			}
 			continue
 		}
 		if enu := model.Enum(id); enu != nil {
-			if err := patchElementDocs(&enu.Documentation, &override); err != nil {
+			if err := patchElementDocs(&enu.documentation, &override); err != nil {
 				return err
 			}
 			continue
 		}
 		if svc := model.Service(id); svc != nil {
-			if err := patchElementDocs(&svc.Documentation, &override); err != nil {
+			if err := patchElementDocs(&svc.documentation, &override); err != nil {
 				return err
 			}
 			continue
@@ -83,42 +83,42 @@ func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 }
 
 func patchFieldDocs(msg *Message, fieldName string, override *DocumentationOverride) error {
-	for _, field := range msg.Fields {
-		if field.Name != fieldName {
+	for _, field := range msg.fields {
+		if field.name != fieldName {
 			continue
 		}
-		if err := patchElementDocs(&field.Documentation, override); err != nil {
+		if err := patchElementDocs(&field.documentation, override); err != nil {
 			return err
 		}
 		return nil
 	}
-	return fmt.Errorf("cannot find field %s in message %s to apply comment override", fieldName, msg.ID)
+	return fmt.Errorf("cannot find field %s in message %s to apply comment override", fieldName, msg.id)
 }
 
 func patchEnumValueDocs(enu *Enum, name string, override *DocumentationOverride) error {
-	for _, v := range enu.Values {
-		if v.Name != name {
+	for _, v := range enu.values {
+		if v.name != name {
 			continue
 		}
-		if err := patchElementDocs(&v.Documentation, override); err != nil {
+		if err := patchElementDocs(&v.documentation, override); err != nil {
 			return err
 		}
 		return nil
 	}
-	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, enu.ID)
+	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, enu.id)
 }
 
 func patchMethodDocs(svc *Service, name string, override *DocumentationOverride) error {
-	for _, m := range svc.Methods {
-		if m.Name != name {
+	for _, m := range svc.methods {
+		if m.name != name {
 			continue
 		}
-		if err := patchElementDocs(&m.Documentation, override); err != nil {
+		if err := patchElementDocs(&m.documentation, override); err != nil {
 			return err
 		}
 		return nil
 	}
-	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, svc.ID)
+	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, svc.id)
 }
 
 func patchElementDocs(documentation *string, override *DocumentationOverride) error {

@@ -63,7 +63,7 @@ func TestMapKeyAnnotations(t *testing.T) {
 			}
 			annotateModel(model, codec)
 
-			got := field.Codec.(*fieldAnnotations).SerdeAs
+			got := field.Codec().(*fieldAnnotations).SerdeAs
 			want := fmt.Sprintf("std::collections::HashMap<%s, serde_with::Same>", test.wantSerdeAs)
 			if got != want {
 				t.Errorf("mismatch for %s, want=%q, got=%q", test.wantSerdeAs, want, got)
@@ -106,7 +106,7 @@ func TestMapValueAnnotations(t *testing.T) {
 	} {
 		testName := fmt.Sprintf("%s_%v", test.spec, test.typez)
 		if test.valueMsg != nil {
-			testName = fmt.Sprintf("%s_message_%s", test.spec, test.valueMsg.ID)
+			testName = fmt.Sprintf("%s_message_%s", test.spec, test.valueMsg.ID())
 		}
 		t.Run(testName, func(t *testing.T) {
 			valueField := api.NewTestField("value")
@@ -134,7 +134,7 @@ func TestMapValueAnnotations(t *testing.T) {
 			codec := newTestCodec(t, test.spec, "test", map[string]string{})
 			annotateModel(model, codec)
 
-			got := field.Codec.(*fieldAnnotations).SerdeAs
+			got := field.Codec().(*fieldAnnotations).SerdeAs
 			want := fmt.Sprintf("std::collections::HashMap<wkt::internal::I32, %s>", test.wantSerdeAs)
 			if got != want {
 				t.Errorf("mismatch for %v, want=%q, got=%q", test, want, got)
@@ -163,7 +163,7 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := field.Codec.(*fieldAnnotations).SerdeAs
+	got := field.Codec().(*fieldAnnotations).SerdeAs
 	if got != "" {
 		t.Errorf("mismatch for %v, got=%q", mapType, got)
 	}

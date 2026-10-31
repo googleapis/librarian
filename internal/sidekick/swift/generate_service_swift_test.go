@@ -222,8 +222,9 @@ func TestGenerateService_WithImports(t *testing.T) {
 				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 		)
 
-	model := api.NewTestAPI([]*api.Message{inputMessage}, nil, []*api.Service{iam})
-	model.AddMessage(externalMessage)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputMessage}, nil, []*api.Service{iam})).
+		AddMessage(externalMessage).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -305,12 +306,12 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 			var messages []*api.Message
-			for _, m := range test.service.Methods {
-				if m.InputType != nil {
-					messages = append(messages, m.InputType)
+			for _, m := range test.service.Methods() {
+				if m.InputType() != nil {
+					messages = append(messages, m.InputType())
 				}
-				if m.OutputType != nil {
-					messages = append(messages, m.OutputType)
+				if m.OutputType() != nil {
+					messages = append(messages, m.OutputType())
 				}
 			}
 			model := api.NewTestAPI(messages, nil, []*api.Service{test.service}).
@@ -321,7 +322,7 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
-			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.service.Name+".swift")
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.service.Name()+".swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)
@@ -732,10 +733,7 @@ func TestGenerateService_LRO(t *testing.T) {
 		WithOutput(operationType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("workflows").Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: workflowType.ID,
-			MetadataTypeID: metadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(workflowType.ID(), metadataType.ID()))
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationInputType).
@@ -747,9 +745,10 @@ func TestGenerateService_LRO(t *testing.T) {
 		WithPackage("google.cloud.workflows.v1").
 		WithMethods(createWorkflow, getOperation)
 
-	model := api.NewTestAPI([]*api.Message{inputType, workflowType, metadataType}, nil, []*api.Service{workflows})
-	model.AddMessage(operationType)
-	model.AddMessage(getOperationInputType)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, workflowType, metadataType}, nil, []*api.Service{workflows})).
+		AddMessage(operationType).
+		AddMessage(getOperationInputType).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -845,10 +844,7 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		WithOutput(operationType).
 		WithVerb("DELETE").
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("workflows").Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: metadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID()))
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationInputType).
@@ -860,9 +856,10 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		WithPackage("google.cloud.workflows.v1").
 		WithMethods(deleteWorkflow, getOperation)
 
-	model := api.NewTestAPI([]*api.Message{inputType, metadataType}, nil, []*api.Service{workflows})
-	model.AddMessage(operationType)
-	model.AddMessage(getOperationInputType)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{inputType, metadataType}, nil, []*api.Service{workflows})).
+		AddMessage(operationType).
+		AddMessage(getOperationInputType).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -923,10 +920,8 @@ func TestGenerateService_DiscoveryLRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("POST").
-		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("instances").Build())
-	insertInstance.DiscoveryLro = &api.DiscoveryLro{
-		PollingPathParameters: []string{"zone"},
-	}
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("instances").Build()).
+		WithDiscoveryLro(api.NewTestDiscoveryLro("zone"))
 
 	service := api.NewTestService("Instances").
 		WithPackage("google.cloud.compute.v1").
@@ -1081,8 +1076,8 @@ func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
 		WithInput(requestMessage).
 		WithBodyFieldPath("*").
 		WithBindings(
-			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()),
-			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("alternative_parent").Build()),
+			api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()).Build(),
+			api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("alternative_parent").Build()).Build(),
 		)
 
 	patchSecret := api.NewTestMethod("PatchSecret").
@@ -1389,9 +1384,10 @@ func TestGenerateService_HTTPBody(t *testing.T) {
 		WithPackage("google.cloud.aiplatform.v1").
 		WithMethods(rawPredict, directBody)
 
-	model := api.NewTestAPI([]*api.Message{rawPredictReq}, nil, []*api.Service{service})
-	model.AddMessage(httpBodyMsg)
-	model.AddMessage(emptyResp)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{rawPredictReq}, nil, []*api.Service{service})).
+		AddMessage(httpBodyMsg).
+		AddMessage(emptyResp).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{

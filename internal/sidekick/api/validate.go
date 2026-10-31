@@ -23,7 +23,7 @@ import (
 // Validate verifies the model satisfies the requires to be used by Codecs.
 func Validate(model *API) error {
 	validatePkg := func(newPackage, elementName string) error {
-		if model.PackageName == newPackage {
+		if model.packageName == newPackage {
 			return nil
 		}
 		// Special exceptions for mixin services
@@ -33,37 +33,37 @@ func Validate(model *API) error {
 			return nil
 		}
 		return fmt.Errorf("sidekick requires all top-level elements to be in the same package want=%q, got=%q for %q",
-			model.PackageName, newPackage, elementName)
+			model.packageName, newPackage, elementName)
 	}
 
-	for _, s := range model.Services {
-		if err := validatePkg(s.Package, s.ID); err != nil {
+	for _, s := range model.services {
+		if err := validatePkg(s.packagez, s.id); err != nil {
 			return err
 		}
 	}
-	for _, m := range model.Messages {
-		if err := validatePkg(m.Package, m.ID); err != nil {
+	for _, m := range model.messages {
+		if err := validatePkg(m.packagez, m.id); err != nil {
 			return err
 		}
 	}
-	for _, e := range model.Enums {
-		if err := validatePkg(e.Package, e.ID); err != nil {
+	for _, e := range model.enums {
+		if err := validatePkg(e.packagez, e.id); err != nil {
 			return err
 		}
 	}
 	mapsList := slices.Collect(model.AllMaps())
 	slices.SortFunc(mapsList, func(a, b *Map) int {
-		return cmp.Compare(a.ID, b.ID)
+		return cmp.Compare(a.id, b.id)
 	})
 	for _, m := range mapsList {
-		if m.Key == nil || m.Value == nil {
-			return fmt.Errorf("map %q must have non-nil key and value fields", m.ID)
+		if m.key == nil || m.value == nil {
+			return fmt.Errorf("map %q must have non-nil key and value fields", m.id)
 		}
-		if m.Key.Typez == TypezMap || m.Key.Map || m.Key.Repeated {
-			return fmt.Errorf("map %q key cannot be a map or repeated field", m.ID)
+		if m.key.typez == TypezMap || m.key.mapz || m.key.repeated {
+			return fmt.Errorf("map %q key cannot be a map or repeated field", m.id)
 		}
-		if m.Value.Typez == TypezMap || m.Value.Map || m.Value.Repeated {
-			return fmt.Errorf("map %q value cannot be a map or repeated field", m.ID)
+		if m.value.typez == TypezMap || m.value.mapz || m.value.repeated {
+			return fmt.Errorf("map %q value cannot be a map or repeated field", m.id)
 		}
 	}
 	return nil

@@ -94,8 +94,7 @@ func TestScopesField(t *testing.T) {
 	standardField := NewTestField("field")
 	_ = NewTestMessage("Parent").WithFields(standardField)
 
-	nilParentField := NewTestField("field")
-	nilParentField.ID = ".test.Parent.field"
+	nilParentField := NewFieldBuilder().WithName("field").WithID(".test.Parent.field").Build()
 
 	for _, test := range []struct {
 		name  string

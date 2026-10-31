@@ -54,9 +54,9 @@ func TestAnnotateModel(t *testing.T) {
 			if err := c.annotateModel(test.model); err != nil {
 				t.Fatal(err)
 			}
-			got, ok := test.model.Codec.(*modelAnnotations)
+			got, ok := test.model.Codec().(*modelAnnotations)
 			if !ok {
-				t.Fatalf("expected *modelAnnotations, got %T", test.model.Codec)
+				t.Fatalf("expected *modelAnnotations, got %T", test.model.Codec())
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

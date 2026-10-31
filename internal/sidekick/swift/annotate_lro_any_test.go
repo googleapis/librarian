@@ -59,10 +59,7 @@ func lroAnyFieldsTestModel(t *testing.T) *api.API {
 		WithInput(folder).
 		WithOutput(operation).
 		WithPathInfo(nil).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: metadata.ID,
-			ResponseTypeID: folder.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(folder.ID(), metadata.ID()))
 	service := api.NewTestService("StorageControl").
 		WithPackage("google.storage.control.v2").
 		WithMethods(method)
@@ -104,19 +101,19 @@ func TestAnnotateLROAnyFields_OnlyOperationAnyFields(t *testing.T) {
 		if message == nil {
 			t.Fatalf("message %q not found in the test model", id)
 		}
-		for _, field := range message.Fields {
-			annotations, ok := field.Codec.(*fieldAnnotations)
+		for _, field := range message.Fields() {
+			annotations, ok := field.Codec().(*fieldAnnotations)
 			if !ok {
-				t.Fatalf("field %q of %q is missing its Swift annotations", field.Name, id)
+				t.Fatalf("field %q of %q is missing its Swift annotations", field.Name(), id)
 			}
 			if annotations.LROAnyConverter == "" {
 				continue
 			}
 			if annotations.LROAnyConverter != "StorageControlLROAnyConverter" {
 				t.Errorf("field %q of %q names converter %q, want %q",
-					field.Name, id, annotations.LROAnyConverter, "StorageControlLROAnyConverter")
+					field.Name(), id, annotations.LROAnyConverter, "StorageControlLROAnyConverter")
 			}
-			got = append(got, fmt.Sprintf("%s.%s", message.Name, field.Name))
+			got = append(got, fmt.Sprintf("%s.%s", message.Name(), field.Name()))
 		}
 	}
 	want := []string{"Operation.metadata", "Operation.response"}
@@ -148,9 +145,9 @@ func TestLROAnyTypes_PayloadTypeNotGenerated(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Stand in for a payload type another module owns.
-	model.Message(".google.storage.control.v2.Folder").Codec = nil
+	model.Message(".google.storage.control.v2.Folder").SetAnnotations(nil)
 
-	types, err := c.lroAnyTypes(model.Services[0].Methods)
+	types, err := c.lroAnyTypes(model.Services()[0].Methods())
 	if err != nil {
 		t.Fatal(err)
 	}

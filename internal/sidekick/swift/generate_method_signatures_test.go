@@ -256,7 +256,7 @@ func newModelWithSignatures(t *testing.T) *api.API {
 			api.NewTestMethodSignature("name", "normal_field"),
 		).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("lro").Build()).
-		WithOperationInfo(api.NewTestOperationInfo(lroResultType.ID, lroMetadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(lroResultType.ID(), lroMetadataType.ID()))
 
 	discoveryLroMethod := api.NewTestMethod("LroDiscoveryMethod").
 		WithInput(requestType).
@@ -272,12 +272,13 @@ func newModelWithSignatures(t *testing.T) *api.API {
 	service := api.NewTestService("TestService").
 		WithPackage("test").
 		WithMethods(simpleMethod, paginationMethod, lroMethod, discoveryLroMethod)
-	model := api.NewTestAPI([]*api.Message{
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{
 		requestType, responseType, itemType, paginationResponseType,
 		operationType, lroResultType, lroMetadataType,
 	}, nil, []*api.Service{service}).
-		WithPackageName("test")
-	model.AddMessage(getOperationInputType)
-	model.AddMessage(operationType)
+		WithPackageName("test")).
+		AddMessage(getOperationInputType).
+		AddMessage(operationType).
+		BuildSyntaxTree()
 	return model
 }

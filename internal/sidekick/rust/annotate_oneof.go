@@ -69,26 +69,26 @@ func (a *oneOfAnnotation) SingleFeatureGate() bool {
 }
 
 func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) (*oneOfAnnotation, error) {
-	scope, err := c.messageScopeName(message, "", model.PackageName)
+	scope, err := c.messageScopeName(message, "", model.PackageName())
 	if err != nil {
 		return nil, err
 	}
 	enumName := c.OneOfEnumName(oneof)
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	structQualifiedName, err := c.fullyQualifiedMessageName(message, model.PackageName)
+	structQualifiedName, err := c.fullyQualifiedMessageName(message, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model, oneof.Scopes())
+	docLines, err := c.formatDocComments(oneof.Documentation(), oneof.ID(), model, oneof.Scopes())
 	if err != nil {
 		return nil, err
 	}
 
 	ann := &oneOfAnnotation{
-		FieldName:                  toSnake(oneof.Name),
-		SetterName:                 toSnakeNoMangling(oneof.Name),
+		FieldName:                  toSnake(oneof.Name()),
+		SetterName:                 toSnakeNoMangling(oneof.Name()),
 		EnumName:                   enumName,
 		QualifiedName:              qualifiedName,
 		RelativeName:               relativeEnumName,
@@ -105,7 +105,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	// and a child message have the same name.
 	// This is solving for unqualified name clashes that affect samples
 	// because we show usings for all types involved.
-	if ann.EnumName == message.Name {
+	if ann.EnumName == message.Name() {
 		ann.AliasInExamples = fmt.Sprintf("%sOneOf", ann.EnumName)
 	}
 	if ann.AliasInExamples == "" {
@@ -114,6 +114,6 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		ann.EnumNameInExamples = ann.AliasInExamples
 	}
 
-	oneof.Codec = ann
+	oneof.SetAnnotations(ann)
 	return ann, nil
 }

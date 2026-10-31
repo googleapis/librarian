@@ -23,8 +23,7 @@ import (
 )
 
 func TestMaybeInlineObject(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Type:        "object",
 		Description: "A field with an inline object.",
@@ -47,11 +46,12 @@ func TestMaybeInlineObject(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	field, err := maybeInlineObjectField(model, message, "inline", input)
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	field, err := maybeInlineObjectField(model, mb, "inline", input)
 	if err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 
 	wantField := api.NewTestMessage("Message").
 		WithPackage("package").
@@ -62,9 +62,9 @@ func TestMaybeInlineObject(t *testing.T) {
 				WithOptional().
 				WithType(api.TypezMessage).
 				WithTypezID(".package.Message.inline"),
-		).Fields[0]
-	wantField.Parent = nil
-	if diff := cmp.Diff(wantField, field); diff != "" {
+		).Fields()[0]
+	wantField.WithParent(nil)
+	if diff := cmp.Diff(wantField, field, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -84,23 +84,22 @@ func TestMaybeInlineObject(t *testing.T) {
 				WithTypezID("uint64").
 				WithOptional(),
 		)
-	for _, f := range wantInlineMessage.Fields {
-		f.Parent = nil
+	for _, f := range wantInlineMessage.Fields() {
+		f.WithParent(nil)
 	}
-	wantInlineMessage.Parent = message
-	gotInlineMessage := model.Message(wantInlineMessage.ID)
+	wantInlineMessage.WithParent(message)
+	gotInlineMessage := model.Message(wantInlineMessage.ID())
 	if gotInlineMessage == nil {
-		t.Fatalf("missing inline message %s", wantInlineMessage.ID)
+		t.Fatalf("missing inline message %s", wantInlineMessage.ID())
 	}
 	apitest.CheckMessage(t, gotInlineMessage, wantInlineMessage)
-	if gotInlineMessage.Parent != message {
-		t.Errorf("mismatched parent in inline message, got=%v, want=%v", gotInlineMessage.Parent, message)
+	if gotInlineMessage.Parent() != message {
+		t.Errorf("mismatched parent in inline message, got=%v, want=%v", gotInlineMessage.Parent(), message)
 	}
 }
 
 func TestArrayWithInlineObject(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &property{
 		Name: "arrayWithObject",
 		Schema: &schema{
@@ -128,11 +127,12 @@ func TestArrayWithInlineObject(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	field, err := makeArrayField(model, message, input)
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	field, err := makeArrayField(model, mb, input)
 	if err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 
 	wantField := api.NewTestMessage("Message").
 		WithPackage("package").
@@ -142,9 +142,9 @@ func TestArrayWithInlineObject(t *testing.T) {
 				WithRepeated().
 				WithType(api.TypezMessage).
 				WithTypezID(".package.Message.arrayWithObject"),
-		).Fields[0]
-	wantField.Parent = nil
-	if diff := cmp.Diff(wantField, field); diff != "" {
+		).Fields()[0]
+	wantField.WithParent(nil)
+	if diff := cmp.Diff(wantField, field, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -164,23 +164,22 @@ func TestArrayWithInlineObject(t *testing.T) {
 				WithTypezID("uint64").
 				WithOptional(),
 		)
-	for _, f := range wantInlineMessage.Fields {
-		f.Parent = nil
+	for _, f := range wantInlineMessage.Fields() {
+		f.WithParent(nil)
 	}
-	wantInlineMessage.Parent = message
-	gotInlineMessage := model.Message(wantInlineMessage.ID)
+	wantInlineMessage.WithParent(message)
+	gotInlineMessage := model.Message(wantInlineMessage.ID())
 	if gotInlineMessage == nil {
-		t.Fatalf("missing inline message %s", wantInlineMessage.ID)
+		t.Fatalf("missing inline message %s", wantInlineMessage.ID())
 	}
 	apitest.CheckMessage(t, gotInlineMessage, wantInlineMessage)
-	if gotInlineMessage.Parent != message {
-		t.Errorf("mismatched parent in inline message, got=%v, want=%v", gotInlineMessage.Parent, message)
+	if gotInlineMessage.Parent() != message {
+		t.Errorf("mismatched parent in inline message, got=%v, want=%v", gotInlineMessage.Parent(), message)
 	}
 }
 
 func TestMaybeInlineObjectErrors(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Type:        "object",
 		Description: "A field with an inline object.",
@@ -194,15 +193,14 @@ func TestMaybeInlineObjectErrors(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if field, err := maybeInlineObjectField(model, message, "inline", input); err == nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if field, err := maybeInlineObjectField(model, mb, "inline", input); err == nil {
 		t.Errorf("expected an error with an invalid inline object, got=%v", field)
 	}
 }
 
 func TestArrayWithInlineObjectError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &property{
 		Name: "arrayWithObject",
 		Schema: &schema{
@@ -223,8 +221,8 @@ func TestArrayWithInlineObjectError(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if field, err := makeArrayField(model, message, input); err == nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if field, err := makeArrayField(model, mb, input); err == nil {
 		t.Errorf("expected an error with an invalid inline object, got=%v", field)
 	}
 }

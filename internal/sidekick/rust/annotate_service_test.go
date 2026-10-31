@@ -34,7 +34,7 @@ func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
 		"extend-grpc-transport": "true",
 	})
 	annotateModel(model, codec)
-	serviceAnn := service.Codec.(*serviceAnnotations)
+	serviceAnn := service.Codec().(*serviceAnnotations)
 
 	if !serviceAnn.ExtendGrpcTransport {
 		t.Errorf("expected `extend-grpc-transport` to be set on the service.")
@@ -51,7 +51,7 @@ func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 		"detailed-tracing-attributes": "true",
 	})
 	annotateModel(model, codec)
-	got := service.Codec.(*serviceAnnotations)
+	got := service.Codec().(*serviceAnnotations)
 	if !got.DetailedTracingAttributes {
 		t.Errorf("serviceAnnotations.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
 	}
@@ -97,23 +97,23 @@ func TestServiceAnnotationsHasVeneer(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ann0 := service0.Codec.(*serviceAnnotations)
+			ann0 := service0.Codec().(*serviceAnnotations)
 			if ann0.HasVeneer != test.wantService0 {
 				t.Errorf("Service0 HasVeneer = %v, want %v", ann0.HasVeneer, test.wantService0)
 			}
 			for _, m := range ann0.Methods {
-				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService0 {
-					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService0)
+				if mAnn := m.Codec().(*methodAnnotation); mAnn.HasVeneer != test.wantService0 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name(), mAnn.HasVeneer, test.wantService0)
 				}
 			}
 
-			ann1 := service1.Codec.(*serviceAnnotations)
+			ann1 := service1.Codec().(*serviceAnnotations)
 			if ann1.HasVeneer != test.wantService1 {
 				t.Errorf("Service1 HasVeneer = %v, want %v", ann1.HasVeneer, test.wantService1)
 			}
 			for _, m := range ann1.Methods {
-				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService1 {
-					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService1)
+				if mAnn := m.Codec().(*methodAnnotation); mAnn.HasVeneer != test.wantService1 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name(), mAnn.HasVeneer, test.wantService1)
 				}
 			}
 		})
@@ -138,7 +138,7 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 		Incomplete:         true,
 		GrpcClient:         "gaxi::grpc::Client",
 	}
-	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
+	if diff := cmp.Diff(wantService, service.Codec(), cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -180,7 +180,7 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 				if service == nil {
 					t.Fatalf("cannot find service %s", id)
 				}
-				service.Methods = []*api.Method{}
+				service.WithMethods()
 			},
 		},
 		{
@@ -204,9 +204,9 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 			if _, err := annotateModel(model, codec); err != nil {
 				t.Fatal(err)
 			}
-			got := service.Codec.(*serviceAnnotations)
+			got := service.Codec().(*serviceAnnotations)
 			if got == nil {
-				t.Fatalf("no annotations for service %s", service.ID)
+				t.Fatalf("no annotations for service %s", service.ID())
 			}
 			if gotVersion := got.MaximumAPIVersion(); gotVersion != test.wantVersion {
 				t.Errorf("got.MaximumAPIVersion() = %q, want = %q", gotVersion, test.wantVersion)
@@ -225,19 +225,19 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 	methodCreate := api.NewTestMethod("CreateResource").
 		WithInput(createReq).
 		WithOutput(operation).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: metadata.ID,
-			ResponseTypeID: resource.ID,
-		}).
+		WithOperationInfo(api.NewOperationInfoBuilder().
+			WithMetadataTypeID(metadata.ID()).
+			WithResponseTypeID(resource.ID()).
+			Build()).
 		WithBindings()
 
 	methodDelete := api.NewTestMethod("DeleteResource").
 		WithInput(deleteReq).
 		WithOutput(operation).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: metadata.ID,
-			ResponseTypeID: api.WktEmptyID,
-		}).
+		WithOperationInfo(api.NewOperationInfoBuilder().
+			WithMetadataTypeID(metadata.ID()).
+			WithResponseTypeID(api.WktEmptyID).
+			Build()).
 		WithBindings()
 
 	service := api.NewTestService("LroService").
@@ -270,7 +270,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 	if !wantService.HasLROs() {
 		t.Errorf("HasLRO should be true. The service has several LROs.")
 	}
-	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
+	if diff := cmp.Diff(wantService, service.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -298,7 +298,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		Incomplete: true,
 		GrpcClient: "gaxi::grpc::Client",
 	}
-	if diff := cmp.Diff(wantService, service.Codec, serviceFilter); diff != "" {
+	if diff := cmp.Diff(wantService, service.Codec(), serviceFilter); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -308,7 +308,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		ServiceNameToCamel:  "renamed",
 		ServiceNameToSnake:  "renamed",
 	}
-	if diff := cmp.Diff(wantMethod, method.Codec, methodFilter); diff != "" {
+	if diff := cmp.Diff(wantMethod, method.Codec(), methodFilter); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -336,15 +336,15 @@ func TestServiceAnnotations(t *testing.T) {
 		Incomplete:        true,
 		GrpcClient:        "gaxi::grpc::Client",
 	}
-	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
+	if diff := cmp.Diff(wantService, service.Codec(), cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// The `noHttpMethod` should be excluded from the list of methods in the
 	// Codec.
-	serviceAnn := service.Codec.(*serviceAnnotations)
+	serviceAnn := service.Codec().(*serviceAnnotations)
 	wantMethodList := []*api.Method{method, emptyMethod}
-	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Model", "Service", "SourceService")); diff != "" {
+	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported(), apitest.IgnoreMethodFields("model", "service", "sourceService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -353,7 +353,7 @@ func TestServiceAnnotations(t *testing.T) {
 		NameNoMangling: "get_resource",
 		BuilderName:    "GetResource",
 		Body:           "None::<gaxi::http::NoBody>",
-		PathInfo:       method.PathInfo,
+		PathInfo:       method.PathInfo(),
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
@@ -362,7 +362,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "crate::model::Response",
 	}
-	if diff := cmp.Diff(wantMethod, method.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff(wantMethod, method.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -371,7 +371,7 @@ func TestServiceAnnotations(t *testing.T) {
 		NameNoMangling: "delete_resource",
 		BuilderName:    "DeleteResource",
 		Body:           "None::<gaxi::http::NoBody>",
-		PathInfo:       emptyMethod.PathInfo,
+		PathInfo:       emptyMethod.PathInfo(),
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
@@ -380,7 +380,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "()",
 	}
-	if diff := cmp.Diff(wantMethod, emptyMethod.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff(wantMethod, emptyMethod.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -464,7 +464,7 @@ func TestServiceAnnotationsStreaming(t *testing.T) {
 			if _, err := annotateModel(model, codec); err != nil {
 				t.Fatal(err)
 			}
-			serviceAnn := test.service.Codec.(*serviceAnnotations)
+			serviceAnn := test.service.Codec().(*serviceAnnotations)
 			if got := serviceAnn.HasBidiStreaming(); got != test.wantBidi {
 				t.Errorf("serviceAnnotations.HasBidiStreaming() = %v, want %v", got, test.wantBidi)
 			}
@@ -537,7 +537,7 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 			if _, err := annotateModel(model, codec); err != nil {
 				t.Fatal(err)
 			}
-			serviceAnn := service.Codec.(*serviceAnnotations)
+			serviceAnn := service.Codec().(*serviceAnnotations)
 			if got := serviceAnn.NeedsRequestBuilder(); got != test.wantRequestBuilder {
 				t.Errorf("serviceAnnotations.NeedsRequestBuilder() = %v, want %v", got, test.wantRequestBuilder)
 			}
@@ -616,7 +616,7 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 			if _, err := annotateModel(model, codec); err != nil {
 				t.Fatal(err)
 			}
-			serviceAnn := service.Codec.(*serviceAnnotations)
+			serviceAnn := service.Codec().(*serviceAnnotations)
 			if got := serviceAnn.IsPureGrpc(); got != test.isPureGrpc {
 				t.Errorf("serviceAnnotations.IsPureGrpc() = %v, want %v", got, test.isPureGrpc)
 			}
@@ -676,11 +676,11 @@ func TestServiceAnnotationsHasExtensibleBuilder(t *testing.T) {
 			if _, err := annotateModel(model, codec); err != nil {
 				t.Fatal(err)
 			}
-			ann0 := service0.Codec.(*serviceAnnotations)
+			ann0 := service0.Codec().(*serviceAnnotations)
 			if got := ann0.HasExtensibleBuilder(); got != test.wantService0 {
 				t.Errorf("Service0 HasExtensibleBuilder() = %v, want %v", got, test.wantService0)
 			}
-			ann1 := service1.Codec.(*serviceAnnotations)
+			ann1 := service1.Codec().(*serviceAnnotations)
 			if got := ann1.HasExtensibleBuilder(); got != test.wantService1 {
 				t.Errorf("Service1 HasExtensibleBuilder() = %v, want %v", got, test.wantService1)
 			}

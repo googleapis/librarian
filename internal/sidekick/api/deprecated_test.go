@@ -32,19 +32,19 @@ func TestDeprecatedAPI(t *testing.T) {
 	}
 
 	model = newAPI()
-	model.Enums[0].WithDeprecated(true)
+	model.Enums()[0].WithDeprecated(true)
 	if !model.HasDeprecatedEntities() {
 		t.Errorf("deprecated enum should result in deprecated entities for model %v", model)
 	}
 
 	model = newAPI()
-	model.Messages[0].WithDeprecated(true)
+	model.Messages()[0].WithDeprecated(true)
 	if !model.HasDeprecatedEntities() {
 		t.Errorf("deprecated message should result in deprecated entities for model %v", model)
 	}
 
 	model = newAPI()
-	model.Services[0].WithDeprecated(true)
+	model.Services()[0].WithDeprecated(true)
 	if !model.HasDeprecatedEntities() {
 		t.Errorf("deprecated service should result in deprecated entities for model %v", model)
 	}

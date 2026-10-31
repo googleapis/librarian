@@ -32,12 +32,12 @@ type GeneratedFile struct {
 
 // PathParams returns the path parameters for a method.
 func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
-	msg := model.Message(m.InputTypeID)
+	msg := model.Message(m.InputTypeID())
 	if msg == nil {
-		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID)
+		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID())
 	}
 	pathNames := []string{}
-	t := m.PathInfo.Bindings[0].PathTemplate
+	t := m.PathInfo().Bindings()[0].PathTemplate()
 	for _, s := range t.Segments() {
 		if s.Variable() != nil {
 			pathNames = append(pathNames, s.Variable().FieldPath()[0])
@@ -46,9 +46,10 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 
 	var params []*api.Field
 	duplicate := map[string]bool{}
+	fields := msg.Fields()
 	for _, name := range pathNames {
-		for _, field := range msg.Fields {
-			if field.Name == name && !duplicate[name] {
+		for _, field := range fields {
+			if field.Name() == name && !duplicate[name] {
 				params = append(params, field)
 				duplicate[name] = true
 				break
@@ -61,8 +62,9 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 // QueryParams returns the query parameters for a method.
 func QueryParams(m *api.Method, b *api.PathBinding) []*api.Field {
 	var queryParams []*api.Field
-	for _, field := range m.InputType.Fields {
-		if !b.QueryParameters[field.Name] {
+	qp := b.QueryParameters()
+	for _, field := range m.InputType().Fields() {
+		if !qp[field.Name()] {
 			continue
 		}
 		queryParams = append(queryParams, field)
@@ -92,5 +94,5 @@ func MapSlice[T, R any](s []T, f func(T) R) []R {
 
 // HasNestedTypes returns true if the message has nested types.
 func HasNestedTypes(m *api.Message) bool {
-	return len(m.Enums) > 0 || len(m.OneOfs) > 0 || len(m.Messages) > 0
+	return len(m.Enums()) > 0 || len(m.OneOfs()) > 0 || len(m.Messages()) > 0
 }

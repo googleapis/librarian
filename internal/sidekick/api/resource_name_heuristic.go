@@ -49,9 +49,9 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 		"get", "list", "create", "update", "delete", "patch", "insert",
 	}
 
-	for _, service := range model.Services {
-		for _, m := range service.Methods {
-			nameLower := strings.ToLower(m.Name)
+	for _, service := range model.services {
+		for _, m := range service.methods {
+			nameLower := strings.ToLower(m.name)
 
 			var isCRUDPrefix bool
 			for _, prefix := range crudPrefixes {
@@ -77,12 +77,16 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 				continue
 			}
 
-			if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+			if m.pathInfo == nil {
+				continue
+			}
+			bindings := m.pathInfo.Bindings()
+			if len(bindings) == 0 {
 				continue
 			}
 
 			// Parse the path template of the primary binding
-			tmpl := m.PathInfo.Bindings[0].PathTemplate
+			tmpl := bindings[0].PathTemplate()
 			if tmpl == nil {
 				continue
 			}

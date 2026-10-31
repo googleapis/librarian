@@ -18,12 +18,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestFindBestResourceFieldByType(t *testing.T) {
 	f := newAIPTestFixture()
-	targetType := f.resource.Type
+	targetType := f.resource.Type()
 
 	for _, tc := range []struct {
 		name   string
@@ -64,7 +63,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestResourceFieldByType(msg, f.model, targetType)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -73,7 +72,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 
 func TestFindBestResourceFieldBySingular(t *testing.T) {
 	f := newAIPTestFixture()
-	targetSingular := f.resource.Singular
+	targetSingular := f.resource.Singular()
 
 	for _, tc := range []struct {
 		name   string
@@ -119,7 +118,7 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestResourceFieldBySingular(msg, f.model, targetSingular)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -168,7 +167,7 @@ func TestFindBestParentFieldByType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestParentFieldByType(msg, childType)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -208,28 +207,28 @@ func TestFieldTypePredicates(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		if tc.field.IsString() != tc.isString {
-			t.Errorf("IsString() for %v should be %v", tc.field.Typez, tc.isString)
+			t.Errorf("IsString() for %v should be %v", tc.field.Typez(), tc.isString)
 		}
 		if tc.field.IsBytes() != tc.isBytes {
-			t.Errorf("IsBytes() for %v should be %v", tc.field.Typez, tc.isBytes)
+			t.Errorf("IsBytes() for %v should be %v", tc.field.Typez(), tc.isBytes)
 		}
 		if tc.field.IsBool() != tc.isBool {
-			t.Errorf("IsBool() for %v should be %v", tc.field.Typez, tc.isBool)
+			t.Errorf("IsBool() for %v should be %v", tc.field.Typez(), tc.isBool)
 		}
 		if tc.field.IsLikeInt() != tc.isInt {
-			t.Errorf("IsLikeInt() for %v should be %v", tc.field.Typez, tc.isInt)
+			t.Errorf("IsLikeInt() for %v should be %v", tc.field.Typez(), tc.isInt)
 		}
 		if tc.field.IsLikeUInt() != tc.isUInt {
-			t.Errorf("IsLikeUInt() for %v should be %v", tc.field.Typez, tc.isUInt)
+			t.Errorf("IsLikeUInt() for %v should be %v", tc.field.Typez(), tc.isUInt)
 		}
 		if tc.field.IsLikeFloat() != tc.isFloat {
-			t.Errorf("IsLikeFloat() for %v should be %v", tc.field.Typez, tc.isFloat)
+			t.Errorf("IsLikeFloat() for %v should be %v", tc.field.Typez(), tc.isFloat)
 		}
 		if tc.field.IsEnum() != tc.isEnum {
-			t.Errorf("IsEnum() for %v should be %v", tc.field.Typez, tc.isEnum)
+			t.Errorf("IsEnum() for %v should be %v", tc.field.Typez(), tc.isEnum)
 		}
 		if tc.field.IsObject() != tc.isObject {
-			t.Errorf("IsObject() for %v should be %v", tc.field.Typez, tc.isObject)
+			t.Errorf("IsObject() for %v should be %v", tc.field.Typez(), tc.isObject)
 		}
 	}
 }
@@ -319,20 +318,20 @@ func TestFindBodyField(t *testing.T) {
 		{
 			name:     "match by path info",
 			message:  NewTestMessage("Request").WithFields(bodyField, otherField),
-			pathInfo: &PathInfo{BodyFieldPath: "body_field"},
+			pathInfo: NewPathInfoBuilder().WithBodyFieldPath("body_field").Build(),
 			want:     bodyField,
 		},
 		{
 			name:       "match by type and name",
 			message:    NewTestMessage("Request").WithFields(typeMatchField, otherField),
-			targetType: messageType.ID,
+			targetType: messageType.ID(),
 			singular:   "type_match",
 			want:       typeMatchField,
 		},
 		{
 			name:       "match by type but wrong name",
 			message:    NewTestMessage("Request").WithFields(typeMatchField, otherField),
-			targetType: messageType.ID,
+			targetType: messageType.ID(),
 			singular:   "wrong_name",
 			want:       nil,
 		},
@@ -346,8 +345,8 @@ func TestFindBodyField(t *testing.T) {
 		{
 			name:       "path info overrides type match",
 			message:    NewTestMessage("Request").WithFields(typeMatchField, bodyField),
-			pathInfo:   &PathInfo{BodyFieldPath: "body_field"},
-			targetType: messageType.ID,
+			pathInfo:   NewPathInfoBuilder().WithBodyFieldPath("body_field").Build(),
+			targetType: messageType.ID(),
 			singular:   "type_match",
 			want:       bodyField,
 		},
@@ -361,7 +360,7 @@ func TestFindBodyField(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findBodyField(tc.message, tc.pathInfo, tc.targetType, tc.singular)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -395,7 +394,7 @@ func TestFindResourceIDField(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findResourceIDField(tc.message, tc.singular)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -405,24 +404,20 @@ func TestFindResourceIDField(t *testing.T) {
 func TestFindQuickstartMethod(t *testing.T) {
 	fooMethod := NewTestMethod("FooMethod")
 	listPolicies := NewTestMethod("ListAccessPolicies").
-		WithOutput(NewTestMessage("ListAccessPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy")))
-	listPolicies.IsAIPStandardList = true
-	getPolicy := NewTestMethod("GetAccessPolicy")
-	getPolicy.IsAIPStandardGet = true
-	createPolicy := NewTestMethod("CreateAccessPolicy")
-	createPolicy.IsAIPStandardCreate = true
-	deletePolicy := NewTestMethod("DeleteAccessPolicy")
-	deletePolicy.IsAIPStandardDelete = true
-	updatePolicy := NewTestMethod("UpdateAccessPolicy")
-	updatePolicy.IsAIPStandardUpdate = true
+		WithOutput(NewTestMessage("ListAccessPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy"))).
+		WithIsAIPStandardList(true)
+	getPolicy := NewTestMethod("GetAccessPolicy").WithIsAIPStandardGet(true)
+	createPolicy := NewTestMethod("CreateAccessPolicy").WithIsAIPStandardCreate(true)
+	deletePolicy := NewTestMethod("DeleteAccessPolicy").WithIsAIPStandardDelete(true)
+	updatePolicy := NewTestMethod("UpdateAccessPolicy").WithIsAIPStandardUpdate(true)
 	listOther := NewTestMethod("ListOtherThings").
-		WithOutput(NewTestMessage("ListOtherThingsResponse").WithResource(NewTestResource("otherthing").WithSingular("otherthing")))
-	listOther.IsAIPStandardList = true
+		WithOutput(NewTestMessage("ListOtherThingsResponse").WithResource(NewTestResource("otherthing").WithSingular("otherthing"))).
+		WithIsAIPStandardList(true)
 
 	deprecatedList := NewTestMethod("DeprecatedList").WithDeprecated(true)
 	listPoliciesMatch := NewTestMethod("ListPolicies").
-		WithOutput(NewTestMessage("ListPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy")))
-	listPoliciesMatch.IsAIPStandardList = true
+		WithOutput(NewTestMessage("ListPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy"))).
+		WithIsAIPStandardList(true)
 	expandMethod := NewTestMethod("Expand").WithServerSideStreaming()
 	chatMethod := NewTestMethod("Chat").WithBidiStreaming()
 
@@ -491,7 +486,7 @@ func TestFindQuickstartMethod(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartMethod(tc.service)
-			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(Method{}, "Service", "Model")); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported(), ignoreMethodFields("service", "model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -539,7 +534,7 @@ func TestFindQuickstartService(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartService(tc.api)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

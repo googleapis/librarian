@@ -41,7 +41,7 @@ func TestAnnotateOneOf(t *testing.T) {
 		Checker:      "testAlternativesCheckAndSet",
 	}
 
-	if diff := cmp.Diff(want, oneof.Codec); diff != "" {
+	if diff := cmp.Diff(want, oneof.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

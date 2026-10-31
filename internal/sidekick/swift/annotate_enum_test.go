@@ -99,7 +99,7 @@ func TestAnnotateEnum(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
+			if diff := cmp.Diff(test.want, enum.Codec(), cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -141,7 +141,7 @@ func TestAnnotateEnum_Gating(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			var enum *api.Enum
 			for e := range model.AllEnums() {
-				if e.Name == test.enumName {
+				if e.Name() == test.enumName {
 					enum = e
 					break
 				}
@@ -149,9 +149,9 @@ func TestAnnotateEnum_Gating(t *testing.T) {
 			if enum == nil {
 				t.Fatalf("enum %s not found", test.enumName)
 			}
-			ann, ok := enum.Codec.(*enumAnnotations)
+			ann, ok := enum.Codec().(*enumAnnotations)
 			if !ok {
-				t.Fatalf("expected enum.Codec to be *enumAnnotations, got %T", enum.Codec)
+				t.Fatalf("expected enum.Codec to be *enumAnnotations, got %T", enum.Codec())
 			}
 
 			if diff := cmp.Diff(test.wantExpression, ann.GateExpression()); diff != "" {
@@ -189,7 +189,7 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 		ModulePath:         "TestProtos",
 		ProtoTypeName:      "TestProtos.Test_Color",
 	}
-	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
+	if diff := cmp.Diff(want, enum.Codec(), cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -220,7 +220,7 @@ func TestAnnotateEnum_NestedModulePath(t *testing.T) {
 		ModulePath:         "TestProtos",
 		ProtoTypeName:      "TestProtos.Test_OuterMessage.InnerEnum",
 	}
-	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
+	if diff := cmp.Diff(want, enum.Codec(), cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

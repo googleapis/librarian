@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestProtobuf_Signatures(t *testing.T) {
@@ -44,8 +44,8 @@ func TestProtobuf_Signatures(t *testing.T) {
 		t.Fatalf("Cannot find message %s in API State", id)
 	}
 	var names []string
-	for _, f := range gotMessage.Fields {
-		names = append(names, f.Name)
+	for _, f := range gotMessage.Fields() {
+		names = append(names, f.Name())
 	}
 	if diff := cmp.Diff([]string{"parent", "foo_id", "flags"}, names); diff != "" {
 		t.Fatalf("mismatch (-want +got):\n%s", diff)
@@ -57,26 +57,21 @@ func TestProtobuf_Signatures(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", id)
 	}
 	wantSignatures := []*api.MethodSignature{
-		{
-			Names:  []string{"parent", "foo_id", "flags"},
-			Fields: gotMessage.Fields,
-		},
-		{
-			Names:  []string{"foo_id", "parent"},
-			Fields: []*api.Field{gotMessage.Fields[1], gotMessage.Fields[0]},
-		},
-		{
-			Names:  []string{"parent", "flags"},
-			Fields: []*api.Field{gotMessage.Fields[0], gotMessage.Fields[2]},
-		},
+		api.NewTestMethodSignature("parent", "foo_id", "flags").
+			WithFields(gotMessage.Fields()...),
+		api.NewTestMethodSignature("foo_id", "parent").
+			WithFields(gotMessage.Fields()[1], gotMessage.Fields()[0]),
+		api.NewTestMethodSignature("parent", "flags").
+			WithFields(gotMessage.Fields()[0], gotMessage.Fields()[2]),
 	}
 
-	// Use IgnoreFields() to avoid recursive testing of the Field->Message->Fields cycle.
+	// Ignore the MethodSignature.method and Field.Parent back-pointers to avoid recursive cycle testing.
 	if diff := cmp.Diff(
 		wantSignatures,
-		gotMethod.Signatures,
-		cmpopts.IgnoreFields(api.MethodSignature{}, "Method"),
-		cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+		gotMethod.Signatures(),
+		apitest.AllowUnexported(),
+		cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".method" }, cmp.Ignore()),
+		apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

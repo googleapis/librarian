@@ -32,11 +32,11 @@ func (c *codec) fieldTypeName(field *api.Field) (*fieldTypeNames, error) {
 	if err != nil {
 		return nil, err
 	}
-	if field.Optional {
+	if field.Optional() {
 		names.Full = fmt.Sprintf("%s?", names.Base)
 		return names, nil
 	}
-	if field.Repeated {
+	if field.Repeated() {
 		names.Full = fmt.Sprintf("[%s]", names.Base)
 		return names, nil
 	}
@@ -45,11 +45,11 @@ func (c *codec) fieldTypeName(field *api.Field) (*fieldTypeNames, error) {
 }
 
 func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezMap:
 		return c.mapFieldTypeNames(field)
 	case api.TypezMessage:
-		m, err := lookupMessage(c.Model, field.TypezID)
+		m, err := lookupMessage(c.Model, field.TypezID())
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +59,7 @@ func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
 		}
 		return &fieldTypeNames{Base: base}, nil
 	case api.TypezEnum:
-		e, err := lookupEnum(c.Model, field.TypezID)
+		e, err := lookupEnum(c.Model, field.TypezID())
 		if err != nil {
 			return nil, err
 		}
@@ -95,11 +95,11 @@ func (c *codec) mapFieldTypeComponents(field *api.Field) (string, string, error)
 	if err != nil {
 		return "", "", err
 	}
-	key, err := c.fieldTypeBase(mapType.Key)
+	key, err := c.fieldTypeBase(mapType.Key())
 	if err != nil {
 		return "", "", err
 	}
-	value, err := c.fieldTypeBase(mapType.Value)
+	value, err := c.fieldTypeBase(mapType.Value())
 	if err != nil {
 		return "", "", err
 	}
@@ -107,7 +107,7 @@ func (c *codec) mapFieldTypeComponents(field *api.Field) (string, string, error)
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezDouble:
 		return "Swift.Double", nil
 	case api.TypezFloat:
@@ -139,14 +139,14 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 	case api.TypezSint64:
 		return "Swift.Int64", nil
 	default:
-		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez.String(), field.ID)
+		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez().String(), field.ID())
 	}
 }
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
 	name := messageSimpleName(m)
-	if m.Parent == nil {
-		prefix, err := c.typePrefix(m.Package, name)
+	if m.Parent() == nil {
+		prefix, err := c.typePrefix(m.Package(), name)
 		if err != nil {
 			return "", err
 		}
@@ -155,7 +155,7 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 		}
 		return name, nil
 	}
-	parent, err := c.messageTypeName(m.Parent)
+	parent, err := c.messageTypeName(m.Parent())
 	if err != nil {
 		return "", err
 	}
@@ -164,12 +164,12 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 
 func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 	name := messageSimpleName(m)
-	if m.Parent == nil {
-		if m.Package == "" {
+	if m.Parent() == nil {
+		if m.Package() == "" {
 			// there is no package, so return the bare type name
 			return name, nil
 		}
-		if m.Package == c.Model.PackageName {
+		if m.Package() == c.Model.PackageName() {
 			// this is the current package
 			if c.Module || c.LibraryName == "" {
 				// LibraryName is intentionally left empty when generating a module
@@ -181,13 +181,13 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 			}
 			return fmt.Sprintf("%s.%s", c.LibraryName, name), nil
 		}
-		dep, ok := c.ApiPackages[m.Package]
+		dep, ok := c.ApiPackages[m.Package()]
 		if !ok {
-			return "", fmt.Errorf("package %q not found in ApiPackages", m.Package)
+			return "", fmt.Errorf("package %q not found in ApiPackages", m.Package())
 		}
 		return fmt.Sprintf("%s.%s", dep.Name, name), nil
 	}
-	parent, err := c.fullyQualifiedMessageTypeName(m.Parent)
+	parent, err := c.fullyQualifiedMessageTypeName(m.Parent())
 	if err != nil {
 		return "", err
 	}
@@ -196,8 +196,8 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 
 func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 	name := enumName(e)
-	if e.Parent == nil {
-		prefix, err := c.typePrefix(e.Package, name)
+	if e.Parent() == nil {
+		prefix, err := c.typePrefix(e.Package(), name)
 		if err != nil {
 			return "", err
 		}
@@ -206,7 +206,7 @@ func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 		}
 		return name, nil
 	}
-	parent, err := c.messageTypeName(e.Parent)
+	parent, err := c.messageTypeName(e.Parent())
 	if err != nil {
 		return "", err
 	}
@@ -220,7 +220,7 @@ func (c *codec) typePrefix(packageName, name string) (string, error) {
 	if err != nil || prefix != "" {
 		return prefix, err
 	}
-	if c.Model == nil || packageName != c.Model.PackageName {
+	if c.Model == nil || packageName != c.Model.PackageName() {
 		return "", nil
 	}
 	if c.Module || c.LibraryName == "" {
@@ -250,12 +250,12 @@ func (c *codec) typePrefix(packageName, name string) (string, error) {
 func (c *codec) externalTypePrefix(packageName string) (string, error) {
 	dep, ok := c.ApiPackages[packageName]
 	if !ok {
-		if packageName == c.Model.PackageName {
+		if packageName == c.Model.PackageName() {
 			return "", nil
 		}
 		return "", fmt.Errorf("package %q not found in ApiPackages", packageName)
 	}
-	if packageName == c.Model.PackageName && (!c.Module || c.TargetLibraryName == dep.Name) {
+	if packageName == c.Model.PackageName() && (!c.Module || c.TargetLibraryName == dep.Name) {
 		return "", nil
 	}
 	return dep.Name, nil

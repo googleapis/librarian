@@ -22,9 +22,36 @@ import (
 
 func allowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
+		API{},
+		DiscoveryLro{},
+		Enum{},
+		EnumValue{},
+		Field{},
+		Map{},
+		Message{},
+		Method{},
+		MethodSignature{},
+		OneOf{},
+		OperationInfo{},
+		PaginationInfo{},
+		PathBinding{},
+		PathInfo{},
 		PathSegment{},
 		PathTemplate{},
 		PathVariable{},
+		Resource{},
+		ResourceNamePattern{},
+		ResourceNameSegment{},
+		ResourceReference{},
+		RoutingInfo{},
+		RoutingInfoCombo{},
+		RoutingInfoComboItem{},
+		RoutingInfoVariant{},
+		RoutingPathSpec{},
+		SampleInfo{},
+		SampleValue{},
+		Service{},
+		TargetResource{},
 	)
 }
 
@@ -35,24 +62,10 @@ func TestRoutingCombosSimpleOr(t *testing.T) {
 	method := NewTestMethod("test").WithRouting(info)
 
 	want := []*RoutingInfoCombo{
-		{
-			Items: []*RoutingInfoComboItem{
-				{
-					Name:    "key",
-					Variant: v1,
-				},
-			},
-		},
-		{
-			Items: []*RoutingInfoComboItem{
-				{
-					Name:    "key",
-					Variant: v2,
-				},
-			},
-		},
+		NewRoutingInfoCombo(NewRoutingInfoComboItem("key", v1)),
+		NewRoutingInfoCombo(NewRoutingInfoComboItem("key", v2)),
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -65,21 +78,20 @@ func TestRoutingCombosSimpleAnd(t *testing.T) {
 	method := NewTestMethod("test").WithRouting(i1, i2)
 
 	want := []*RoutingInfoCombo{
-		{
-			Items: []*RoutingInfoComboItem{
-				{
-					Name:    "key1",
-					Variant: v1,
-				},
-				{
-					Name:    "key2",
-					Variant: v2,
-				},
-			},
-		},
+		NewRoutingInfoCombo(
+			NewRoutingInfoComboItem("key1", v1),
+			NewRoutingInfoComboItem("key2", v2),
+		),
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	combo := method.RoutingCombos()[0]
+	if len(combo.Items()) != 2 {
+		t.Fatalf("len(combo.Items()) = %d, want 2", len(combo.Items()))
+	}
+	if combo.Items()[0].Name() != "key1" || combo.Items()[0].Variant() != v1 {
+		t.Errorf("combo.Items()[0] = (%q, %v), want (%q, %v)", combo.Items()[0].Name(), combo.Items()[0].Variant(), "key1", v1)
 	}
 }
 
@@ -99,22 +111,11 @@ func TestRoutingCombosFull(t *testing.T) {
 	method := NewTestMethod("test").WithRouting(a, b, c)
 
 	make_combo := func(va *RoutingInfoVariant, vb *RoutingInfoVariant, vc *RoutingInfoVariant) *RoutingInfoCombo {
-		return &RoutingInfoCombo{
-			Items: []*RoutingInfoComboItem{
-				{
-					Name:    "a",
-					Variant: va,
-				},
-				{
-					Name:    "b",
-					Variant: vb,
-				},
-				{
-					Name:    "c",
-					Variant: vc,
-				},
-			},
-		}
+		return NewRoutingInfoCombo(
+			NewRoutingInfoComboItem("a", va),
+			NewRoutingInfoComboItem("b", vb),
+			NewRoutingInfoComboItem("c", vc),
+		)
 	}
 	want := []*RoutingInfoCombo{
 		make_combo(va1, vb1, vc1),
@@ -124,15 +125,15 @@ func TestRoutingCombosFull(t *testing.T) {
 		make_combo(va3, vb1, vc1),
 		make_combo(va3, vb2, vc1),
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestRoutingInfoVariantFieldName(t *testing.T) {
-	variant := &RoutingInfoVariant{
-		FieldPath: []string{"request", "b", "c"},
-	}
+	variant := NewRoutingInfoVariantBuilder().
+		WithFieldPath("request", "b", "c").
+		Build()
 	got := variant.FieldName()
 	want := "request.b.c"
 	if got != want {
@@ -141,17 +142,11 @@ func TestRoutingInfoVariantFieldName(t *testing.T) {
 }
 
 func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
-	variant := &RoutingInfoVariant{
-		Prefix: RoutingPathSpec{
-			Segments: []string{"a", "b", "c"},
-		},
-		Matching: RoutingPathSpec{
-			Segments: []string{"d", "*"},
-		},
-		Suffix: RoutingPathSpec{
-			Segments: []string{"e", "**"},
-		},
-	}
+	variant := NewRoutingInfoVariantBuilder().
+		WithPrefixSegments("a", "b", "c").
+		WithMatchingSegments("d", "*").
+		WithSuffixSegments("e", "**").
+		Build()
 	got := variant.TemplateAsString()
 	want := "a/b/c/d/*/e/**"
 	if got != want {
@@ -160,20 +155,18 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 }
 
 func TestPathBindingHeuristic(t *testing.T) {
-	heuristic := &TargetResource{
-		FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
-	}
-	binding := &PathBinding{
-		Verb:           "GET",
-		TargetResource: heuristic,
+	heuristic := NewTargetResource([][]string{{"project"}, {"zone"}, {"instance"}}, nil)
+	binding := NewPathBindingBuilder().
+		WithVerb("GET").
+		WithTargetResource(heuristic).
+		Build()
+
+	if binding.Verb() != "GET" {
+		t.Errorf("expected GET, got %s", binding.Verb())
 	}
 
-	if binding.Verb != "GET" {
-		t.Errorf("expected GET, got %s", binding.Verb)
-	}
-
-	if binding.TargetResource.FieldPaths[0][0] != "project" {
-		t.Errorf("expected project, got %s", binding.TargetResource.FieldPaths[0][0])
+	if binding.TargetResource().FieldPaths()[0][0] != "project" {
+		t.Errorf("expected project, got %s", binding.TargetResource().FieldPaths()[0][0])
 	}
 }
 

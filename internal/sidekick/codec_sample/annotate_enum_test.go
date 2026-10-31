@@ -41,9 +41,9 @@ func TestAnnotateEnum(t *testing.T) {
 			if err := c.annotateModel(model); err != nil {
 				t.Fatal(err)
 			}
-			got, ok := test.enum.Codec.(*enumAnnotations)
+			got, ok := test.enum.Codec().(*enumAnnotations)
 			if !ok {
-				t.Fatalf("expected *enumAnnotations, got %T", test.enum.Codec)
+				t.Fatalf("expected *enumAnnotations, got %T", test.enum.Codec())
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

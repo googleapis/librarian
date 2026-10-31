@@ -20,34 +20,40 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func maybeInlineObjectField(model *api.API, parent *api.Message, name string, input *schema) (*api.Field, error) {
+func maybeInlineObjectField(model *api.APIBuilder, parentBuilder *api.MessageBuilder, name string, input *schema) (*api.Field, error) {
+	return makeInlineObjectField(model, parentBuilder, name, input, input.Description, true, false)
+}
+
+func makeInlineObjectField(model *api.APIBuilder, parentBuilder *api.MessageBuilder, name string, input *schema, description string, optional, repeated bool) (*api.Field, error) {
 	if input.Type != "object" || input.Properties == nil {
 		return nil, nil
 	}
-	id := fmt.Sprintf("%s.%s", parent.ID, name)
+	parent := parentBuilder.Build()
+	id := fmt.Sprintf("%s.%s", parent.ID(), name)
 	documentation := fmt.Sprintf("The message type for the [%s][%s] field.", name, id[1:])
-	message := &api.Message{
-		Name:          name,
-		ID:            id,
-		Package:       parent.Package,
-		Documentation: documentation,
-		Parent:        parent,
-	}
-	if err := makeMessageFields(model, message, input); err != nil {
+	mb := api.NewMessageBuilder().
+		WithName(name).
+		WithID(id).
+		WithPackage(parent.Package()).
+		WithDocumentation(documentation).
+		WithParent(parent)
+	if err := makeMessageFields(model, mb, input); err != nil {
 		return nil, err
 	}
-	parent.Messages = append(parent.Messages, message)
+	message := mb.Build()
+	parentBuilder.AddMessage(message)
 	model.AddMessage(message)
 
-	field := &api.Field{
-		Name:          name,
-		JSONName:      name,
-		ID:            id,
-		Documentation: input.Description,
-		Deprecated:    input.Deprecated,
-		Optional:      true,
-		Typez:         api.TypezMessage,
-		TypezID:       id,
-	}
+	field := api.NewFieldBuilder().
+		WithName(name).
+		WithJSONName(name).
+		WithID(id).
+		WithDocumentation(description).
+		WithDeprecated(input.Deprecated).
+		WithOptional(optional).
+		WithRepeated(repeated).
+		WithTypez(api.TypezMessage).
+		WithTypezID(id).
+		Build()
 	return field, nil
 }

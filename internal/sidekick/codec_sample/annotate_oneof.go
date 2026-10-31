@@ -22,9 +22,9 @@ type oneOfAnnotations struct {
 }
 
 func (c *codec) annotateOneOf(o *api.OneOf, mAnn *messageAnnotations) error {
-	o.Codec = &oneOfAnnotations{
+	o.SetAnnotations(&oneOfAnnotations{
 		Message: mAnn,
-		Name:    o.Name + "Sample",
-	}
+		Name:    o.Name() + "Sample",
+	})
 	return nil
 }

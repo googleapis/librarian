@@ -112,7 +112,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithOutput(folder).
 				WithVerb("POST").
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v2").WithVariableNamed("parent").WithLiteral("folders").Build()).
-				WithAutoPopulated(createFolderRequest.Fields[2]),
+				WithAutoPopulated(createFolderRequest.Fields()[2]),
 			api.NewTestMethod("GetIamPolicy").
 				WithInput(getIamPolicyRequest).
 				WithOutput(policy).
@@ -123,10 +123,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithOutput(operation).
 				WithVerb("POST").
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v2").WithVariableNamed("name").WithLiteral(":rename").Build()).
-				WithOperationInfo(&api.OperationInfo{
-					ResponseTypeID: folder.ID,
-					MetadataTypeID: renameFolderMetadata.ID,
-				}),
+				WithOperationInfo(api.NewTestOperationInfo(folder.ID(), renameFolderMetadata.ID())),
 			api.NewTestMethod("GetOperation").
 				WithInput(getOperationRequest).
 				WithOutput(operation).
@@ -135,11 +132,12 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		).
 		WithDefaultHost("storage.googleapis.com")
 
-	controlModel := api.NewTestAPI([]*api.Message{folder, createFolderRequest, renameFolderRequest, renameFolderMetadata}, nil, []*api.Service{controlService})
-	controlModel.AddMessage(policy)
-	controlModel.AddMessage(getIamPolicyRequest)
-	controlModel.AddMessage(operation)
-	controlModel.AddMessage(getOperationRequest)
+	controlModel := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{folder, createFolderRequest, renameFolderRequest, renameFolderMetadata}, nil, []*api.Service{controlService})).
+		AddMessage(policy).
+		AddMessage(getIamPolicyRequest).
+		AddMessage(operation).
+		AddMessage(getOperationRequest).
+		BuildSyntaxTree()
 	if err := api.CrossReference(controlModel); err != nil {
 		t.Fatal(err)
 	}

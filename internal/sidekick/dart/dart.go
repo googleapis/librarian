@@ -130,9 +130,9 @@ var reservedNames = map[string]string{
 }
 
 func messageName(m *api.Message) string {
-	name := strcase.ToCamel(m.Name)
+	name := strcase.ToCamel(m.Name())
 
-	if m.Parent == nil {
+	if m.Parent() == nil {
 		// For top-most symbols, check for conflicts with reserved names.
 		if _, hasConflict := reservedNames[name]; hasConflict {
 			return name + deconflictChar
@@ -140,17 +140,17 @@ func messageName(m *api.Message) string {
 			return name
 		}
 	} else {
-		return messageName(m.Parent) + nestedMessageChar + name
+		return messageName(m.Parent()) + nestedMessageChar + name
 	}
 }
 
 func qualifiedName(m *api.Message) string {
 	// Convert '.google.protobuf.Duration' to 'google.protobuf.Duration'.
-	return strings.TrimPrefix(m.ID, ".")
+	return strings.TrimPrefix(m.ID(), ".")
 }
 
 func fieldName(field *api.Field) string {
-	name := strcase.ToLowerCamel(field.Name)
+	name := strcase.ToLowerCamel(field.Name())
 	if _, hasConflict := reservedNames[name]; hasConflict {
 		name = name + deconflictChar
 	}
@@ -158,16 +158,16 @@ func fieldName(field *api.Field) string {
 }
 
 func enumName(e *api.Enum) string {
-	name := strcase.ToCamel(e.Name)
-	if e.Parent != nil {
-		name = messageName(e.Parent) + nestedEnumChar + name
+	name := strcase.ToCamel(e.Name())
+	if e.Parent() != nil {
+		name = messageName(e.Parent()) + nestedEnumChar + name
 	}
 	return name
 }
 
 func httpPathFmt(pathInfo *api.PathInfo) string {
 	var builder strings.Builder
-	t := pathInfo.Bindings[0].PathTemplate
+	t := pathInfo.Bindings()[0].PathTemplate()
 	for _, segment := range t.Segments() {
 		switch {
 		case segment.Literal() != "":
@@ -238,7 +238,7 @@ func packageName(api *api.API, packageNameOverride string) string {
 
 	// Convert 'google.protobuf' to 'google_cloud_protobuf' and
 	// 'google.cloud.language.v2' to 'google_cloud_language_v2.
-	packageName := api.PackageName
+	packageName := api.PackageName()
 	packageName = strings.TrimPrefix(packageName, "google.cloud.")
 	packageName = strings.TrimPrefix(packageName, "google.")
 	return "google_cloud_" + strings.ReplaceAll(packageName, ".", "_")
@@ -248,13 +248,14 @@ func shouldGenerateMethod(m *api.Method) bool {
 	// Ignore methods without HTTP annotations; we cannot generate working RPCs
 	// for them.
 	// TODO(#499) Switch to explicitly excluding such functions.
-	if m.ClientSideStreaming || m.PathInfo == nil {
+	if m.ClientSideStreaming() || m.PathInfo() == nil {
 		return false
 	}
-	if len(m.PathInfo.Bindings) == 0 {
+	bindings := m.PathInfo().Bindings()
+	if len(bindings) == 0 {
 		return false
 	}
-	return m.PathInfo.Bindings[0].PathTemplate != nil
+	return bindings[0].PathTemplate() != nil
 }
 
 func formatDirectory(ctx context.Context, dir string) error {
