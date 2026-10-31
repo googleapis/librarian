@@ -24,6 +24,9 @@
 // percentage and compares it against the target for the component. The
 // default target is 80%. Components with a different target are listed below.
 // The -target flag overrides both the default and per-component targets.
+//
+// When GITHUB_STEP_SUMMARY is set, as it is in GitHub Actions, a Markdown
+// report with per-package statement coverage is appended to that file.
 package main
 
 import (
@@ -33,6 +36,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -72,6 +76,9 @@ func main() {
 		log.Fatalf("coverage: %v", err)
 	}
 	fmt.Printf("Coverage: %.1f%% (target: %.0f%%)\n", coverage, target)
+	if err := writeStepSummary(coverage, target); err != nil {
+		log.Fatalf("step summary: %v", err)
+	}
 	if coverage < target {
 		fmt.Printf("FAIL: coverage %.1f%% is below target %.0f%%\n", coverage, target)
 		os.Exit(1)
@@ -134,4 +141,105 @@ func parseTotalCoverage(out string) (float64, error) {
 		return pct, nil
 	}
 	return 0, fmt.Errorf("no total line found in coverage output")
+}
+
+// writeStepSummary appends a Markdown coverage report to the file named by
+// GITHUB_STEP_SUMMARY. It does nothing if the variable is unset.
+func writeStepSummary(total, target float64) error {
+	name := os.Getenv("GITHUB_STEP_SUMMARY")
+	if name == "" {
+		return nil
+	}
+	profile, err := os.ReadFile("coverage.out")
+	if err != nil {
+		return err
+	}
+	pkgs, err := packageCoverage(string(profile))
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(formatSummary(total, target, pkgs)); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
+// pkgCoverage is the statement coverage of a single package.
+type pkgCoverage struct {
+	pkg     string
+	covered int
+	total   int
+}
+
+func (p pkgCoverage) percent() float64 {
+	if p.total == 0 {
+		return 0
+	}
+	return 100 * float64(p.covered) / float64(p.total)
+}
+
+// packageCoverage aggregates a Go coverage profile by package, sorted by
+// package path.
+func packageCoverage(profile string) ([]pkgCoverage, error) {
+	byPkg := map[string]*pkgCoverage{}
+	for line := range strings.SplitSeq(profile, "\n") {
+		if line == "" || strings.HasPrefix(line, "mode:") {
+			continue
+		}
+		// Each line has the form "pkg/file.go:start,end numStmts count".
+		fields := strings.Fields(line)
+		if len(fields) != 3 {
+			return nil, fmt.Errorf("malformed profile line %q", line)
+		}
+		file, _, ok := strings.Cut(fields[0], ":")
+		if !ok {
+			return nil, fmt.Errorf("malformed profile line %q", line)
+		}
+		stmts, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return nil, fmt.Errorf("malformed profile line %q: %w", line, err)
+		}
+		count, err := strconv.Atoi(fields[2])
+		if err != nil {
+			return nil, fmt.Errorf("malformed profile line %q: %w", line, err)
+		}
+		pkg := path.Dir(file)
+		p, ok := byPkg[pkg]
+		if !ok {
+			p = &pkgCoverage{pkg: pkg}
+			byPkg[pkg] = p
+		}
+		p.total += stmts
+		if count > 0 {
+			p.covered += stmts
+		}
+	}
+	var out []pkgCoverage
+	for _, p := range byPkg {
+		out = append(out, *p)
+	}
+	slices.SortFunc(out, func(a, b pkgCoverage) int { return strings.Compare(a.pkg, b.pkg) })
+	return out, nil
+}
+
+// formatSummary renders a Markdown coverage report.
+func formatSummary(total, target float64, pkgs []pkgCoverage) string {
+	status := "✅ PASS"
+	if total < target {
+		status = "❌ FAIL"
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "### Coverage: %.1f%% (target: %.0f%%) %s\n\n", total, target, status)
+	b.WriteString("<details><summary>Per-package statement coverage</summary>\n\n")
+	b.WriteString("| Package | Coverage | Statements |\n|---|---:|---:|\n")
+	for _, p := range pkgs {
+		fmt.Fprintf(&b, "| `%s` | %.1f%% | %d/%d |\n", p.pkg, p.percent(), p.covered, p.total)
+	}
+	b.WriteString("\n</details>\n\n")
+	return b.String()
 }
