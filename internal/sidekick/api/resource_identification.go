@@ -48,7 +48,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
 func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
-	if binding.PathTemplate == nil {
+	if binding.pathTemplate == nil {
 		return nil
 	}
 
@@ -59,7 +59,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 			return err
 		}
 		if target != nil {
-			binding.TargetResource = target
+			binding.targetResource = target
 			return nil
 		}
 	}
@@ -69,7 +69,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		return err
 	}
 	if target != nil {
-		binding.TargetResource = target
+		binding.targetResource = target
 		return nil
 	}
 	return nil
@@ -77,7 +77,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 
 func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
 
-	tmpl := binding.PathTemplate
+	tmpl := binding.pathTemplate
 	if tmpl == nil {
 		return nil, nil
 	}
@@ -159,11 +159,12 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		targetSegments := segments[firstIndex : i+1]
 		for _, s := range targetSegments {
 			if s.Variable() != nil {
-				_, err := findField(method.InputType, s.Variable().FieldPath())
+				fieldPath := s.Variable().FieldPath()
+				_, err := findField(method.InputType, fieldPath)
 				if err != nil {
 					return nil, err
 				}
-				fieldPaths = append(fieldPaths, s.Variable().FieldPath())
+				fieldPaths = append(fieldPaths, fieldPath)
 			}
 		}
 		template, err := constructTemplate(method, targetSegments)
@@ -185,8 +186,9 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 	}
 
 	var lastVarIndex = -1
+	segments := binding.pathTemplate.Segments()
 	// Collect field paths corresponding to variable segments in the path template
-	for i, segment := range binding.PathTemplate.Segments() {
+	for i, segment := range segments {
 		if segment.Variable() == nil {
 			continue
 		}
@@ -209,7 +211,7 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
-	template, err := constructTemplate(method, binding.PathTemplate.Segments()[:lastVarIndex+1])
+	template, err := constructTemplate(method, segments[:lastVarIndex+1])
 	if err != nil {
 		return nil, err
 	}
