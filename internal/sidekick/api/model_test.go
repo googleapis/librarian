@@ -20,6 +20,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func allowUnexported() cmp.Option {
+	return cmp.AllowUnexported(
+		PathSegment{},
+		PathTemplate{},
+		PathVariable{},
+	)
+}
+
 func TestRoutingCombosSimpleOr(t *testing.T) {
 	v1 := NewTestRoutingInfoVariant("v1")
 	v2 := NewTestRoutingInfoVariant("v2")

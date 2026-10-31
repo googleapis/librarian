@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
@@ -343,7 +344,7 @@ func TestServiceAnnotations(t *testing.T) {
 	// Codec.
 	serviceAnn := service.Codec.(*serviceAnnotations)
 	wantMethodList := []*api.Method{method, emptyMethod}
-	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), cmp.AllowUnexported(api.PathTemplate{}, api.PathSegment{}, api.PathVariable{}), cmpopts.IgnoreFields(api.Method{}, "Model", "Service", "SourceService")); diff != "" {
+	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Model", "Service", "SourceService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -361,7 +362,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "crate::model::Response",
 	}
-	if diff := cmp.Diff(wantMethod, method.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), cmp.AllowUnexported(api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff(wantMethod, method.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -379,7 +380,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "()",
 	}
-	if diff := cmp.Diff(wantMethod, emptyMethod.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), cmp.AllowUnexported(api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff(wantMethod, emptyMethod.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -48,10 +48,10 @@ func TestPathTemplate(t *testing.T) {
 		},
 		verb: "verb",
 	}
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathTemplate{}, PathSegment{}, PathVariable{})); diff != "" {
+	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(want.segments, got.Segments(), cmp.AllowUnexported(PathSegment{}, PathVariable{})); diff != "" {
+	if diff := cmp.Diff(want.segments, got.Segments(), allowUnexported()); diff != "" {
 		t.Errorf("Segments() mismatch (-want +got):\n%s", diff)
 	}
 	if got.Verb() != want.verb {
