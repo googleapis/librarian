@@ -17,7 +17,7 @@
 //
 // Usage:
 //
-//	coverage [-target=N] <packages...>
+//	coverage [-target=N] [-summary-output=FILE] <packages...>
 //
 // It runs "go test -race -coverprofile -covermode=atomic" on the given
 // packages, then uses "go tool cover -func" to extract the total coverage
@@ -25,7 +25,8 @@
 // default target is 80%. Components with a different target are listed below.
 // The -target flag overrides both the default and per-component targets.
 //
-// In GitHub Actions, a per-package report is appended to the job summary.
+// The -summary-output flag appends a Markdown report of per-package coverage
+// to FILE, such as $GITHUB_STEP_SUMMARY in GitHub Actions.
 package main
 
 import (
@@ -54,8 +55,9 @@ var targets = map[string]float64{}
 
 func main() {
 	targetFlag := flag.Float64("target", 0, "override coverage target (0 means use per-package default)")
+	summaryOutput := flag.String("summary-output", "", "append a Markdown coverage report to this file")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "usage: coverage [-target=N] <packages...>\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "usage: coverage [-target=N] [-summary-output=FILE] <packages...>\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -77,8 +79,10 @@ func main() {
 		log.Fatalf("coverage: %v", err)
 	}
 	fmt.Printf("Coverage: %.1f%% (target: %.0f%%)\n", coverage, target)
-	if err := writeSummary(coverage, target); err != nil {
-		log.Printf("step summary: %v", err)
+	if *summaryOutput != "" {
+		if err := writeSummary(*summaryOutput, coverage, target); err != nil {
+			log.Printf("summary: %v", err)
+		}
 	}
 	if coverage < target {
 		fmt.Printf("FAIL: coverage %.1f%% is below target %.0f%%\n", coverage, target)
@@ -145,12 +149,8 @@ func parseTotalCoverage(out string) (float64, error) {
 }
 
 // writeSummary appends a Markdown report of total and per-package statement
-// coverage to the file named by GITHUB_STEP_SUMMARY, if set.
-func writeSummary(total, target float64) error {
-	name := os.Getenv("GITHUB_STEP_SUMMARY")
-	if name == "" {
-		return nil
-	}
+// coverage to the named file.
+func writeSummary(name string, total, target float64) error {
 	profiles, err := cover.ParseProfiles("coverage.out")
 	if err != nil {
 		return err
@@ -173,6 +173,7 @@ func writeSummary(total, target float64) error {
 	for _, pkg := range slices.Sorted(maps.Keys(stmts)) {
 		fmt.Fprintf(&sb, "| `%s` | %.1f%% |\n", pkg, 100*float64(covered[pkg])/float64(stmts[pkg]))
 	}
+	sb.WriteString("\n")
 	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err

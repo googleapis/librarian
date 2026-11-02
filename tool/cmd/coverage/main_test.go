@@ -108,8 +108,7 @@ example.com/empty/e.go:1.1,2.2 0 0
 	if err := os.WriteFile(summary, []byte("existing\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("GITHUB_STEP_SUMMARY", summary)
-	if err := writeSummary(62.5, 80); err != nil {
+	if err := writeSummary(summary, 62.5, 80); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(summary)
@@ -120,17 +119,37 @@ example.com/empty/e.go:1.1,2.2 0 0
 		"### Coverage: 62.5% (target: 80%)\n\n" +
 		"| Package | Coverage |\n|---|---:|\n" +
 		"| `example.com/a` | 75.0% |\n" +
-		"| `example.com/b` | 50.0% |\n"
+		"| `example.com/b` | 50.0% |\n\n"
 	if diff := cmp.Diff(want, string(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestWriteSummary_Unset(t *testing.T) {
-	t.Chdir(t.TempDir())
-	t.Setenv("GITHUB_STEP_SUMMARY", "")
-	// No coverage.out exists, so reading it would fail.
-	if err := writeSummary(100, 80); err != nil {
-		t.Fatal(err)
+func TestWriteSummary_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		profile string
+		output  func(t *testing.T) string
+	}{
+		{
+			name:    "malformed profile",
+			profile: "mode: atomic\nnot a block\n",
+			output:  func(t *testing.T) string { return filepath.Join(t.TempDir(), "summary.md") },
+		},
+		{
+			name:    "output is a directory",
+			profile: "mode: atomic\n",
+			output:  func(t *testing.T) string { return t.TempDir() },
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			if err := os.WriteFile("coverage.out", []byte(test.profile), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := writeSummary(test.output(t), 100, 80); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
 	}
 }

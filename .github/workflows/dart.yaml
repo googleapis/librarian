@@ -36,4 +36,4 @@ jobs:
       - name: Verify git is available
         run: git --version
       - name: Run tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/sidekick/dart ./internal/librarian/dart
+        run: go run ./tool/cmd/coverage -summary-output="$GITHUB_STEP_SUMMARY" ./internal/sidekick/dart ./internal/librarian/dart
