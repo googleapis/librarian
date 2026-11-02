@@ -33,7 +33,7 @@ jobs:
           go run ./cmd/librarian install go
       - name: Run tests and check coverage
         run: |
-          go run ./tool/cmd/coverage -target=80 \
+          go run ./tool/cmd/coverage -summary-output="$GITHUB_STEP_SUMMARY" -target=80 \
             $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|php|python|ruby|rust|swift)|internal/sidekick|internal/sample|internal/testhelper')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
