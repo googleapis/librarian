@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -171,12 +172,12 @@ func TestUpdateLibrary_BuildFailureDoesNotLeakLastGeneratedCommit(t *testing.T) 
 	}
 
 	wantErrors := []string{"Error while building " + failingLibraryID}
-	if strings.Join(prContent.Errors, "|") != strings.Join(wantErrors, "|") {
-		t.Errorf("prContent.Errors = %v, want %v", prContent.Errors, wantErrors)
+	if diff := cmp.Diff(wantErrors, prContent.Errors); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantSuccesses := []string{"Generated " + succeedingLibraryID}
-	if strings.Join(prContent.Successes, "|") != strings.Join(wantSuccesses, "|") {
-		t.Errorf("prContent.Successes = %v, want %v", prContent.Successes, wantSuccesses)
+	if diff := cmp.Diff(wantSuccesses, prContent.Successes); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Only the succeeding library has a commit on top of the initial state.
