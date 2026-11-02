@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3](https://github.com/googleapis/librarian/compare/v0.1.2...v0.1.3) (2026-11-02)
+
+
+### Bug Fixes
+
+* restore lastGeneratedCommit when a library build fails in update-apis ([#7885](https://github.com/googleapis/librarian/issues/7885)) ([830dcd4](https://github.com/googleapis/librarian/commit/830dcd4cdec8a91ef4f1454f6c6b8f1165f14cc8))
+* update dependencies ([#7881](https://github.com/googleapis/librarian/issues/7881)) ([1444cf4](https://github.com/googleapis/librarian/commit/1444cf40a1f58faf4fff55b00fb4ec8fb82af156))
+* variaible shadowing bug in secretsClient ([#7098](https://github.com/googleapis/librarian/issues/7098)) ([a89c5b0](https://github.com/googleapis/librarian/commit/a89c5b05619901d402759424e84bf4644094daa6))
+
 ## [0.1.2](https://github.com/googleapis/librarian/compare/v0.1.0...v0.1.2) (2026-06-18)
 
 
