@@ -947,12 +947,16 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 	req := api.NewTestMessage("Req").WithPackage("google.cloud.test.v1")
 	resp := api.NewTestMessage("Resp").WithPackage("google.cloud.test.v1")
 
-	unaryMethod := api.NewTestMethod("Unary").
-		WithInput(req).
-		WithOutput(resp).
-		WithVerb("GET").
-		WithPathTemplate(api.NewPathTemplateBuilder().Build())
-	streamMethod := api.NewTestMethod("Stream").WithInput(req).WithOutput(resp).WithBidiStreaming()
+	newUnaryMethod := func() *api.Method {
+		return api.NewTestMethod("Unary").
+			WithInput(req).
+			WithOutput(resp).
+			WithVerb("GET").
+			WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	}
+	newStreamMethod := func() *api.Method {
+		return api.NewTestMethod("Stream").WithInput(req).WithOutput(resp).WithBidiStreaming()
+	}
 
 	for _, test := range []struct {
 		name    string
@@ -962,13 +966,13 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 	}{
 		{
 			name:    "unary method with default http returns no grpc root types",
-			methods: []*api.Method{unaryMethod},
+			methods: []*api.Method{newUnaryMethod()},
 			options: map[string]string{},
 			want:    nil,
 		},
 		{
 			name:    "unary method with default_transport grpc returns root types",
-			methods: []*api.Method{unaryMethod},
+			methods: []*api.Method{newUnaryMethod()},
 			options: map[string]string{
 				"default-transport": "grpc",
 			},
@@ -976,13 +980,13 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 		},
 		{
 			name:    "streaming method returns root types",
-			methods: []*api.Method{streamMethod},
+			methods: []*api.Method{newStreamMethod()},
 			options: map[string]string{},
 			want:    []string{req.ID, resp.ID},
 		},
 		{
 			name:    "mixed methods with default http returns only streaming root types",
-			methods: []*api.Method{unaryMethod, streamMethod},
+			methods: []*api.Method{newUnaryMethod(), newStreamMethod()},
 			options: map[string]string{},
 			want:    []string{req.ID, resp.ID},
 		},

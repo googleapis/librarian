@@ -61,7 +61,7 @@ func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 			InputTypeID:     svcMixin.InputTypeID,
 			OutputTypeID:    svcMixin.OutputTypeID,
 			ReturnsEmpty:    svcMixin.ReturnsEmpty,
-			PathInfo:        svcMixin.PathInfo,
+			PathInfo:        clonePathInfo(svcMixin.PathInfo),
 			Pagination:      svcMixin.Pagination,
 			Routing:         svcMixin.Routing,
 			AutoPopulated:   svcMixin.AutoPopulated,
@@ -73,6 +73,28 @@ func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 		model.AddMethod(method)
 	}
 	return nil
+}
+
+func clonePathInfo(pi *api.PathInfo) *api.PathInfo {
+	if pi == nil {
+		return nil
+	}
+	var bindings []*api.PathBinding
+	if pi.Bindings != nil {
+		bindings = make([]*api.PathBinding, len(pi.Bindings))
+		for i, b := range pi.Bindings {
+			bindings[i] = api.NewPathBindingBuilder().
+				WithVerb(b.Verb()).
+				WithPathTemplate(b.PathTemplate()).
+				WithQueryParameterMap(b.QueryParameters()).
+				WithTargetResource(b.TargetResource()).
+				Build()
+		}
+	}
+	return &api.PathInfo{
+		Bindings:      bindings,
+		BodyFieldPath: pi.BodyFieldPath,
+	}
 }
 
 func lroFindPoller(method *api.Method, model *api.API, discoveryConfig *api.Discovery) (*api.Method, []string) {

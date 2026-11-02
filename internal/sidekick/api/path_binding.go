@@ -64,6 +64,11 @@ func (b *PathBinding) Codec() any {
 }
 
 // SetAnnotations sets the language-specific annotations for the path binding.
+//
+// It panics if the annotations have already been set.
 func (b *PathBinding) SetAnnotations(codec any) {
+	if b.codec != nil {
+		panic("PathBinding.SetAnnotations called more than once")
+	}
 	b.codec = codec
 }
