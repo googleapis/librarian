@@ -237,6 +237,10 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 		return err
 	}
 
+	// Remember the previous value so that we can restore it if the build fails.
+	// The in-memory state is shared across libraries, so a stale value would
+	// otherwise be persisted by the next successful library.
+	previousGeneratedCommit := library.LastGeneratedCommit
 	library.LastGeneratedCommit = commits[0].Hash.String()
 	if err := savePipelineState(state); err != nil {
 		return err
@@ -273,7 +277,8 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 	}
 
 	if buildErr != nil {
-		addErrorToPullRequest(prContent, library.Id, err, "building")
+		addErrorToPullRequest(prContent, library.Id, buildErr, "building")
+		library.LastGeneratedCommit = previousGeneratedCommit
 		if err = languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err
 		}
