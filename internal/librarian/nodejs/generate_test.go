@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 	"syscall"
@@ -1030,64 +1029,66 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestGenerate_ParallelAPIs(t *testing.T) {
-	previousGOMAXPROCS := runtime.GOMAXPROCS(max(runtime.GOMAXPROCS(0), 2))
-	t.Cleanup(func() { runtime.GOMAXPROCS(previousGOMAXPROCS) })
-	tempBin := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", tempBin)
-	nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
-	if err := os.MkdirAll(nodeBinDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	createFakeSystemExecutable(t, "protoc")
-	signalDir := t.TempDir()
-	generatorScript := fmt.Sprintf(`#!/bin/sh
-touch "%[1]s/$$"
-attempt=0
-while [ "$(ls "%[1]s" | wc -l)" -lt 2 ]; do
-  attempt=$((attempt + 1))
-  if [ "$attempt" -ge 250 ]; then exit 1; fi
-  sleep 0.02
-done
-`, signalDir)
-	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "gapic-generator-typescript"), generatorScript)
-	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "gapic-node-processing"), "#!/bin/sh\nexit 0\n")
-	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "compileProtos"), "#!/bin/sh\nexit 0\n")
-	library := Fill(&config.Library{
-		Name:   "google-cloud-secretmanager",
-		Output: filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager"),
-		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
-			{Path: "google/cloud/secretmanager/v1beta2"},
-		},
-	})
+func TestGenerate_APIs(t *testing.T) {
+	setupFakeNodejsTools(t)
 	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
-	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
-		t.Fatal(err)
-	}
-	entries, err := os.ReadDir(signalDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(2, len(entries)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name string
+		apis []*config.API
+		keep []string
+	}{
+		{name: "no APIs", keep: []string{".repo-metadata.json", "README.md"}},
+		{name: "only skipped v1small API", apis: []*config.API{{Path: "google/cloud/compute/v1small"}}, keep: []string{".repo-metadata.json", "README.md"}},
+		{name: "single API", apis: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
+		{name: "multiple APIs", apis: []*config.API{{Path: "google/cloud/secretmanager/v1"}, {Path: "google/cloud/secretmanager/v1beta2"}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
+			if err := os.MkdirAll(outDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			owlBotFile := filepath.Join(outDir, ".OwlBot.yaml")
+			if err := os.WriteFile(owlBotFile, []byte("deep-copy-regex:\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			library := Fill(&config.Library{Name: "google-cloud-secretmanager", Output: outDir, APIs: test.apis, Keep: test.keep})
+			if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(owlBotFile); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("expected .OwlBot.yaml to be removed by post-processor, got err = %v", err)
+			}
+		})
 	}
 }
 
-func TestGenerate_ParallelAPIs_Error(t *testing.T) {
-	createFakeSystemExecutable(t, "protoc")
-	library := Fill(&config.Library{
-		Name:   "google-cloud-secretmanager",
-		Output: filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager"),
-		APIs: []*config.API{
-			{Path: "google/cloud/compute/v1small"},
-			{Path: "google/cloud/nonexistent/v1"},
-		},
-	})
+func TestGenerate_APIs_Error(t *testing.T) {
+	setupFakeNodejsTools(t)
 	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
-	gotErr := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
-	if !errors.Is(gotErr, fs.ErrNotExist) {
-		t.Errorf("Generate() error = %v, want %v", gotErr, fs.ErrNotExist)
+	for _, test := range []struct {
+		name string
+		apis []*config.API
+	}{
+		{
+			name: "one of multiple APIs fails",
+			apis: []*config.API{{Path: "google/cloud/secretmanager/v1"}, {Path: "google/cloud/nonexistent/v1"}},
+		},
+		{
+			name: "all APIs fail",
+			apis: []*config.API{{Path: "google/cloud/nonexistent/v1"}, {Path: "google/cloud/nonexistent/v2"}},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
+			library := Fill(&config.Library{Name: "google-cloud-secretmanager", Output: outDir, APIs: test.apis})
+			gotErr := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+			if !errors.Is(gotErr, fs.ErrNotExist) {
+				t.Errorf("Generate() error = %v, want %v", gotErr, fs.ErrNotExist)
+			}
+			if _, err := os.Stat(filepath.Join(outDir, ".repo-metadata.json")); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("expected post-processor not to run on error, but .repo-metadata.json stat err = %v", err)
+			}
+		})
 	}
 }
 
@@ -2134,4 +2135,18 @@ func createFakeSystemExecutable(t *testing.T, binaryName string) string {
 	testhelper.WriteExecutable(t, fakePath, "#!/bin/sh\nexit 0\n")
 	t.Setenv("PATH", tempDir+string(filepath.ListSeparator)+os.Getenv("PATH"))
 	return fakePath
+}
+
+func setupFakeNodejsTools(t *testing.T) {
+	t.Helper()
+	tempBin := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", tempBin)
+	nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
+	if err := os.MkdirAll(nodeBinDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	createFakeSystemExecutable(t, "protoc")
+	for _, tool := range []string{"gapic-generator-typescript", "gapic-node-processing", "compileProtos"} {
+		testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, tool), "#!/bin/sh\nexit 0\n")
+	}
 }
