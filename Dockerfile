@@ -35,6 +35,7 @@ WORKDIR /app
 
 RUN apt update
 RUN apt-get install -y unzip \
+  jq \
   gnupg \
   apt-transport-https \
   ca-certificates \
