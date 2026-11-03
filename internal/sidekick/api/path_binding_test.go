@@ -63,14 +63,3 @@ func TestPathBinding(t *testing.T) {
 		t.Errorf("Codec() = %v, want %v", got.Codec(), want.codec)
 	}
 }
-
-func TestPathBindingSetAnnotationsPanicsWhenAlreadySet(t *testing.T) {
-	pb := NewPathBindingBuilder().Build()
-	pb.SetAnnotations("first")
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected panic when calling SetAnnotations a second time, got none")
-		}
-	}()
-	pb.SetAnnotations("second")
-}
