@@ -270,7 +270,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	if method.HasRouting() {
 		routingParams = c.routingParamsFromRouting(method.Routing)
 	} else if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
-		routingParams = c.routingParamsFromPathTemplate(method.PathInfo.Bindings[0].PathTemplate)
+		routingParams = c.routingParamsFromPathTemplate(method.PathInfo.Bindings[0].PathTemplate())
 	}
 
 	// In Protobuf APIs (such as Storage Control or pure gRPC services), some RPC
@@ -298,11 +298,11 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			isHTTPBodyRequest = true
 		}
 		for _, binding := range method.PathInfo.Bindings {
-			pVars, err := c.pathVariables(method.InputType, binding.PathTemplate)
+			pVars, err := c.pathVariables(method.InputType, binding.PathTemplate())
 			if err != nil {
 				return err
 			}
-			pExpr := pathExpression(binding.PathTemplate)
+			pExpr := pathExpression(binding.PathTemplate())
 			qParams := language.QueryParams(method, binding)
 			// With `body: "*"` the request body only contains the fields not bound by the path
 			// template.
@@ -313,7 +313,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 				}
 			}
 			pathBindings = append(pathBindings, &pathBindingAnnotations{
-				HTTPMethod:        binding.Verb,
+				HTTPMethod:        binding.Verb(),
 				PathExpression:    pExpr,
 				PathVariables:     pVars,
 				QueryParams:       qParams,
