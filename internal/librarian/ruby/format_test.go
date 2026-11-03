@@ -16,6 +16,7 @@ package ruby
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,6 +29,9 @@ import (
 func TestFormat(t *testing.T) {
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
+	if err := Format(t.Context()); err != nil {
+		t.Fatal(err)
+	}
 	installDir := filepath.Join(binDir, "ruby_tools")
 	configPath := filepath.Join(installDir, "gems", "gapic-generator-cloud-0.52.0", "cloud-rubocop.yml")
 	for _, dir := range []string{filepath.Dir(configPath), filepath.Join(installDir, "bin")} {
@@ -49,21 +53,32 @@ done
 `)
 	outDir := t.TempDir()
 	want := map[string]string{
-		"lib/foo.rb":       "x = 1\n# formatted\n",
-		"lib/foo_pb.rb":    "x = 1\n",
-		"lib/kept.rb":      "x = 1\n",
-		"test/foo_test.rb": "x = 1\n",
+		"foo/.toys.rb":           "x = 1\n# formatted\n",
+		"foo/Gemfile":            "x = 1\n# formatted\n",
+		"foo/snippets/Gemfile":   "x = 1\n# formatted\n",
+		"foo/lib/foo.rb":         "x = 1\n# formatted\n",
+		"foo/proto_docs/foo.rb":  "x = 1\n# formatted\n",
+		"foo/snippets/foo.rb":    "x = 1\n# formatted\n",
+		"foo/lib/foo_pb.rb":      "x = 1\n",
+		"foo/lib/kept.rb":        "x = 1\n",
+		"foo/lib/foo/version.rb": "x = 1\n",
+		"foo/test/foo_test.rb":   "x = 1\n",
+		"bar/lib/bar.rb":         "x = 1\n# formatted\n",
 	}
 	for relPath := range want {
-		full := filepath.Join(outDir, relPath)
-		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+		filePath := filepath.Join(outDir, relPath)
+		if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(full, []byte("x = 1\n"), 0o644); err != nil {
+		if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := Format(t.Context(), &config.Library{Name: "foo", Output: outDir, Keep: []string{"lib/kept.rb"}}); err != nil {
+	libraries := []*config.Library{
+		{Name: "foo", Output: filepath.Join(outDir, "foo"), Keep: []string{"lib/kept.rb"}},
+		{Name: "bar", Output: filepath.Join(outDir, "bar")},
+	}
+	if err := Format(t.Context(), libraries...); err != nil {
 		t.Fatal(err)
 	}
 	got := make(map[string]string)
@@ -82,14 +97,34 @@ done
 func TestFormat_Error(t *testing.T) {
 	t.Setenv("LIBRARIAN_BIN", t.TempDir())
 	outDir := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(outDir, "lib"), 0o755); err != nil {
+	filePath := filepath.Join(outDir, "lib", "foo.rb")
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(outDir, "lib", "foo.rb"), []byte("x = 1\n"), 0o644); err != nil {
+	if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	gotErr := Format(t.Context(), &config.Library{Name: "foo", Output: outDir})
-	if !errors.Is(gotErr, ErrRubocopConfigNotFound) {
-		t.Errorf("Format() error = %v, wantErr %v", gotErr, ErrRubocopConfigNotFound)
+	for _, test := range []struct {
+		name    string
+		output  string
+		wantErr error
+	}{
+		{
+			name:    "missing output directory",
+			output:  filepath.Join(outDir, "nonexistent"),
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name:    "missing rubocop config",
+			output:  outDir,
+			wantErr: ErrRubocopConfigNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotErr := Format(t.Context(), &config.Library{Name: "foo", Output: test.output})
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("Format() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
 	}
 }

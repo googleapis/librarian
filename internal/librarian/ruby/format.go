@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -65,8 +66,7 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 	configPath := matches[0]
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.SetLimit(runtime.GOMAXPROCS(0))
-	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
-		chunk := allFiles[i:min(i+maxFilesPerFormatBatch, len(allFiles))]
+	for chunk := range slices.Chunk(allFiles, maxFilesPerFormatBatch) {
 		group.Go(func() error {
 			return command.RunWithEnv(groupCtx, env, "rubocop", append([]string{"--cache", "false", "-a", "--fail-level", "E", "-c", configPath}, chunk...)...)
 		})
@@ -100,6 +100,10 @@ func isFormattableRubyFile(relSlash string) bool {
 		return true
 	}
 	dir, _, _ := strings.Cut(relSlash, "/")
-	return (dir == "lib" || dir == "proto_docs" || dir == "snippets") &&
-		strings.HasSuffix(relSlash, ".rb") && !strings.HasSuffix(relSlash, "_pb.rb")
+	switch dir {
+	case "lib", "proto_docs", "snippets":
+		return strings.HasSuffix(relSlash, ".rb") && !strings.HasSuffix(relSlash, "_pb.rb")
+	default:
+		return false
+	}
 }

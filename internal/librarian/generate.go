@@ -317,7 +317,10 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		if err := g.Wait(); err != nil {
 			return err
 		}
-		return ruby.Format(ctx, libraries...)
+		if err := ruby.Format(ctx, libraries...); err != nil {
+			return fmt.Errorf("format ruby libraries (%s): %w", cfg.Language, err)
+		}
+		return nil
 	case config.LanguageRust:
 		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
