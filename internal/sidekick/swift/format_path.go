@@ -63,8 +63,7 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 	current := message
 	var lastField *api.Field
 	var jsonNames []string
-	fieldPath := variable.FieldPath()
-	for _, v := range fieldPath {
+	for _, v := range variable.FieldPath() {
 		field, err := lookupField(current, v)
 		if err != nil {
 			return nil, err
@@ -90,7 +89,7 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		case api.TypezString:
 			test = fmt.Sprintf("!%s.isEmpty", name)
 		case api.TypezBytes:
-			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez.String(), message.ID, strings.Join(fieldPath, "."))
+			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez.String(), message.ID, strings.Join(variable.FieldPath(), "."))
 		default:
 			test = ""
 		}
@@ -98,17 +97,16 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 	var matchingSegments []string
 	var templateString string
 	if lastField != nil && lastField.Typez == api.TypezString {
-		segments := variable.Segments()
-		matchingSegments = annotateSegments(segments, false, false)
-		if len(segments) > 0 {
-			templateString = strings.Join(segments, "/")
+		matchingSegments = annotateSegments(variable.Segments(), false, false)
+		if len(variable.Segments()) > 0 {
+			templateString = strings.Join(variable.Segments(), "/")
 		}
 	}
 	pathVar := &pathVariable{
 		Name:             name,
 		Expression:       expression.String(),
 		Test:             test,
-		FieldPath:        strings.Join(fieldPath, "."),
+		FieldPath:        strings.Join(variable.FieldPath(), "."),
 		JSONFieldPath:    strings.Join(jsonNames, "."),
 		MatchingSegments: matchingSegments,
 		TemplateString:   templateString,

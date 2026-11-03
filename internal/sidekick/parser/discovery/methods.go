@@ -84,14 +84,15 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		return nil, err
 	}
 
-	bindingBuilder := api.NewPathBindingBuilder().
-		WithVerb(input.HTTPMethod).
-		WithPathTemplate(path).
-		WithQueryParameters()
+	binding := &api.PathBinding{
+		Verb:            input.HTTPMethod,
+		PathTemplate:    path,
+		QueryParameters: map[string]bool{},
+	}
 	fieldNames := map[string]bool{}
 	for _, p := range input.Parameters {
 		if p.Location != "path" {
-			bindingBuilder.WithQueryParameter(p.Name)
+			binding.QueryParameters[p.Name] = true
 		}
 		prop := &property{
 			Name:   p.Name,
@@ -105,7 +106,6 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		requestMessage.Fields = append(requestMessage.Fields, field)
 		fieldNames[field.Name] = true
 	}
-	binding := bindingBuilder.Build()
 
 	// Methods without path parameters don't get an overload. Typically one of
 	// the query parameter is "required" for them. Otherwise the request is some

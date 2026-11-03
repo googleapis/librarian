@@ -154,8 +154,8 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "wildcard body with multiple bindings",
 			bodyFieldPath: "*",
 			bindings: []*api.PathBinding{
-				api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()).Build(),
-				api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("secret", "name").Build()).Build(),
+				api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()),
+				api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("secret", "name").Build()),
 			},
 			want:                  [][]string{{"parent"}, {"secret.name"}},
 			wantHasOmitted:        true,
@@ -165,7 +165,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "wildcard body without path variables",
 			bodyFieldPath: "*",
 			bindings: []*api.PathBinding{
-				api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("secrets").Build()).Build(),
+				api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("secrets").Build()),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -175,7 +175,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "named body field",
 			bodyFieldPath: "secret",
 			bindings: []*api.PathBinding{
-				api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()).Build(),
+				api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -185,7 +185,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "no body",
 			bodyFieldPath: "",
 			bindings: []*api.PathBinding{
-				api.NewPathBindingBuilder().WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()).Build(),
+				api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -525,21 +525,15 @@ func TestAnnotateMethod_MultipleBindings(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithBindings(
-			api.NewPathBindingBuilder().
-				WithVerb("GET").
-				WithPathTemplate(api.NewPathTemplateBuilder().
-					WithLiteral("v1").
-					WithVariableNamed("name").
-					Build()).
-				Build(),
-			api.NewPathBindingBuilder().
-				WithVerb("POST").
-				WithPathTemplate(api.NewPathTemplateBuilder().
-					WithLiteral("v1").
-					WithVariableNamed("project").
-					WithLiteral("resources").
-					Build()).
-				Build(),
+			api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().
+				WithLiteral("v1").
+				WithVariableNamed("name").
+				Build()),
+			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
+				WithLiteral("v1").
+				WithVariableNamed("project").
+				WithLiteral("resources").
+				Build()),
 		)
 	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})

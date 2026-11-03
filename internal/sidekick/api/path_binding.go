@@ -14,8 +14,6 @@
 
 package api
 
-import "maps"
-
 // PathBinding is a binding of a path to a method.
 type PathBinding struct {
 	// HTTP Verb.
@@ -26,49 +24,14 @@ type PathBinding struct {
 	// - PUT
 	// - DELETE
 	// - PATCH
-	verb string
+	Verb string
 	// The path broken by components.
-	pathTemplate *PathTemplate
+	PathTemplate *PathTemplate
 	// Query parameter fields.
-	queryParameters map[string]bool
-	// targetResource contains the results of the resource name identification.
+	QueryParameters map[string]bool
+	// TargetResource contains the results of the resource name identification.
 	// This helps identify which resource this path is likely targeting.
-	targetResource *TargetResource
+	TargetResource *TargetResource
 	// Language specific annotations.
-	codec any
-}
-
-// Verb returns the HTTP verb for the path binding.
-func (b *PathBinding) Verb() string {
-	return b.verb
-}
-
-// PathTemplate returns the path template for the path binding.
-func (b *PathBinding) PathTemplate() *PathTemplate {
-	return b.pathTemplate
-}
-
-// QueryParameters returns the query parameter fields for the path binding.
-func (b *PathBinding) QueryParameters() map[string]bool {
-	return maps.Clone(b.queryParameters)
-}
-
-// TargetResource returns the target resource identified for the path binding.
-func (b *PathBinding) TargetResource() *TargetResource {
-	return b.targetResource
-}
-
-// Codec returns the language-specific annotations for the path binding.
-func (b *PathBinding) Codec() any {
-	return b.codec
-}
-
-// SetAnnotations sets the language-specific annotations for the path binding.
-//
-// It panics if the annotations have already been set.
-func (b *PathBinding) SetAnnotations(codec any) {
-	if b.codec != nil {
-		panic("PathBinding.SetAnnotations called more than once")
-	}
-	b.codec = codec
+	Codec any
 }

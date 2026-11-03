@@ -22,7 +22,6 @@ import (
 
 func allowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
-		PathBinding{},
 		PathSegment{},
 		PathTemplate{},
 		PathVariable{},
@@ -164,17 +163,17 @@ func TestPathBindingHeuristic(t *testing.T) {
 	heuristic := &TargetResource{
 		FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
 	}
-	binding := NewPathBindingBuilder().
-		WithVerb("GET").
-		WithTargetResource(heuristic).
-		Build()
-
-	if binding.Verb() != "GET" {
-		t.Errorf("expected GET, got %s", binding.Verb())
+	binding := &PathBinding{
+		Verb:           "GET",
+		TargetResource: heuristic,
 	}
 
-	if binding.TargetResource().FieldPaths[0][0] != "project" {
-		t.Errorf("expected project, got %s", binding.TargetResource().FieldPaths[0][0])
+	if binding.Verb != "GET" {
+		t.Errorf("expected GET, got %s", binding.Verb)
+	}
+
+	if binding.TargetResource.FieldPaths[0][0] != "project" {
+		t.Errorf("expected project, got %s", binding.TargetResource.FieldPaths[0][0])
 	}
 }
 

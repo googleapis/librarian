@@ -35,10 +35,8 @@ func TestQueryParams(t *testing.T) {
 			api.NewTestField("used_in_path"),
 			api.NewTestField("used_in_body"),
 		)
-	binding := api.NewPathBindingBuilder().
-		WithVerb("GET").
-		WithQueryParameters("field1", "field2").
-		Build()
+	binding := api.NewTestPathBinding("GET", nil).
+		WithQueryParameters("field1", "field2")
 	method := api.NewTestMethod("Test").
 		WithID("..TestService.Test").
 		WithInput(request).

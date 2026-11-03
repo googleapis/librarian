@@ -1081,8 +1081,8 @@ func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
 		WithInput(requestMessage).
 		WithBodyFieldPath("*").
 		WithBindings(
-			api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()).Build(),
-			api.NewPathBindingBuilder().WithVerb("POST").WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("alternative_parent").Build()).Build(),
+			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()),
+			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("alternative_parent").Build()),
 		)
 
 	patchSecret := api.NewTestMethod("PatchSecret").
