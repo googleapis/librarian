@@ -48,7 +48,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
 func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
-	if binding.pathTemplate == nil {
+	if binding.pathTemplate == nil || binding.targetResource != nil {
 		return nil
 	}
 

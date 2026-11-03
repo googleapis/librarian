@@ -521,3 +521,37 @@ func TestIdentifyTargetResources_HeuristicsDisabled(t *testing.T) {
 		t.Errorf("IdentifyTargetResources(model, false) populated TargetResource %v, want nil", binding.TargetResource())
 	}
 }
+
+func TestIdentifyTargetResources_PreservesExistingTargetResource(t *testing.T) {
+	preset := &TargetResource{
+		FieldPaths: [][]string{{"custom"}},
+		Template:   ParseTemplateForTest("//custom.googleapis.com/items/{custom}"),
+	}
+	path := NewPathTemplateBuilder().
+		WithLiteral("projects").WithVariableNamed("project").
+		Build()
+	binding := NewPathBindingBuilder().
+		WithPathTemplate(path).
+		WithTargetResource(preset).
+		Build()
+	method := NewTestMethod("TestMethod").
+		WithInput(NewTestMessage("TestMethodRequest").WithFields(
+			NewTestField("project").
+				WithType(TypezString).
+				WithResourceReference("cloudresourcemanager.googleapis.com/Project"),
+		)).
+		WithBindings(binding)
+	service := NewTestService("TestService").
+		WithID(".google.cloud.compute.v1.Instances").
+		WithMethods(method)
+	model := NewTestAPI(nil, nil, []*Service{service}).WithName("test-api")
+	method.Model = model
+	service.Model = model
+
+	if err := IdentifyTargetResources(model, true); err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(preset, binding.TargetResource(), allowUnexported()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
