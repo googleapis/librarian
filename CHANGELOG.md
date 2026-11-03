@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.51.0](https://github.com/googleapis/librarian/compare/v0.50.0...v0.51.0) (2026-10-31)
+
+
+### Features
+
+* **dart:** support per-call retry ([#7787](https://github.com/googleapis/librarian/issues/7787)) ([24344b6](https://github.com/googleapis/librarian/commit/24344b6370454f4f7c8b8b650a7da786406515b3))
+* **sidekick/rust:** convert proto2 optionals ([#7867](https://github.com/googleapis/librarian/issues/7867)) ([c9629b6](https://github.com/googleapis/librarian/commit/c9629b60a8ee46654cff9b889d4aaaa6a2d7c691))
+* **sidekick:** mark `proto2` optional fields ([#7865](https://github.com/googleapis/librarian/issues/7865)) ([b91651f](https://github.com/googleapis/librarian/commit/b91651f66da138c46d2b027a4d8e05c2c3eef767))
+
+
+### Bug Fixes
+
+* **dart:** do not delete CHANGELOG.md ([#7817](https://github.com/googleapis/librarian/issues/7817)) ([4f027cb](https://github.com/googleapis/librarian/commit/4f027cb2384dde8a76c60a7bc66f492fb317bea6))
+* **dart:** restore package description position ([#7370](https://github.com/googleapis/librarian/issues/7370)) ([bac42b7](https://github.com/googleapis/librarian/commit/bac42b7b30a6d0c35cb3a932a42135f2fe6c348c))
+* **internal/librarian/dart:** set initial `librarian.yaml` version on `bump` ([#7808](https://github.com/googleapis/librarian/issues/7808)) ([9f9042e](https://github.com/googleapis/librarian/commit/9f9042ef8169e47682dbcfa4ac485358a8007c00))
+* **internal/serviceconfig:** add title for shopping merchant reviews v1 ([#7805](https://github.com/googleapis/librarian/issues/7805)) ([bf53ece](https://github.com/googleapis/librarian/commit/bf53ecebfd4c3dba61a8bfff5ae5251af2b8b3a2))
+* **internal/serviceconfig:** add title for shopping merchant reviews v1 ([#7805](https://github.com/googleapis/librarian/issues/7805)) ([affbeb4](https://github.com/googleapis/librarian/commit/affbeb413399398d9acde4f0ec14b6d5af0eaabd))
+* **sidekick/swift:** use fast WKTAny helpers ([#7826](https://github.com/googleapis/librarian/issues/7826)) ([b6c93c5](https://github.com/googleapis/librarian/commit/b6c93c5a0d5f06a596a48a8524dc4d94eb5668cf))
+
+## [0.50.0](https://github.com/googleapis/librarian/compare/v0.49.0...v0.50.0) (2026-10-27)
+
+
+### Features
+
+* **internal/librarian/java:** parallelize generation and formatting ([#7813](https://github.com/googleapis/librarian/issues/7813)) ([bf3b603](https://github.com/googleapis/librarian/commit/bf3b6034ee47d5f1776013e55b8c296438b10473))
+
+
+### Bug Fixes
+
+* **internal/librarian:** check explicit API paths in findExistingLibraryForAPI ([#7816](https://github.com/googleapis/librarian/issues/7816)) ([00ae0ab](https://github.com/googleapis/librarian/commit/00ae0ab2bf5e506433ccfcbb7030b1748e87abc8)), refs [#7814](https://github.com/googleapis/librarian/issues/7814)
+* **internal/sidekick/rust_prost:** map BytesValue ([#7798](https://github.com/googleapis/librarian/issues/7798)) ([7080958](https://github.com/googleapis/librarian/commit/70809581943f00b16202f7f31ee39e4fca8d3103))
+* **internal/sidekick/rust:** match prost-build module snake_case ([#7806](https://github.com/googleapis/librarian/issues/7806)) ([8790f1b](https://github.com/googleapis/librarian/commit/8790f1b3a1b8ee5407117ae475d5a09170cd3c5c))
+* **sidekick/swift:** support google.api.HttpBody in REST ([#7811](https://github.com/googleapis/librarian/issues/7811)) ([d427811](https://github.com/googleapis/librarian/commit/d427811683db9112a2c4ad5d9ae8779262bb6042))
+* **swift:** strip backticks from DocC xref links ([#7804](https://github.com/googleapis/librarian/issues/7804)) ([6a931c5](https://github.com/googleapis/librarian/commit/6a931c5a0bb6fb46f5d24a615031903638dd41f7)), refs [#751](https://github.com/googleapis/librarian/issues/751)
+
 ## [0.49.0](https://github.com/googleapis/librarian/compare/v0.48.0...v0.49.0) (2026-10-19)
 
 

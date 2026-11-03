@@ -31,14 +31,15 @@ func TestMakeServiceMethods(t *testing.T) {
 		WithID("..zones.get").
 		WithDocumentation("Returns the specified Zone resource.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
-			WithVariableNamed("zone")).
-		WithQueryParameters(map[string]bool{}).
+			WithVariableNamed("zone").
+			Build()).
+		WithQueryParameters().
 		WithBodyFieldPath("")
 	m1.InputTypeID = "..zones.getRequest"
 	m1.OutputTypeID = "..Zone"
@@ -48,16 +49,14 @@ func TestMakeServiceMethods(t *testing.T) {
 		WithID("..firewallPolicies.insert").
 		WithDocumentation("Creates a new policy in the specified project using the data included in the request.").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("locations").
 			WithLiteral("global").
-			WithLiteral("firewallPolicies")).
-		WithQueryParameters(map[string]bool{
-			"parentId":  true,
-			"requestId": true,
-		}).
+			WithLiteral("firewallPolicies").
+			Build()).
+		WithQueryParameters("parentId", "requestId").
 		WithBodyFieldPath("body")
 	m2.InputTypeID = "..firewallPolicies.insertRequest"
 	m2.OutputTypeID = "..Operation"
@@ -81,7 +80,7 @@ func TestMakeServiceMethods(t *testing.T) {
 			if got == nil {
 				t.Fatalf("expected method %s in the API model", test.id)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -102,7 +101,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 		WithID("..zoneOperations.delete").
 		WithDocumentation("Deletes the specified zone-specific Operations resource.").
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
@@ -110,14 +109,15 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 			WithLiteral("zones").
 			WithVariableNamed("zone").
 			WithLiteral("operations").
-			WithVariableNamed("operation")).
-		WithQueryParameters(map[string]bool{}).
+			WithVariableNamed("operation").
+			Build()).
+		WithQueryParameters().
 		WithBodyFieldPath("").
 		ReturnEmpty()
 	want.InputTypeID = "..zoneOperations.deleteRequest"
 	want.OutputTypeID = ".google.protobuf.Empty"
 	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -137,18 +137,19 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 		WithDocumentation("Moves an instance and its attached persistent disks from one zone to another. *Note*: Moving VMs or disks by using this method might cause unexpected behavior. For more information, see the [known issue](/compute/docs/troubleshooting/known-issues#moving_vms_or_disks_using_the_moveinstance_api_or_the_causes_unexpected_behavior). [Deprecated] This method is deprecated. See [moving instance across zones](/compute/docs/instances/moving-instance-across-zones) instead.").
 		WithDeprecated(true).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
-			WithLiteral("moveInstance")).
-		WithQueryParameters(map[string]bool{"requestId": true}).
+			WithLiteral("moveInstance").
+			Build()).
+		WithQueryParameters("requestId").
 		WithBodyFieldPath("body")
 	want.InputTypeID = "..projects.moveInstanceRequest"
 	want.OutputTypeID = "..Operation"
 	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "body"}}}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

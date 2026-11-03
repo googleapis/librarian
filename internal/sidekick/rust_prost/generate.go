@@ -17,13 +17,16 @@ package rust_prost
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	libconfig "github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -59,6 +62,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, template strin
 	}
 	defer os.RemoveAll(tmpDir)
 	if err := parsedTemplates.GenerateFromModel(tmpDir, model, generatedFiles); err != nil {
+		return err
+	}
+	if err := copyCargoLock(tmpDir); err != nil {
 		return err
 	}
 	// Collect source root directories needed as include paths for protoc / prost-build
@@ -107,4 +113,11 @@ func buildRS(ctx context.Context, pc *libconfig.Protoc, rootPaths []string, tmpD
 	}
 	env["PROTOC"] = protocPath
 	return command.RunInDirWithEnv(ctx, tmpDir, env, command.Cargo, "build", "--features", "_generate-protos")
+}
+
+func copyCargoLock(tmpDir string) error {
+	if _, err := os.Stat("Cargo.lock"); errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	return filesystem.CopyFile("Cargo.lock", filepath.Join(tmpDir, "Cargo.lock"))
 }

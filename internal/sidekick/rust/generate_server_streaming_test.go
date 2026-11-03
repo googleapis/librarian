@@ -41,7 +41,7 @@ func TestGenerateServerStreaming(t *testing.T) {
 		WithOutput(response).
 		WithServerSideStreaming().
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 		WithAutoPopulated(requestID)
 	service := api.NewTestService("Echo").WithPackage("test.v1").WithMethods(serverMethod)
 
@@ -356,7 +356,7 @@ func TestGenerateGrpcClientServerStreaming(t *testing.T) {
 		WithOutput(response).
 		WithServerSideStreaming().
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("Echo").WithPackage("test.v1").WithMethods(serverMethod)
 
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})

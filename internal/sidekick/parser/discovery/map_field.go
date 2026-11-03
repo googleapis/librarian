@@ -48,7 +48,7 @@ func maybeMapOfObjectField(model *api.API, message *api.Message, input *property
 		JSONName:      input.Name,
 		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
 		Documentation: input.Schema.Description,
-		Typez:         api.TypezMessage,
+		Typez:         api.TypezMap,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
 		Map:           true,
@@ -70,7 +70,7 @@ func maybeMapOfEnumField(model *api.API, message *api.Message, input *property) 
 		JSONName:      input.Name,
 		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
 		Documentation: input.Schema.Description,
-		Typez:         api.TypezMessage,
+		Typez:         api.TypezMap,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
 		Map:           true,
@@ -89,7 +89,7 @@ func maybeMapOfPrimitiveField(model *api.API, message *api.Message, input *prope
 		JSONName:      input.Name,
 		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
 		Documentation: input.Schema.Description,
-		Typez:         api.TypezMessage,
+		Typez:         api.TypezMap,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
 		Map:           true,
@@ -97,9 +97,9 @@ func maybeMapOfPrimitiveField(model *api.API, message *api.Message, input *prope
 	return field, nil
 }
 
-func insertMapType(model *api.API, valueTypez api.Typez, valueTypezId string) string {
-	id := fmt.Sprintf("$map<string, %s>", valueTypezId)
-	if model.Message(id) != nil {
+func insertMapType(model *api.API, valueTypez api.Typez, valueTypezID string) string {
+	id := fmt.Sprintf("$map<string, %s>", valueTypezID)
+	if model.Map(id) != nil {
 		return id
 	}
 	key := &api.Field{
@@ -112,16 +112,13 @@ func insertMapType(model *api.API, valueTypez api.Typez, valueTypezId string) st
 		Name:    "value",
 		ID:      fmt.Sprintf("%s.value", id),
 		Typez:   valueTypez,
-		TypezID: valueTypezId,
+		TypezID: valueTypezID,
 	}
-	message := &api.Message{
-		Name:          id,
-		ID:            id,
-		Documentation: id,
-		Package:       "$",
-		IsMap:         true,
-		Fields:        []*api.Field{key, value},
+	mapEntity := &api.Map{
+		ID:    id,
+		Key:   key,
+		Value: value,
 	}
-	model.AddMessage(message)
+	model.AddMap(mapEntity)
 	return id
 }

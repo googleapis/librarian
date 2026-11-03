@@ -49,7 +49,7 @@ func TestBuildCodec(t *testing.T) {
 			library: &config.Library{
 				Dart: &config.DartPackage{},
 			},
-			want: map[string]string{},
+			want: map[string]string{"version": "0.1.0"},
 		},
 		{
 			name: "dependencies",
@@ -60,6 +60,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"dependencies": "http: ^1.3.0",
+				"version":      "0.1.0",
 			},
 		},
 		{
@@ -71,6 +72,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"dev-dependencies": "test: ^1.0.0",
+				"version":          "0.1.0",
 			},
 		},
 		{
@@ -82,6 +84,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"extra-imports": "package:googleapis_auth/auth.dart",
+				"version":       "0.1.0",
 			},
 		},
 		{
@@ -93,6 +96,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"library-path-override": "lib/custom.dart",
+				"version":               "0.1.0",
 			},
 		},
 		{
@@ -102,6 +106,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"not-for-publication": "true",
+				"version":             "0.1.0",
 			},
 		},
 		{
@@ -113,6 +118,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"part-file": "part 'src/common.dart';",
+				"version":   "0.1.0",
 			},
 		},
 		{
@@ -124,6 +130,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"readme-after-title-text": "**Note:** This package is experimental.",
+				"version":                 "0.1.0",
 			},
 		},
 		{
@@ -135,6 +142,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"readme-quickstart-text": "Run `dart pub add` to install this package.",
+				"version":                "0.1.0",
 			},
 		},
 		{
@@ -146,6 +154,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"repository-url": "https://github.com/googleapis/google-cloud-dart",
+				"version":        "0.1.0",
 			},
 		},
 		{
@@ -161,6 +170,7 @@ func TestBuildCodec(t *testing.T) {
 			want: map[string]string{
 				"package:googleapis_auth": "^2.0.0",
 				"package:http":            "^1.3.0",
+				"version":                 "0.1.0",
 			},
 		},
 		{
@@ -176,6 +186,7 @@ func TestBuildCodec(t *testing.T) {
 			want: map[string]string{
 				"prefix:google.protobuf": "pb",
 				"prefix:google.api":      "api",
+				"version":                "0.1.0",
 			},
 		},
 		{
@@ -191,6 +202,7 @@ func TestBuildCodec(t *testing.T) {
 			want: map[string]string{
 				"proto:google.api":      "package:google_cloud_api/api.dart",
 				"proto:google.protobuf": "package:protobuf/protobuf.dart",
+				"version":               "0.1.0",
 			},
 		},
 		{
@@ -202,6 +214,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"supports-sse": "true",
+				"version":      "0.1.0",
 			},
 		},
 		{
@@ -279,7 +292,7 @@ func TestBuildCodec(t *testing.T) {
 					Protos:   map[string]string{},
 				},
 			},
-			want: map[string]string{},
+			want: map[string]string{"version": "0.1.0"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -335,7 +348,7 @@ func TestToModelConfig(t *testing.T) {
 					},
 					ActiveRoots: []string{"googleapis"},
 				},
-				Codec:    map[string]string{},
+				Codec:    map[string]string{"version": "0.1.0"},
 				Override: api.ModelOverride{},
 			},
 		},
@@ -355,7 +368,7 @@ func TestToModelConfig(t *testing.T) {
 					},
 					ActiveRoots: []string{"googleapis"},
 				},
-				Codec:    map[string]string{},
+				Codec:    map[string]string{"version": "0.1.0"},
 				Override: api.ModelOverride{},
 			},
 		},
@@ -380,7 +393,7 @@ func TestToModelConfig(t *testing.T) {
 					},
 					ActiveRoots: []string{"googleapis"},
 				},
-				Codec: map[string]string{},
+				Codec: map[string]string{"version": "0.1.0"},
 				Override: api.ModelOverride{
 					Name: "override-name",
 				},
@@ -444,6 +457,7 @@ func TestToModelConfig(t *testing.T) {
 					"readme-after-title-text":        "readme-after-title-text",
 					"readme-quickstart-text":         "readme-quickstart-text",
 					"repository-url":                 "https://github.com/googleapis/google-cloud-dart",
+					"version":                        "0.1.0",
 				},
 			},
 		},
@@ -465,7 +479,7 @@ func TestToModelConfig(t *testing.T) {
 					},
 					ActiveRoots: []string{"googleapis"},
 				},
-				Codec:    map[string]string{},
+				Codec:    map[string]string{"version": "0.1.0"},
 				Override: api.ModelOverride{},
 			},
 		},
@@ -490,7 +504,7 @@ func TestToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 					IncludeList: []string{"date.proto", "expr.proto"},
 				},
-				Codec:    map[string]string{},
+				Codec:    map[string]string{"version": "0.1.0"},
 				Override: api.ModelOverride{},
 			},
 		},
@@ -513,7 +527,7 @@ func TestToModelConfig(t *testing.T) {
 					},
 					ActiveRoots: []string{"googleapis", "showcase"},
 				},
-				Codec: map[string]string{},
+				Codec: map[string]string{"version": "0.1.0"},
 				Override: api.ModelOverride{
 					Title: "Showcase API",
 				},
@@ -537,7 +551,7 @@ func TestToModelConfig(t *testing.T) {
 					},
 					ActiveRoots: []string{"googleapis", "extra-root"},
 				},
-				Codec:    map[string]string{},
+				Codec:    map[string]string{"version": "0.1.0"},
 				Override: api.ModelOverride{},
 			},
 		},
@@ -561,7 +575,7 @@ func TestToModelConfig(t *testing.T) {
 					},
 					ActiveRoots: []string{"googleapis"},
 				},
-				Codec: map[string]string{},
+				Codec: map[string]string{"version": "0.1.0"},
 				Override: api.ModelOverride{
 					SkippedIDs: []string{".google.cloud.secretmanager.v1.Secret.name"},
 				},

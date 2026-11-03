@@ -43,11 +43,12 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 		WithDocumentation("A create method.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v7").
-				WithLiteral("thing"),
+				WithLiteral("thing").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{"parent": true}).
+		WithQueryParameters("parent").
 		WithAPIVersion("v7_20260206")
 	createMethod.SourceServiceID = ".test.Service"
 	createMethod.InputTypeID = ".test.Request"
@@ -58,12 +59,13 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 		WithDocumentation("Another sort of method.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v7").
 				WithLiteral("thing").
-				WithVerb("make"),
+				WithVerb("make").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{"parent": true}).
+		WithQueryParameters("parent").
 		WithAPIVersion("v7_20260206")
 	makeMethod.SourceServiceID = ".test.Service"
 	makeMethod.InputTypeID = ".test.Request"

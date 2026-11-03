@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestLroAnnotations(t *testing.T) {
@@ -38,19 +39,20 @@ func TestLroAnnotations(t *testing.T) {
 	want := api.NewTestMethod("insert").
 		WithID("..instances.insert").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
 			WithVariableNamed("zone").
-			WithLiteral("instances")).
-		WithQueryParameters(map[string]bool{
-			"requestId":              true,
-			"sourceInstanceTemplate": true,
-			"sourceMachineImage":     true,
-		}).
+			WithLiteral("instances").
+			Build()).
+		WithQueryParameters(
+			"requestId",
+			"sourceInstanceTemplate",
+			"sourceMachineImage",
+		).
 		WithBodyFieldPath("body").
 		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone"},
@@ -62,7 +64,7 @@ func TestLroAnnotations(t *testing.T) {
 	if got == nil {
 		t.Fatalf("missing method %s in model", want.ID)
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Method{}, "Documentation")); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -70,7 +72,7 @@ func TestLroAnnotations(t *testing.T) {
 	wantMixin := api.NewTestMethod("getOperation").
 		WithID("..instances.getOperation").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
@@ -78,8 +80,9 @@ func TestLroAnnotations(t *testing.T) {
 			WithLiteral("zones").
 			WithVariableNamed("zone").
 			WithLiteral("operations").
-			WithVariableNamed("operation")).
-		WithQueryParameters(map[string]bool{}).
+			WithVariableNamed("operation").
+			Build()).
+		WithQueryParameters().
 		WithBodyFieldPath("")
 	wantMixin.InputTypeID = "..zoneOperations.getRequest"
 	wantMixin.OutputTypeID = "..Operation"
@@ -89,7 +92,7 @@ func TestLroAnnotations(t *testing.T) {
 	if gotMixin == nil {
 		t.Fatalf("missing method %s in model", wantMixin.ID)
 	}
-	if diff := cmp.Diff(wantMixin, gotMixin, cmpopts.IgnoreFields(api.Method{}, "Documentation", "Service")); diff != "" {
+	if diff := cmp.Diff(wantMixin, gotMixin, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Documentation", "Service")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -111,50 +114,54 @@ func TestLroAnnotationsError(t *testing.T) {
 			api.NewTestMethod("create_foo").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("zone").
 					WithLiteral("foo").
-					WithVariableNamed("id")).
-				WithQueryParameters(map[string]bool{}),
+					WithVariableNamed("id").
+					Build()).
+				WithQueryParameters(),
 			api.NewTestMethod("create_bar").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("region").
 					WithLiteral("foo").
-					WithVariableNamed("id")).
-				WithQueryParameters(map[string]bool{}),
+					WithVariableNamed("id").
+					Build()).
+				WithQueryParameters(),
 		)
 	pollerService := newDiscoveryTestService("Operations").
 		WithMethods(
 			api.NewTestMethod("get_1").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("zone").
 					WithLiteral("operations").
-					WithVariableNamed("operation")).
-				WithQueryParameters(map[string]bool{}),
+					WithVariableNamed("operation").
+					Build()).
+				WithQueryParameters(),
 			api.NewTestMethod("get_2").
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).
+				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("p").
 					WithVariableNamed("project").
 					WithLiteral("l").
 					WithVariableNamed("region").
 					WithLiteral("operations").
-					WithVariableNamed("operation")).
-				WithQueryParameters(map[string]bool{}),
+					WithVariableNamed("operation").
+					Build()).
+				WithQueryParameters(),
 		)
 
 	model := api.NewTestAPI([]*api.Message{operation}, nil, []*api.Service{badService, pollerService})

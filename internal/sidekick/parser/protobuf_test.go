@@ -201,6 +201,94 @@ func TestProtobuf_ScalarOptional(t *testing.T) {
 	))
 }
 
+func TestProtobuf_Proto2Optional(t *testing.T) {
+	requireProtoc(t)
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "proto2.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	message := test.Message(".test.Fake")
+	if message == nil {
+		t.Fatalf("Cannot find message %s in API", ".test.Fake")
+	}
+	choice := api.NewTestOneOf("choice").
+		WithFields(
+			api.NewTestField("f_oneof").
+				WithDocumentation("A oneof field.").
+				WithType(api.TypezString),
+		)
+	for _, f := range choice.Fields {
+		f.Group = nil
+	}
+	apitest.CheckMessage(t, message, newTestProtobufFakeMessage(
+		api.NewTestField("f_int32").
+			WithDocumentation("An optional scalar field.").
+			WithType(api.TypezInt32).
+			WithProto2Optional(),
+		api.NewTestField("f_string").
+			WithDocumentation("An optional string field.").
+			WithType(api.TypezString).
+			WithProto2Optional(),
+		api.NewTestField("f_enum").
+			WithDocumentation("An optional enum field.").
+			WithType(api.TypezEnum).
+			WithTypezID(".test.Fake.Kind").
+			WithProto2Optional(),
+		api.NewTestField("f_default").
+			WithDocumentation("An optional field with a non-zero default.").
+			WithType(api.TypezBool).
+			WithProto2Optional(),
+		api.NewTestField("f_required").
+			WithDocumentation("A required field.").
+			WithType(api.TypezString),
+		api.NewTestField("f_repeated").
+			WithDocumentation("A repeated field.").
+			WithType(api.TypezString).
+			WithRepeated(),
+		api.NewTestField("f_message").
+			WithDocumentation("An optional message field.").
+			WithType(api.TypezMessage).
+			WithTypezID(".test.Fake.Inner").
+			WithOptional(),
+		api.NewTestField("f_map").
+			WithDocumentation("A map field.").
+			WithMap().
+			WithTypezID(".test.Fake.FMapEntry"),
+		api.NewTestField("result").
+			WithType(api.TypezGroup).
+			WithTypezID(".test.Fake.Result"),
+	).WithOneOfs(choice))
+
+	message = test.Message(".test.Fake.Inner")
+	if message == nil {
+		t.Fatalf("Cannot find message %s in API", ".test.Fake.Inner")
+	}
+	apitest.CheckMessage(t, message, api.NewTestMessage("Inner").
+		WithPackage("test").
+		WithID(".test.Fake.Inner").
+		WithDocumentation("A nested message.").
+		WithFields(
+			api.NewTestField("f_inner").
+				WithDocumentation("An optional field in a nested message.").
+				WithType(api.TypezInt32).
+				WithProto2Optional(),
+		))
+
+	mapEntry := test.Map(".test.Fake.FMapEntry")
+	if mapEntry == nil {
+		t.Fatalf("Cannot find map %s in API", ".test.Fake.FMapEntry")
+	}
+	apitest.CheckMap(t, mapEntry, api.NewTestMapWithFields(
+		".test.Fake.FMapEntry",
+		api.NewTestField("key").
+			WithType(api.TypezString).
+			WithJSONName("key"),
+		api.NewTestField("value").
+			WithType(api.TypezInt32).
+			WithJSONName("value"),
+	))
+}
+
 func TestProtobuf_SkipExternalMessages(t *testing.T) {
 	requireProtoc(t)
 	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
@@ -335,14 +423,16 @@ func TestProtobuf_Comments(t *testing.T) {
 		WithDocumentation("Some RPC.\n\nIt does not do much.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 	createMethod.SourceServiceID = ".test.Service"
 	createMethod.InputTypeID = ".test.Request"
@@ -532,56 +622,53 @@ func TestProtobuf_MapFields(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	want := api.NewTestMessage("Fake").
+	apitest.CheckMessage(t, message, api.NewTestMessage("Fake").
 		WithPackage("test").
 		WithFields(
 			api.NewTestField("singular_map").
-				WithMap().
-				WithType(api.TypezMessage).
-				WithTypezID(".test.Fake.SingularMapEntry"),
+				WithType(api.TypezMap).
+				WithTypezID(".test.Fake.SingularMapEntry").
+				WithJSONName("singularMap").
+				WithMap(),
 			api.NewTestField("enum_value").
-				WithMap().
-				WithType(api.TypezMessage).
-				WithTypezID(".test.Fake.EnumValueEntry"),
-		)
-	apitest.CheckMessage(t, message, want)
+				WithType(api.TypezMap).
+				WithTypezID(".test.Fake.EnumValueEntry").
+				WithJSONName("enumValue").
+				WithMap(),
+		))
 
 	if diff := cmp.Diff([]*api.Message(nil), message.Messages); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	message = test.Message(".test.Fake.SingularMapEntry")
-	if message == nil {
-		t.Fatalf("Cannot find message %s in API State", ".test.Fake.SingularMapEntry")
+	singularMap := test.Map(".test.Fake.SingularMapEntry")
+	if singularMap == nil {
+		t.Fatalf("Cannot find map %s in API State", ".test.Fake.SingularMapEntry")
 	}
-	wantSingularMapEntry := api.NewTestMessage("SingularMapEntry").
-		WithPackage("test").
-		WithID(".test.Fake.SingularMapEntry").
-		WithFields(
-			api.NewTestField("key").
-				WithType(api.TypezString),
-			api.NewTestField("value").
-				WithType(api.TypezInt32),
-		)
-	wantSingularMapEntry.IsMap = true
-	apitest.CheckMessage(t, message, wantSingularMapEntry)
+	apitest.CheckMap(t, singularMap, api.NewTestMapWithFields(
+		".test.Fake.SingularMapEntry",
+		api.NewTestField("key").
+			WithType(api.TypezString).
+			WithJSONName("key"),
+		api.NewTestField("value").
+			WithType(api.TypezInt32).
+			WithJSONName("value"),
+	))
 
-	message = test.Message(".test.Fake.EnumValueEntry")
-	if message == nil {
-		t.Fatalf("Cannot find message %s in API State", ".test.Fake.EnumValueEntry")
+	enumValueMap := test.Map(".test.Fake.EnumValueEntry")
+	if enumValueMap == nil {
+		t.Fatalf("Cannot find map %s in API State", ".test.Fake.EnumValueEntry")
 	}
-	wantEnumValueEntry := api.NewTestMessage("EnumValueEntry").
-		WithPackage("test").
-		WithID(".test.Fake.EnumValueEntry").
-		WithFields(
-			api.NewTestField("key").
-				WithType(api.TypezString),
-			api.NewTestField("value").
-				WithType(api.TypezEnum).
-				WithTypezID(".test.TestEnum"),
-		)
-	wantEnumValueEntry.IsMap = true
-	apitest.CheckMessage(t, message, wantEnumValueEntry)
+	apitest.CheckMap(t, enumValueMap, api.NewTestMapWithFields(
+		".test.Fake.EnumValueEntry",
+		api.NewTestField("key").
+			WithType(api.TypezString).
+			WithJSONName("key"),
+		api.NewTestField("value").
+			WithType(api.TypezEnum).
+			WithTypezID(".test.TestEnum").
+			WithJSONName("value"),
+	))
 }
 
 func TestProtobuf_Service(t *testing.T) {
@@ -599,15 +686,17 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Gets a Foo resource.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("name").
+				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
-					WithMatch()),
+					WithMatch().
+					Build()).
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{})
+		WithQueryParameters()
 	getFoo.SourceServiceID = ".test.TestService"
 	getFoo.InputTypeID = ".test.GetFooRequest"
 	getFoo.OutputTypeID = ".test.Foo"
@@ -619,14 +708,16 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{"foo_id": true}).
+		WithQueryParameters("foo_id").
 		WithBodyFieldPath("foo")
 	createFoo.SourceServiceID = ".test.TestService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
@@ -638,15 +729,17 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Deletes a Foo resource.").
 		WithVerb("DELETE").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("name").
+				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
-					WithMatch()),
+					WithMatch().
+					Build()).
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		ReturnEmpty()
 	deleteFoo.SourceServiceID = ".test.TestService"
 	deleteFoo.InputTypeID = ".test.DeleteFooRequest"
@@ -666,16 +759,18 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("A server-side streaming RPC.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("name").
+				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
-					WithMatch()).
-				WithVerb("Download"),
+					WithMatch().
+					Build()).
+				WithVerb("Download").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithServerSideStreaming()
 	downloadFoos.SourceServiceID = ".test.TestService"
 	downloadFoos.InputTypeID = ".test.GetFooRequest"
@@ -714,14 +809,16 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 		WithDocumentation("Creates a new `Foo` resource. `Foo`s are containers for `Bar`s.\n\nShows how a `body: \"${field}\"` option works.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{"foo_id": true}).
+		WithQueryParameters("foo_id").
 		WithBodyFieldPath("bar")
 	createFoo.SourceServiceID = ".test.TestService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
@@ -733,16 +830,18 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 		WithDocumentation("Add a Bar resource.\n\nShows how a `body: \"*\"` option works.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
-					WithMatch()).
-				WithVerb("addFoo"),
+					WithMatch().
+					Build()).
+				WithVerb("addFoo").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 	addBar.SourceServiceID = ".test.TestService"
 	addBar.InputTypeID = ".test.AddBarRequest"
@@ -805,19 +904,21 @@ func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
 	}
 }
 
-func newTestPaginationMethod(name, inputType string, queryParams map[string]bool, pageTokenReq string) *api.Method {
+func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams ...string) *api.Method {
 	m := api.NewTestMethod(name).
 		WithID(".test.TestService." + name).
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
-		WithQueryParameters(queryParams)
+		WithQueryParameters(queryParams...)
 	m.SourceServiceID = ".test.TestService"
 	m.InputTypeID = ".test." + inputType
 	m.OutputTypeID = ".test.ListFooResponse"
@@ -846,25 +947,25 @@ func TestProtobuf_Pagination(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "")
+	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", "", "page_size", "page_token")
 	missingNextPageToken.OutputTypeID = ".test.ListFooMissingNextPageTokenResponse"
 
-	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "")
+	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", "", "page_size", "page_token")
 	missingRepeatedItem.OutputTypeID = ".test.ListFooMissingRepeatedItemResponse"
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
 		WithDefaultHost("test.googleapis.com").
 		WithMethods(
-			newTestPaginationMethod("ListFoo", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "ListFooRequest"),
-			newTestPaginationMethod("ListFooWithMaxResultsInt32", "ListFooMaxResultsInt32Request", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsInt32Request"),
-			newTestPaginationMethod("ListFooWithMaxResultsUInt32", "ListFooMaxResultsUInt32Request", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsUInt32Request"),
-			newTestPaginationMethod("ListFooWithMaxResultsUInt32Value", "ListFooMaxResultsUInt32ValueRequest", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsUInt32ValueRequest"),
-			newTestPaginationMethod("ListFooWithMaxResultsInt32Value", "ListFooMaxResultsInt32ValueRequest", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsInt32ValueRequest"),
-			newTestPaginationMethod("ListFooWithMaxResultsIncorrectMessageType", "ListFooMaxResultIncorrectMessageTypeRequest", map[string]bool{"max_results": true, "page_token": true}, ""),
+			newTestPaginationMethod("ListFoo", "ListFooRequest", "ListFooRequest", "page_size", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsInt32", "ListFooMaxResultsInt32Request", "ListFooMaxResultsInt32Request", "max_results", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsUInt32", "ListFooMaxResultsUInt32Request", "ListFooMaxResultsUInt32Request", "max_results", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsUInt32Value", "ListFooMaxResultsUInt32ValueRequest", "ListFooMaxResultsUInt32ValueRequest", "max_results", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsInt32Value", "ListFooMaxResultsInt32ValueRequest", "ListFooMaxResultsInt32ValueRequest", "max_results", "page_token"),
+			newTestPaginationMethod("ListFooWithMaxResultsIncorrectMessageType", "ListFooMaxResultIncorrectMessageTypeRequest", "", "max_results", "page_token"),
 			missingNextPageToken,
-			newTestPaginationMethod("ListFooMissingPageSize", "ListFooMissingPageSizeRequest", map[string]bool{"page_token": true}, ""),
-			newTestPaginationMethod("ListFooMissingPageToken", "ListFooMissingPageTokenRequest", map[string]bool{"page_size": true}, ""),
+			newTestPaginationMethod("ListFooMissingPageSize", "ListFooMissingPageSizeRequest", "", "page_token"),
+			newTestPaginationMethod("ListFooMissingPageToken", "ListFooMissingPageTokenRequest", "", "page_size"),
 			missingRepeatedItem,
 		)
 	apitest.CheckService(t, service, wantService)
@@ -938,14 +1039,16 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("foo").
 		WithOperationInfo(&api.OperationInfo{
 			MetadataTypeID: ".google.protobuf.Empty",
@@ -961,14 +1064,16 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("foo").
 		WithOperationInfo(&api.OperationInfo{
 			MetadataTypeID: ".test.CreateMetadata",
@@ -984,13 +1089,15 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Custom docs.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v2").
-				WithVariable(api.NewPathVariable("name").
+				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("operations").
-					WithMatch()),
+					WithMatch().
+					Build()).
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 	getOperation.SourceServiceID = ".google.longrunning.Operations"
 	getOperation.InputTypeID = ".google.longrunning.GetOperationRequest"
@@ -1226,10 +1333,10 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		shelfResourceDef := api.NewTestResource("library.googleapis.com/Shelf").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
 				},
 			)
 		// Find Shelf in the slice
@@ -1243,7 +1350,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if foundShelf == nil {
 			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Shelf' not found")
 		}
-		if diff := cmp.Diff(shelfResourceDef, foundShelf, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
+		if diff := cmp.Diff(shelfResourceDef, foundShelf, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1251,12 +1358,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		bookResourceDef := api.NewTestResource("library.googleapis.com/Book").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("books"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("books").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("book").WithMatch().Build()).Build(),
 				},
 			).
 			WithPlural("books").
@@ -1274,7 +1381,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 		// Note: Book resource has 'Self' populated because it's a message resource.
 		// Ignoring Self/Codec for comparison.
-		if diff := cmp.Diff(bookResourceDef, foundBook, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		if diff := cmp.Diff(bookResourceDef, foundBook, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -1306,18 +1413,18 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		wantBookResource := api.NewTestResource("library.googleapis.com/Book").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("books"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("books").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("book").WithMatch().Build()).Build(),
 				},
 			).
 			WithPlural("books").
 			WithSingular("book")
 
-		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1467,21 +1574,21 @@ func TestParseResourcePatterns(t *testing.T) {
 		}
 		want := []api.ResourcePattern{
 			{
-				*(&api.PathSegment{}).WithLiteral("publishers"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-				*(&api.PathSegment{}).WithLiteral("shelves"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
+				*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+				*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
 			},
 			{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+				*api.NewPathSegmentBuilder().WithLiteral("projects").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("project").WithMatch().Build()).Build(),
 			},
 		}
 		got, err := parseResourcePatterns(patterns)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if diff := cmp.Diff(want, got); diff != "" {
+		if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})

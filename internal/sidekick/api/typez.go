@@ -41,6 +41,8 @@ const (
 	TypezSfixed64  Typez = 16
 	TypezSint32    Typez = 17
 	TypezSint64    Typez = 18
+	// TypezMap represents a map field type.
+	TypezMap Typez = 19
 )
 
 var typezName = [...]string{
@@ -63,6 +65,7 @@ var typezName = [...]string{
 	"SFIXED64",
 	"SINT32",
 	"SINT64",
+	"MAP",
 }
 
 // String returns the symbolic name for the Typez.

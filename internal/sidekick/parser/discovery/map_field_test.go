@@ -23,20 +23,12 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
-func newTestDiscoveryMap(id string, valueTypez api.Typez, valueTypezID string) *api.Message {
-	m := api.NewTestMessage(id).
-		WithIsMap().
-		WithPackage("$").
-		WithID(id).
-		WithDocumentation(id).
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString).WithTypezID("string").WithJSONName(""),
-			api.NewTestField("value").WithType(valueTypez).WithTypezID(valueTypezID).WithJSONName(""),
-		)
-	for _, f := range m.Fields {
-		f.Parent = nil
-	}
-	return m
+func newTestDiscoveryMap(id string, valueTypez api.Typez, valueTypezID string) *api.Map {
+	return api.NewTestMapWithFields(
+		id,
+		api.NewTestField("key").WithType(api.TypezString).WithTypezID("string").WithJSONName(""),
+		api.NewTestField("value").WithType(valueTypez).WithTypezID(valueTypezID).WithJSONName(""),
+	)
 }
 
 func newTestDiscoveryMessage(fields ...*api.Field) *api.Message {
@@ -76,18 +68,18 @@ func TestMapFields(t *testing.T) {
 		api.NewTestField("labels").
 			WithDocumentation("Lots of messages have labels.").
 			WithDeprecated(true).
-			WithType(api.TypezMessage).
+			WithType(api.TypezMap).
 			WithTypezID("$map<string, string>").
 			WithMap(),
 	)
 	apitest.CheckMessage(t, message, wantMessage)
 
 	wantMap := newTestDiscoveryMap("$map<string, string>", api.TypezString, "string")
-	gotMap := model.Message(wantMap.ID)
+	gotMap := model.Map(wantMap.ID)
 	if gotMap == nil {
-		t.Fatalf("missing map message %s", wantMap.ID)
+		t.Fatalf("missing map %s", wantMap.ID)
 	}
-	apitest.CheckMessage(t, gotMap, wantMap)
+	apitest.CheckMap(t, gotMap, wantMap)
 }
 
 func TestMapFieldWithObjectValues(t *testing.T) {
@@ -118,18 +110,18 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 		api.NewTestField("objectMapField").
 			WithDocumentation("The description for objectMapField.").
 			WithDeprecated(true).
-			WithType(api.TypezMessage).
+			WithType(api.TypezMap).
 			WithTypezID("$map<string, .package.SomeOtherMessage>").
 			WithMap(),
 	)
 	apitest.CheckMessage(t, message, wantMessage)
 
 	wantMap := newTestDiscoveryMap("$map<string, .package.SomeOtherMessage>", api.TypezMessage, ".package.SomeOtherMessage")
-	gotMap := model.Message(wantMap.ID)
+	gotMap := model.Map(wantMap.ID)
 	if gotMap == nil {
-		t.Fatalf("missing map message %s", wantMap.ID)
+		t.Fatalf("missing map %s", wantMap.ID)
 	}
-	apitest.CheckMessage(t, gotMap, wantMap)
+	apitest.CheckMap(t, gotMap, wantMap)
 }
 
 func TestMapFieldWithEnumValues(t *testing.T) {
@@ -167,18 +159,18 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 		api.NewTestField("enumMapField").
 			WithDocumentation("The description for enumMapField.").
 			WithDeprecated(true).
-			WithType(api.TypezMessage).
+			WithType(api.TypezMap).
 			WithTypezID("$map<string, .package.Message.enumMapField>").
 			WithMap(),
 	)
 	apitest.CheckMessage(t, message, wantMessage)
 
 	wantMap := newTestDiscoveryMap("$map<string, .package.Message.enumMapField>", api.TypezEnum, ".package.Message.enumMapField")
-	gotMap := model.Message(wantMap.ID)
+	gotMap := model.Map(wantMap.ID)
 	if gotMap == nil {
-		t.Fatalf("missing map message %s", wantMap.ID)
+		t.Fatalf("missing map %s", wantMap.ID)
 	}
-	apitest.CheckMessage(t, gotMap, wantMap)
+	apitest.CheckMap(t, gotMap, wantMap)
 
 	wantEnum := api.NewTestEnum("enumMapField").
 		WithPackage("package").
@@ -253,7 +245,7 @@ func TestMapScalarTypes(t *testing.T) {
 				WithFields(
 					api.NewTestField("mapField").
 						WithDocumentation("The description for mapField.").
-						WithType(api.TypezMessage).
+						WithType(api.TypezMap).
 						WithMap(),
 				).Fields[0],
 		}
@@ -261,28 +253,13 @@ func TestMapScalarTypes(t *testing.T) {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 			continue
 		}
-		mapMessage := model.Message(message.Fields[0].TypezID)
-		if mapMessage == nil {
-			t.Errorf("missing map message %s", message.Fields[0].TypezID)
+		mapEntity := model.Map(message.Fields[0].TypezID)
+		if mapEntity == nil {
+			t.Errorf("missing map %s", message.Fields[0].TypezID)
 			continue
 		}
-		if len(mapMessage.Fields) != 2 {
-			t.Errorf("expected exactly two fields, got=%v", mapMessage.Fields)
-			continue
-		}
-		got := mapMessage.Fields[1]
-		want := api.NewTestMessage(mapMessage.ID).
-			WithID(mapMessage.ID).
-			WithFields(
-				api.NewTestField("key").WithJSONName(""),
-				api.NewTestField("value").
-					WithType(test.WantTypez).
-					WithTypezID(test.WantTypeID).
-					WithJSONName(""),
-			).Fields[1]
-		if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
+		wantMap := newTestDiscoveryMap(mapEntity.ID, test.WantTypez, test.WantTypeID)
+		apitest.CheckMap(t, mapEntity, wantMap)
 	}
 }
 

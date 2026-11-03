@@ -193,13 +193,13 @@ public struct {{ .Codec.Name }}: Codable, Equatable, {{ .Codec.Model.WktPackage 
   /// - Throws: An error if the type URL in `any` does not match `"{{ .Codec.TypeURL }}"`,
   ///   or if deserialization fails.
   public init(fromAny any: {{ .Codec.Model.WktPackage }}.WKTAny) throws {
-    self = try {{ .Codec.Model.WktPackage }}._slowAnyDeserialize(Self.self, from: any)
+    self = try {{ .Codec.Model.WktPackage }}._anyDeserialize(Self.self, from: any)
   }
 
   /// Packs this `{{ .Codec.Name }}` into a `{{ .Codec.Model.WktPackage }}.WKTStruct` representation.
   ///
   /// - Throws: An error if serialization fails.
   public func _pack() throws -> {{ .Codec.Model.WktPackage }}.WKTStruct {
-    return try {{ .Codec.Model.WktPackage }}._slowAnySerialize(message: self)
+    return try {{ .Codec.Model.WktPackage }}._anySerialize(message: self)
   }
 }

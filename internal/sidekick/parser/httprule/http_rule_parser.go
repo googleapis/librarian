@@ -96,10 +96,10 @@ func ParseResourcePattern(pathTemplate string) (*api.PathTemplate, error) {
 	if strings.Contains(pathTemplate, "}.{") ||
 		strings.Contains(pathTemplate, "}~{") {
 		// TODO(https://github.com/googleapis/librarian/issues/3258): support non-standard separators in resource names... somehow.
-		return (&api.PathTemplate{}), nil
+		return api.NewPathTemplateBuilder().Build(), nil
 	}
 	if pathTemplate == api.SingleSegmentWildcard {
-		return (&api.PathTemplate{}), nil
+		return api.NewPathTemplateBuilder().Build(), nil
 	}
 	return parsePathTemplate("/" + pathTemplate)
 }
@@ -143,10 +143,10 @@ func parsePathTemplate(pathTemplate string) (*api.PathTemplate, error) {
 	if pos != len(pathTemplate) {
 		return nil, fmt.Errorf("invalid path template, expected it to end at position %d: %s", pos, pathTemplate)
 	}
-	return &api.PathTemplate{
-		Segments: segments,
-		Verb:     verb,
-	}, nil
+	return api.NewPathTemplateBuilder().
+		WithSegments(segments...).
+		WithVerb(verb).
+		Build(), nil
 
 }
 
@@ -202,9 +202,9 @@ func parseLiteralSegment(literalSegment string) (*api.PathSegment, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	return &api.PathSegment{
-		Literal: string(literal),
-	}, width, nil
+	return api.NewPathSegmentBuilder().
+		WithLiteral(string(literal)).
+		Build(), width, nil
 }
 
 func parseVarSegment(varString string) (*api.PathSegment, int, error) {
@@ -239,12 +239,11 @@ func parseVarSegment(varString string) (*api.PathSegment, int, error) {
 		// When there are no segments, the single "*" matcher is implied.
 		segments = append(segments, api.SingleSegmentWildcard)
 	}
-	return &api.PathSegment{
-		Variable: &api.PathVariable{
-			FieldPath: fieldPath,
-			Segments:  segments,
-		},
-	}, pos, nil
+	return api.NewPathSegmentBuilder().
+		WithVariable(api.NewPathVariableBuilder(fieldPath...).
+			WithSegments(segments...).
+			Build()).
+		Build(), pos, nil
 }
 
 func parseVarSubsegments(segmentsString string) ([]string, int, error) {

@@ -83,12 +83,13 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 	}
 
 	// Iterate backwards over segments
-	for i, seg := range slices.Backward(tmpl.Segments) {
-		if seg.Variable == nil || i == 0 || tmpl.Segments[i-1].Literal == "" {
+	segments := tmpl.Segments()
+	for i, seg := range slices.Backward(segments) {
+		if seg.Variable() == nil || i == 0 || segments[i-1].Literal() == "" {
 			continue
 		}
 
-		token := tmpl.Segments[i-1].Literal
+		token := segments[i-1].Literal()
 		if !vocabulary[token] && !isVersionString(token) {
 			continue // continue scanning backward if not in vocabulary
 		}
@@ -101,11 +102,11 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 			// Walk backwards to find the start of the resource pattern chain
 			firstIndex = i - 1
 			for firstIndex > 0 {
-				prevSeg := tmpl.Segments[firstIndex-1]
+				prevSeg := segments[firstIndex-1]
 
 				// Case 1: The preceding segment is a standalone literal (e.g., "global")
-				if prevSeg.Literal != "" {
-					if isVersionString(prevSeg.Literal) {
+				if prevSeg.Literal() != "" {
+					if isVersionString(prevSeg.Literal()) {
 						break // Stop at version strings (e.g., "v1")
 					}
 					firstIndex--
@@ -113,12 +114,12 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 				}
 
 				// Case 2: The preceding segment is a variable. It must be paired with a literal.
-				if prevSeg.Variable != nil {
-					if firstIndex < 2 || tmpl.Segments[firstIndex-2].Literal == "" {
+				if prevSeg.Variable() != nil {
+					if firstIndex < 2 || segments[firstIndex-2].Literal() == "" {
 						break // Variable near the beginning, cannot form a pair
 					}
 
-					prevLiteralVal := tmpl.Segments[firstIndex-2].Literal
+					prevLiteralVal := segments[firstIndex-2].Literal()
 
 					// If the literal is a known collection, include the pair and continue
 					if vocabulary[prevLiteralVal] {
@@ -145,7 +146,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		// If earlier variables exist, this chain is just a trailing partial match and should be ignored.
 		disconnected := false
 		for k := 0; k < firstIndex; k++ {
-			if tmpl.Segments[k].Variable != nil {
+			if segments[k].Variable() != nil {
 				disconnected = true
 				break
 			}
@@ -155,14 +156,14 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		}
 
 		var fieldPaths [][]string
-		targetSegments := tmpl.Segments[firstIndex : i+1]
+		targetSegments := segments[firstIndex : i+1]
 		for _, s := range targetSegments {
-			if s.Variable != nil {
-				_, err := findField(method.InputType, s.Variable.FieldPath)
+			if s.Variable() != nil {
+				_, err := findField(method.InputType, s.Variable().FieldPath())
 				if err != nil {
 					return nil, err
 				}
-				fieldPaths = append(fieldPaths, s.Variable.FieldPath)
+				fieldPaths = append(fieldPaths, s.Variable().FieldPath())
 			}
 		}
 		template, err := constructTemplate(method, targetSegments)
@@ -185,12 +186,12 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 
 	var lastVarIndex = -1
 	// Collect field paths corresponding to variable segments in the path template
-	for i, segment := range binding.PathTemplate.Segments {
-		if segment.Variable == nil {
+	for i, segment := range binding.PathTemplate.Segments() {
+		if segment.Variable() == nil {
 			continue
 		}
 
-		fieldPath := segment.Variable.FieldPath
+		fieldPath := segment.Variable().FieldPath()
 		field, err := findField(method.InputType, fieldPath)
 		if err != nil {
 			return nil, err
@@ -208,7 +209,7 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
-	template, err := constructTemplate(method, binding.PathTemplate.Segments[:lastVarIndex+1])
+	template, err := constructTemplate(method, binding.PathTemplate.Segments()[:lastVarIndex+1])
 	if err != nil {
 		return nil, err
 	}
@@ -256,19 +257,19 @@ func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, e
 
 	var result []PathSegment
 	h := "//" + host
-	result = append(result, PathSegment{Literal: h})
+	result = append(result, *NewPathSegmentBuilder().WithLiteral(h).Build())
 
 	for _, seg := range segments {
-		if seg.Literal != "" {
-			l := seg.Literal
+		if seg.Literal() != "" {
+			l := seg.Literal()
 			if isVersionString(l) {
 				continue
 			}
-			result = append(result, PathSegment{Literal: l})
-		} else if seg.Variable != nil {
-			result = append(result, PathSegment{Variable: &PathVariable{
-				FieldPath: seg.Variable.FieldPath,
-			}})
+			result = append(result, *NewPathSegmentBuilder().WithLiteral(l).Build())
+		} else if seg.Variable() != nil {
+			result = append(result, *NewPathSegmentBuilder().
+				WithVariable(NewPathVariableBuilder(seg.Variable().FieldPath()...).Build()).
+				Build())
 		}
 	}
 	return result, nil

@@ -300,9 +300,9 @@ func TestOpenAPI_MapString(t *testing.T) {
 		WithID("..Fake").
 		WithDocumentation("A test message.").
 		WithFields(
-			api.NewTestField("fMap").WithType(api.TypezMessage).WithTypezID("$map<string, string>").WithMap(),
-			api.NewTestField("fMapS32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
-			api.NewTestField("fMapS64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
+			api.NewTestField("fMap").WithType(api.TypezMap).WithTypezID("$map<string, string>").WithMap(),
+			api.NewTestField("fMapS32").WithType(api.TypezMap).WithTypezID("$map<string, int32>").WithMap(),
+			api.NewTestField("fMapS64").WithType(api.TypezMap).WithTypezID("$map<string, int64>").WithMap(),
 		)
 	apitest.CheckMessage(t, test.Messages[0], wantMap)
 }
@@ -334,8 +334,8 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 		WithID("..Fake").
 		WithDocumentation("A test message.").
 		WithFields(
-			api.NewTestField("fMapI32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
-			api.NewTestField("fMapI64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
+			api.NewTestField("fMapI32").WithType(api.TypezMap).WithTypezID("$map<string, int32>").WithMap(),
+			api.NewTestField("fMapI64").WithType(api.TypezMap).WithTypezID("$map<string, int64>").WithMap(),
 		)
 	apitest.CheckMessage(t, test.Messages[0], wantMapInteger)
 }
@@ -388,7 +388,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				WithOptional(),
 			api.NewTestField("labels").
 				WithDocumentation("Cross-service attributes for the location. For example\n\n    {\"cloud.googleapis.com/region\": \"us-east1\"}").
-				WithType(api.TypezMessage).
+				WithType(api.TypezMap).
 				WithTypezID("$map<string, string>").
 				WithMap(),
 			api.NewTestField("metadata").
@@ -488,16 +488,13 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		WithID("..Service.ListLocations").
 		WithDocumentation("Lists information about the supported locations for this service.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
-			WithLiteral("locations")).
-		WithQueryParameters(map[string]bool{
-			"filter":    true,
-			"pageSize":  true,
-			"pageToken": true,
-		}).
+			WithLiteral("locations").
+			Build()).
+		WithQueryParameters("filter", "pageSize", "pageToken").
 		WithPagination(pageToken)
 	wantListLocationsMethod.IsList = false
 	wantListLocationsMethod.InputTypeID = "..Service.ListLocationsRequest"
@@ -684,13 +681,14 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		WithID("..Service.ListFoos").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{"pageSize": true, "pageToken": true}).
+		WithQueryParameters("pageSize", "pageToken").
 		WithPagination(
 			api.NewTestField("pageToken").
 				WithDocumentation("The `{pageToken}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.").
@@ -855,14 +853,15 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		WithID("..Service.RpcA").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("rpc").
-				WithLiteral("a"),
+				WithLiteral("a").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{"filter": true})
+		WithQueryParameters("filter")
 	rpcA.InputTypeID = "..Service.RpcARequest"
 	rpcA.OutputTypeID = "..Response"
 	apitest.CheckMethod(t, service, "RpcA", rpcA)
@@ -872,14 +871,15 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		WithDeprecated(true).
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("rpc").
-				WithLiteral("b"),
+				WithLiteral("b").
+				Build(),
 		).
-		WithQueryParameters(map[string]bool{})
+		WithQueryParameters()
 	rpcB.InputTypeID = "..Service.RpcBRequest"
 	rpcB.OutputTypeID = "..Response"
 	apitest.CheckMethod(t, service, "RpcB", rpcB)

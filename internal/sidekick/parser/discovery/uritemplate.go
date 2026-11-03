@@ -38,7 +38,7 @@ var (
 // In sidekick we need to capture the structure of the URI template for the
 // codec(s) to emit good templates with them.
 func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
-	template := &api.PathTemplate{}
+	template := api.NewPathTemplateBuilder()
 	var pos int
 	for {
 		var err error
@@ -56,7 +56,7 @@ func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
 		if err != nil {
 			return nil, err
 		}
-		template.Segments = append(template.Segments, *segment)
+		template.WithSegment(*segment)
 		pos += width
 		if pos == len(uriTemplate) || uriTemplate[pos] != slash {
 			break
@@ -70,12 +70,12 @@ func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
 			return nil, err
 		}
 		pos += width
-		template.Verb = literal.Literal
+		template.WithVerb(literal.Literal())
 	}
 	if pos != len(uriTemplate) {
 		return nil, fmt.Errorf("trailing data (%q) cannot be parsed as a URI template", uriTemplate[pos:])
 	}
-	return template, nil
+	return template.Build(), nil
 }
 
 func parseExpression(input string) (*api.PathSegment, int, error) {
@@ -112,14 +112,14 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 	if !match {
 		return nil, 0, fmt.Errorf("invalid varname found on expression %q", input)
 	}
-	variable := api.NewPathVariable(tail)
+	variable := api.NewPathVariableBuilder(tail)
 	if allowReserved {
 		variable.WithAllowReserved()
 		variable.WithMatchRecursive()
 	} else {
 		variable.WithMatch()
 	}
-	return &api.PathSegment{Variable: variable}, end + 2, nil
+	return api.NewPathSegmentBuilder().WithVariable(variable.Build()).Build(), end + 2, nil
 }
 
 // parseLiteral() extracts a literal value from `input`.
@@ -150,5 +150,5 @@ func parseLiteral(input string) (*api.PathSegment, int, error) {
 	if tail != "" && tail[0] != slash {
 		return nil, index, fmt.Errorf("found unexpected character %v in literal %q, stopped at position %v", tail[0], input, index)
 	}
-	return &api.PathSegment{Literal: literal}, width, nil
+	return api.NewPathSegmentBuilder().WithLiteral(literal).Build(), width, nil
 }

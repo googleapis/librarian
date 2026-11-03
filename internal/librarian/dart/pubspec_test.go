@@ -116,3 +116,13 @@ dependencies:
 		t.Errorf("pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }
+
+func TestUpdatePubspecVersion_Error(t *testing.T) {
+	pubspecPath := filepath.Join(t.TempDir(), "pubspec.yaml")
+	if err := os.WriteFile(pubspecPath, []byte("name: my_library\npublish_to: none\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := updatePubspecVersion(pubspecPath, "1.1.0"); err == nil {
+		t.Error("updatePubspecVersion() error = nil, want error")
+	}
+}

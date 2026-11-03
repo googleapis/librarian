@@ -49,10 +49,7 @@ func TestFindServiceDependencies(t *testing.T) {
 			NewTestMethod("Method0").
 				WithInput(empty).
 				WithOutput(empty).
-				WithOperationInfo(&OperationInfo{
-					MetadataTypeID: opMetadata.ID,
-					ResponseTypeID: opResponse.ID,
-				}),
+				WithOperationInfo(NewTestOperationInfo(opResponse.ID, opMetadata.ID)),
 		),
 	}
 	less := func(a, b string) bool { return a < b }

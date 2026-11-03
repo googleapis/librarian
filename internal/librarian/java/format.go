@@ -19,10 +19,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"golang.org/x/sync/errgroup"
 )
 
 const maxFilesPerFormatBatch = 2000
@@ -30,29 +32,33 @@ const maxFilesPerFormatBatch = 2000
 // Format formats Java client libraries using google-java-format in batches.
 func Format(ctx context.Context, libraries ...*config.Library) error {
 	var allFiles []string
-	for _, lib := range libraries {
-		files, err := collectJavaFiles(lib.Output)
+	for _, library := range libraries {
+		files, err := collectJavaFiles(library.Output)
 		if err != nil {
-			return fmt.Errorf("failed to find java files for formatting in %q: %w", lib.Name, err)
+			return fmt.Errorf("failed to find java files for formatting in %q: %w", library.Name, err)
 		}
 		allFiles = append(allFiles, files...)
+	}
+	if len(allFiles) == 0 {
+		return nil
 	}
 	env, err := getToolsEnv()
 	if err != nil {
 		return err
 	}
-	// Batch file paths in chunks of maxFilesPerFormatBatch (2,000 files).
-	// Passing 2,000 files per CLI invocation avoids exceeding OS command-line length limits (ARG_MAX)
-	// while preventing JVM heap exhaustion on RAM-constrained CI runners.
+	// Chunk file paths to avoid exceeding OS command-line length limits (ARG_MAX) and to bound per-batch JVM heap usage.
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(runtime.GOMAXPROCS(0))
 	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
 		end := min(i+maxFilesPerFormatBatch, len(allFiles))
-		chunk := allFiles[i:end]
-		args := append([]string{"--replace"}, chunk...)
-		if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
-			return fmt.Errorf("failed to format batch [%d:%d]: %w", i, end, err)
-		}
+		g.Go(func() error {
+			if err := command.RunWithEnv(gctx, env, "google-java-format", append([]string{"--replace"}, allFiles[i:end]...)...); err != nil {
+				return fmt.Errorf("failed to format batch [%d:%d]: %w", i, end, err)
+			}
+			return nil
+		})
 	}
-	return nil
+	return g.Wait()
 }
 
 func collectJavaFiles(root string) ([]string, error) {

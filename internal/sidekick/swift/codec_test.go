@@ -375,7 +375,7 @@ func makeGatedTestModel() *api.API {
 			api.NewTestMethod("M1").
 				WithInput(sharedMessage).
 				WithOutput(s1Message).
-				WithPathTemplate(&api.PathTemplate{}),
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 		)
 	s2 := api.NewTestService("Service2").
 		WithPackage("google.cloud.test.v1").
@@ -383,7 +383,7 @@ func makeGatedTestModel() *api.API {
 			api.NewTestMethod("M2").
 				WithInput(sharedMessage).
 				WithOutput(s2Message).
-				WithPathTemplate(&api.PathTemplate{}),
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 		)
 
 	model := api.NewTestAPI(
@@ -400,7 +400,7 @@ func makeRequiredServicesTestModel() *api.API {
 	externalResponse := api.NewTestMessage("Response").WithPackage("external")
 	externalMethod := api.NewTestMethod("GetThing").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
 		WithInput(externalRequest).
 		WithOutput(externalResponse)
 	externalService := api.NewTestService("ExternalService").
@@ -419,7 +419,7 @@ func makeRequiredServicesTestModel() *api.API {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	sourceService := api.NewTestService("zoneOperations").
 		WithPackage("test").
 		WithMethods(sourceMethod)

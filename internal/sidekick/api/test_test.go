@@ -18,32 +18,32 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
-	b1 := api.NewTestPathBinding("GET", (&api.PathTemplate{}).WithLiteral("v1"))
-	b2 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v2"))
+	b1 := api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").Build())
+	b2 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v2").Build())
 
 	method.WithBindings(b1, b2)
 
 	if method.PathInfo == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test")
-	b1 := api.NewTestPathBinding("DELETE", (&api.PathTemplate{}).WithLiteral("v1"))
+	b1 := api.NewTestPathBinding("DELETE", api.NewPathTemplateBuilder().WithLiteral("v1").Build())
 
 	method.WithBindings(b1)
 
-	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -74,7 +74,7 @@ func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
 
 func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
-	pt := (&api.PathTemplate{}).WithLiteral("v1")
+	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	method.WithPathTemplate(pt)
 
 	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
@@ -87,13 +87,13 @@ func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 
 func TestMethod_WithQueryParameters_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
-	params := map[string]bool{"page_size": true}
-	method.WithQueryParameters(params)
+	method.WithQueryParameters("page_size")
 
 	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if diff := cmp.Diff(params, method.PathInfo.Bindings[0].QueryParameters); diff != "" {
+	want := map[string]bool{"page_size": true}
+	if diff := cmp.Diff(want, method.PathInfo.Bindings[0].QueryParameters); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -106,10 +106,10 @@ func TestMethod_WithDocumentation(t *testing.T) {
 }
 
 func TestPathBinding_Fluent(t *testing.T) {
-	pt := (&api.PathTemplate{}).WithLiteral("v1")
+	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	b := api.NewTestPathBinding("GET", pt).
 		WithVerb("POST").
-		WithQueryParameters(map[string]bool{"filter": true})
+		WithQueryParameters("filter")
 
 	if b.Verb != "POST" {
 		t.Errorf("expected Verb 'POST', got %q", b.Verb)
@@ -133,13 +133,6 @@ func TestMessage_WithDocumentation(t *testing.T) {
 	m := api.NewTestMessage("Test").WithDocumentation("A test message.")
 	if m.Documentation != "A test message." {
 		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation)
-	}
-}
-
-func TestMessage_WithIsMap(t *testing.T) {
-	m := api.NewTestMessage("TestEntry").WithIsMap()
-	if !m.IsMap {
-		t.Errorf("expected IsMap to be true")
 	}
 }
 
@@ -219,6 +212,16 @@ func TestNewTestAPI_DeduplicatesNestedMessages(t *testing.T) {
 	}
 }
 
+func TestMessage_WithMessages_UpdatesOneOfIDs(t *testing.T) {
+	oneof := api.NewTestOneOf("choice")
+	child := api.NewTestMessage("Child").WithOneOfs(oneof)
+	_ = api.NewTestMessage("Parent").WithMessages(child)
+
+	if got, want := child.OneOfs[0].ID, ".test.Parent.Child.choice"; got != want {
+		t.Errorf("child.OneOfs[0].ID = %q, want %q", got, want)
+	}
+}
+
 func TestService_WithDocumentation(t *testing.T) {
 	const doc = "Test service documentation."
 	s := api.NewTestService("TestService").WithDocumentation(doc)
@@ -234,43 +237,121 @@ func TestMethod_ReturnEmpty(t *testing.T) {
 	}
 }
 
-func TestNewTestMapMessage(t *testing.T) {
-	m := api.NewTestMapMessage("TestEntry", api.TypezString, api.TypezInt32)
-	if !m.IsMap {
-		t.Errorf("m.IsMap = %v, want true", m.IsMap)
+func TestNewTestMap(t *testing.T) {
+	got := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
+	want := &api.Map{
+		ID: ".test.TestMap",
+		Key: &api.Field{
+			Name:     "key",
+			JSONName: "key",
+			ID:       ".test.TestMap.key",
+			Typez:    api.TypezString,
+		},
+		Value: &api.Field{
+			Name:     "value",
+			JSONName: "value",
+			ID:       ".test.TestMap.value",
+			Typez:    api.TypezInt32,
+		},
 	}
-	if len(m.Fields) != 2 {
-		t.Fatalf("len(m.Fields) = %d, want 2", len(m.Fields))
+	apitest.CheckMap(t, got, want)
+}
+
+func TestNewTestMapWithFields(t *testing.T) {
+	valMsg := api.NewTestMessage("ValueMsg")
+	key := api.NewTestField("custom_key").WithType(api.TypezString)
+	val := api.NewTestField("custom_val").WithMessageType(valMsg)
+	got := api.NewTestMapWithFields(".custom.package.MyMap", key, val)
+	want := &api.Map{
+		ID: ".custom.package.MyMap",
+		Key: &api.Field{
+			Name:     "custom_key",
+			JSONName: "customKey",
+			ID:       ".custom.package.MyMap.custom_key",
+			Typez:    api.TypezString,
+		},
+		Value: &api.Field{
+			Name:        "custom_val",
+			JSONName:    "customVal",
+			ID:          ".custom.package.MyMap.custom_val",
+			Typez:       api.TypezMessage,
+			TypezID:     valMsg.ID,
+			MessageType: valMsg,
+		},
 	}
-	if got, want := m.Fields[0].Name, "key"; got != want {
-		t.Errorf("m.Fields[0].Name = %q, want %q", got, want)
+	apitest.CheckMap(t, got, want)
+}
+
+func TestMap_WithID(t *testing.T) {
+	m := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
+	m.WithID(".new.package.TestMap")
+	if got, want := m.ID, ".new.package.TestMap"; got != want {
+		t.Errorf("m.ID = %q, want %q", got, want)
 	}
-	if got, want := m.Fields[0].Typez, api.TypezString; got != want {
-		t.Errorf("m.Fields[0].Typez = %v, want %v", got, want)
+	if got, want := m.Key.ID, ".new.package.TestMap.key"; got != want {
+		t.Errorf("m.Key.ID = %q, want %q", got, want)
 	}
-	if got, want := m.Fields[1].Name, "value"; got != want {
-		t.Errorf("m.Fields[1].Name = %q, want %q", got, want)
-	}
-	if got, want := m.Fields[1].Typez, api.TypezInt32; got != want {
-		t.Errorf("m.Fields[1].Typez = %v, want %v", got, want)
+	if got, want := m.Value.ID, ".new.package.TestMap.value"; got != want {
+		t.Errorf("m.Value.ID = %q, want %q", got, want)
 	}
 }
 
-func TestNewTestMapMessageWithFields(t *testing.T) {
-	valMsg := api.NewTestMessage("ValueMsg")
-	m := api.NewTestMapMessageWithFields(
-		"TestEntry",
-		api.NewTestField("key").WithType(api.TypezString),
-		api.NewTestField("value").WithMessageType(valMsg),
-	)
-	if !m.IsMap {
-		t.Errorf("m.IsMap = %v, want true", m.IsMap)
+func TestField_WithMap(t *testing.T) {
+	f := api.NewTestField("test_field").WithRepeated().WithOptional().WithMap()
+	if got, want := f.Typez, api.TypezMap; got != want {
+		t.Errorf("f.Typez = %v, want %v", got, want)
 	}
-	if len(m.Fields) != 2 {
-		t.Fatalf("len(m.Fields) = %d, want 2", len(m.Fields))
+	if !f.Map {
+		t.Errorf("f.Map = %v, want true", f.Map)
 	}
-	if got := m.Fields[1].MessageType; got != valMsg {
-		t.Errorf("m.Fields[1].MessageType = %v, want %v", got, valMsg)
+	if f.Repeated {
+		t.Errorf("f.Repeated = %v, want false", f.Repeated)
+	}
+	if f.Optional {
+		t.Errorf("f.Optional = %v, want false", f.Optional)
+	}
+}
+
+func TestField_WithMapType(t *testing.T) {
+	m := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
+	f := api.NewTestField("test_field").WithRepeated().WithOptional().WithMapType(m)
+	if got := f.MapType; got != m {
+		t.Errorf("f.MapType = %v, want %v", got, m)
+	}
+	if got, want := f.Typez, api.TypezMap; got != want {
+		t.Errorf("f.Typez = %v, want %v", got, want)
+	}
+	if !f.Map {
+		t.Errorf("f.Map = %v, want true", f.Map)
+	}
+	if f.Repeated {
+		t.Errorf("f.Repeated = %v, want false", f.Repeated)
+	}
+	if f.Optional {
+		t.Errorf("f.Optional = %v, want false", f.Optional)
+	}
+	if got, want := f.TypezID, m.ID; got != want {
+		t.Errorf("f.TypezID = %q, want %q", got, want)
+	}
+}
+
+func TestAPI_WithMaps(t *testing.T) {
+	m1 := api.NewTestMap("Map1", api.TypezString, api.TypezInt32)
+	m2 := api.NewTestMap("Map2", api.TypezString, api.TypezString)
+	model := api.NewTestAPI(nil, nil, nil).WithMaps(m1, m2)
+
+	if got := model.Map(m1.ID); got != m1 {
+		t.Errorf("model.Map(%q) = %v, want %v", m1.ID, got, m1)
+	}
+	if got := model.Map(m2.ID); got != m2 {
+		t.Errorf("model.Map(%q) = %v, want %v", m2.ID, got, m2)
+	}
+	var count int
+	for range model.AllMaps() {
+		count++
+	}
+	if count != 2 {
+		t.Errorf("AllMaps count = %d, want 2", count)
 	}
 }
 
@@ -296,10 +377,15 @@ func TestAPI_FluentSetters(t *testing.T) {
 	}
 }
 
-func TestService_WithDefaultHost(t *testing.T) {
-	svc := api.NewTestService("TestService").WithDefaultHost("test.googleapis.com")
+func TestService_FluentSetters(t *testing.T) {
+	svc := api.NewTestService("TestService").
+		WithDefaultHost("test.googleapis.com").
+		WithID(".custom.TestService")
 	if got, want := svc.DefaultHost, "test.googleapis.com"; got != want {
 		t.Errorf("svc.DefaultHost = %q, want %q", got, want)
+	}
+	if got, want := svc.ID, ".custom.TestService"; got != want {
+		t.Errorf("svc.ID = %q, want %q", got, want)
 	}
 }
 
