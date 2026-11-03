@@ -72,13 +72,10 @@ func serviceAnnotationsModel() *api.API {
 
 func TestPathInfoAnnotations(t *testing.T) {
 	binding := func(verb string) *api.PathBinding {
-		return api.NewPathBindingBuilder().
-			WithVerb(verb).
-			WithPathTemplate(api.NewPathTemplateBuilder().
-				WithLiteral("v1").
-				WithLiteral("resource").
-				Build()).
-			Build()
+		return api.NewTestPathBinding(verb, api.NewPathTemplateBuilder().
+			WithLiteral("v1").
+			WithLiteral("resource").
+			Build())
 	}
 
 	for _, test := range []struct {
@@ -154,20 +151,17 @@ func TestPathBindingAnnotations(t *testing.T) {
 	).WithOneOfs(oneof)
 	response := api.NewTestMessage("Response")
 
-	b0 := api.NewPathBindingBuilder().
-		WithVerb("POST").
-		WithPathTemplate(api.NewPathTemplateBuilder().
-			WithLiteral("v2").
-			WithVariable(api.NewPathVariableBuilder("name").
-				WithLiteral("projects").
-				WithMatch().
-				WithLiteral("locations").
-				WithMatch().
-				Build()).
-			WithVerb("create").
+	b0 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
+		WithLiteral("v2").
+		WithVariable(api.NewPathVariableBuilder("name").
+			WithLiteral("projects").
+			WithMatch().
+			WithLiteral("locations").
+			WithMatch().
 			Build()).
-		WithQueryParameters("id").
-		Build()
+		WithVerb("create").
+		Build()).
+		WithQueryParameters("id")
 	wantB0 := &pathBindingAnnotation{
 		PathFmt:     "/v2/{}:create",
 		QueryParams: []*api.Field{fID},
@@ -181,19 +175,16 @@ func TestPathBindingAnnotations(t *testing.T) {
 		},
 	}
 
-	b1 := api.NewPathBindingBuilder().
-		WithVerb("POST").
-		WithPathTemplate(api.NewPathTemplateBuilder().
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("project").
-			WithLiteral("locations").
-			WithVariableNamed("location").
-			WithLiteral("ids").
-			WithVariableNamed("id").
-			WithVerb("action").
-			Build()).
-		Build()
+	b1 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
+		WithLiteral("v1").
+		WithLiteral("projects").
+		WithVariableNamed("project").
+		WithLiteral("locations").
+		WithVariableNamed("location").
+		WithLiteral("ids").
+		WithVariableNamed("id").
+		WithVerb("action").
+		Build())
 	wantB1 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:action",
 		Substitutions: []*bindingSubstitution{
@@ -217,19 +208,16 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-	b2 := api.NewPathBindingBuilder().
-		WithVerb("POST").
-		WithPathTemplate(api.NewPathTemplateBuilder().
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("child", "project").
-			WithLiteral("locations").
-			WithVariableNamed("child", "location").
-			WithLiteral("ids").
-			WithVariableNamed("child", "id").
-			WithVerb("actionOnChild").
-			Build()).
-		Build()
+	b2 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
+		WithLiteral("v1").
+		WithLiteral("projects").
+		WithVariableNamed("child", "project").
+		WithLiteral("locations").
+		WithVariableNamed("child", "location").
+		WithLiteral("ids").
+		WithVariableNamed("child", "id").
+		WithVerb("actionOnChild").
+		Build())
 	wantB2 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:actionOnChild",
 		Substitutions: []*bindingSubstitution{
@@ -253,27 +241,21 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-	b3 := api.NewPathBindingBuilder().
-		WithVerb("GET").
-		WithPathTemplate(api.NewPathTemplateBuilder().
-			WithLiteral("v2").
-			WithLiteral("foos").
-			Build()).
-		WithQueryParameters("name", "optional", "child").
-		Build()
+	b3 := api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().
+		WithLiteral("v2").
+		WithLiteral("foos").
+		Build()).
+		WithQueryParameters("name", "optional", "child")
 	wantB3 := &pathBindingAnnotation{
 		PathFmt:     "/v2/foos",
 		QueryParams: []*api.Field{fName, fOptional, fChild},
 	}
-	b4 := api.NewPathBindingBuilder().
-		WithVerb("POST").
-		WithPathTemplate(api.NewPathTemplateBuilder().
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("oneofField").
-			WithVerb("actionOnOneof").
-			Build()).
-		Build()
+	b4 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
+		WithLiteral("v1").
+		WithLiteral("projects").
+		WithVariableNamed("oneofField").
+		WithVerb("actionOnOneof").
+		Build())
 	wantB4 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}:actionOnOneof",
 		Substitutions: []*bindingSubstitution{
@@ -305,21 +287,21 @@ func TestPathBindingAnnotations(t *testing.T) {
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
-	if diff := cmp.Diff(wantB0, b0.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB0, b0.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(wantB1, b1.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB1, b1.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(wantB2, b2.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	if diff := cmp.Diff(wantB3, b3.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB2, b2.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if diff := cmp.Diff(wantB4, b4.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB3, b3.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	if diff := cmp.Diff(wantB4, b4.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -328,17 +310,14 @@ func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
 	fName := api.NewTestField("name").WithType(api.TypezString)
 	request := api.NewTestMessage("Request").WithFields(fName)
 	response := api.NewTestMessage("Response")
-	binding := api.NewPathBindingBuilder().
-		WithVerb("POST").
-		WithPathTemplate(api.NewPathTemplateBuilder().
-			WithLiteral("v2").
-			WithVariable(api.NewPathVariableBuilder("name").
-				WithLiteral("projects").
-				WithMatch().
-				Build()).
-			WithVerb("create").
+	binding := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
+		WithLiteral("v2").
+		WithVariable(api.NewPathVariableBuilder("name").
+			WithLiteral("projects").
+			WithMatch().
 			Build()).
-		Build()
+		WithVerb("create").
+		Build())
 	method := api.NewTestMethod("DoFoo").
 		WithInput(request).
 		WithOutput(response).
@@ -354,7 +333,7 @@ func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
 	})
 	annotateModel(model, codec)
 
-	got := binding.Codec().(*pathBindingAnnotation)
+	got := binding.Codec.(*pathBindingAnnotation)
 	if !got.DetailedTracingAttributes {
 		t.Errorf("pathBindingAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
 	}
@@ -377,18 +356,15 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			WithJSONName(test.FieldName)
 		request := api.NewTestMessage("Request").WithFields(field)
 		response := api.NewTestMessage("Response")
-		binding := api.NewPathBindingBuilder().
-			WithVerb("GET").
-			WithPathTemplate(api.NewPathTemplateBuilder().
-				WithLiteral("v1").
-				WithLiteral("machines").
-				WithVariable(api.NewPathVariableBuilder(test.FieldName).
-					WithMatch().
-					Build()).
-				WithVerb("create").
+		binding := api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().
+			WithLiteral("v1").
+			WithLiteral("machines").
+			WithVariable(api.NewPathVariableBuilder(test.FieldName).
+				WithMatch().
 				Build()).
-			WithQueryParameters().
-			Build()
+			WithVerb("create").
+			Build()).
+			WithQueryParameters()
 		wantBinding := &pathBindingAnnotation{
 			PathFmt: "/v1/machines/{}:create",
 			Substitutions: []*bindingSubstitution{
@@ -413,7 +389,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		api.CrossReference(model)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 		annotateModel(model, codec)
-		if diff := cmp.Diff(wantBinding, binding.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+		if diff := cmp.Diff(wantBinding, binding.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 

@@ -37,7 +37,7 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID)
 	}
 	pathNames := []string{}
-	t := m.PathInfo.Bindings[0].PathTemplate()
+	t := m.PathInfo.Bindings[0].PathTemplate
 	for _, s := range t.Segments() {
 		if s.Variable() != nil {
 			pathNames = append(pathNames, s.Variable().FieldPath()[0])
@@ -61,9 +61,8 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 // QueryParams returns the query parameters for a method.
 func QueryParams(m *api.Method, b *api.PathBinding) []*api.Field {
 	var queryParams []*api.Field
-	qp := b.QueryParameters()
 	for _, field := range m.InputType.Fields {
-		if !qp[field.Name] {
+		if !b.QueryParameters[field.Name] {
 			continue
 		}
 		queryParams = append(queryParams, field)
