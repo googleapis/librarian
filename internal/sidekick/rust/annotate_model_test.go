@@ -642,9 +642,7 @@ func TestGenerateSetterSamples(t *testing.T) {
 }
 
 func TestModelAnnotationsHasStreaming(t *testing.T) {
-	msg := api.NewTestMessage("Request").WithPackage("test.v1")
-
-	bidiService := func() *api.Service {
+	bidiService := func(msg *api.Message) *api.Service {
 		bidiChat := api.NewTestMethod("Chat").
 			WithInput(msg).
 			WithOutput(msg).
@@ -655,7 +653,7 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			WithMethods(bidiChat)
 	}
 
-	unaryService := func() *api.Service {
+	unaryService := func(msg *api.Message) *api.Service {
 		unaryGet := api.NewTestMethod("Get").
 			WithInput(msg).
 			WithOutput(msg).
@@ -665,7 +663,7 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			WithMethods(unaryGet)
 	}
 
-	serverStreamingService := func() *api.Service {
+	serverStreamingService := func(msg *api.Message) *api.Service {
 		serverExpand := api.NewTestMethod("Expand").
 			WithInput(msg).
 			WithOutput(msg).
@@ -676,7 +674,7 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			WithMethods(serverExpand)
 	}
 
-	mixedService := func() *api.Service {
+	mixedService := func(msg *api.Message) *api.Service {
 		mixedChat := api.NewTestMethod("Chat").
 			WithInput(msg).
 			WithOutput(msg).
@@ -694,7 +692,7 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 
 	for _, test := range []struct {
 		name                 string
-		service              func() *api.Service
+		service              func(*api.Message) *api.Service
 		options              map[string]string
 		wantBidi             bool
 		wantServer           bool
@@ -809,7 +807,8 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			svc := test.service()
+			msg := api.NewTestMessage("Request").WithPackage("test.v1")
+			svc := test.service(msg)
 			model := api.NewTestAPI([]*api.Message{msg}, nil, []*api.Service{svc})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
