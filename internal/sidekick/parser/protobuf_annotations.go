@@ -79,8 +79,8 @@ func processRule(httpRule *httpRule, model *api.API, mID string) (*api.PathInfo,
 		WithBodyFieldPath(body).
 		WithBindings(binding)
 
-	for _, binding := range httpRule.GetAdditionalBindings() {
-		binding, additionalBody, err := processRuleShallow(binding, model, mID)
+	for _, additionalRule := range httpRule.GetAdditionalBindings() {
+		additionalBinding, additionalBody, err := processRuleShallow(additionalRule, model, mID)
 		if err != nil {
 			return nil, err
 		}
@@ -91,8 +91,8 @@ func processRule(httpRule *httpRule, model *api.API, mID string) (*api.PathInfo,
 				slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", body, "additionalBindingBody", additionalBody)
 			}
 		}
-		if binding != nil {
-			pathInfoBuilder.WithBinding(binding)
+		if additionalBinding != nil {
+			pathInfoBuilder.WithBinding(additionalBinding)
 		} else {
 			slog.Warn("additional binding without a pattern", "message", mID)
 		}
