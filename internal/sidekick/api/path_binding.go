@@ -64,6 +64,24 @@ func (b *PathBinding) Codec() any {
 }
 
 // SetAnnotations sets the language-specific annotations for the path binding.
+//
+// It panics if the annotations have already been set.
 func (b *PathBinding) SetAnnotations(codec any) {
+	if b.codec != nil {
+		panic("PathBinding.SetAnnotations called more than once")
+	}
 	b.codec = codec
+}
+
+// Clone returns a copy of the PathBinding without its codec annotation.
+func (b *PathBinding) Clone() *PathBinding {
+	if b == nil {
+		return nil
+	}
+	return &PathBinding{
+		verb:            b.verb,
+		pathTemplate:    b.pathTemplate,
+		queryParameters: maps.Clone(b.queryParameters),
+		targetResource:  b.targetResource,
+	}
 }

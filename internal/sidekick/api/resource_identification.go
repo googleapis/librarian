@@ -59,6 +59,9 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 			return err
 		}
 		if target != nil {
+			if binding.targetResource != nil {
+				return fmt.Errorf("targetResource already set for method: %s", method.ID)
+			}
 			binding.targetResource = target
 			return nil
 		}
@@ -69,6 +72,9 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		return err
 	}
 	if target != nil {
+		if binding.targetResource != nil {
+			return fmt.Errorf("targetResource already set for method: %s", method.ID)
+		}
 		binding.targetResource = target
 		return nil
 	}

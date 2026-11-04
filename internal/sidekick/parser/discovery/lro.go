@@ -83,12 +83,7 @@ func clonePathInfo(pi *api.PathInfo) *api.PathInfo {
 	if pi.Bindings != nil {
 		bindings = make([]*api.PathBinding, len(pi.Bindings))
 		for i, b := range pi.Bindings {
-			bindings[i] = api.NewPathBindingBuilder().
-				WithVerb(b.Verb()).
-				WithPathTemplate(b.PathTemplate()).
-				WithQueryParameterMap(b.QueryParameters()).
-				WithTargetResource(b.TargetResource()).
-				Build()
+			bindings[i] = b.Clone()
 		}
 	}
 	return &api.PathInfo{
