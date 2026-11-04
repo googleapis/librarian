@@ -27,7 +27,55 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-func TestFormat(t *testing.T) {
+// TestFormat_NoLibraries verifies that Format is a no-op when no libraries are passed.
+func TestFormat_NoLibraries(t *testing.T) {
+	testFormatLibraries(t, 0)
+}
+
+// TestFormat_SingleLibrary verifies that Format formats all eligible Ruby files
+// across multi-API directories while preserving kept and excluded files.
+func TestFormat_SingleLibrary(t *testing.T) {
+	testFormatLibraries(t, 1)
+}
+
+// TestFormat_MultipleLibraries verifies that Format formats the same set of
+// Ruby files identically across multiple libraries in a single batch call.
+func TestFormat_MultipleLibraries(t *testing.T) {
+	testFormatLibraries(t, 4)
+}
+
+// TestFormat_MultipleBatches verifies that Format chunks and formats files
+// across multiple rubocop invocations when total files exceed maxFilesPerFormatBatch.
+func TestFormat_MultipleBatches(t *testing.T) {
+	testFormatLibraries(t, 26)
+}
+
+func TestFormat_MissingOutputDir_Error(t *testing.T) {
+	outDir := filepath.Join(t.TempDir(), "nonexistent")
+	gotErr := Format(t.Context(), &config.Library{Name: "foo", Output: outDir})
+	if !errors.Is(gotErr, fs.ErrNotExist) {
+		t.Errorf("Format() error = %v, wantErr %v", gotErr, fs.ErrNotExist)
+	}
+}
+
+func TestFormat_MissingRubocopConfig_Error(t *testing.T) {
+	t.Setenv("LIBRARIAN_BIN", t.TempDir())
+	outDir := t.TempDir()
+	filePath := filepath.Join(outDir, "lib", "foo.rb")
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gotErr := Format(t.Context(), &config.Library{Name: "foo", Output: outDir})
+	if !errors.Is(gotErr, ErrRubocopConfigNotFound) {
+		t.Errorf("Format() error = %v, wantErr %v", gotErr, ErrRubocopConfigNotFound)
+	}
+}
+
+func testFormatLibraries(t *testing.T, count int) {
+	t.Helper()
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
 	installDir := filepath.Join(binDir, "ruby_tools")
@@ -49,100 +97,53 @@ while [ $# -gt 0 ]; do
   esac
 done
 `)
-	for _, test := range []struct {
-		name  string
-		count int
-	}{
-		{name: "no libraries", count: 0},
-		{name: "single library", count: 1},
-		{name: "multiple libraries", count: 4},
-		{name: "multiple batches", count: 26},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			outDir := t.TempDir()
-			var libraries []*config.Library
-			want := make(map[string]string)
-			for index := range test.count {
-				libraryName := fmt.Sprintf("foo%d", index)
-				libraries = append(libraries, &config.Library{
-					Name:   libraryName,
-					Output: filepath.Join(outDir, libraryName),
-					Keep:   []string{"lib/kept.rb"},
-				})
-				for relPath, wantContent := range map[string]string{
-					".toys.rb":                           "x = 1\n# formatted\n",
-					"Gemfile":                            "x = 1\n# formatted\n",
-					"snippets/Gemfile":                   "x = 1\n# formatted\n",
-					"lib/client.rb":                      "x = 1\n# formatted\n",
-					"lib/v1/client.rb":                   "x = 1\n# formatted\n",
-					"lib/v2/client.rb":                   "x = 1\n# formatted\n",
-					"proto_docs/doc.rb":                  "x = 1\n# formatted\n",
-					"snippets/snippet.rb":                "x = 1\n# formatted\n",
-					"lib/client_pb.rb":                   "x = 1\n",
-					"lib/kept.rb":                        "x = 1\n",
-					"lib/" + libraryName + "/version.rb": "x = 1\n",
-					"test/client_test.rb":                "x = 1\n",
-				} {
-					libraryRelPath := filepath.ToSlash(filepath.Join(libraryName, relPath))
-					want[libraryRelPath] = wantContent
-					filePath := filepath.Join(outDir, libraryRelPath)
-					if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
-						t.Fatal(err)
-					}
-					if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
-						t.Fatal(err)
-					}
-				}
-			}
-			if err := Format(t.Context(), libraries...); err != nil {
+	outDir := t.TempDir()
+	var libraries []*config.Library
+	want := make(map[string]string)
+	for index := range count {
+		libraryName := fmt.Sprintf("foo%d", index)
+		libraries = append(libraries, &config.Library{
+			Name:   libraryName,
+			Output: filepath.Join(outDir, libraryName),
+			Keep:   []string{"lib/kept.rb"},
+		})
+		for relPath, wantContent := range map[string]string{
+			".toys.rb":                           "x = 1\n# formatted\n",
+			"Gemfile":                            "x = 1\n# formatted\n",
+			"snippets/Gemfile":                   "x = 1\n# formatted\n",
+			"lib/client.rb":                      "x = 1\n# formatted\n",
+			"lib/v1/client.rb":                   "x = 1\n# formatted\n",
+			"lib/v2/client.rb":                   "x = 1\n# formatted\n",
+			"proto_docs/doc.rb":                  "x = 1\n# formatted\n",
+			"snippets/snippet.rb":                "x = 1\n# formatted\n",
+			"lib/client_pb.rb":                   "x = 1\n",
+			"lib/kept.rb":                        "x = 1\n",
+			"lib/" + libraryName + "/version.rb": "x = 1\n",
+			"test/client_test.rb":                "x = 1\n",
+		} {
+			libraryRelPath := filepath.ToSlash(filepath.Join(libraryName, relPath))
+			want[libraryRelPath] = wantContent
+			filePath := filepath.Join(outDir, libraryRelPath)
+			if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
 				t.Fatal(err)
 			}
-			got := make(map[string]string)
-			for relPath := range want {
-				content, err := os.ReadFile(filepath.Join(outDir, relPath))
-				if err != nil {
-					t.Fatal(err)
-				}
-				got[relPath] = string(content)
+			if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
+				t.Fatal(err)
 			}
-			if diff := cmp.Diff(want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
+		}
 	}
-}
-
-func TestFormat_Error(t *testing.T) {
-	t.Setenv("LIBRARIAN_BIN", t.TempDir())
-	outDir := t.TempDir()
-	filePath := filepath.Join(outDir, "lib", "foo.rb")
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+	if err := Format(t.Context(), libraries...); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
-		t.Fatal(err)
+	got := make(map[string]string)
+	for relPath := range want {
+		content, err := os.ReadFile(filepath.Join(outDir, relPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got[relPath] = string(content)
 	}
-	for _, test := range []struct {
-		name    string
-		output  string
-		wantErr error
-	}{
-		{
-			name:    "missing output directory",
-			output:  filepath.Join(outDir, "nonexistent"),
-			wantErr: fs.ErrNotExist,
-		},
-		{
-			name:    "missing rubocop config",
-			output:  outDir,
-			wantErr: ErrRubocopConfigNotFound,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			gotErr := Format(t.Context(), &config.Library{Name: "foo", Output: test.output})
-			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("Format() error = %v, wantErr %v", gotErr, test.wantErr)
-			}
-		})
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
