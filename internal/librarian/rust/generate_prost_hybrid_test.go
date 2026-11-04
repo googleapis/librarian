@@ -33,7 +33,15 @@ func TestGenerateProstHybrid(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "cargo")
 	msg := api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	method := api.NewTestMethod("Get").
+		WithInput(msg).
+		WithOutput(msg).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build())
+	method.PathInfo.SetAnnotations("initial-pi-codec")
+	method.PathInfo.Bindings()[0].SetAnnotations("initial-codec")
+	svc := api.NewTestService("Service").WithPackage("google.cloud.test.v1").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{svc})
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

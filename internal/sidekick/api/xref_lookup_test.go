@@ -319,7 +319,7 @@ func TestFindBodyField(t *testing.T) {
 		{
 			name:     "match by path info",
 			message:  NewTestMessage("Request").WithFields(bodyField, otherField),
-			pathInfo: &PathInfo{BodyFieldPath: "body_field"},
+			pathInfo: NewPathInfoBuilder().WithBodyFieldPath("body_field").Build(),
 			want:     bodyField,
 		},
 		{
@@ -346,7 +346,7 @@ func TestFindBodyField(t *testing.T) {
 		{
 			name:       "path info overrides type match",
 			message:    NewTestMessage("Request").WithFields(typeMatchField, bodyField),
-			pathInfo:   &PathInfo{BodyFieldPath: "body_field"},
+			pathInfo:   NewPathInfoBuilder().WithBodyFieldPath("body_field").Build(),
 			targetType: messageType.ID,
 			singular:   "type_match",
 			want:       bodyField,
@@ -491,7 +491,7 @@ func TestFindQuickstartMethod(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartMethod(tc.service)
-			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(Method{}, "Service", "Model")); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported(), cmpopts.IgnoreFields(Method{}, "Service", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -539,7 +539,7 @@ func TestFindQuickstartService(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartService(tc.api)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -214,16 +214,16 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 				return err
 			}
 			queryParameters := makeQueryParameters(op.Operation)
-			pathInfo := &api.PathInfo{
-				Bindings: []*api.PathBinding{
-					{
-						Verb:            op.Verb,
-						PathTemplate:    pathTemplate,
-						QueryParameters: queryParameters,
-					},
-				},
-				BodyFieldPath: bodyFieldPath,
-			}
+			pathInfo := api.NewPathInfoBuilder().
+				WithBindings(
+					api.NewPathBindingBuilder().
+						WithVerb(op.Verb).
+						WithPathTemplate(pathTemplate).
+						WithQueryParameterMap(queryParameters).
+						Build(),
+				).
+				WithBodyFieldPath(bodyFieldPath).
+				Build()
 			mID := fmt.Sprintf("%s.%s", serviceID, op.Operation.OperationId)
 			m := &api.Method{
 				Name:          op.Operation.OperationId,

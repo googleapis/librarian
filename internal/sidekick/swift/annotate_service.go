@@ -434,7 +434,7 @@ func (c *codec) shouldGenerateMethod(method *api.Method) bool {
 	if c.isGrpc() {
 		return true
 	}
-	return method.PathInfo != nil && len(method.PathInfo.Bindings) != 0
+	return method.PathInfo != nil && len(method.PathInfo.Bindings()) != 0
 }
 
 func (c *codec) addFeatureAnnotations(

@@ -384,9 +384,9 @@ func (s *Service) WithDefaultHost(host string) *Service {
 func NewTestMethod(name string) *Method {
 	return &Method{
 		Name: name,
-		ID:   fmt.Sprintf(".test.%s", name),
+		ID:   fmt.Sprintf(".%s.%s", "test", name),
 		PathInfo: &PathInfo{
-			Bindings: []*PathBinding{{}},
+			bindings: []*PathBinding{{}},
 		},
 	}
 }
@@ -434,15 +434,15 @@ func (m *Method) ensureFirstBinding() *PathBinding {
 	if m.PathInfo == nil {
 		m.PathInfo = &PathInfo{}
 	}
-	if len(m.PathInfo.Bindings) == 0 {
-		m.PathInfo.Bindings = append(m.PathInfo.Bindings, &PathBinding{})
+	if len(m.PathInfo.bindings) == 0 {
+		m.PathInfo.bindings = append(m.PathInfo.bindings, &PathBinding{})
 	}
-	return m.PathInfo.Bindings[0]
+	return m.PathInfo.bindings[0]
 }
 
 // WithVerb sets the HTTP verb for the first binding.
 func (m *Method) WithVerb(verb string) *Method {
-	m.ensureFirstBinding().Verb = verb
+	m.ensureFirstBinding().verb = verb
 	return m
 }
 
@@ -480,7 +480,7 @@ func (m *Method) WithOutputTypeID(id string) *Method {
 
 // WithPathTemplate sets the path template for the first binding.
 func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
-	m.ensureFirstBinding().PathTemplate = pt
+	m.ensureFirstBinding().pathTemplate = pt
 	return m
 }
 
@@ -490,7 +490,7 @@ func (m *Method) WithBindings(bindings ...*PathBinding) *Method {
 	if m.PathInfo == nil {
 		m.PathInfo = &PathInfo{}
 	}
-	m.PathInfo.Bindings = bindings
+	m.PathInfo.bindings = bindings
 	return m
 }
 
@@ -500,14 +500,18 @@ func (m *Method) WithBodyFieldPath(path string) *Method {
 	if m.PathInfo == nil {
 		m.PathInfo = &PathInfo{}
 	}
-	m.PathInfo.BodyFieldPath = path
+	m.PathInfo.bodyFieldPath = path
 	return m
 }
 
 // WithQueryParameters sets the query parameters on the first binding of the method.
 // It initializes PathInfo if it is nil, and creates a binding if none exists.
 func (m *Method) WithQueryParameters(params ...string) *Method {
-	m.ensureFirstBinding().WithQueryParameters(params...)
+	b := m.ensureFirstBinding()
+	b.queryParameters = make(map[string]bool, len(params))
+	for _, p := range params {
+		b.queryParameters[p] = true
+	}
 	return m
 }
 
@@ -611,41 +615,6 @@ func (m *Method) WithSampleInfo(sampleInfo *SampleInfo) *Method {
 func (m *Method) ReturnEmpty() *Method {
 	m.ReturnsEmpty = true
 	return m
-}
-
-// NewTestPathBinding creates a PathBinding with the given verb and path template.
-func NewTestPathBinding(verb string, pt *PathTemplate) *PathBinding {
-	return &PathBinding{
-		Verb:         verb,
-		PathTemplate: pt,
-	}
-}
-
-// WithVerb sets the HTTP verb for the binding.
-func (b *PathBinding) WithVerb(verb string) *PathBinding {
-	b.Verb = verb
-	return b
-}
-
-// WithPathTemplate sets the path template for the binding.
-func (b *PathBinding) WithPathTemplate(pt *PathTemplate) *PathBinding {
-	b.PathTemplate = pt
-	return b
-}
-
-// WithQueryParameters sets the query parameters for the binding.
-func (b *PathBinding) WithQueryParameters(params ...string) *PathBinding {
-	b.QueryParameters = make(map[string]bool, len(params))
-	for _, p := range params {
-		b.QueryParameters[p] = true
-	}
-	return b
-}
-
-// WithTargetResource sets the target resource for the binding.
-func (b *PathBinding) WithTargetResource(tr *TargetResource) *PathBinding {
-	b.TargetResource = tr
-	return b
 }
 
 // NewTestOneOf creates a OneOf with defaults for testing.
