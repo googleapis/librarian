@@ -252,6 +252,11 @@ func TestGenerateSkip(t *testing.T) {
 			want: []string{lib1},
 		},
 		{
+			name: "skip_generate with all and force flags",
+			args: []string{"librarian", "generate", "--all", "--force"},
+			want: []string{lib1, lib2},
+		},
+		{
 			name:    "skip_generate with library name",
 			args:    []string{"librarian", "generate", lib1},
 			wantErr: errSkipGenerate,
