@@ -56,7 +56,7 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if err != nil {
 			return err
 		}
-		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist", "--no-dev"); err != nil {
+		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 		if tool.Entrypoint == "" {
