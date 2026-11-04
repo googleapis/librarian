@@ -80,11 +80,26 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
+	repoRoot := filepath.Dir(filepath.Dir(outdir))
+	if err := generateAPIs(ctx, cfg, library, googleapisDir, repoRoot); err != nil {
+		return err
+	}
+	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
+		return fmt.Errorf("failed to run post processor: %w", err)
+	}
+	if library.Name == "google-cloud-compute" {
+		if err := injectV1SmallExports(outdir); err != nil {
+			return fmt.Errorf("failed to inject v1small exports: %w", err)
+		}
+	}
+	return nil
+}
+
+func generateAPIs(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot string) error {
 	var protocConfig *config.Protoc
 	if cfg.Tools != nil {
 		protocConfig = cfg.Tools.Protoc
 	}
-	repoRoot := filepath.Dir(filepath.Dir(outdir))
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.SetLimit(runtime.GOMAXPROCS(0))
 	for index, api := range library.APIs {
@@ -108,20 +123,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return nil
 		})
 	}
-	if err := group.Wait(); err != nil {
-		return err
-	}
-	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
-		return fmt.Errorf("failed to run post processor: %w", err)
-	}
-
-	if library.Name == "google-cloud-compute" {
-		if err := injectV1SmallExports(outdir); err != nil {
-			return fmt.Errorf("failed to inject v1small exports: %w", err)
-		}
-	}
-
-	return nil
+	return group.Wait()
 }
 
 func requireCachedTool(toolName string) (string, error) {
