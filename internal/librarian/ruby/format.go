@@ -36,42 +36,57 @@ var ErrRubocopConfigNotFound = errors.New("cloud-rubocop.yml not found in gapic-
 
 // Format formats generated Ruby libraries using rubocop in batches.
 func Format(ctx context.Context, libraries ...*config.Library) error {
-	var allFiles []string
-	for _, library := range libraries {
-		files, err := collectRubyFiles(library)
-		if err != nil {
-			return fmt.Errorf("collect ruby files in %q: %w", library.Name, err)
-		}
-		allFiles = append(allFiles, files...)
+	files, err := collectAllRubyFiles(libraries)
+	if err != nil {
+		return err
 	}
-	if len(allFiles) == 0 {
+	if len(files) == 0 {
 		return nil
 	}
 	env, err := toolsEnv()
 	if err != nil {
 		return err
 	}
-	installDir, err := InstallDir()
+	configPath, err := rubocopConfigPath()
 	if err != nil {
 		return err
 	}
-	matches, err := filepath.Glob(filepath.Join(installDir, "gems", "gapic-generator-cloud-*", "cloud-rubocop.yml"))
-	if err != nil {
-		return err
-	}
-	if len(matches) == 0 {
-		return ErrRubocopConfigNotFound
-	}
-	// Install provisions a single pinned gapic-generator-cloud version in installDir.
-	configPath := matches[0]
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.SetLimit(runtime.GOMAXPROCS(0))
-	for chunk := range slices.Chunk(allFiles, maxFilesPerFormatBatch) {
+	for chunk := range slices.Chunk(files, maxFilesPerFormatBatch) {
 		group.Go(func() error {
 			return command.RunWithEnv(groupCtx, env, "rubocop", append([]string{"--cache", "false", "-a", "--fail-level", "E", "-c", configPath}, chunk...)...)
 		})
 	}
 	return group.Wait()
+}
+
+func collectAllRubyFiles(libraries []*config.Library) ([]string, error) {
+	var allFiles []string
+	for _, library := range libraries {
+		files, err := collectRubyFiles(library)
+		if err != nil {
+			return nil, fmt.Errorf("collect ruby files in %q: %w", library.Name, err)
+		}
+		allFiles = append(allFiles, files...)
+	}
+	return allFiles, nil
+}
+
+func rubocopConfigPath() (string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return "", err
+	}
+	matches, err := filepath.Glob(filepath.Join(installDir, "gems", "gapic-generator-cloud-*", "cloud-rubocop.yml"))
+	if err != nil {
+		return "", err
+	}
+	if len(matches) == 0 {
+		return "", ErrRubocopConfigNotFound
+	}
+	// Install provisions a single pinned gapic-generator-cloud version in installDir.
+	return matches[0], nil
 }
 
 func collectRubyFiles(library *config.Library) ([]string, error) {
