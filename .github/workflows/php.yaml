@@ -42,7 +42,6 @@ jobs:
         with:
           repository: googleapis/google-cloud-php
           path: google-cloud-php
-          depth: 1
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
@@ -64,7 +63,7 @@ jobs:
             ~/.cache/librarian
             google-cloud-php/dev/vendor
             ${{ env.pythonLocation }}/lib/python3.14/site-packages
-          key: librarian-php-tools-v3-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
+          key: librarian-php-tools-v3-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
       - name: Run librarian install
         if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-php
@@ -109,7 +108,7 @@ jobs:
             ~/.cache/librarian
             google-cloud-php/dev/vendor
             ${{ env.pythonLocation }}/lib/python3.14/site-packages
-          key: librarian-php-tools-v3-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
+          key: librarian-php-tools-v3-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
       - name: Run librarian install
         if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-php
