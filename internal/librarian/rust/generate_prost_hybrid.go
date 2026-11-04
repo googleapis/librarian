@@ -345,17 +345,7 @@ func cloneServices(services []*api.Service) []*api.Service {
 				mCopy := *m
 				mCopy.Codec = nil
 				mCopy.Service = &svcCopy
-				if m.PathInfo != nil {
-					piCopy := *m.PathInfo
-					piCopy.Codec = nil
-					if m.PathInfo.Bindings != nil {
-						piCopy.Bindings = make([]*api.PathBinding, len(m.PathInfo.Bindings))
-						for k, b := range m.PathInfo.Bindings {
-							piCopy.Bindings[k] = b.Clone()
-						}
-					}
-					mCopy.PathInfo = &piCopy
-				}
+				mCopy.PathInfo = m.PathInfo.Clone()
 				svcCopy.Methods[j] = &mCopy
 			}
 		}
