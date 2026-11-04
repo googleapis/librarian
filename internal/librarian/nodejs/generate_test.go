@@ -1040,7 +1040,13 @@ func TestGenerate_APIs(t *testing.T) {
 		{name: "no APIs", keep: []string{".repo-metadata.json", "README.md"}},
 		{name: "only skipped v1small API", apis: []*config.API{{Path: "google/cloud/compute/v1small"}}, keep: []string{".repo-metadata.json", "README.md"}},
 		{name: "single API", apis: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
-		{name: "multiple APIs", apis: []*config.API{{Path: "google/cloud/secretmanager/v1"}, {Path: "google/cloud/secretmanager/v1beta2"}}},
+		{name: "multiple APIs", apis: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+			{Path: "google/cloud/secretmanager/v1beta2"},
+			{Path: "google/cloud/configdelivery/v1"},
+			{Path: "google/cloud/workflows/v1"},
+			{Path: "google/cloud/workflows/executions/v1"},
+		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
@@ -1069,14 +1075,19 @@ func TestGenerate_APIs_Error(t *testing.T) {
 		name string
 		apis []*config.API
 	}{
-		{
-			name: "one of multiple APIs fails",
-			apis: []*config.API{{Path: "google/cloud/secretmanager/v1"}, {Path: "google/cloud/nonexistent/v1"}},
-		},
-		{
-			name: "all APIs fail",
-			apis: []*config.API{{Path: "google/cloud/nonexistent/v1"}, {Path: "google/cloud/nonexistent/v2"}},
-		},
+		{name: "one of multiple APIs fails", apis: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+			{Path: "google/cloud/secretmanager/v1beta2"},
+			{Path: "google/cloud/nonexistent/v1"},
+			{Path: "google/cloud/configdelivery/v1"},
+			{Path: "google/cloud/workflows/v1"},
+		}},
+		{name: "all APIs fail", apis: []*config.API{
+			{Path: "google/cloud/nonexistent/v1"},
+			{Path: "google/cloud/nonexistent/v2"},
+			{Path: "google/cloud/nonexistent/v3"},
+			{Path: "google/cloud/nonexistent/v4"},
+		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
