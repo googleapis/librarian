@@ -829,7 +829,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	annotation := &methodAnnotation{
 		Parent:              method,
 		Name:                strcase.ToLowerCamel(method.Name),
-		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
+		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb()),
 		RequestType:         annotate.resolveMessageName(method.InputType, true),
 		ResponseType:        annotate.resolveMessageName(method.OutputType, true),
 		DocLines:            formatDocComments(method.Documentation, annotate.model),

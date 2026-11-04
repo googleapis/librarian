@@ -480,9 +480,15 @@ func TestServiceAnnotationsStreaming(t *testing.T) {
 
 func TestServiceAnnotationsMethodKinds(t *testing.T) {
 	msg := api.NewTestMessage("Request").WithPackage("test.v1")
-	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
-	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
-	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	newBidiMethod := func() *api.Method {
+		return api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	}
+	newServerMethod := func() *api.Method {
+		return api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	}
+	newUnaryMethod := func() *api.Method {
+		return api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	}
 
 	for _, test := range []struct {
 		name                  string
@@ -493,35 +499,35 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 	}{
 		{
 			name:                  "bidi only",
-			methods:               []*api.Method{bidiMethod},
+			methods:               []*api.Method{newBidiMethod()},
 			options:               map[string]string{},
 			wantRequestBuilder:    false,
 			wantBidiStreamBuilder: true,
 		},
 		{
 			name:                  "bidi and unary",
-			methods:               []*api.Method{bidiMethod, unaryMethod},
+			methods:               []*api.Method{newBidiMethod(), newUnaryMethod()},
 			options:               map[string]string{},
 			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: true,
 		},
 		{
 			name:                  "server streaming only",
-			methods:               []*api.Method{serverMethod},
+			methods:               []*api.Method{newServerMethod()},
 			options:               map[string]string{},
 			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: false,
 		},
 		{
 			name:                  "server streaming and bidi",
-			methods:               []*api.Method{serverMethod, bidiMethod},
+			methods:               []*api.Method{newServerMethod(), newBidiMethod()},
 			options:               map[string]string{},
 			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: true,
 		},
 		{
 			name:                  "unary only",
-			methods:               []*api.Method{unaryMethod},
+			methods:               []*api.Method{newUnaryMethod()},
 			options:               map[string]string{},
 			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: false,
@@ -550,8 +556,12 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 
 func TestServiceAnnotationsClassification(t *testing.T) {
 	msg := api.NewTestMessage("Request").WithPackage("test.v1")
-	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
-	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	newBidiMethod := func() *api.Method {
+		return api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	}
+	newUnaryMethod := func() *api.Method {
+		return api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	}
 
 	for _, test := range []struct {
 		name       string
@@ -563,7 +573,7 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 	}{
 		{
 			name:       "pure gRPC service with only streaming methods",
-			methods:    []*api.Method{bidiMethod},
+			methods:    []*api.Method{newBidiMethod()},
 			options:    map[string]string{},
 			isPureGrpc: true,
 			isPureHttp: false,
@@ -571,7 +581,7 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 		},
 		{
 			name:       "pure HTTP service with only unary methods",
-			methods:    []*api.Method{unaryMethod},
+			methods:    []*api.Method{newUnaryMethod()},
 			options:    map[string]string{},
 			isPureGrpc: false,
 			isPureHttp: true,
@@ -579,7 +589,7 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 		},
 		{
 			name:       "hybrid service with unary and streaming methods",
-			methods:    []*api.Method{unaryMethod, bidiMethod},
+			methods:    []*api.Method{newUnaryMethod(), newBidiMethod()},
 			options:    map[string]string{},
 			isPureGrpc: false,
 			isPureHttp: false,
@@ -587,7 +597,7 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 		},
 		{
 			name:    "default transport grpc marks unary service as pure gRPC",
-			methods: []*api.Method{unaryMethod},
+			methods: []*api.Method{newUnaryMethod()},
 			options: map[string]string{
 				"default-transport": "grpc",
 			},
@@ -597,7 +607,7 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 		},
 		{
 			name:    "default transport grpc with streaming is pure gRPC",
-			methods: []*api.Method{unaryMethod, bidiMethod},
+			methods: []*api.Method{newUnaryMethod(), newBidiMethod()},
 			options: map[string]string{
 				"default-transport": "grpc",
 			},
