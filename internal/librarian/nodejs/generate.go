@@ -100,6 +100,9 @@ func generateAPIs(ctx context.Context, cfg *config.Config, library *config.Libra
 	if cfg.Tools != nil {
 		protocConfig = cfg.Tools.Protoc
 	}
+	// Use errgroup.WithContext to fail fast on the first error and cancel any
+	// in-flight protoc subprocesses, matching the fail-fast behavior of other
+	// languages and generateLibraries.
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.SetLimit(runtime.GOMAXPROCS(0))
 	for index, api := range library.APIs {

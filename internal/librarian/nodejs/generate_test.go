@@ -1029,7 +1029,9 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestGenerate_APIs(t *testing.T) {
+// TestGenerate_AllAPIsSucceed verifies that Generate succeeds across zero, skipped,
+// single, and multiple APIs, and runs the post-processor on completion.
+func TestGenerate_AllAPIsSucceed(t *testing.T) {
 	setupFakeNodejsTools(t)
 	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
 	for _, test := range []struct {
@@ -1068,38 +1070,54 @@ func TestGenerate_APIs(t *testing.T) {
 	}
 }
 
-func TestGenerate_APIs_Error(t *testing.T) {
+// TestGenerate_PartialAPIFailure_Error verifies that when one API fails while others
+// succeed, Generate returns the error and skips post-processing.
+func TestGenerate_PartialAPIFailure_Error(t *testing.T) {
 	setupFakeNodejsTools(t)
 	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
-	for _, test := range []struct {
-		name string
-		apis []*config.API
-	}{
-		{name: "one of multiple APIs fails", apis: []*config.API{
+	outDir := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
+	library := Fill(&config.Library{
+		Name:   "google-cloud-secretmanager",
+		Output: outDir,
+		APIs: []*config.API{
 			{Path: "google/cloud/secretmanager/v1"},
 			{Path: "google/cloud/secretmanager/v1beta2"},
 			{Path: "google/cloud/nonexistent/v1"},
 			{Path: "google/cloud/configdelivery/v1"},
 			{Path: "google/cloud/workflows/v1"},
-		}},
-		{name: "all APIs fail", apis: []*config.API{
+		},
+	})
+	gotErr := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	if !errors.Is(gotErr, fs.ErrNotExist) {
+		t.Errorf("Generate() error = %v, want %v", gotErr, fs.ErrNotExist)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, ".repo-metadata.json")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected post-processor not to run on error, but .repo-metadata.json stat err = %v", err)
+	}
+}
+
+// TestGenerate_AllAPIsFail_Error verifies that when every API fails, Generate
+// returns the error and skips post-processing.
+func TestGenerate_AllAPIsFail_Error(t *testing.T) {
+	setupFakeNodejsTools(t)
+	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
+	outDir := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
+	library := Fill(&config.Library{
+		Name:   "google-cloud-secretmanager",
+		Output: outDir,
+		APIs: []*config.API{
 			{Path: "google/cloud/nonexistent/v1"},
 			{Path: "google/cloud/nonexistent/v2"},
 			{Path: "google/cloud/nonexistent/v3"},
 			{Path: "google/cloud/nonexistent/v4"},
-		}},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			outDir := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
-			library := Fill(&config.Library{Name: "google-cloud-secretmanager", Output: outDir, APIs: test.apis})
-			gotErr := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
-			if !errors.Is(gotErr, fs.ErrNotExist) {
-				t.Errorf("Generate() error = %v, want %v", gotErr, fs.ErrNotExist)
-			}
-			if _, err := os.Stat(filepath.Join(outDir, ".repo-metadata.json")); !errors.Is(err, fs.ErrNotExist) {
-				t.Errorf("expected post-processor not to run on error, but .repo-metadata.json stat err = %v", err)
-			}
-		})
+		},
+	})
+	gotErr := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	if !errors.Is(gotErr, fs.ErrNotExist) {
+		t.Errorf("Generate() error = %v, want %v", gotErr, fs.ErrNotExist)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, ".repo-metadata.json")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected post-processor not to run on error, but .repo-metadata.json stat err = %v", err)
 	}
 }
 
