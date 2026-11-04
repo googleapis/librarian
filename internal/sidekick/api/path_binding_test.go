@@ -74,3 +74,34 @@ func TestPathBindingSetAnnotationsPanicsWhenAlreadySet(t *testing.T) {
 	}()
 	pb.SetAnnotations("second")
 }
+
+func TestPathBindingClone(t *testing.T) {
+	var nilBinding *PathBinding
+	if got := nilBinding.Clone(); got != nil {
+		t.Errorf("nilBinding.Clone() = %v, want nil", got)
+	}
+
+	pt := NewPathTemplateBuilder().WithLiteral("v1").Build()
+	tr := &TargetResource{
+		FieldPaths: [][]string{{"parent"}},
+		Template:   []PathSegment{*NewPathSegmentBuilder().WithLiteral("items").Build()},
+	}
+	orig := NewPathBindingBuilder().
+		WithVerb("GET").
+		WithPathTemplate(pt).
+		WithQueryParameters("filter").
+		WithTargetResource(tr).
+		Build()
+	orig.SetAnnotations("my-codec")
+
+	got := orig.Clone()
+	want := &PathBinding{
+		verb:            "GET",
+		pathTemplate:    pt,
+		queryParameters: map[string]bool{"filter": true},
+		targetResource:  tr,
+	}
+	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
+		t.Errorf("Clone() mismatch (-want +got):\n%s", diff)
+	}
+}

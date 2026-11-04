@@ -72,3 +72,16 @@ func (b *PathBinding) SetAnnotations(codec any) {
 	}
 	b.codec = codec
 }
+
+// Clone returns a copy of the PathBinding without its codec annotation.
+func (b *PathBinding) Clone() *PathBinding {
+	if b == nil {
+		return nil
+	}
+	return &PathBinding{
+		verb:            b.verb,
+		pathTemplate:    b.pathTemplate,
+		queryParameters: maps.Clone(b.queryParameters),
+		targetResource:  b.targetResource,
+	}
+}

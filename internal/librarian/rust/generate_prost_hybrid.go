@@ -351,12 +351,7 @@ func cloneServices(services []*api.Service) []*api.Service {
 					if m.PathInfo.Bindings != nil {
 						piCopy.Bindings = make([]*api.PathBinding, len(m.PathInfo.Bindings))
 						for k, b := range m.PathInfo.Bindings {
-							piCopy.Bindings[k] = api.NewPathBindingBuilder().
-								WithVerb(b.Verb()).
-								WithPathTemplate(b.PathTemplate()).
-								WithQueryParameterMap(b.QueryParameters()).
-								WithTargetResource(b.TargetResource()).
-								Build()
+							piCopy.Bindings[k] = b.Clone()
 						}
 					}
 					mCopy.PathInfo = &piCopy
