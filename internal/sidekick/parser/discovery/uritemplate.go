@@ -38,7 +38,7 @@ var (
 // In sidekick we need to capture the structure of the URI template for the
 // codec(s) to emit good templates with them.
 func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
-	template := &api.PathTemplate{}
+	template := api.NewPathTemplateBuilder()
 	var pos int
 	for {
 		var err error
@@ -56,7 +56,7 @@ func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
 		if err != nil {
 			return nil, err
 		}
-		template.Segments = append(template.Segments, *segment)
+		template.WithSegment(*segment)
 		pos += width
 		if pos == len(uriTemplate) || uriTemplate[pos] != slash {
 			break
@@ -70,12 +70,12 @@ func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
 			return nil, err
 		}
 		pos += width
-		template.Verb = literal.Literal()
+		template.WithVerb(literal.Literal())
 	}
 	if pos != len(uriTemplate) {
 		return nil, fmt.Errorf("trailing data (%q) cannot be parsed as a URI template", uriTemplate[pos:])
 	}
-	return template, nil
+	return template.Build(), nil
 }
 
 func parseExpression(input string) (*api.PathSegment, int, error) {

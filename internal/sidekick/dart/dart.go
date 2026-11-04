@@ -168,7 +168,7 @@ func enumName(e *api.Enum) string {
 func httpPathFmt(pathInfo *api.PathInfo) string {
 	var builder strings.Builder
 	t := pathInfo.Bindings[0].PathTemplate
-	for _, segment := range t.Segments {
+	for _, segment := range t.Segments() {
 		switch {
 		case segment.Literal() != "":
 			builder.WriteString("/")
@@ -185,9 +185,9 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 			builder.WriteString("}")
 		}
 	}
-	if t.Verb != "" {
+	if t.Verb() != "" {
 		builder.WriteString(":")
-		builder.WriteString(t.Verb)
+		builder.WriteString(t.Verb())
 	}
 
 	return builder.String()

@@ -24,7 +24,7 @@ import (
 func pathExpression(t *api.PathTemplate) string {
 	count := 0
 	var pathComponents []string
-	for _, segment := range t.Segments {
+	for _, segment := range t.Segments() {
 		if segment.Literal() != "" {
 			pathComponents = append(pathComponents, segment.Literal())
 		} else if segment.Variable() != nil {
@@ -33,8 +33,8 @@ func pathExpression(t *api.PathTemplate) string {
 		}
 	}
 	path := "/" + strings.Join(pathComponents, "/")
-	if t.Verb != "" {
-		path += ":" + t.Verb
+	if t.Verb() != "" {
+		path += ":" + t.Verb()
 	}
 	return path
 }
@@ -42,7 +42,7 @@ func pathExpression(t *api.PathTemplate) string {
 func (c *codec) pathVariables(message *api.Message, t *api.PathTemplate) ([]*pathVariable, error) {
 	count := 0
 	var variables []*pathVariable
-	for _, segment := range t.Segments {
+	for _, segment := range t.Segments() {
 		if segment.Variable() != nil {
 			pathVar, err := c.newPathVariable(message, segment.Variable(), count)
 			if err != nil {
@@ -268,7 +268,7 @@ func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*rou
 // google.api.routing annotations are absent per AIP-4222.
 func (c *codec) routingParamsFromPathTemplate(t *api.PathTemplate) []*routingParam {
 	var params []*routingParam
-	for _, segment := range t.Segments {
+	for _, segment := range t.Segments() {
 		if segment.Variable() != nil {
 			fieldPath := segment.Variable().FieldPath()
 			if len(fieldPath) == 0 {

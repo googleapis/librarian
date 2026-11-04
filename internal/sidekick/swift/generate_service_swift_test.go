@@ -111,7 +111,7 @@ func TestGenerateService_Delegation(t *testing.T) {
 				WithInput(request).
 				WithOutput(response).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1")),
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build()),
 		)
 
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{iam}).
@@ -167,13 +167,13 @@ func TestGenerateService_SnippetFiles(t *testing.T) {
 		api.NewTestMethod("CreateRole").
 			WithInput(dummyMessage).
 			WithVerb("POST").
-			WithPathTemplate(&api.PathTemplate{}),
+			WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 	)
 	secretManager := api.NewTestService("SecretManagerService").WithPackage(packageName).WithMethods(
 		api.NewTestMethod("GetSecret").
 			WithInput(dummyMessage).
 			WithVerb("GET").
-			WithPathTemplate(&api.PathTemplate{}),
+			WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 	)
 
 	model := api.NewTestAPI([]*api.Message{dummyMessage}, nil, []*api.Service{iam, secretManager})
@@ -219,7 +219,7 @@ func TestGenerateService_WithImports(t *testing.T) {
 				WithInput(inputMessage).
 				WithOutput(externalMessage).
 				WithVerb("POST").
-				WithPathTemplate(&api.PathTemplate{}),
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 		)
 
 	model := api.NewTestAPI([]*api.Message{inputMessage}, nil, []*api.Service{iam})
@@ -278,7 +278,7 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 						WithInput(api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")).
 						WithOutput(api.NewTestMessage("Response").WithPackage("google.cloud.test.v1")).
 						WithVerb("POST").
-						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("action")),
+						WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("action").Build()),
 				),
 			wantImport:   "\nimport Foundation\n",
 			unwantImport: "\npublic import Foundation\n",
@@ -293,7 +293,7 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 							WithFields(api.NewTestField("payload").WithType(api.TypezBytes))).
 						WithOutput(api.NewTestMessage("UploadResponse").WithPackage("google.cloud.test.v1")).
 						WithVerb("POST").
-						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload")).
+						WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("upload").Build()).
 						WithSignatures(api.NewTestMethodSignature().WithFields(
 							api.NewTestField("payload").WithType(api.TypezBytes),
 						)),
@@ -345,9 +345,10 @@ func TestGenerateService_PathParameters(t *testing.T) {
 	}{
 		{
 			name: "Nested",
-			path: (&api.PathTemplate{}).
+			path: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("secret", "name"),
+				WithVariableNamed("secret", "name").
+				Build(),
 			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
           guard
@@ -382,9 +383,10 @@ func TestGenerateService_PathParameters(t *testing.T) {
 		},
 		{
 			name: "Plain",
-			path: (&api.PathTemplate{}).
+			path: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name"),
+				WithVariableNamed("name").
+				Build(),
 			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
           guard
@@ -419,12 +421,13 @@ func TestGenerateService_PathParameters(t *testing.T) {
 		},
 		{
 			name: "Multiple strings",
-			path: (&api.PathTemplate{}).
+			path: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("locations").
-				WithVariableNamed("location"),
+				WithVariableNamed("location").
+				Build(),
 			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
           guard
@@ -578,7 +581,7 @@ func TestGenerateService_Pagination(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")).
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("secrets").Build()).
 				WithPagination(pageTokenField)
 
 			iam := api.NewTestService("SecretManagerService").
@@ -728,7 +731,7 @@ func TestGenerateService_LRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("workflows")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("workflows").Build()).
 		WithOperationInfo(&api.OperationInfo{
 			ResponseTypeID: workflowType.ID,
 			MetadataTypeID: metadataType.ID,
@@ -738,7 +741,7 @@ func TestGenerateService_LRO(t *testing.T) {
 		WithInput(getOperationInputType).
 		WithOutput(operationType).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("operations").Build())
 
 	workflows := api.NewTestService("WorkflowsService").
 		WithPackage("google.cloud.workflows.v1").
@@ -841,7 +844,7 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("workflows")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("workflows").Build()).
 		WithOperationInfo(&api.OperationInfo{
 			ResponseTypeID: ".google.protobuf.Empty",
 			MetadataTypeID: metadataType.ID,
@@ -851,7 +854,7 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		WithInput(getOperationInputType).
 		WithOutput(operationType).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("operations").Build())
 
 	workflows := api.NewTestService("WorkflowsService").
 		WithPackage("google.cloud.workflows.v1").
@@ -920,7 +923,7 @@ func TestGenerateService_DiscoveryLRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("instances"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("instances").Build())
 	insertInstance.DiscoveryLro = &api.DiscoveryLro{
 		PollingPathParameters: []string{"zone"},
 	}
@@ -1066,27 +1069,27 @@ func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
 		WithInput(requestMessage).
 		WithBodyFieldPath("*").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build())
 
 	updateSecret := api.NewTestMethod("UpdateSecret").
 		WithInput(requestMessage).
 		WithBodyFieldPath("*").
 		WithVerb("PATCH").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("secret", "name"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("secret", "name").Build())
 
 	addSecretVersion := api.NewTestMethod("AddSecretVersion").
 		WithInput(requestMessage).
 		WithBodyFieldPath("*").
 		WithBindings(
-			api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")),
-			api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("alternative_parent")),
+			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()),
+			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("alternative_parent").Build()),
 		)
 
 	patchSecret := api.NewTestMethod("PatchSecret").
 		WithInput(requestMessage).
 		WithBodyFieldPath("secret").
 		WithVerb("PATCH").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build())
 
 	service := api.NewTestService("SecretManagerService").
 		WithPackage("google.cloud.secretmanager.v1").
@@ -1185,13 +1188,13 @@ func TestGenerateServiceSwift_SkipStreamingMethods(t *testing.T) {
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("predict"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("predict").Build())
 
 	streaming := api.NewTestMethod("StreamPredict").
 		WithInput(req).
 		WithOutput(resp).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("streamPredict")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("streamPredict").Build()).
 		WithServerSideStreaming()
 
 	service := api.NewTestService("PredictionService").
@@ -1262,21 +1265,21 @@ func TestGenerateService_AutoPopulated(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(responseType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 		WithAutoPopulated(reqIDField)
 
 	createResourceOptional := api.NewTestMethod("CreateResourceOptional").
 		WithInput(optInputType).
 		WithOutput(responseType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
 		WithAutoPopulated(optReqIDField)
 
 	deleteResource := api.NewTestMethod("DeleteResource").
 		WithInput(plainInputType).
 		WithOutput(responseType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 
 	service := api.NewTestService("TestService").
 		WithPackage("test").
@@ -1375,13 +1378,13 @@ func TestGenerateService_HTTPBody(t *testing.T) {
 		WithOutput(httpBodyMsg).
 		WithBodyFieldPath("http_body").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("endpoint"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("endpoint").Build())
 	directBody := api.NewTestMethod("UploadRaw").
 		WithInput(httpBodyMsg).
 		WithOutput(emptyResp).
 		WithBodyFieldPath("*").
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("upload").Build())
 	service := api.NewTestService("PredictionService").
 		WithPackage("google.cloud.aiplatform.v1").
 		WithMethods(rawPredict, directBody)

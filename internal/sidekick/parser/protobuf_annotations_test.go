@@ -94,7 +94,7 @@ func TestProcessRule_HttpBodyWildcard(t *testing.T) {
 				Bindings: []*api.PathBinding{
 					{
 						Verb: "POST",
-						PathTemplate: (&api.PathTemplate{}).
+						PathTemplate: api.NewPathTemplateBuilder().
 							WithLiteral("v1").
 							WithVariable(api.NewPathVariableBuilder("endpoint").
 								WithLiteral("projects").
@@ -104,7 +104,8 @@ func TestProcessRule_HttpBodyWildcard(t *testing.T) {
 								WithLiteral("endpoints").
 								WithMatch().
 								Build()).
-							WithVerb("rawPredict"),
+							WithVerb("rawPredict").
+							Build(),
 						QueryParameters: test.wantQueryParams,
 					},
 				},

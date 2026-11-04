@@ -82,7 +82,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 					WithInput(f.requestType).
 					WithOutput(f.responseType).
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("simple").Build()).
 					WithDeprecated(true).
 					WithDocumentation("-- simple marker --")
 			},
@@ -106,7 +106,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 					WithInput(f.requestType).
 					WithOutput(f.paginationResponseType).
 					WithVerb("GET").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("pagination")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("pagination").Build()).
 					WithPagination(f.requestType.Fields[0]).
 					WithDeprecated(true).
 					WithDocumentation("-- pagination marker --")
@@ -136,7 +136,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 					WithInput(f.requestType).
 					WithOutput(f.operationType).
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("lro").Build()).
 					WithOperationInfo(&api.OperationInfo{
 						ResponseTypeID: f.lroResultType.ID,
 						MetadataTypeID: f.lroMetadataType.ID,
@@ -169,7 +169,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 					WithInput(f.requestType).
 					WithOutput(f.responseType).
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("notDeprecated")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("notDeprecated").Build()).
 					WithDocumentation("-- not deprecated marker --")
 			},
 			want: []expectedBlock{
@@ -201,7 +201,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 						WithInput(fixtures.getOperationInputType).
 						WithOutput(fixtures.operationType).
 						WithVerb("GET").
-						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
+						WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("operations").Build()),
 				)
 
 			model := api.NewTestAPI([]*api.Message{
@@ -301,14 +301,14 @@ func TestGenerateService_DiagnoseMethodTypes(t *testing.T) {
 						WithInput(requestType).
 						WithOutput(responseType).
 						WithVerb("POST").
-						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple")).
+						WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("simple").Build()).
 						WithSignatures(api.NewTestMethodSignature().WithFields(requestType.Fields[0])).
 						WithDeprecated(test.methodDeprecated),
 					api.NewTestMethod("GetOperation").
 						WithInput(getOperationInputType).
 						WithOutput(operationType).
 						WithVerb("GET").
-						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
+						WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("operations").Build()),
 				)
 
 			model := api.NewTestAPI([]*api.Message{
@@ -388,13 +388,13 @@ func TestGenerateService_DiagnoseRequestFields(t *testing.T) {
 					WithInput(requestType).
 					WithOutput(responseType).
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple")).
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("simple").Build()).
 					WithSignatures(api.NewTestMethodSignature().WithFields(requestType.Fields[0])),
 				api.NewTestMethod("GetOperation").
 					WithInput(getOperationInputType).
 					WithOutput(operationType).
 					WithVerb("GET").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
+					WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("operations").Build()),
 			)
 
 			model := api.NewTestAPI([]*api.Message{

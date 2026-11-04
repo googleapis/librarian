@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
@@ -343,7 +344,7 @@ func TestServiceAnnotations(t *testing.T) {
 	// Codec.
 	serviceAnn := service.Codec.(*serviceAnnotations)
 	wantMethodList := []*api.Method{method, emptyMethod}
-	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{}), cmpopts.IgnoreFields(api.Method{}, "Model", "Service", "SourceService")); diff != "" {
+	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Model", "Service", "SourceService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -361,7 +362,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "crate::model::Response",
 	}
-	if diff := cmp.Diff(wantMethod, method.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff(wantMethod, method.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -379,7 +380,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "()",
 	}
-	if diff := cmp.Diff(wantMethod, emptyMethod.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff(wantMethod, emptyMethod.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -479,9 +480,9 @@ func TestServiceAnnotationsStreaming(t *testing.T) {
 
 func TestServiceAnnotationsMethodKinds(t *testing.T) {
 	msg := api.NewTestMessage("Request").WithPackage("test.v1")
-	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(&api.PathTemplate{})
-	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(&api.PathTemplate{})
-	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 
 	for _, test := range []struct {
 		name                  string
@@ -549,8 +550,8 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 
 func TestServiceAnnotationsClassification(t *testing.T) {
 	msg := api.NewTestMessage("Request").WithPackage("test.v1")
-	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(&api.PathTemplate{})
-	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 
 	for _, test := range []struct {
 		name       string

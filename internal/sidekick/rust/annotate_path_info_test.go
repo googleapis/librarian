@@ -38,17 +38,19 @@ func serviceAnnotationsModel() *api.API {
 		WithInput(request).
 		WithOutput(response).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("resource"))
+			WithLiteral("resource").
+			Build())
 	emptyMsg := api.NewTestMessage("Empty").WithID(api.WktEmptyID)
 	emptyMethod := api.NewTestMethod("DeleteResource").
 		WithInput(request).
 		WithOutput(emptyMsg).
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("resource")).
+			WithLiteral("resource").
+			Build()).
 		ReturnEmpty()
 
 	noHttpMethod := api.NewTestMethod("DoAThing").
@@ -70,9 +72,10 @@ func serviceAnnotationsModel() *api.API {
 
 func TestPathInfoAnnotations(t *testing.T) {
 	binding := func(verb string) *api.PathBinding {
-		return api.NewTestPathBinding(verb, (&api.PathTemplate{}).
+		return api.NewTestPathBinding(verb, api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithLiteral("resource"))
+			WithLiteral("resource").
+			Build())
 	}
 
 	for _, test := range []struct {
@@ -148,7 +151,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 	).WithOneOfs(oneof)
 	response := api.NewTestMessage("Response")
 
-	b0 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+	b0 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
 		WithLiteral("v2").
 		WithVariable(api.NewPathVariableBuilder("name").
 			WithLiteral("projects").
@@ -156,7 +159,8 @@ func TestPathBindingAnnotations(t *testing.T) {
 			WithLiteral("locations").
 			WithMatch().
 			Build()).
-		WithVerb("create")).
+		WithVerb("create").
+		Build()).
 		WithQueryParameters("id")
 	wantB0 := &pathBindingAnnotation{
 		PathFmt:     "/v2/{}:create",
@@ -171,7 +175,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 		},
 	}
 
-	b1 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+	b1 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
 		WithLiteral("v1").
 		WithLiteral("projects").
 		WithVariableNamed("project").
@@ -179,7 +183,8 @@ func TestPathBindingAnnotations(t *testing.T) {
 		WithVariableNamed("location").
 		WithLiteral("ids").
 		WithVariableNamed("id").
-		WithVerb("action"))
+		WithVerb("action").
+		Build())
 	wantB1 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:action",
 		Substitutions: []*bindingSubstitution{
@@ -203,7 +208,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-	b2 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+	b2 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
 		WithLiteral("v1").
 		WithLiteral("projects").
 		WithVariableNamed("child", "project").
@@ -211,7 +216,8 @@ func TestPathBindingAnnotations(t *testing.T) {
 		WithVariableNamed("child", "location").
 		WithLiteral("ids").
 		WithVariableNamed("child", "id").
-		WithVerb("actionOnChild"))
+		WithVerb("actionOnChild").
+		Build())
 	wantB2 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:actionOnChild",
 		Substitutions: []*bindingSubstitution{
@@ -235,19 +241,21 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-	b3 := api.NewTestPathBinding("GET", (&api.PathTemplate{}).
+	b3 := api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().
 		WithLiteral("v2").
-		WithLiteral("foos")).
+		WithLiteral("foos").
+		Build()).
 		WithQueryParameters("name", "optional", "child")
 	wantB3 := &pathBindingAnnotation{
 		PathFmt:     "/v2/foos",
 		QueryParams: []*api.Field{fName, fOptional, fChild},
 	}
-	b4 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+	b4 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
 		WithLiteral("v1").
 		WithLiteral("projects").
 		WithVariableNamed("oneofField").
-		WithVerb("actionOnOneof"))
+		WithVerb("actionOnOneof").
+		Build())
 	wantB4 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}:actionOnOneof",
 		Substitutions: []*bindingSubstitution{
@@ -302,13 +310,14 @@ func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
 	fName := api.NewTestField("name").WithType(api.TypezString)
 	request := api.NewTestMessage("Request").WithFields(fName)
 	response := api.NewTestMessage("Response")
-	binding := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+	binding := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
 		WithLiteral("v2").
 		WithVariable(api.NewPathVariableBuilder("name").
 			WithLiteral("projects").
 			WithMatch().
 			Build()).
-		WithVerb("create"))
+		WithVerb("create").
+		Build())
 	method := api.NewTestMethod("DoFoo").
 		WithInput(request).
 		WithOutput(response).
@@ -347,13 +356,14 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			WithJSONName(test.FieldName)
 		request := api.NewTestMessage("Request").WithFields(field)
 		response := api.NewTestMessage("Response")
-		binding := api.NewTestPathBinding("GET", (&api.PathTemplate{}).
+		binding := api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithLiteral("machines").
 			WithVariable(api.NewPathVariableBuilder(test.FieldName).
 				WithMatch().
 				Build()).
-			WithVerb("create")).
+			WithVerb("create").
+			Build()).
 			WithQueryParameters()
 		wantBinding := &pathBindingAnnotation{
 			PathFmt: "/v1/machines/{}:create",

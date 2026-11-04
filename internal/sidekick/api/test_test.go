@@ -18,33 +18,32 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
-	b1 := api.NewTestPathBinding("GET", (&api.PathTemplate{}).WithLiteral("v1"))
-	b2 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v2"))
+	b1 := api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").Build())
+	b2 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v2").Build())
 
 	method.WithBindings(b1, b2)
 
 	if method.PathInfo == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test")
-	b1 := api.NewTestPathBinding("DELETE", (&api.PathTemplate{}).WithLiteral("v1"))
+	b1 := api.NewTestPathBinding("DELETE", api.NewPathTemplateBuilder().WithLiteral("v1").Build())
 
 	method.WithBindings(b1)
 
-	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -75,7 +74,7 @@ func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
 
 func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
-	pt := (&api.PathTemplate{}).WithLiteral("v1")
+	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	method.WithPathTemplate(pt)
 
 	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
@@ -107,7 +106,7 @@ func TestMethod_WithDocumentation(t *testing.T) {
 }
 
 func TestPathBinding_Fluent(t *testing.T) {
-	pt := (&api.PathTemplate{}).WithLiteral("v1")
+	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	b := api.NewTestPathBinding("GET", pt).
 		WithVerb("POST").
 		WithQueryParameters("filter")

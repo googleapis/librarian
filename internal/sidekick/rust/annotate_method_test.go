@@ -209,13 +209,13 @@ func annotateMethodModel(t *testing.T) *api.API {
 		WithInput(request).
 		WithOutput(response).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 
 	methodDelete := api.NewTestMethod("Delete").
 		WithInput(request).
 		WithOutput(empty).
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
@@ -223,7 +223,8 @@ func annotateMethodModel(t *testing.T) *api.API {
 			// This is unlikely, but want to test variables that
 			// are reserved words.
 			WithLiteral("types").
-			WithVariableNamed("type")).
+			WithVariableNamed("type").
+			Build()).
 		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone", "type"},
 		}).
@@ -233,7 +234,7 @@ func annotateMethodModel(t *testing.T) *api.API {
 		WithInput(request).
 		WithOutput(response).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 
 	service := api.NewTestService("ResourceService").
 		WithPackage("test.v1").
@@ -259,13 +260,14 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			t.Fatalf("missing method %s", methodID)
 		}
 		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-			m.PathInfo.Bindings[0].PathTemplate = (&api.PathTemplate{}).
+			m.PathInfo.Bindings[0].PathTemplate = api.NewPathTemplateBuilder().
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("zones").
 				WithVariableNamed("zone").
 				WithLiteral("types").
-				WithVariableNamed("type")
+				WithVariableNamed("type").
+				Build()
 			m.PathInfo.Bindings[0].TargetResource = &api.TargetResource{
 				Template:   api.ParseTemplateForTest(template),
 				FieldPaths: fields,
@@ -285,9 +287,10 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	mSelf.PathInfo.Bindings = []*api.PathBinding{
 		{
 			Verb: "GET",
-			PathTemplate: (&api.PathTemplate{}).
+			PathTemplate: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name"),
+				WithVariableNamed("name").
+				Build(),
 			TargetResource: &api.TargetResource{
 				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
 				FieldPaths: [][]string{{"name"}},
@@ -295,14 +298,15 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		},
 		{
 			Verb: "GET",
-			PathTemplate: (&api.PathTemplate{}).
+			PathTemplate: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("locations").
 				WithVariableNamed("location").
 				WithLiteral("clusters").
-				WithVariableNamed("cluster"),
+				WithVariableNamed("cluster").
+				Build(),
 			TargetResource: &api.TargetResource{
 				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
 				FieldPaths: [][]string{{"project"}, {"location"}, {"cluster"}},
@@ -310,7 +314,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		},
 		{
 			Verb:         "GET",
-			PathTemplate: &api.PathTemplate{},
+			PathTemplate: api.NewPathTemplateBuilder().Build(),
 		},
 	}
 
@@ -418,13 +422,14 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 		},
 		{
 			name: "Discovery API Compute V1 Example",
-			binding: api.NewTestPathBinding("", (&api.PathTemplate{}).
+			binding: api.NewTestPathBinding("", api.NewPathTemplateBuilder().
 				WithLiteral("compute").
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("zones").
-				WithVariableNamed("zone")).
+				WithVariableNamed("zone").
+				Build()).
 				WithTargetResource(&api.TargetResource{
 					// Notice that constructTemplate already stripped out "compute/v1"
 					Template: api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),
@@ -577,7 +582,7 @@ func TestIsHttp(t *testing.T) {
 
 func TestMethodUsesGrpc(t *testing.T) {
 	msg := api.NewTestMessage("Message").WithPackage("test.v1")
-	unaryMethod := api.NewTestMethod("Unary").WithInput(msg).WithOutput(msg).WithPathTemplate(&api.PathTemplate{})
+	unaryMethod := api.NewTestMethod("Unary").WithInput(msg).WithOutput(msg).WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	bidiMethod := api.NewTestMethod("Bidi").WithInput(msg).WithOutput(msg).WithBidiStreaming()
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()

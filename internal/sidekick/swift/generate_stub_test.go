@@ -38,7 +38,7 @@ func TestGenerateStub_Structure(t *testing.T) {
 				WithInput(request).
 				WithOutput(response).
 				WithVerb("GET").
-				WithPathTemplate(&api.PathTemplate{}),
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 		)
 
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
@@ -127,7 +127,7 @@ func TestGenerateStub_QueryParameters(t *testing.T) {
 		WithInput(request).
 		WithOutput(response).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").Build()).
 		WithQueryParameters("ttl_days", "enable")
 
 	service := api.NewTestService("Service").
@@ -277,7 +277,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 				WithInput(createFolderRequest).
 				WithOutput(folder).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders")),
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders").Build()),
 			deleteFolder,
 			getOperation,
 		)
@@ -395,13 +395,15 @@ func TestGenerateStub_MultipleBindings(t *testing.T) {
 		WithInput(request).
 		WithOutput(response).
 		WithBindings(
-			api.NewTestPathBinding("GET", (&api.PathTemplate{}).
+			api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name")),
-			api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+				WithVariableNamed("name").
+				Build()),
+			api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariableNamed("parent").
-				WithLiteral("resources")),
+				WithLiteral("resources").
+				Build()),
 		)
 
 	service := api.NewTestService("Service").

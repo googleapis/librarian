@@ -423,13 +423,14 @@ func TestProtobuf_Comments(t *testing.T) {
 		WithDocumentation("Some RPC.\n\nIt does not do much.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					Build()).
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
@@ -685,14 +686,15 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Gets a Foo resource.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
 					WithMatch().
-					Build()),
+					Build()).
+				Build(),
 		).
 		WithQueryParameters()
 	getFoo.SourceServiceID = ".test.TestService"
@@ -706,13 +708,14 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					Build()).
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters("foo_id").
 		WithBodyFieldPath("foo")
@@ -726,14 +729,15 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Deletes a Foo resource.").
 		WithVerb("DELETE").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
 					WithMatch().
-					Build()),
+					Build()).
+				Build(),
 		).
 		WithQueryParameters().
 		ReturnEmpty()
@@ -755,7 +759,7 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("A server-side streaming RPC.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
@@ -763,7 +767,8 @@ func TestProtobuf_Service(t *testing.T) {
 					WithLiteral("foos").
 					WithMatch().
 					Build()).
-				WithVerb("Download"),
+				WithVerb("Download").
+				Build(),
 		).
 		WithQueryParameters().
 		WithServerSideStreaming()
@@ -804,13 +809,14 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 		WithDocumentation("Creates a new `Foo` resource. `Foo`s are containers for `Bar`s.\n\nShows how a `body: \"${field}\"` option works.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					Build()).
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters("foo_id").
 		WithBodyFieldPath("bar")
@@ -824,7 +830,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 		WithDocumentation("Add a Bar resource.\n\nShows how a `body: \"*\"` option works.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
@@ -832,7 +838,8 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					WithLiteral("foos").
 					WithMatch().
 					Build()).
-				WithVerb("addFoo"),
+				WithVerb("addFoo").
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
@@ -902,13 +909,14 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 		WithID(".test.TestService." + name).
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					Build()).
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters(queryParams...)
 	m.SourceServiceID = ".test.TestService"
@@ -1031,13 +1039,14 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					Build()).
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("foo").
@@ -1055,13 +1064,14 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					Build()).
-				WithLiteral("foos"),
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("foo").
@@ -1079,12 +1089,13 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Custom docs.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v2").
 				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("operations").
 					WithMatch().
-					Build()),
+					Build()).
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
