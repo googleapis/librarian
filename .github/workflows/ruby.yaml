@@ -72,7 +72,7 @@ jobs:
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test'
         working-directory: google-cloud-ruby
-        run: librarian generate google-cloud-asset-v1
+        run: librarian generate --force google-cloud-asset-v1
   integration-test:
     name: Integration test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
