@@ -49,3 +49,16 @@ func lookupField(message *api.Message, name string) (*api.Field, error) {
 	}
 	return message.Fields[idx], nil
 }
+
+// lookupMap finds the map definition for a map field.
+func lookupMap(model *api.API, f *api.Field) (*api.Map, error) {
+	if f.MapType != nil {
+		return f.MapType, nil
+	}
+	if model != nil {
+		if m := model.Map(f.TypezID); m != nil {
+			return m, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to lookup map %q for field %q", f.TypezID, f.ID)
+}

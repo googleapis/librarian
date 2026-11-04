@@ -21,8 +21,8 @@ extend-exclude = [
   "**/python_mono_repo_library/**",
 ]
 
-[type.mustache]
-extend-glob = ["*.mustache"]
+[type.gotmpl]
+extend-glob = ["*.gotmpl"]
 
 # These are not good ideas for "extend-words" because they will catch too many
 # true positives

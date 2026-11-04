@@ -34,22 +34,23 @@ import (
 // codecs need. For example, the `oneof` fields use the containing `OneOf` to
 // reference any types or names of the `OneOf` during their generation.
 func CrossReference(model *API) error {
+	for m := range model.AllMaps() {
+		if m.Key != nil {
+			if err := crossReferenceField(model, m.Key); err != nil {
+				return err
+			}
+		}
+		if m.Value != nil {
+			if err := crossReferenceField(model, m.Value); err != nil {
+				return err
+			}
+		}
+	}
 	for m := range model.AllMessages() {
 		for _, f := range m.Fields {
 			f.Parent = m
-			switch f.Typez {
-			case TypezMessage:
-				t := model.Message(f.TypezID)
-				if t == nil {
-					return fmt.Errorf("cannot find message type %s for field %s", f.TypezID, f.ID)
-				}
-				f.MessageType = t
-			case TypezEnum:
-				t := model.Enum(f.TypezID)
-				if t == nil {
-					return fmt.Errorf("cannot find enum type %s for field %s", f.TypezID, f.ID)
-				}
-				f.EnumType = t
+			if err := crossReferenceField(model, f); err != nil {
+				return err
 			}
 		}
 		for _, o := range m.OneOfs {
@@ -428,26 +429,26 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 	var segments []ResourceNameSegment
 	for i := 0; i < len(pattern); i++ {
 		s := pattern[i]
-		if strings.HasPrefix(s.Literal, "//") {
+		if strings.HasPrefix(s.Literal(), "//") {
 			continue
 		}
 		seg := ResourceNameSegment{
-			Literal: s.Literal,
+			Literal: s.Literal(),
 		}
-		if s.Variable != nil && len(s.Variable.FieldPath) > 0 {
+		if s.Variable() != nil && len(s.Variable().FieldPath()) > 0 {
 			// The parser used for parsing resource name patterns is the same used for
 			// parsing HTTP rules. Resource patterns do not have "field paths",
 			// instead they only have "placeholders" for each of the resource IDs of
 			// the resources that are part of the resource name hierarchy.
 			// These placeholders end up on the first, and only, field path
 			// that results when parsing a segment of a resource name pattern.
-			seg.Variable = s.Variable.FieldPath[0]
+			seg.Variable = s.Variable().FieldPath()[0]
 		}
 
 		// Try to combine with next segment if this is a literal and next is variable
-		if s.Literal != "" && i+1 < len(pattern) && pattern[i+1].Variable != nil {
-			if len(pattern[i+1].Variable.FieldPath) > 0 {
-				seg.Variable = pattern[i+1].Variable.FieldPath[0]
+		if s.Literal() != "" && i+1 < len(pattern) && pattern[i+1].Variable() != nil {
+			if len(pattern[i+1].Variable().FieldPath()) > 0 {
+				seg.Variable = pattern[i+1].Variable().FieldPath()[0]
 			}
 			i++
 		}
@@ -753,7 +754,7 @@ func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, si
 	var resourceField *Field
 	bodyFieldPath := ""
 	if pathInfo != nil {
-		bodyFieldPath = pathInfo.BodyFieldPath
+		bodyFieldPath = pathInfo.BodyFieldPath()
 	}
 
 	for _, f := range message.Fields {
@@ -787,6 +788,30 @@ func standardMethodOutputResource(m *Method) *Resource {
 		if lroResponse := m.LongRunningResponseType; lroResponse != nil {
 			return lroResponse.Resource
 		}
+	}
+	return nil
+}
+
+func crossReferenceField(model *API, f *Field) error {
+	switch f.Typez {
+	case TypezMessage:
+		t := model.Message(f.TypezID)
+		if t == nil {
+			return fmt.Errorf("unknown message type %s for field %s", f.TypezID, f.ID)
+		}
+		f.MessageType = t
+	case TypezEnum:
+		t := model.Enum(f.TypezID)
+		if t == nil {
+			return fmt.Errorf("unknown enum type %s for field %s", f.TypezID, f.ID)
+		}
+		f.EnumType = t
+	case TypezMap:
+		t := model.Map(f.TypezID)
+		if t == nil {
+			return fmt.Errorf("unknown map type %s for field %s", f.TypezID, f.ID)
+		}
+		f.MapType = t
 	}
 	return nil
 }

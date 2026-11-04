@@ -6,8 +6,10 @@ reviews for this repository.
 When reviewing or generating code, apply the following checks and references:
 
 - **Follow local standards:** Ensure all changes conform to
-  [`doc/howwewritego.md`](../doc/howwewritego.md), which defines the project’s
-  architectural patterns, design decisions, and testing requirements.
+  [`doc/howwewritesoftware.md`](/doc/howwewritesoftware.md) and
+  [`doc/howwewritego.md`](/doc/howwewritego.md), which
+  define the project’s architectural patterns, design decisions, and testing
+  requirements.
 - **Verify testing quality:** Add or update tests as needed, following the
   guidance in [Go Test Comments](../doc/styleguide/go-test-comments.md).
 - **Enforce idiomatic Go:** Flag patterns that conflict with the recommendations

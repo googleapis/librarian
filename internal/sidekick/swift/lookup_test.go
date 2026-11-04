@@ -86,3 +86,40 @@ func TestLookupField_Error(t *testing.T) {
 		t.Errorf("lookupField() expected error, got nil")
 	}
 }
+
+func TestLookupMap(t *testing.T) {
+	mapType := api.NewTestMap("LabelsEntry", api.TypezString, api.TypezString)
+	field := api.NewTestField("labels").WithMapType(mapType)
+
+	got, err := lookupMap(nil, field)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(mapType, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestLookupMap_FromModel(t *testing.T) {
+	mapType := api.NewTestMap("LabelsEntry", api.TypezString, api.TypezString).WithID(".test.LabelsEntry")
+	model := api.NewTestAPI(nil, nil, nil).WithMaps(mapType)
+	field := api.NewTestField("labels").WithType(api.TypezMap).WithTypezID(".test.LabelsEntry")
+
+	got, err := lookupMap(model, field)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(mapType, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestLookupMap_Error(t *testing.T) {
+	model := api.NewTestAPI(nil, nil, nil)
+	field := api.NewTestField("labels").WithType(api.TypezMap).WithTypezID(".test.Missing")
+
+	_, err := lookupMap(model, field)
+	if err == nil {
+		t.Errorf("lookupMap() expected error, got nil")
+	}
+}

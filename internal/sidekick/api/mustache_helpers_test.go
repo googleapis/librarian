@@ -17,22 +17,14 @@ package api
 import "testing"
 
 func TestHasMessages(t *testing.T) {
-	m := &Message{
-		Name:    "Message",
-		Package: "test",
-		ID:      ".test.Message",
-	}
+	m := NewTestMessage("Message")
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{})
 
 	if !model.HasMessages() {
 		t.Errorf("expected HasMessages() == true for: %v", model)
 	}
 
-	e := &Enum{
-		Name:    "Enum",
-		Package: "test",
-		ID:      ".test.Enum",
-	}
+	e := NewTestEnum("Enum")
 	model = NewTestAPI([]*Message{}, []*Enum{e}, []*Service{})
 	if model.HasMessages() {
 		t.Errorf("expected HasMessages() == false for: %v", model)
@@ -40,35 +32,35 @@ func TestHasMessages(t *testing.T) {
 }
 
 func TestMethodIsBidiStreaming(t *testing.T) {
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name   string
 		method *Method
 		want   bool
 	}{
 		{
 			name:   "unary method",
-			method: &Method{},
+			method: NewTestMethod("test"),
 			want:   false,
 		},
 		{
 			name:   "client streaming only",
-			method: &Method{ClientSideStreaming: true},
+			method: NewTestMethod("test").WithClientSideStreaming(),
 			want:   false,
 		},
 		{
 			name:   "server streaming only",
-			method: &Method{ServerSideStreaming: true},
+			method: NewTestMethod("test").WithServerSideStreaming(),
 			want:   false,
 		},
 		{
 			name:   "bidi streaming",
-			method: &Method{ClientSideStreaming: true, ServerSideStreaming: true},
+			method: NewTestMethod("test").WithBidiStreaming(),
 			want:   true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.method.IsBidiStreaming(); got != tc.want {
-				t.Errorf("got %v, want %v", got, tc.want)
+		t.Run(test.name, func(t *testing.T) {
+			if got := test.method.IsBidiStreaming(); got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}

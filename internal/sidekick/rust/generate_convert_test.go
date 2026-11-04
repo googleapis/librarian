@@ -120,6 +120,45 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedAny> for MessageWith
     }
 }`,
 		},
+		{
+			name: "message with proto2 optional fields",
+			makeMessage: func() (*api.Message, []string) {
+				enum := api.NewTestEnum("Label").WithValues(api.NewTestEnumValue("LABEL_OPTIONAL", 1))
+				msg := api.NewTestMessage("Proto2Message").WithPackage("test.v1").WithEnums(enum).WithFields(
+					api.NewTestField("name").WithType(api.TypezString).WithProto2Optional(),
+					api.NewTestField("number").WithType(api.TypezInt32).WithProto2Optional(),
+					api.NewTestField("label").WithEnumType(enum).WithProto2Optional(),
+					api.NewTestField("enabled").WithType(api.TypezBool).WithProto2Optional(),
+					api.NewTestField("required_name").WithType(api.TypezString),
+				)
+				return msg, nil
+			},
+			want: `impl gaxi::prost::ToProto<Proto2Message> for crate::model::Proto2Message {
+    type Output = Proto2Message;
+    fn to_proto(self) -> std::result::Result<Proto2Message, gaxi::prost::ConvertError> {
+        Ok(Self::Output {
+            name: Some(self.name.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
+            number: Some(self.number.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
+            label: Some(self.label.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
+            enabled: Some(self.enabled.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
+            required_name: self.required_name.to_proto()?,
+        })
+    }
+}
+
+impl gaxi::prost::FromProto<crate::model::Proto2Message> for Proto2Message {
+    fn cnv(self) -> std::result::Result<crate::model::Proto2Message, gaxi::prost::ConvertError> {
+        Ok(
+            crate::model::Proto2Message::new()
+                .set_name(self.name.unwrap_or_default())
+                .set_number(self.number.unwrap_or_default())
+                .set_label(self.label.unwrap_or_default())
+                .set_enabled(self.enabled.unwrap_or_default())
+                .set_required_name(self.required_name)
+        )
+    }
+}`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			message, skippedIDs := test.makeMessage()

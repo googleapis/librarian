@@ -30,6 +30,7 @@ import (
 const (
 	httpImport          = "package:http/http.dart as http"
 	serviceClientImport = "package:google_cloud_rpc/service_client.dart"
+	retryImport         = "package:google_cloud_rpc/retry.dart"
 	encodingImport      = "package:google_cloud_protobuf/src/encoding.dart"
 	protobufImport      = "package:google_cloud_protobuf/protobuf.dart"
 )
@@ -166,17 +167,17 @@ func enumName(e *api.Enum) string {
 
 func httpPathFmt(pathInfo *api.PathInfo) string {
 	var builder strings.Builder
-	t := pathInfo.Bindings[0].PathTemplate
-	for _, segment := range t.Segments {
+	t := pathInfo.Bindings()[0].PathTemplate()
+	for _, segment := range t.Segments() {
 		switch {
-		case segment.Literal != "":
+		case segment.Literal() != "":
 			builder.WriteString("/")
-			builder.WriteString(segment.Literal)
-		case segment.Variable != nil:
+			builder.WriteString(segment.Literal())
+		case segment.Variable() != nil:
 			// Form '${request.foo!.bar!.baz}'.
 			builder.WriteString("/${request")
 			deref := "."
-			for _, f := range segment.Variable.FieldPath {
+			for _, f := range segment.Variable().FieldPath() {
 				builder.WriteString(deref)
 				builder.WriteString(strcase.ToLowerCamel(f))
 				deref = "!."
@@ -184,9 +185,9 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 			builder.WriteString("}")
 		}
 	}
-	if t.Verb != "" {
+	if t.Verb() != "" {
 		builder.WriteString(":")
-		builder.WriteString(t.Verb)
+		builder.WriteString(t.Verb())
 	}
 
 	return builder.String()
@@ -250,10 +251,11 @@ func shouldGenerateMethod(m *api.Method) bool {
 	if m.ClientSideStreaming || m.PathInfo == nil {
 		return false
 	}
-	if len(m.PathInfo.Bindings) == 0 {
+	bindings := m.PathInfo.Bindings()
+	if len(bindings) == 0 {
 		return false
 	}
-	return m.PathInfo.Bindings[0].PathTemplate != nil
+	return bindings[0].PathTemplate() != nil
 }
 
 func formatDirectory(ctx context.Context, dir string) error {

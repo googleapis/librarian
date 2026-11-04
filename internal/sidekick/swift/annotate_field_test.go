@@ -95,7 +95,7 @@ func TestAnnotateField(t *testing.T) {
 }
 
 func TestAnnotateField_Discovery(t *testing.T) {
-	mapMessage := api.NewTestMapMessage("map<string, bytes>", api.TypezString, api.TypezBytes).
+	mapType := api.NewTestMap("map<string, bytes>", api.TypezString, api.TypezBytes).
 		WithID("$map<string, bytes>")
 
 	for _, test := range []struct {
@@ -153,7 +153,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 		},
 		{
 			name:  "map",
-			input: api.NewTestField("name").WithMessageType(mapMessage).WithMap(),
+			input: api.NewTestField("name").WithMapType(mapType),
 			want: &fieldAnnotations{
 				FieldType:            "[Swift.String: Foundation.Data]",
 				BaseFieldType:        "[Swift.String: Foundation.Data]",
@@ -162,14 +162,13 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				UrlSafeValue:         true,
 				ProtoFieldName:       "name",
 				ProtoFieldNamePascal: "Name",
-				ValueField:           mapMessage.Fields[1],
+				ValueField:           mapType.Value,
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			msg := api.NewTestMessage("Message").WithFields(test.input)
-			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
-			model.AddMessage(mapMessage)
+			model := api.NewTestAPI([]*api.Message{msg}, nil, nil).WithMaps(mapType)
 			codec := newTestCodec(t, model, nil)
 			codec.UrlSafeForBytes = true
 			if err := codec.annotateModel(); err != nil {

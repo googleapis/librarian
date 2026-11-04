@@ -16,6 +16,7 @@ package dart
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -223,6 +224,80 @@ func TestFormat(t *testing.T) {
 	}
 	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestKeep(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		keep  []string
+		files []string
+		want  []string
+	}{
+		{
+			name: "missing output directory",
+			keep: []string{"test/foo_test.dart"},
+			want: []string{"test/foo_test.dart"},
+		},
+		{
+			name:  "no changelog",
+			keep:  []string{"test/foo_test.dart"},
+			files: []string{"test/foo_test.dart"},
+			want:  []string{"test/foo_test.dart"},
+		},
+		{
+			name:  "changelog",
+			files: []string{"CHANGELOG.md"},
+			want:  []string{"CHANGELOG.md"},
+		},
+		{
+			name:  "changelog and keep list",
+			keep:  []string{"test/foo_test.dart"},
+			files: []string{"CHANGELOG.md", "test/foo_test.dart"},
+			want:  []string{"test/foo_test.dart", "CHANGELOG.md"},
+		},
+		{
+			name:  "changelog already in keep list",
+			keep:  []string{"CHANGELOG.md"},
+			files: []string{"CHANGELOG.md"},
+			want:  []string{"CHANGELOG.md"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			library := &config.Library{
+				Output: filepath.Join(t.TempDir(), "google_cloud_foo"),
+				Keep:   test.keep,
+			}
+			for _, file := range test.files {
+				path := filepath.Join(library.Output, file)
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, nil, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := Keep(library)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestKeep_Error(t *testing.T) {
+	library := &config.Library{Output: t.TempDir()}
+	if err := os.Chmod(library.Output, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(library.Output, 0o755)
+	})
+	if _, err := Keep(library); !errors.Is(err, fs.ErrPermission) {
+		t.Errorf("Keep() error = %v, want %v", err, fs.ErrPermission)
 	}
 }
 

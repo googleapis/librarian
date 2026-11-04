@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestProcessRule_HttpBodyWildcard(t *testing.T) {
@@ -88,26 +89,28 @@ func TestProcessRule_HttpBodyWildcard(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := &api.PathInfo{
-				BodyFieldPath: test.wantBodyField,
-				Bindings: []*api.PathBinding{
-					{
-						Verb: "POST",
-						PathTemplate: (&api.PathTemplate{}).
+			want := api.NewPathInfoBuilder().
+				WithBodyFieldPath(test.wantBodyField).
+				WithBindings(
+					api.NewPathBindingBuilder().
+						WithVerb("POST").
+						WithPathTemplate(api.NewPathTemplateBuilder().
 							WithLiteral("v1").
-							WithVariable(api.NewPathVariable("endpoint").
+							WithVariable(api.NewPathVariableBuilder("endpoint").
 								WithLiteral("projects").
 								WithMatch().
 								WithLiteral("locations").
 								WithMatch().
 								WithLiteral("endpoints").
-								WithMatch()).
-							WithVerb("rawPredict"),
-						QueryParameters: test.wantQueryParams,
-					},
-				},
-			}
-			if diff := cmp.Diff(want, got); diff != "" {
+								WithMatch().
+								Build()).
+							WithVerb("rawPredict").
+							Build()).
+						WithQueryParameterMap(test.wantQueryParams).
+						Build(),
+				).
+				Build()
+			if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

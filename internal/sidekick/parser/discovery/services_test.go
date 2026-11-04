@@ -36,14 +36,15 @@ func TestService(t *testing.T) {
 		WithID("..zones.get").
 		WithDocumentation("Returns the specified Zone resource.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
-			WithVariableNamed("zone")).
-		WithQueryParameters(map[string]bool{}).
+			WithVariableNamed("zone").
+			Build()).
+		WithQueryParameters().
 		WithBodyFieldPath("")
 	getMethod.InputTypeID = "..zones.getRequest"
 	getMethod.OutputTypeID = "..Zone"
@@ -53,19 +54,20 @@ func TestService(t *testing.T) {
 		WithID("..zones.list").
 		WithDocumentation("Retrieves the list of Zone resources available to the specified project.").
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("compute").
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
-			WithLiteral("zones")).
-		WithQueryParameters(map[string]bool{
-			"filter":               true,
-			"maxResults":           true,
-			"orderBy":              true,
-			"pageToken":            true,
-			"returnPartialSuccess": true,
-		}).
+			WithLiteral("zones").
+			Build()).
+		WithQueryParameters(
+			"filter",
+			"maxResults",
+			"orderBy",
+			"pageToken",
+			"returnPartialSuccess",
+		).
 		WithBodyFieldPath("")
 	listMethod.InputTypeID = "..zones.listRequest"
 	listMethod.OutputTypeID = "..ZoneList"

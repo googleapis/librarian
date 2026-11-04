@@ -36,10 +36,14 @@ type Field struct {
 	JSONName string
 	// Optional indicates that the field is marked as optional in proto3.
 	Optional bool
+	// Proto2Optional indicates that the field is a scalar or enum declared
+	// optional in a proto2 file. Unlike `Optional`, it does not make the
+	// field optional in the generated model.
+	Proto2Optional bool
 
 	// For a given field, at most one of `Repeated` or `Map` is true.
 	//
-	// Using booleans (as opposed to an enum) makes it easier to write mustache
+	// Using booleans (as opposed to an enum) makes it easier to write Go
 	// templates.
 	//
 	// Repeated is true if the field is a repeated field.
@@ -82,6 +86,8 @@ type Field struct {
 	MessageType *Message
 	// The enum type for this field, can be nil.
 	EnumType *Enum
+	// The map type for this field, can be nil.
+	MapType *Map
 	// ResourceReference contains the data from the `google.api.resource_reference`
 	// annotation.
 	ResourceReference *ResourceReference
@@ -109,7 +115,7 @@ func (f *Field) NameEqualJSONName() bool {
 
 // IsString returns true if the primitive type of a field is `TypezString`.
 //
-// This is useful for mustache templates that differ only
+// This is useful for Go templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsString() bool {
 	return f.Typez == TypezString
@@ -117,7 +123,7 @@ func (f *Field) IsString() bool {
 
 // IsBytes returns true if the primitive type of a field is `TypezBytes`.
 //
-// This is useful for mustache templates that differ only
+// This is useful for Go templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsBytes() bool {
 	return f.Typez == TypezBytes
@@ -125,7 +131,7 @@ func (f *Field) IsBytes() bool {
 
 // IsBool returns true if the primitive type of a field is `TypezBool`.
 //
-// This is useful for mustache templates that differ only
+// This is useful for Go templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsBool() bool {
 	return f.Typez == TypezBool
@@ -134,7 +140,7 @@ func (f *Field) IsBool() bool {
 // IsLikeInt returns true if the primitive type of a field is one of the
 // integer types.
 //
-// This is useful for mustache templates that differ only
+// This is useful for Go templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsLikeInt() bool {
 	switch f.Typez {
@@ -150,7 +156,7 @@ func (f *Field) IsLikeInt() bool {
 // IsLikeUInt returns true if the primitive type of a field is one of the
 // unsigned integer types.
 //
-// This is useful for mustache templates that differ only
+// This is useful for Go templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsLikeUInt() bool {
 	switch f.Typez {
@@ -164,7 +170,7 @@ func (f *Field) IsLikeUInt() bool {
 // IsLikeFloat returns true if the primitive type of a field is a float or
 // double.
 //
-// This is useful for mustache templates that differ only
+// This is useful for Go templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsLikeFloat() bool {
 	return f.Typez == TypezDouble || f.Typez == TypezFloat
@@ -172,7 +178,7 @@ func (f *Field) IsLikeFloat() bool {
 
 // IsEnum returns true if the primitive type of a field is `TypezEnum`.
 //
-// This is useful for mustache templates that differ only
+// This is useful for Go templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsEnum() bool {
 	return f.Typez == TypezEnum
@@ -180,11 +186,8 @@ func (f *Field) IsEnum() bool {
 
 // IsObject returns true if the primitive type of a field is `TypezMessage`.
 //
-// This is useful for mustache templates that differ only
+// This is useful for Go templates that differ only
 // in the broad category of field type involved.
-//
-// The templates *should* first check if the field is singular, as all maps are
-// also objects.
 func (f *Field) IsObject() bool {
 	return f.Typez == TypezMessage
 }

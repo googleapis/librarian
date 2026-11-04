@@ -38,7 +38,7 @@ func TestGenerateStub_Structure(t *testing.T) {
 				WithInput(request).
 				WithOutput(response).
 				WithVerb("GET").
-				WithPathTemplate(&api.PathTemplate{}),
+				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 		)
 
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
@@ -127,11 +127,8 @@ func TestGenerateStub_QueryParameters(t *testing.T) {
 		WithInput(request).
 		WithOutput(response).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project")).
-		WithQueryParameters(map[string]bool{
-			"ttl_days": true,
-			"enable":   true,
-		})
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").Build()).
+		WithQueryParameters("ttl_days", "enable")
 
 	service := api.NewTestService("Service").
 		WithPackage("test").
@@ -258,14 +255,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 		WithOutput(empty).
 		WithPathInfo(nil).
 		ReturnEmpty().
-		WithRouting(&api.RoutingInfo{
-			Name: "bucket",
-			Variants: []*api.RoutingInfoVariant{
-				{
-					FieldPath: []string{"name"},
-				},
-			},
-		})
+		WithRouting(api.NewTestRoutingInfo("bucket", api.NewTestRoutingInfoVariant("name")))
 
 	sourceGetOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationRequest).
@@ -287,7 +277,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 				WithInput(createFolderRequest).
 				WithOutput(folder).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders")),
+				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders").Build()),
 			deleteFolder,
 			getOperation,
 		)
@@ -405,13 +395,21 @@ func TestGenerateStub_MultipleBindings(t *testing.T) {
 		WithInput(request).
 		WithOutput(response).
 		WithBindings(
-			api.NewTestPathBinding("GET", (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("name")),
-			api.NewTestPathBinding("POST", (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("parent").
-				WithLiteral("resources")),
+			api.NewPathBindingBuilder().
+				WithVerb("GET").
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("v1").
+					WithVariableNamed("name").
+					Build()).
+				Build(),
+			api.NewPathBindingBuilder().
+				WithVerb("POST").
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("v1").
+					WithVariableNamed("parent").
+					WithLiteral("resources").
+					Build()).
+				Build(),
 		)
 
 	service := api.NewTestService("Service").

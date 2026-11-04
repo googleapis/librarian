@@ -103,3 +103,16 @@ jobs:
           go-version-file: "go.mod"
       - name: Run TestGoGenerate
         run: go test -run TestGoGenerate -count=1 .
+  layer-dependencies-check:
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: "go.mod"
+      - name: Run the TestLayering tests
+        run: go test -run '^TestLayering' -count=1 .

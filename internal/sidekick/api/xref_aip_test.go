@@ -33,50 +33,14 @@ type aipTestFixture struct {
 }
 
 func newAIPTestFixture() *aipTestFixture {
-	resource := &Resource{
-		Type:     "google.cloud.secretmanager.v1/Secret",
-		Singular: "secret",
-	}
-	resourceWithoutSingular := &Resource{
-		Type: "google.cloud.secretmanager.v1/SecretWithoutSingular",
-	}
-	resourceNameField := &Field{
-		Name: "name",
-		ResourceReference: &ResourceReference{
-			Type: resource.Type,
-		},
-	}
-	resourceOtherNameField := &Field{
-		Name: "other_name",
-		ResourceReference: &ResourceReference{
-			Type: resource.Type,
-		},
-	}
-	resourceNameNoSingularField := &Field{
-		Name: "name",
-		ResourceReference: &ResourceReference{
-			Type: resourceWithoutSingular.Type,
-		},
-	}
-	resourceOtherNameNoSingularField := &Field{
-		Name: "other_name",
-		ResourceReference: &ResourceReference{
-			Type: resourceWithoutSingular.Type,
-		},
-	}
-	nonExistentResourceField := &Field{
-		Name: "name",
-		ResourceReference: &ResourceReference{
-			Type: "nonexistent.googleapis.com/NonExistent",
-		},
-	}
-
-	wildcardResourceField := &Field{
-		Name: "name",
-		ResourceReference: &ResourceReference{
-			Type: "*",
-		},
-	}
+	resource := NewTestResource("google.cloud.secretmanager.v1/Secret").WithSingular("secret")
+	resourceWithoutSingular := NewTestResource("google.cloud.secretmanager.v1/SecretWithoutSingular")
+	resourceNameField := NewTestField("name").WithResourceReference(resource.Type)
+	resourceOtherNameField := NewTestField("other_name").WithResourceReference(resource.Type)
+	resourceNameNoSingularField := NewTestField("name").WithResourceReference(resourceWithoutSingular.Type)
+	resourceOtherNameNoSingularField := NewTestField("other_name").WithResourceReference(resourceWithoutSingular.Type)
+	nonExistentResourceField := NewTestField("name").WithResourceReference("nonexistent.googleapis.com/NonExistent")
+	wildcardResourceField := NewTestField("name").WithResourceReference("*")
 
 	model := &API{
 		ResourceDefinitions: []*Resource{resource, resourceWithoutSingular},
@@ -99,40 +63,48 @@ func newAIPTestFixture() *aipTestFixture {
 	}
 }
 
+func newAIPTestMethod(name string, input, output *Message, model *API) *Method {
+	m := NewTestMethod(name).WithInput(input).WithOutput(output)
+	m.Model = model
+	return m
+}
+
+func newAIPTestDeleteMethod(input *Message, model *API) *Method {
+	m := NewTestMethod("DeleteSecret").WithInput(input).ReturnEmpty()
+	m.Model = model
+	return m
+}
+
 func TestIsAIPStandard(t *testing.T) {
 	f := newAIPTestFixture()
 
-	// Setup for a valid Get operation
-	validGetMethod := &Method{
-		Name:       "GetSecret",
-		InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-		OutputType: &Message{Resource: f.resource},
-		Model:      f.model,
-	}
+	output := NewTestMessage("Response").WithResource(f.resource)
 
-	validDeleteMethod := &Method{
-		Name:         "DeleteSecret",
-		InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
-		ReturnsEmpty: true,
-		Model:        f.model,
-	}
+	validGetMethod := newAIPTestMethod(
+		"GetSecret",
+		NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+		output,
+		f.model,
+	)
 
-	validUndeleteMethod := &Method{
-		Name:      "UndeleteSecret",
-		InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
-		OutputType: &Message{
-			Resource: f.resource,
-		},
-		Model: f.model,
-	}
+	validDeleteMethod := newAIPTestDeleteMethod(
+		NewTestMessage("DeleteSecretRequest").WithFields(f.resourceNameField),
+		f.model,
+	)
 
-	// Setup for an invalid Get operation (e.g., wrong name)
-	invalidGetMethod := &Method{
-		Name:       "ListSecrets", // Not a Get method
-		InputType:  &Message{Name: "ListSecretsRequest"},
-		OutputType: &Message{Resource: f.resource},
-		Model:      f.model,
-	}
+	validUndeleteMethod := newAIPTestMethod(
+		"UndeleteSecret",
+		NewTestMessage("UndeleteSecretRequest").WithFields(f.resourceNameField),
+		output,
+		f.model,
+	)
+
+	invalidGetMethod := newAIPTestMethod(
+		"ListSecrets",
+		NewTestMessage("ListSecretsRequest"),
+		output,
+		f.model,
+	)
 
 	testCases := []struct {
 		name   string
@@ -174,10 +146,7 @@ func TestIsAIPStandard(t *testing.T) {
 func TestAIPStandardGetInfo(t *testing.T) {
 	f := newAIPTestFixture()
 
-	// Helper to create an output message since Get needs it
-	output := &Message{
-		Resource: f.resource,
-	}
+	output := NewTestMessage("Response").WithResource(f.resource)
 
 	testCases := []struct {
 		name   string
@@ -186,12 +155,12 @@ func TestAIPStandardGetInfo(t *testing.T) {
 	}{
 		{
 			name: "valid get operation with wildcard resource reference",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.wildcardResourceField}},
-				OutputType: output,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.wildcardResourceField),
+				output,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.wildcardResourceField,
 				IsRequestResourceName: true,
@@ -199,12 +168,12 @@ func TestAIPStandardGetInfo(t *testing.T) {
 		},
 		{
 			name: "valid get operation",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType: output,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameField,
 				IsRequestResourceName: true,
@@ -212,14 +181,12 @@ func TestAIPStandardGetInfo(t *testing.T) {
 		},
 		{
 			name: "valid get operation with missing singular name on resource",
-			method: &Method{
-				Name:      "GetSecret",
-				InputType: &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameNoSingularField}},
-				OutputType: &Message{
-					Resource: f.resourceWithoutSingular,
-				},
-				Model: f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameNoSingularField),
+				NewTestMessage("Response").WithResource(f.resourceWithoutSingular),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameNoSingularField,
 				IsRequestResourceName: true,
@@ -227,110 +194,102 @@ func TestAIPStandardGetInfo(t *testing.T) {
 		},
 		{
 			name: "method name is incorrect",
-			method: &Method{
-				Name:       "Get",
-				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType: output,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"Get",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "request type name is incorrect",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType: output,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "returns empty",
-			method: &Method{
-				Name:         "GetSecret",
-				InputType:    &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType:   output,
-				ReturnsEmpty: true,
-				Model:        f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			).ReturnEmpty(),
 			want: nil,
 		},
 		{
 			name: "output is not a resource",
-			method: &Method{
-				Name:      "GetSecret",
-				InputType: &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType: &Message{
-					Resource: nil,
-				},
-				Model: f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				NewTestMessage("Response"),
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "request does not contain resource name field",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetSecretRequest"},
-				OutputType: output,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest"),
+				output,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "pagination method is not a standard get operation",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType: output,
-				Pagination: &Field{},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			).WithPagination(NewTestField("page")),
 			want: nil,
 		},
 		{
 			name: "client streaming method is not a standard get operation",
-			method: &Method{
-				Name:                "GetSecret",
-				InputType:           &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType:          output,
-				ClientSideStreaming: true,
-				Model:               f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			).WithClientSideStreaming(),
 			want: nil,
 		},
 		{
 			name: "server streaming method is not a standard get operation",
-			method: &Method{
-				Name:                "GetSecret",
-				InputType:           &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType:          output,
-				ServerSideStreaming: true,
-				Model:               f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			).WithServerSideStreaming(),
 			want: nil,
 		},
 		{
 			name: "LRO method is not a standard get operation",
-			method: &Method{
-				Name:          "GetSecret",
-				InputType:     &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType:    output,
-				OperationInfo: &OperationInfo{},
-				Model:         f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			).WithOperationInfo(NewTestOperationInfo("", "")),
 			want: nil,
 		},
 		{
 			name: "Discovery LRO method is not a standard get operation",
-			method: &Method{
-				Name:         "GetSecret",
-				InputType:    &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType:   output,
-				DiscoveryLro: &DiscoveryLro{},
-				Model:        f.model,
-			},
+			method: newAIPTestMethod(
+				"GetSecret",
+				NewTestMessage("GetSecretRequest").WithFields(f.resourceNameField),
+				output,
+				f.model,
+			).WithDiscoveryLro(NewTestDiscoveryLro()),
 			want: nil,
 		},
 	}
@@ -355,12 +314,10 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 	}{
 		{
 			name: "valid simple delete with wildcard resource reference",
-			method: &Method{
-				Name:         "DeleteSecret",
-				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.wildcardResourceField}},
-				ReturnsEmpty: true,
-				Model:        f.model,
-			},
+			method: newAIPTestDeleteMethod(
+				NewTestMessage("DeleteSecretRequest").WithFields(f.wildcardResourceField),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.wildcardResourceField,
 				IsRequestResourceName: true,
@@ -368,12 +325,10 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		},
 		{
 			name: "valid simple delete",
-			method: &Method{
-				Name:         "DeleteSecret",
-				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
-				ReturnsEmpty: true,
-				Model:        f.model,
-			},
+			method: newAIPTestDeleteMethod(
+				NewTestMessage("DeleteSecretRequest").WithFields(f.resourceNameField),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameField,
 				IsRequestResourceName: true,
@@ -381,12 +336,10 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		},
 		{
 			name: "valid simple delete with missing singular name on resource",
-			method: &Method{
-				Name:         "DeleteSecret",
-				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameNoSingularField}},
-				ReturnsEmpty: true,
-				Model:        f.model,
-			},
+			method: newAIPTestDeleteMethod(
+				NewTestMessage("DeleteSecretRequest").WithFields(f.resourceNameNoSingularField),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameNoSingularField,
 				IsRequestResourceName: true,
@@ -394,12 +347,12 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		},
 		{
 			name: "valid lro delete",
-			method: &Method{
-				Name:          "DeleteSecret",
-				InputType:     &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OperationInfo: &OperationInfo{},
-				Model:         f.model,
-			},
+			method: newAIPTestMethod(
+				"DeleteSecret",
+				NewTestMessage("DeleteSecretRequest").WithFields(f.resourceNameField),
+				nil,
+				f.model,
+			).WithOperationInfo(NewTestOperationInfo("", "")),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameField,
 				IsRequestResourceName: true,
@@ -407,12 +360,10 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		},
 		{
 			name: "valid delete with other name matching singular",
-			method: &Method{
-				Name:         "DeleteSecret",
-				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceOtherNameField}},
-				ReturnsEmpty: true,
-				Model:        f.model,
-			},
+			method: newAIPTestDeleteMethod(
+				NewTestMessage("DeleteSecretRequest").WithFields(f.resourceOtherNameField),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceOtherNameField,
 				IsRequestResourceName: true,
@@ -420,49 +371,45 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		},
 		{
 			name: "incorrect method name",
-			method: &Method{
-				Name:      "RemoveSecret",
-				InputType: &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
-				Model:     f.model,
-			},
+			method: newAIPTestMethod(
+				"RemoveSecret",
+				NewTestMessage("DeleteSecretRequest").WithFields(f.resourceNameField),
+				nil,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "incorrect request name",
-			method: &Method{
-				Name:      "DeleteSecret",
-				InputType: &Message{Name: "RemoveSecretRequest", Fields: []*Field{f.resourceNameField}},
-				Model:     f.model,
-			},
+			method: newAIPTestMethod(
+				"DeleteSecret",
+				NewTestMessage("RemoveSecretRequest").WithFields(f.resourceNameField),
+				nil,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "resource not found in ResourceByType map",
-			method: &Method{
-				Name: "DeleteSecret",
-				InputType: &Message{
-					Name: "DeleteSecretRequest",
-					Fields: []*Field{
-						f.nonExistentResourceField,
-					},
-				},
-				Model: f.model, // model's ResourceByType does not contain the nonexistent resource
-			},
+			method: newAIPTestMethod(
+				"DeleteSecret",
+				NewTestMessage("DeleteSecretRequest").WithFields(f.nonExistentResourceField),
+				nil,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "invalid delete with no matching field",
-			method: &Method{
-				Name: "DeleteSecret",
-				InputType: &Message{
-					Name: "DeleteSecretRequest",
-					Fields: []*Field{
-						f.nonExistentResourceField,
-						f.resourceOtherNameNoSingularField,
-					},
-				},
-				Model: f.model,
-			},
+			method: newAIPTestMethod(
+				"DeleteSecret",
+				NewTestMessage("DeleteSecretRequest").WithFields(
+					f.nonExistentResourceField,
+					f.resourceOtherNameNoSingularField,
+				),
+				nil,
+				f.model,
+			),
 			want: nil,
 		},
 	}
@@ -488,14 +435,12 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 	}{
 		{
 			name: "valid simple undelete with wildcard resource reference",
-			method: &Method{
-				Name:      "UndeleteSecret",
-				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.wildcardResourceField}},
-				OutputType: &Message{
-					Resource: f.resource,
-				},
-				Model: f.model,
-			},
+			method: newAIPTestMethod(
+				"UndeleteSecret",
+				NewTestMessage("UndeleteSecretRequest").WithFields(f.wildcardResourceField),
+				NewTestMessage("UndeleteSecretResponse").WithResource(f.resource),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.wildcardResourceField,
 				IsRequestResourceName: true,
@@ -503,14 +448,12 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 		},
 		{
 			name: "valid simple undelete",
-			method: &Method{
-				Name:      "UndeleteSecret",
-				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OutputType: &Message{
-					Resource: f.resource,
-				},
-				Model: f.model,
-			},
+			method: newAIPTestMethod(
+				"UndeleteSecret",
+				NewTestMessage("UndeleteSecretRequest").WithFields(f.resourceNameField),
+				NewTestMessage("UndeleteSecretResponse").WithResource(f.resource),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameField,
 				IsRequestResourceName: true,
@@ -518,14 +461,12 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 		},
 		{
 			name: "valid simple undelete with missing singular name on resource",
-			method: &Method{
-				Name:      "UndeleteSecret",
-				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameNoSingularField}},
-				OutputType: &Message{
-					Resource: f.resourceWithoutSingular,
-				},
-				Model: f.model,
-			},
+			method: newAIPTestMethod(
+				"UndeleteSecret",
+				NewTestMessage("UndeleteSecretRequest").WithFields(f.resourceNameNoSingularField),
+				NewTestMessage("UndeleteSecretResponse").WithResource(f.resourceWithoutSingular),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameNoSingularField,
 				IsRequestResourceName: true,
@@ -533,12 +474,13 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 		},
 		{
 			name: "valid lro undelete",
-			method: &Method{
-				Name:          "UndeleteSecret",
-				InputType:     &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
-				OperationInfo: &OperationInfo{},
-				Model:         f.model,
-			},
+			method: func() *Method {
+				m := NewTestMethod("UndeleteSecret").
+					WithInput(NewTestMessage("UndeleteSecretRequest").WithFields(f.resourceNameField)).
+					WithOperationInfo(NewTestOperationInfo("", ""))
+				m.Model = f.model
+				return m
+			}(),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameField,
 				IsRequestResourceName: true,
@@ -546,14 +488,12 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 		},
 		{
 			name: "valid undelete with other name matching singular",
-			method: &Method{
-				Name:      "UndeleteSecret",
-				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceOtherNameField}},
-				OutputType: &Message{
-					Resource: f.resource,
-				},
-				Model: f.model,
-			},
+			method: newAIPTestMethod(
+				"UndeleteSecret",
+				NewTestMessage("UndeleteSecretRequest").WithFields(f.resourceOtherNameField),
+				NewTestMessage("UndeleteSecretResponse").WithResource(f.resource),
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceOtherNameField,
 				IsRequestResourceName: true,
@@ -561,49 +501,45 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 		},
 		{
 			name: "incorrect method name",
-			method: &Method{
-				Name:      "RestoreSecret",
-				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
-				Model:     f.model,
-			},
+			method: func() *Method {
+				m := NewTestMethod("RestoreSecret").
+					WithInput(NewTestMessage("UndeleteSecretRequest").WithFields(f.resourceNameField))
+				m.Model = f.model
+				return m
+			}(),
 			want: nil,
 		},
 		{
 			name: "incorrect request name",
-			method: &Method{
-				Name:      "UndeleteSecret",
-				InputType: &Message{Name: "RestoreSecretRequest", Fields: []*Field{f.resourceNameField}},
-				Model:     f.model,
-			},
+			method: func() *Method {
+				m := NewTestMethod("UndeleteSecret").
+					WithInput(NewTestMessage("RestoreSecretRequest").WithFields(f.resourceNameField))
+				m.Model = f.model
+				return m
+			}(),
 			want: nil,
 		},
 		{
 			name: "resource not found in ResourceByType map",
-			method: &Method{
-				Name: "UndeleteSecret",
-				InputType: &Message{
-					Name: "UndeleteSecretRequest",
-					Fields: []*Field{
-						f.nonExistentResourceField,
-					},
-				},
-				Model: f.model, // model's ResourceByType does not contain the nonexistent resource
-			},
+			method: func() *Method {
+				m := NewTestMethod("UndeleteSecret").
+					WithInput(NewTestMessage("UndeleteSecretRequest").WithFields(f.nonExistentResourceField))
+				m.Model = f.model
+				return m
+			}(),
 			want: nil,
 		},
 		{
 			name: "invalid undelete with no matching field",
-			method: &Method{
-				Name: "UndeleteSecret",
-				InputType: &Message{
-					Name: "UndeleteSecretRequest",
-					Fields: []*Field{
+			method: func() *Method {
+				m := NewTestMethod("UndeleteSecret").
+					WithInput(NewTestMessage("UndeleteSecretRequest").WithFields(
 						f.nonExistentResourceField,
 						f.resourceOtherNameNoSingularField,
-					},
-				},
-				Model: f.model,
-			},
+					))
+				m.Model = f.model
+				return m
+			}(),
 			want: nil,
 		},
 	}
@@ -623,23 +559,17 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 	f := newAIPTestFixture()
 
 	// Setup for Create
-	secretMessage := &Message{ID: "secret_message_id"}
-	f.resource.Self = secretMessage
+	secretMessage := NewTestMessage("secret_message_id")
 
-	parentField := &Field{
-		Name:              "parent",
-		ResourceReference: &ResourceReference{ChildType: f.resource.Type},
-		Typez:             TypezString,
-	}
-	resourceField := &Field{
-		Name:    "secret",
-		Typez:   TypezMessage,
-		TypezID: secretMessage.ID,
-	}
-	idField := &Field{
-		Name:  "secret_id",
-		Typez: TypezString,
-	}
+	parentField := NewTestField("parent").
+		WithType(TypezString).
+		WithChildTypeReference(f.resource.Type)
+	resourceField := NewTestField("secret").
+		WithMessageType(secretMessage)
+	idField := NewTestField("secret_id").
+		WithType(TypezString)
+	output := NewTestMessage("Response").WithResource(f.resource)
+	f.resource.Self = secretMessage
 
 	testCases := []struct {
 		name   string
@@ -648,19 +578,12 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 	}{
 		{
 			name: "valid create operation",
-			method: &Method{
-				Name: "CreateSecret",
-				InputType: &Message{
-					Name: "CreateSecretRequest",
-					Fields: []*Field{
-						parentField,
-						idField,
-						resourceField,
-					},
-				},
-				OutputType: &Message{Resource: f.resource},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"CreateSecret",
+				NewTestMessage("CreateSecretRequest").WithFields(parentField, idField, resourceField),
+				output,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     parentField,
 				IsRequestResourceName: true,
@@ -670,18 +593,12 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 		},
 		{
 			name: "valid create operation without id",
-			method: &Method{
-				Name: "CreateSecret",
-				InputType: &Message{
-					Name: "CreateSecretRequest",
-					Fields: []*Field{
-						parentField,
-						resourceField,
-					},
-				},
-				OutputType: &Message{Resource: f.resource},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"CreateSecret",
+				NewTestMessage("CreateSecretRequest").WithFields(parentField, resourceField),
+				output,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     parentField,
 				IsRequestResourceName: true,
@@ -690,18 +607,12 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 		},
 		{
 			name: "invalid create operation (wrong name)",
-			method: &Method{
-				Name: "MakeSecret",
-				InputType: &Message{
-					Name: "CreateSecretRequest",
-					Fields: []*Field{
-						parentField,
-						resourceField,
-					},
-				},
-				OutputType: &Message{Resource: f.resource},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"MakeSecret",
+				NewTestMessage("CreateSecretRequest").WithFields(parentField, resourceField),
+				output,
+				f.model,
+			),
 			want: nil,
 		},
 	}
@@ -721,24 +632,16 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 	f := newAIPTestFixture()
 
 	// Setup for Update
-	secretMessage := &Message{
-		ID: "secret_message_id",
-		Fields: []*Field{
-			f.resourceNameField,
-		},
-	}
-	f.resource.Self = secretMessage
+	secretMessage := NewTestMessage("secret_message_id").
+		WithID("secret_message_id").
+		WithFields(f.resourceNameField)
 
-	resourceField := &Field{
-		Name:        "secret",
-		Typez:       TypezMessage,
-		TypezID:     secretMessage.ID,
-		MessageType: secretMessage,
-	}
-	updateMaskField := &Field{
-		Name:    "update_mask",
-		TypezID: ".google.protobuf.FieldMask",
-	}
+	resourceField := NewTestField("secret").
+		WithMessageType(secretMessage)
+	updateMaskField := NewTestField("update_mask").
+		WithTypezID(".google.protobuf.FieldMask")
+	output := NewTestMessage("Response").WithResource(f.resource)
+	f.resource.Self = secretMessage
 
 	testCases := []struct {
 		name   string
@@ -747,18 +650,12 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 	}{
 		{
 			name: "valid update operation",
-			method: &Method{
-				Name: "UpdateSecret",
-				InputType: &Message{
-					Name: "UpdateSecretRequest",
-					Fields: []*Field{
-						resourceField,
-						updateMaskField,
-					},
-				},
-				OutputType: &Message{Resource: f.resource},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"UpdateSecret",
+				NewTestMessage("UpdateSecretRequest").WithFields(resourceField, updateMaskField),
+				output,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameField,
 				MessageField:          resourceField,
@@ -768,17 +665,12 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 		},
 		{
 			name: "valid update operation without mask",
-			method: &Method{
-				Name: "UpdateSecret",
-				InputType: &Message{
-					Name: "UpdateSecretRequest",
-					Fields: []*Field{
-						resourceField,
-					},
-				},
-				OutputType: &Message{Resource: f.resource},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"UpdateSecret",
+				NewTestMessage("UpdateSecretRequest").WithFields(resourceField),
+				output,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     f.resourceNameField,
 				MessageField:          resourceField,
@@ -787,47 +679,32 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 		},
 		{
 			name: "invalid update operation (wrong name)",
-			method: &Method{
-				Name: "ModifySecret",
-				InputType: &Message{
-					Name: "UpdateSecretRequest",
-					Fields: []*Field{
-						resourceField,
-					},
-				},
-				OutputType: &Message{Resource: f.resource},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"ModifySecret",
+				NewTestMessage("UpdateSecretRequest").WithFields(resourceField),
+				output,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "invalid update operation (wrong request name)",
-			method: &Method{
-				Name: "UpdateSecret",
-				InputType: &Message{
-					Name: "ModifySecretRequest",
-					Fields: []*Field{
-						resourceField,
-					},
-				},
-				OutputType: &Message{Resource: f.resource},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"UpdateSecret",
+				NewTestMessage("ModifySecretRequest").WithFields(resourceField),
+				output,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "invalid update operation (missing resource)",
-			method: &Method{
-				Name: "UpdateSecret",
-				InputType: &Message{
-					Name: "UpdateSecretRequest",
-					Fields: []*Field{
-						updateMaskField,
-					},
-				},
-				OutputType: &Message{Resource: f.resource},
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"UpdateSecret",
+				NewTestMessage("UpdateSecretRequest").WithFields(updateMaskField),
+				output,
+				f.model,
+			),
 			want: nil,
 		},
 	}
@@ -851,24 +728,18 @@ func TestAIPStandardListInfo(t *testing.T) {
 	// Ensure the parent field points to this resource type in child_type?
 	// No, parent field child_type matches the listed resource type.
 
-	secretResource := &Resource{Type: resourceType, Plural: "Secrets"}
-	secretMessage := &Message{Resource: secretResource}
-	parentField := &Field{
-		Name:              "parent",
-		ResourceReference: &ResourceReference{ChildType: resourceType},
-	}
-	otherParentField := &Field{
-		Name:              "database", // Not named "parent"
-		ResourceReference: &ResourceReference{ChildType: resourceType},
-	}
-	plainParentField := &Field{Name: "parent"} // No child_type
+	secretResource := NewTestResource(resourceType).WithPlural("Secrets")
+	secretMessage := NewTestMessage("Secret").WithResource(secretResource)
+	parentField := NewTestField("parent").
+		WithChildTypeReference(resourceType)
+	otherParentField := NewTestField("database").
+		WithChildTypeReference(resourceType) // Not named "parent"
+	plainParentField := NewTestField("parent") // No child_type
 
-	pageableItem := &Field{Name: "secrets", MessageType: secretMessage}
-	paginationInfo := &PaginationInfo{PageableItem: pageableItem}
-	listOutput := &Message{
-		Name:       "ListSecretsResponse",
-		Pagination: paginationInfo,
-	}
+	pageableItem := NewTestField("secrets").WithMessageType(secretMessage)
+	paginationInfo := NewTestPaginationInfo(nil, pageableItem)
+	listOutput := NewTestMessage("ListSecretsResponse")
+	listOutput.Pagination = paginationInfo
 
 	testCases := []struct {
 		name   string
@@ -877,12 +748,12 @@ func TestAIPStandardListInfo(t *testing.T) {
 	}{
 		{
 			name: "valid list operation with parent field match by child_type",
-			method: &Method{
-				Name:       "ListSecrets",
-				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{parentField}},
-				OutputType: listOutput,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"ListSecrets",
+				NewTestMessage("ListSecretsRequest").WithFields(parentField),
+				listOutput,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     parentField,
 				IsRequestResourceName: true,
@@ -890,12 +761,12 @@ func TestAIPStandardListInfo(t *testing.T) {
 		},
 		{
 			name: "valid list operation with other field match by child_type",
-			method: &Method{
-				Name:       "ListSecrets",
-				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{otherParentField}},
-				OutputType: listOutput,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"ListSecrets",
+				NewTestMessage("ListSecretsRequest").WithFields(otherParentField),
+				listOutput,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     otherParentField,
 				IsRequestResourceName: true,
@@ -903,12 +774,12 @@ func TestAIPStandardListInfo(t *testing.T) {
 		},
 		{
 			name: "valid list operation with parent field name match (fallback)",
-			method: &Method{
-				Name:       "ListSecrets",
-				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{plainParentField}},
-				OutputType: listOutput,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"ListSecrets",
+				NewTestMessage("ListSecretsRequest").WithFields(plainParentField),
+				listOutput,
+				f.model,
+			),
 			want: &SampleInfo{
 				ResourceNameField:     plainParentField,
 				IsRequestResourceName: true,
@@ -916,52 +787,56 @@ func TestAIPStandardListInfo(t *testing.T) {
 		},
 		{
 			name: "list operation missing parent field",
-			method: &Method{
-				Name:       "ListSecrets",
-				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{}},
-				OutputType: listOutput,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"ListSecrets",
+				NewTestMessage("ListSecretsRequest"),
+				listOutput,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "method name does not start with List",
-			method: &Method{
-				Name:       "EnumerateSecrets",
-				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{parentField}},
-				OutputType: listOutput,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"EnumerateSecrets",
+				NewTestMessage("ListSecretsRequest").WithFields(parentField),
+				listOutput,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "input type name mismatch",
-			method: &Method{
-				Name:       "ListSecrets",
-				InputType:  &Message{Name: "EnumerateSecretsRequest", Fields: []*Field{parentField}},
-				OutputType: listOutput,
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"ListSecrets",
+				NewTestMessage("EnumerateSecretsRequest").WithFields(parentField),
+				listOutput,
+				f.model,
+			),
 			want: nil,
 		},
 		{
 			name: "output type name mismatch",
-			method: &Method{
-				Name:       "ListSecrets",
-				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{parentField}},
-				OutputType: &Message{Name: "EnumerateSecretsResponse", Pagination: paginationInfo},
-				Model:      f.model,
-			},
+			method: func() *Method {
+				out := NewTestMessage("EnumerateSecretsResponse")
+				out.Pagination = paginationInfo
+				return newAIPTestMethod(
+					"ListSecrets",
+					NewTestMessage("ListSecretsRequest").WithFields(parentField),
+					out,
+					f.model,
+				)
+			}(),
 			want: nil,
 		},
 		{
 			name: "not a list operation (no pagination)",
-			method: &Method{
-				Name:       "ListSecrets",
-				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{parentField}},
-				OutputType: &Message{Name: "ListSecretsResponse"}, // No pagination
-				Model:      f.model,
-			},
+			method: newAIPTestMethod(
+				"ListSecrets",
+				NewTestMessage("ListSecretsRequest").WithFields(parentField),
+				NewTestMessage("ListSecretsResponse"),
+				f.model,
+			),
 			want: nil,
 		},
 	}

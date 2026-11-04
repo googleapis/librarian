@@ -37,10 +37,10 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID)
 	}
 	pathNames := []string{}
-	t := m.PathInfo.Bindings[0].PathTemplate
-	for _, s := range t.Segments {
-		if s.Variable != nil {
-			pathNames = append(pathNames, s.Variable.FieldPath[0])
+	t := m.PathInfo.Bindings()[0].PathTemplate()
+	for _, s := range t.Segments() {
+		if s.Variable() != nil {
+			pathNames = append(pathNames, s.Variable().FieldPath()[0])
 		}
 	}
 
@@ -61,8 +61,9 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 // QueryParams returns the query parameters for a method.
 func QueryParams(m *api.Method, b *api.PathBinding) []*api.Field {
 	var queryParams []*api.Field
+	qp := b.QueryParameters()
 	for _, field := range m.InputType.Fields {
-		if !b.QueryParameters[field.Name] {
+		if !qp[field.Name] {
 			continue
 		}
 		queryParams = append(queryParams, field)
@@ -92,24 +93,5 @@ func MapSlice[T, R any](s []T, f func(T) R) []R {
 
 // HasNestedTypes returns true if the message has nested types.
 func HasNestedTypes(m *api.Message) bool {
-	if len(m.Enums) > 0 || len(m.OneOfs) > 0 {
-		return true
-	}
-	for _, child := range m.Messages {
-		if !child.IsMap {
-			return true
-		}
-	}
-	return false
-}
-
-// FieldIsMap returns true if the field is a map.
-func FieldIsMap(f *api.Field, model *api.API) bool {
-	if f.Typez != api.TypezMessage {
-		return false
-	}
-	if m := model.Message(f.TypezID); m != nil {
-		return m.IsMap
-	}
-	return false
+	return len(m.Enums) > 0 || len(m.OneOfs) > 0 || len(m.Messages) > 0
 }

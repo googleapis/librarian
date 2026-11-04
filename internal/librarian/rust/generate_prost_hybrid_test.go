@@ -33,7 +33,15 @@ func TestGenerateProstHybrid(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "cargo")
 	msg := api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	method := api.NewTestMethod("Get").
+		WithInput(msg).
+		WithOutput(msg).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build())
+	method.PathInfo.SetAnnotations("initial-pi-codec")
+	method.PathInfo.Bindings()[0].SetAnnotations("initial-codec")
+	svc := api.NewTestService("Service").WithPackage("google.cloud.test.v1").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{svc})
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -63,15 +71,31 @@ func TestGenerateProstHybrid(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
+			absSpecSource, err := filepath.Abs("../../testdata/googleapis/google/type")
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Chdir(outDir)
+			const cargoLock = `version = 4
+
+[[package]]
+name = "prost-build"
+version = "0.14.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "tonic-prost-build"
+version = "0.14.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+`
+			if err := os.WriteFile(filepath.Join(outDir, "Cargo.lock"), []byte(cargoLock), 0o644); err != nil {
+				t.Fatal(err)
+			}
 			lib := &config.Library{
 				Name: "test-package",
 				Rust: &config.RustCrate{
 					TemplateOverride: test.templateOverride,
 				},
-			}
-			absSpecSource, err := filepath.Abs("../../testdata/googleapis/google/type")
-			if err != nil {
-				t.Fatal(err)
 			}
 			srcs := &sources.Sources{
 				Googleapis: filepath.Dir(filepath.Dir(absSpecSource)),

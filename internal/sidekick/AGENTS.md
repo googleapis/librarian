@@ -14,7 +14,7 @@ The end-to-end generation pipeline follows these distinct stages:
 2. **Annotation / Codec:** The target language package
    (`internal/sidekick/<lang>`) decorates the `api.API` model with
    language-specific metadata and types (stored in `node.Codec`).
-3. **Template Rendering:** The annotated model is passed to Mustache templates
+3. **Template Rendering:** The annotated model is passed to Go templates
    (`internal/sidekick/<lang>/templates`) to render target source code.
 4. **Formatting:** Generated source files are formatted using target language
    toolchains.
@@ -24,7 +24,7 @@ flowchart LR
     Spec["Service Spec\n(Protobuf / OpenAPI / Discovery)"] --> Parser["internal/sidekick/parser"]
     Parser --> Model["api.API\n(Language-Agnostic IR)"]
     Model --> Codec["Language Codec\n(Annotations & Enriched AST)"]
-    Templates["Mustache Templates\n(<lang>/templates)"] --> Renderer["Template Engine"]
+    Templates["Go Templates\n(<lang>/templates)"] --> Renderer["Template Engine"]
     Codec --> Renderer
     Renderer --> Output["Generated Source Code"]
 ```
@@ -95,9 +95,8 @@ expected annotation struct on the corresponding model element:
 
 ## Template Architecture & Boilerplate
 
-Sidekick generators use templates (`internal/sidekick/<lang>/templates/`) to
-define the emitted source code structure. Generators are migrating from legacy
-Mustache templates (`.mustache`) to Go templates (`.gotmpl`).
+Sidekick generators use Go templates (`.gotmpl`) under
+`internal/sidekick/<lang>/templates/` to define the emitted source code structure.
 
 ### Go Template Formatting Guidelines
 
@@ -156,8 +155,7 @@ multiline partials unindented.
 ### Template and Output Boilerplate
 
 - **Template Copyright Header:** Every template file must begin with an Apache
-  2.0 license comment (using `{{/* ... */}}` for Go templates or `{{! ... }}`
-  for legacy Mustache). Always use the current year for newly created files.
+  2.0 license comment (using `{{/* ... */}}`). Always use the current year for newly created files.
 - **Output File Boilerplate:** Templates that render standalone source files
   (not partials) must emit the target file's license and copyright boilerplate.
 - **Reusable Partials:** Output boilerplate must be rendered using a reusable
@@ -182,7 +180,7 @@ sidekick generator must adhere strictly to these architectural invariants:
 - **Templates Own Formatting:** Never construct multi-line doc comments (e.g.
   Doxygen `///` blocks) or hand-craft continuation indentations in Go.
 - Annotation methods should expose typed data slices or simple strings (e.g.,
-  returning `[]FieldAnnotation` or a clean string), allowing Mustache templates
+  returning `[]FieldAnnotation` or a clean string), allowing Go templates
   and partials to handle iteration, syntax, and indentation.
 
 ### 2. Parser & AST Fidelity (Extend Parsers, Do Not Re-Parse)

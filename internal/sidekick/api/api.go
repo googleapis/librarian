@@ -62,6 +62,8 @@ type API struct {
 	enumByID map[string]*Enum
 	// resourceByType returns a resource that is associated with the API.
 	resourceByType map[string]*Resource
+	// mapByID returns a map that is associated with the API.
+	mapByID map[string]*Map
 
 	// RubyPackage captures the package name override for Ruby.
 	//
@@ -119,7 +121,7 @@ type ModelOverride struct {
 
 // HasMessages returns true if the API contains messages (most do).
 //
-// This is useful in the mustache templates to skip code that only makes sense
+// This is useful in Go templates to skip code that only makes sense
 // when per-message code follows.
 func (a *API) HasMessages() bool {
 	return len(a.Messages) != 0
@@ -127,7 +129,7 @@ func (a *API) HasMessages() bool {
 
 // HasServices returns true if the API contains services (most do).
 //
-// This is useful in the mustache templates to skip code that only makes sense
+// This is useful in Go templates to skip code that only makes sense
 // when per-service code follows.
 func (a *API) HasServices() bool {
 	return len(a.Services) != 0
@@ -135,9 +137,8 @@ func (a *API) HasServices() bool {
 
 // ModelCodec returns the Codec field with an alternative name.
 //
-// In some mustache templates we want to access the annotations for the
-// enclosing model. In mustache you can get a field from an enclosing context
-// *if* the name is unique.
+// In some Go templates we want to access the annotations for the
+// enclosing model.
 func (a *API) ModelCodec() any {
 	return a.Codec
 }
@@ -230,4 +231,22 @@ func (a *API) AddResource(r *Resource) {
 		a.resourceByType = make(map[string]*Resource)
 	}
 	a.resourceByType[r.Type] = r
+}
+
+// Map returns a map that is associated with the API.
+func (a *API) Map(id string) *Map {
+	return a.mapByID[id]
+}
+
+// AllMaps returns an iterator over the maps in the API.
+func (a *API) AllMaps() iter.Seq[*Map] {
+	return maps.Values(a.mapByID)
+}
+
+// AddMap adds a map to the API.
+func (a *API) AddMap(m *Map) {
+	if a.mapByID == nil {
+		a.mapByID = make(map[string]*Map)
+	}
+	a.mapByID[m.ID] = m
 }

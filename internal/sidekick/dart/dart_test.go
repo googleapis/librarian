@@ -272,10 +272,10 @@ func TestFieldType(t *testing.T) {
 }
 
 func TestFieldType_Maps(t *testing.T) {
-	mapMsg := api.NewTestMapMessage("$map<string, string>", api.TypezString, api.TypezInt32)
+	mapMsg := api.NewTestMap("$map<string, string>", api.TypezString, api.TypezInt32)
 	field := api.NewTestField("map").
-		WithMessageType(mapMsg)
-	model := api.NewTestAPI([]*api.Message{mapMsg}, nil, nil)
+		WithMapType(mapMsg)
+	model := api.NewTestAPI(nil, nil, nil).WithMaps(mapMsg)
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
 
@@ -287,10 +287,8 @@ func TestFieldType_Maps(t *testing.T) {
 }
 
 func TestFieldType_Bytes(t *testing.T) {
-	message := api.NewTestMapMessage("$test", api.TypezString, api.TypezBytes).
-		WithID("$test")
-	field := message.Fields[1]
-	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
+	field := api.NewTestField("value").WithType(api.TypezBytes)
+	model := api.NewTestAPI(nil, nil, nil)
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
 

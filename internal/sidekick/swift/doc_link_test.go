@@ -24,25 +24,31 @@ import (
 
 func TestDocLink(t *testing.T) {
 	enumValue := api.NewTestEnumValue("ENUM_VALUE", 0)
-	someEnum := api.NewTestEnum("SomeEnum").WithValues(enumValue)
+	publicValue := api.NewTestEnumValue("SOME_ENUM_PUBLIC", 1)
+	someEnum := api.NewTestEnum("SomeEnum").WithValues(enumValue, publicValue)
 	response := api.NewTestField("response")
 	errorz := api.NewTestField("error")
-	result := api.NewTestOneOf("result").WithFields(response, errorz)
+	defaultField := api.NewTestField("default")
+	result := api.NewTestOneOf("result").WithFields(response, errorz, defaultField)
 	someMessage := api.NewTestMessage("SomeMessage").
 		WithPackage("test.v1").
 		WithFields(
 			api.NewTestField("unused"),
 			api.NewTestField("field"),
 			api.NewTestField("typez"),
+			api.NewTestField("protocol"),
+			api.NewTestField("Self"),
 		).
 		WithOneOfs(result).
 		WithEnums(someEnum)
 	otherMessage := api.NewTestMessage("OtherMessage").
-		WithPackage("other.v1")
+		WithPackage("other.v1").
+		WithFields(api.NewTestField("protocol"))
 	someService := api.NewTestService("SomeService").
 		WithPackage("test.v1").
 		WithMethods(
 			api.NewTestMethod("CreateFoo"),
+			api.NewTestMethod("get"),
 			api.NewTestMethod("StreamFoo").WithServerSideStreaming(),
 		)
 
@@ -81,6 +87,18 @@ func TestDocLink(t *testing.T) {
 			want:   "<doc:SomeMessage/field>",
 		},
 		{
+			name:   "escaped keyword field link",
+			link:   "SomeMessage.protocol",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/protocol>",
+		},
+		{
+			name:   "metatype keyword field link",
+			link:   "SomeMessage.Self",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/self_>",
+		},
+		{
 			name:   "oneof field link (1)",
 			link:   "SomeMessage.error",
 			scopes: []string{"test.v1"},
@@ -93,16 +111,34 @@ func TestDocLink(t *testing.T) {
 			want:   "<doc:SomeMessage/ResultOneOf/response(_:)>",
 		},
 		{
+			name:   "escaped keyword oneof field link",
+			link:   "SomeMessage.default",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/ResultOneOf/default(_:)>",
+		},
+		{
 			name:   "enum value link",
 			link:   "SomeMessage.SomeEnum.ENUM_VALUE",
 			scopes: []string{"test.v1"},
 			want:   "<doc:SomeMessage/SomeEnum/enumValue>",
 		},
 		{
+			name:   "escaped keyword enum value link",
+			link:   "SomeMessage.SomeEnum.SOME_ENUM_PUBLIC",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/SomeEnum/public>",
+		},
+		{
 			name:   "method link",
 			link:   "SomeService.CreateFoo",
 			scopes: []string{"test.v1"},
 			want:   "<doc:SomeServiceClient/createFoo(request:options:)>",
+		},
+		{
+			name:   "escaped keyword method link",
+			link:   "SomeService.get",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeServiceClient/get(request:options:)>",
 		},
 		{
 			name:   "streaming method link",
@@ -127,6 +163,12 @@ func TestDocLink(t *testing.T) {
 			link:   "other.v1.OtherMessage",
 			scopes: []string{},
 			want:   "https://www.google.com/search?q=Swift+other.v1+OtherPrefix.OtherMessage",
+		},
+		{
+			name:   "different package escaped keyword field link",
+			link:   "other.v1.OtherMessage.protocol",
+			scopes: []string{},
+			want:   "https://www.google.com/search?q=Swift+other.v1+OtherPrefix.OtherMessage/protocol",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

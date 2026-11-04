@@ -38,6 +38,9 @@ func (c *codec) linkDefinition(link string, scopes []string) (string, error) {
 
 // docLink returns the documentation link for a symbol.
 func (c *codec) docLink(packageName, name string) string {
+	// Swift keywords are escaped with backticks in code (e.g. `get`, `protocol`),
+	// but DocC symbol links require unescaped symbol names.
+	name = strings.ReplaceAll(name, "`", "")
 	if packageName != c.Model.PackageName {
 		// TODO(#5072) - we have not implemented cross-reference links to external packages.
 		return fmt.Sprintf("https://www.google.com/search?q=Swift+%s+%s", packageName, name)

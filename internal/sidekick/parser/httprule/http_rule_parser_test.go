@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestParseSegments(t *testing.T) {
@@ -28,31 +29,31 @@ func TestParseSegments(t *testing.T) {
 		want        *api.PathTemplate
 		explanation string
 	}{
-		{"/foo", (&api.PathTemplate{}).WithLiteral("foo"), ""},
-		{"/foo/bar", (&api.PathTemplate{}).WithLiteral("foo").WithLiteral("bar"), ""},
+		{"/foo", api.NewPathTemplateBuilder().WithLiteral("foo").Build(), ""},
+		{"/foo/bar", api.NewPathTemplateBuilder().WithLiteral("foo").WithLiteral("bar").Build(), ""},
 		{"/v1/*/foo", nil, "matchers only exist within a variable segment"},
 		{"/v1/**/foo", nil, "matchers only exist within a variable segment"},
-		{"/foo:bar", (&api.PathTemplate{}).WithLiteral("foo").WithVerb("bar"), ""},
-		{"/foo/{bar}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar"), ""},
-		{"/foo/{bar.baz}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar", "baz"), ""},
-		{"/foo/{bar=baz}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithLiteral("baz")), ""},
-		{"/foo/{bar=*}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatch()), ""},
-		{"/foo/{bar=*}/baz", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatch()).
-			WithLiteral("baz"), ""},
-		{"/foo/{bar=**}/baz:qux", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatchRecursive()).
-			WithLiteral("baz").WithVerb("qux"), ""},
-		{"/foo/{bar=baz/*/qux/*}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithLiteral("baz").WithMatch().WithLiteral("qux").WithMatch()), ""},
-		{"/foo/{bar}/{baz}/{qux}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar").WithVariableNamed("baz").WithVariableNamed("qux"), ""},
+		{"/foo:bar", api.NewPathTemplateBuilder().WithLiteral("foo").WithVerb("bar").Build(), ""},
+		{"/foo/{bar}", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariableNamed("bar").Build(), ""},
+		{"/foo/{bar.baz}", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariableNamed("bar", "baz").Build(), ""},
+		{"/foo/{bar=baz}", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariable(
+			api.NewPathVariableBuilder("bar").WithLiteral("baz").Build()).Build(), ""},
+		{"/foo/{bar=*}", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariable(
+			api.NewPathVariableBuilder("bar").WithMatch().Build()).Build(), ""},
+		{"/foo/{bar=*}/baz", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariable(
+			api.NewPathVariableBuilder("bar").WithMatch().Build()).
+			WithLiteral("baz").Build(), ""},
+		{"/foo/{bar=**}/baz:qux", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariable(
+			api.NewPathVariableBuilder("bar").WithMatchRecursive().Build()).
+			WithLiteral("baz").WithVerb("qux").Build(), ""},
+		{"/foo/{bar=baz/*/qux/*}", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariable(
+			api.NewPathVariableBuilder("bar").WithLiteral("baz").WithMatch().WithLiteral("qux").WithMatch().Build()).Build(), ""},
+		{"/foo/{bar}/{baz}/{qux}", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariableNamed("bar").WithVariableNamed("baz").WithVariableNamed("qux").Build(), ""},
 		{"foo", nil, "path must start with slash"},
 		{"/", nil, "path cannot end with slash"},
 		{"/foo/", nil, "path cannot end with slash"},
 		{"/foo/***/bar", nil, "wildcard literal cannot exceed two *, and * isn't allowed in a LITERAL"},
-		{"/%0f", (&api.PathTemplate{}).WithLiteral("%0f"), ""},
+		{"/%0f", api.NewPathTemplateBuilder().WithLiteral("%0f").Build(), ""},
 		{"/%0z", nil, "bad percent encoding"},
 		{"/foo//bar", nil, "segment is too short"},
 		{"/foo/:", nil, "verb is too short"},
@@ -61,7 +62,7 @@ func TestParseSegments(t *testing.T) {
 		{"/foo/{.a}/bar", nil, "var identifier too short"},
 		{"/foo/{a=}/bar", nil, "var value too short"},
 		{"/foo/{9bar}", nil, "var identifier has bad first character"},
-		{"/foo/{bar9}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar9"), ""},
+		{"/foo/{bar9}", api.NewPathTemplateBuilder().WithLiteral("foo").WithVariableNamed("bar9").Build(), ""},
 		{"/foo/{b&r}", nil, "var identifier has bad character"},
 		{"/foo/:bar", nil, "verb cannot come after slash"},
 		{"/foo:bar/baz", nil, "verb must be the last segment, and : isn't allowed in a LITERAL"},
@@ -77,7 +78,7 @@ func TestParseSegments(t *testing.T) {
 				if got == nil {
 					t.Fatalf("expected path template for %s, got nil", test.path)
 				}
-				if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+				if diff := cmp.Diff(test.want, got, apitest.AllowUnexported(), cmpopts.EquateEmpty()); diff != "" {
 					t.Fatalf("failed parsing path [%s] (-want, +got):\n%s", test.path, diff)
 				}
 			} else {
@@ -157,18 +158,19 @@ func TestParseResourcePattern(t *testing.T) {
 		{
 			"single wildcard",
 			api.SingleSegmentWildcard,
-			(&api.PathTemplate{}),
+			api.NewPathTemplateBuilder().Build(),
 			false,
 			"should parse a single wildcard as a literal segment",
 		},
 		{
 			"standard hierarchical pattern",
 			"projects/{project}/serviceAccounts/{service_account}",
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("serviceAccounts").
-				WithVariableNamed("service_account"),
+				WithVariableNamed("service_account").
+				Build(),
 			false,
 			"should parse a standard hierarchical resource pattern correctly",
 		},
@@ -183,7 +185,7 @@ func TestParseResourcePattern(t *testing.T) {
 				if err != nil {
 					t.Fatalf("ParseResourcePattern(%s) failed: %v", test.pattern, err)
 				}
-				if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+				if diff := cmp.Diff(test.want, got, apitest.AllowUnexported(), cmpopts.EquateEmpty()); diff != "" {
 					t.Fatalf("failed parsing resource pattern [\"%s\"] (-want, +got):\n%s", test.pattern, diff)
 				}
 			}

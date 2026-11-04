@@ -278,15 +278,16 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 }
 
 func TestFieldTypeName_Map(t *testing.T) {
-	mapEntry := api.NewTestMapMessage("SingularMapEntry", api.TypezString, api.TypezInt32).
-		WithPackage("google.cloud.test.v1").
+	mapEntry := api.NewTestMap("SingularMapEntry", api.TypezString, api.TypezInt32).
 		WithID(".google.cloud.test.v1.WithMap.SingularMapEntry")
 
-	model := api.NewTestAPI([]*api.Message{mapEntry}, nil, nil)
+	model := api.NewTestAPI(nil, nil, nil).
+		WithPackageName("google.cloud.test.v1").
+		WithMaps(mapEntry)
 	c := newTestCodec(t, model, nil)
 
 	field := api.NewTestField("field1").
-		WithMessageType(mapEntry)
+		WithMapType(mapEntry)
 
 	got, err := c.fieldTypeName(field)
 	if err != nil {

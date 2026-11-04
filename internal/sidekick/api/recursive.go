@@ -25,6 +25,30 @@ func LabelRecursiveFields(model *API) {
 }
 
 func (field *Field) recursivelyReferences(messageID string, model *API, visited map[string]bool) bool {
+	if field.Typez == TypezMap {
+		mapType := field.MapType
+		if mapType == nil {
+			mapType = model.Map(field.TypezID)
+		}
+		if mapType == nil || visited[mapType.ID] {
+			return false
+		}
+		visited[mapType.ID] = true
+		defer delete(visited, mapType.ID)
+		recursive := false
+		if mapType.Key != nil && mapType.Key.recursivelyReferences(messageID, model, visited) {
+			mapType.Key.Recursive = true
+			recursive = true
+		}
+		if mapType.Value != nil && mapType.Value.recursivelyReferences(messageID, model, visited) {
+			mapType.Value.Recursive = true
+			recursive = true
+		}
+		if recursive {
+			field.Recursive = true
+		}
+		return recursive
+	}
 	if field.Typez != TypezMessage {
 		return false
 	}

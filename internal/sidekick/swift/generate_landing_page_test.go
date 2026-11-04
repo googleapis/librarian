@@ -48,7 +48,7 @@ func TestGenerateLandingPage(t *testing.T) {
 			method := api.NewTestMethod("Get").
 				WithInput(inputType).
 				WithOutput(outputType).
-				WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+				WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 			service := api.NewTestService("Service").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
 				WithPackageName("test").

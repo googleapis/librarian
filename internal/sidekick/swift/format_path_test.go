@@ -29,31 +29,35 @@ func TestPathExpression(t *testing.T) {
 	}{
 		{
 			name: "literals only",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithLiteral("operations"),
+				WithLiteral("operations").
+				Build(),
 			want: "/v1/operations",
 		},
 		{
 			name: "with variable",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name"),
+				WithVariableNamed("name").
+				Build(),
 			want: "/v1/\\(pathVariable0)",
 		},
 		{
 			name: "with multiple variables",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name").WithLiteral("separator").WithVariableNamed("second"),
+				WithVariableNamed("name").WithLiteral("separator").WithVariableNamed("second").
+				Build(),
 			want: "/v1/\\(pathVariable0)/separator/\\(pathVariable1)",
 		},
 		{
 			name: "with verb",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("operations").
-				WithVerb("cancel"),
+				WithVerb("cancel").
+				Build(),
 			want: "/v1/operations:cancel",
 		},
 	} {
@@ -87,14 +91,15 @@ func TestPathVariables(t *testing.T) {
 	}{
 		{
 			name:     "no variables",
-			template: (&api.PathTemplate{}).WithLiteral("v1"),
+			template: api.NewPathTemplateBuilder().WithLiteral("v1").Build(),
 			want:     nil,
 		},
 		{
 			name: "one variable",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name"),
+				WithVariableNamed("name").
+				Build(),
 			want: []*pathVariable{
 				{
 					Name:             "pathVariable0",
@@ -109,11 +114,12 @@ func TestPathVariables(t *testing.T) {
 		},
 		{
 			name: "two variables",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithVariableNamed("name").
 				WithLiteral("sep").
-				WithVariableNamed("second"),
+				WithVariableNamed("second").
+				Build(),
 			want: []*pathVariable{
 				{
 					Name:             "pathVariable0",
@@ -137,9 +143,10 @@ func TestPathVariables(t *testing.T) {
 		},
 		{
 			name: "error - lookup field missing",
-			template: (&api.PathTemplate{}).
+			template: api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("missing"),
+				WithVariableNamed("missing").
+				Build(),
 			wantErr: true,
 		},
 	} {
@@ -197,12 +204,10 @@ func TestNewPathVariable(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:    "non-optional string",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"parent"},
-			},
-			count: 0,
+			name:     "non-optional string",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("parent").Build(),
+			count:    0,
 			want: &pathVariable{
 				Name:          "pathVariable0",
 				Expression:    ".parent as Swift.String?",
@@ -212,12 +217,10 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "optional string",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"display_name"},
-			},
-			count: 1,
+			name:     "optional string",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("display_name").Build(),
+			count:    1,
 			want: &pathVariable{
 				Name:          "pathVariable1",
 				Expression:    ".displayName",
@@ -227,21 +230,17 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "error - oneof field",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"oneof_field"},
-			},
-			count:   6,
-			wantErr: true,
+			name:     "error - oneof field",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("oneof_field").Build(),
+			count:    6,
+			wantErr:  true,
 		},
 		{
-			name:    "nested non-optional string",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"secret", "name"},
-			},
-			count: 2,
+			name:     "nested non-optional string",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("secret", "name").Build(),
+			count:    2,
 			want: &pathVariable{
 				Name:          "pathVariable2",
 				Expression:    ".secret.map({ $0.name })",
@@ -251,12 +250,10 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "nested optional string",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"secret", "description"},
-			},
-			count: 3,
+			name:     "nested optional string",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("secret", "description").Build(),
+			count:    3,
 			want: &pathVariable{
 				Name:          "pathVariable3",
 				Expression:    ".secret.flatMap({ $0.description })",
@@ -266,12 +263,10 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "explicit json_name",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"custom_name"},
-			},
-			count: 7,
+			name:     "explicit json_name",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("custom_name").Build(),
+			count:    7,
 			want: &pathVariable{
 				Name:          "pathVariable7",
 				Expression:    ".customName as Swift.String?",
@@ -281,22 +276,18 @@ func TestNewPathVariable(t *testing.T) {
 			},
 		},
 		{
-			name:    "error - unsupported type bytes",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"data"},
-			},
-			count:   4,
-			wantErr: true,
+			name:     "error - unsupported type bytes",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("data").Build(),
+			count:    4,
+			wantErr:  true,
 		},
 		{
-			name:    "error - lookup field missing",
-			message: requestMessage,
-			variable: &api.PathVariable{
-				FieldPath: []string{"missing"},
-			},
-			count:   5,
-			wantErr: true,
+			name:     "error - lookup field missing",
+			message:  requestMessage,
+			variable: api.NewPathVariableBuilder("missing").Build(),
+			count:    5,
+			wantErr:  true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -556,9 +547,10 @@ func TestRoutingParamsFromPathTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	template := (&api.PathTemplate{}).
+	template := api.NewPathTemplateBuilder().
 		WithLiteral("v2").
-		WithVariableNamed("name")
+		WithVariableNamed("name").
+		Build()
 
 	got := codec.routingParamsFromPathTemplate(template)
 
