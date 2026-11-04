@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestParseUriTemplateSuccess(t *testing.T) {
@@ -27,38 +28,43 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 		input string
 		want  *api.PathTemplate
 	}{
-		{"locations/global/firewallPolicies", (&api.PathTemplate{}).
+		{"locations/global/firewallPolicies", api.NewPathTemplateBuilder().
 			WithLiteral("locations").
 			WithLiteral("global").
-			WithLiteral("firewallPolicies")},
-		{"locations/global/operations/{operation}", (&api.PathTemplate{}).
+			WithLiteral("firewallPolicies").
+			Build()},
+		{"locations/global/operations/{operation}", api.NewPathTemplateBuilder().
 			WithLiteral("locations").
 			WithLiteral("global").
 			WithLiteral("operations").
-			WithVariableNamed("operation")},
-		{"projects/{project}/zones/{zone}/{parentName}/reservationSubBlocks", (&api.PathTemplate{}).
+			WithVariableNamed("operation").
+			Build()},
+		{"projects/{project}/zones/{zone}/{parentName}/reservationSubBlocks", api.NewPathTemplateBuilder().
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
 			WithVariableNamed("zone").
 			WithVariableNamed("parentName").
-			WithLiteral("reservationSubBlocks")},
-		{"v1/{+parent}/externalAccountKeys", (&api.PathTemplate{}).
+			WithLiteral("reservationSubBlocks").
+			Build()},
+		{"v1/{+parent}/externalAccountKeys", api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("parent").WithAllowReserved().WithMatchRecursive()).
-			WithLiteral("externalAccountKeys")},
-		{"dns/v1/{+resource}:getIamPolicy", (&api.PathTemplate{}).
+			WithVariable(api.NewPathVariableBuilder("parent").WithAllowReserved().WithMatchRecursive().Build()).
+			WithLiteral("externalAccountKeys").
+			Build()},
+		{"dns/v1/{+resource}:getIamPolicy", api.NewPathTemplateBuilder().
 			WithLiteral("dns").
 			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("resource").WithAllowReserved().WithMatchRecursive()).
-			WithVerb("getIamPolicy")},
+			WithVariable(api.NewPathVariableBuilder("resource").WithAllowReserved().WithMatchRecursive().Build()).
+			WithVerb("getIamPolicy").
+			Build()},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			got, err := ParseUriTemplate(test.input)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+			if diff := cmp.Diff(test.want, got, apitest.AllowUnexported(), cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -103,7 +109,7 @@ func TestParseExpression(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariable(test.want).WithMatch()}, gotSegment); diff != "" {
+			if diff := cmp.Diff(api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder(test.want).WithMatch().Build()).Build(), gotSegment, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if len(test.want)+2 != gotWidth {
@@ -145,7 +151,7 @@ func TestParseLiteral(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(&api.PathSegment{Literal: test.want}, gotSegment); diff != "" {
+			if diff := cmp.Diff(api.NewPathSegmentBuilder().WithLiteral(test.want).Build(), gotSegment, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if len(test.want) != gotWidth {

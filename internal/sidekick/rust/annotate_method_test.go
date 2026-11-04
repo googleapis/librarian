@@ -209,13 +209,13 @@ func annotateMethodModel(t *testing.T) *api.API {
 		WithInput(request).
 		WithOutput(response).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 
 	methodDelete := api.NewTestMethod("Delete").
 		WithInput(request).
 		WithOutput(empty).
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
@@ -223,7 +223,8 @@ func annotateMethodModel(t *testing.T) *api.API {
 			// This is unlikely, but want to test variables that
 			// are reserved words.
 			WithLiteral("types").
-			WithVariableNamed("type")).
+			WithVariableNamed("type").
+			Build()).
 		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone", "type"},
 		}).
@@ -233,7 +234,7 @@ func annotateMethodModel(t *testing.T) *api.API {
 		WithInput(request).
 		WithOutput(response).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 
 	service := api.NewTestService("ResourceService").
 		WithPackage("test.v1").
@@ -259,17 +260,22 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			t.Fatalf("missing method %s", methodID)
 		}
 		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-			m.PathInfo.Bindings[0].PathTemplate = (&api.PathTemplate{}).
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("zones").
-				WithVariableNamed("zone").
-				WithLiteral("types").
-				WithVariableNamed("type")
-			m.PathInfo.Bindings[0].TargetResource = &api.TargetResource{
-				Template:   api.ParseTemplateForTest(template),
-				FieldPaths: fields,
-			}
+			m.PathInfo.Bindings[0] = api.NewPathBindingBuilder().
+				WithVerb(m.PathInfo.Bindings[0].Verb()).
+				WithQueryParameterMap(m.PathInfo.Bindings[0].QueryParameters()).
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("projects").
+					WithVariableNamed("project").
+					WithLiteral("zones").
+					WithVariableNamed("zone").
+					WithLiteral("types").
+					WithVariableNamed("type").
+					Build()).
+				WithTargetResource(api.NewTargetResource(
+					fields,
+					api.ParseTemplateForTest(template),
+				)).
+				Build()
 		}
 	}
 
@@ -283,35 +289,37 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	// Setup: Inject multiple bindings for the "Self" method
 	mSelf := model.Method(".test.v1.ResourceService.Self")
 	mSelf.PathInfo.Bindings = []*api.PathBinding{
-		{
-			Verb: "GET",
-			PathTemplate: (&api.PathTemplate{}).
+		api.NewPathBindingBuilder().
+			WithVerb("GET").
+			WithPathTemplate(api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariableNamed("name"),
-			TargetResource: &api.TargetResource{
-				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
-				FieldPaths: [][]string{{"name"}},
-			},
-		},
-		{
-			Verb: "GET",
-			PathTemplate: (&api.PathTemplate{}).
+				WithVariableNamed("name").
+				Build()).
+			WithTargetResource(api.NewTargetResource(
+				[][]string{{"name"}},
+				api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
+			)).
+			Build(),
+		api.NewPathBindingBuilder().
+			WithVerb("GET").
+			WithPathTemplate(api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("locations").
 				WithVariableNamed("location").
 				WithLiteral("clusters").
-				WithVariableNamed("cluster"),
-			TargetResource: &api.TargetResource{
-				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
-				FieldPaths: [][]string{{"project"}, {"location"}, {"cluster"}},
-			},
-		},
-		{
-			Verb:         "GET",
-			PathTemplate: &api.PathTemplate{},
-		},
+				WithVariableNamed("cluster").
+				Build()).
+			WithTargetResource(api.NewTargetResource(
+				[][]string{{"project"}, {"location"}, {"cluster"}},
+				api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
+			)).
+			Build(),
+		api.NewPathBindingBuilder().
+			WithVerb("GET").
+			WithPathTemplate(api.NewPathTemplateBuilder().Build()).
+			Build(),
 	}
 
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
@@ -384,7 +392,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 
 			if test.wantBindings != nil {
 				for i, wantBinding := range test.wantBindings {
-					gotBinding := m.PathInfo.Bindings[i].Codec.(*pathBindingAnnotation)
+					gotBinding := m.PathInfo.Bindings[i].Codec().(*pathBindingAnnotation)
 					if diff := cmp.Diff(wantBinding, gotBinding, cmpopts.IgnoreFields(pathBindingAnnotation{}, "DetailedTracingAttributes", "PathFmt", "QueryParams", "Substitutions")); diff != "" {
 						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
@@ -404,36 +412,46 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 	}{
 		{
 			name: "Basic",
-			binding: api.NewTestPathBinding("", nil).WithTargetResource(&api.TargetResource{
-				Template: api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
-			}),
+			binding: api.NewPathBindingBuilder().
+				WithTargetResource(api.NewTargetResource(
+					nil,
+					api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
+				)).
+				Build(),
 			want: "//test.googleapis.com/projects/{}/zones/{}",
 		},
 		{
 			name: "With Extended Field Path",
-			binding: api.NewTestPathBinding("", nil).WithTargetResource(&api.TargetResource{
-				Template: api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
-			}),
+			binding: api.NewPathBindingBuilder().
+				WithTargetResource(api.NewTargetResource(
+					nil,
+					api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
+				)).
+				Build(),
 			want: "//test.googleapis.com/items/{}",
 		},
 		{
 			name: "Discovery API Compute V1 Example",
-			binding: api.NewTestPathBinding("", (&api.PathTemplate{}).
-				WithLiteral("compute").
-				WithLiteral("v1").
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("zones").
-				WithVariableNamed("zone")).
-				WithTargetResource(&api.TargetResource{
+			binding: api.NewPathBindingBuilder().
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("compute").
+					WithLiteral("v1").
+					WithLiteral("projects").
+					WithVariableNamed("project").
+					WithLiteral("zones").
+					WithVariableNamed("zone").
+					Build()).
+				WithTargetResource(api.NewTargetResource(
+					nil,
 					// Notice that constructTemplate already stripped out "compute/v1"
-					Template: api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),
-				}),
+					api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),
+				)).
+				Build(),
 			want: "//compute.googleapis.com/projects/{}/zones/{}",
 		},
 		{
 			name:    "Missing TargetResource",
-			binding: api.NewTestPathBinding("", nil),
+			binding: api.NewPathBindingBuilder().Build(),
 			wantErr: true,
 		},
 	} {
@@ -577,7 +595,7 @@ func TestIsHttp(t *testing.T) {
 
 func TestMethodUsesGrpc(t *testing.T) {
 	msg := api.NewTestMessage("Message").WithPackage("test.v1")
-	unaryMethod := api.NewTestMethod("Unary").WithInput(msg).WithOutput(msg).WithPathTemplate(&api.PathTemplate{})
+	unaryMethod := api.NewTestMethod("Unary").WithInput(msg).WithOutput(msg).WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	bidiMethod := api.NewTestMethod("Bidi").WithInput(msg).WithOutput(msg).WithBidiStreaming()
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()

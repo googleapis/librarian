@@ -20,6 +20,16 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func allowUnexported() cmp.Option {
+	return cmp.AllowUnexported(
+		PathBinding{},
+		PathSegment{},
+		PathTemplate{},
+		PathVariable{},
+		TargetResource{},
+	)
+}
+
 func TestRoutingCombosSimpleOr(t *testing.T) {
 	v1 := NewTestRoutingInfoVariant("v1")
 	v2 := NewTestRoutingInfoVariant("v2")
@@ -151,59 +161,19 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 	}
 }
 
-func TestPathTemplateBuilder(t *testing.T) {
-	got := (&PathTemplate{}).
-		WithLiteral("v1").
-		WithVariable(NewPathVariable("parent", "child").
-			WithLiteral("projects").
-			WithMatch().
-			WithAllowReserved().
-			WithLiteral("locations").
-			WithMatchRecursive()).
-		WithVariableNamed("v2", "field").
-		WithVerb("verb")
-	verb := "verb"
-	want := &PathTemplate{
-		Segments: []PathSegment{
-			{
-				Literal: "v1",
-			},
-			{
-				Variable: &PathVariable{
-					FieldPath:     []string{"parent", "child"},
-					Segments:      []string{"projects", "*", "locations", "**"},
-					AllowReserved: true,
-				},
-			},
-			{
-				Variable: &PathVariable{
-					FieldPath: []string{"v2", "field"},
-					Segments:  []string{"*"},
-				},
-			},
-		},
-		Verb: verb,
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
 func TestPathBindingHeuristic(t *testing.T) {
-	heuristic := &TargetResource{
-		FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
-	}
-	binding := &PathBinding{
-		Verb:           "GET",
-		TargetResource: heuristic,
+	heuristic := NewTargetResource([][]string{{"project"}, {"zone"}, {"instance"}}, nil)
+	binding := NewPathBindingBuilder().
+		WithVerb("GET").
+		WithTargetResource(heuristic).
+		Build()
+
+	if binding.Verb() != "GET" {
+		t.Errorf("expected GET, got %s", binding.Verb())
 	}
 
-	if binding.Verb != "GET" {
-		t.Errorf("expected GET, got %s", binding.Verb)
-	}
-
-	if binding.TargetResource.FieldPaths[0][0] != "project" {
-		t.Errorf("expected project, got %s", binding.TargetResource.FieldPaths[0][0])
+	if binding.TargetResource().FieldPaths()[0][0] != "project" {
+		t.Errorf("expected project, got %s", binding.TargetResource().FieldPaths()[0][0])
 	}
 }
 

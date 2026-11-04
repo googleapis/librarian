@@ -442,7 +442,7 @@ func newTestAnnotateModelAPI(t *testing.T) *api.API {
 		WithInput(empty).
 		WithOutput(empty).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("resource"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("resource").Build())
 
 	service0 := api.NewTestService("Service0").
 		WithPackage("").
@@ -452,7 +452,7 @@ func newTestAnnotateModelAPI(t *testing.T) *api.API {
 		WithInput(empty).
 		WithOutput(empty).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("resource"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("resource").Build())
 
 	service1 := api.NewTestService("Service1").
 		WithPackage("").
@@ -839,13 +839,13 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 func TestModelAnnotationsGrpcServices(t *testing.T) {
 	msg := api.NewTestMessage("Request").WithPackage("test.v1")
 
-	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(&api.PathTemplate{})
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	bidiService := api.NewTestService("BidiService").WithPackage("test.v1").WithMethods(bidiMethod)
 
-	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(&api.PathTemplate{})
+	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	serverService := api.NewTestService("ServerService").WithPackage("test.v1").WithMethods(serverMethod)
 
-	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	unaryService := api.NewTestService("UnaryService").WithPackage("test.v1").WithMethods(unaryMethod)
 
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService, serverService, unaryService})
@@ -947,12 +947,16 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 	req := api.NewTestMessage("Req").WithPackage("google.cloud.test.v1")
 	resp := api.NewTestMessage("Resp").WithPackage("google.cloud.test.v1")
 
-	unaryMethod := api.NewTestMethod("Unary").
-		WithInput(req).
-		WithOutput(resp).
-		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
-	streamMethod := api.NewTestMethod("Stream").WithInput(req).WithOutput(resp).WithBidiStreaming()
+	newUnaryMethod := func() *api.Method {
+		return api.NewTestMethod("Unary").
+			WithInput(req).
+			WithOutput(resp).
+			WithVerb("GET").
+			WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	}
+	newStreamMethod := func() *api.Method {
+		return api.NewTestMethod("Stream").WithInput(req).WithOutput(resp).WithBidiStreaming()
+	}
 
 	for _, test := range []struct {
 		name    string
@@ -962,13 +966,13 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 	}{
 		{
 			name:    "unary method with default http returns no grpc root types",
-			methods: []*api.Method{unaryMethod},
+			methods: []*api.Method{newUnaryMethod()},
 			options: map[string]string{},
 			want:    nil,
 		},
 		{
 			name:    "unary method with default_transport grpc returns root types",
-			methods: []*api.Method{unaryMethod},
+			methods: []*api.Method{newUnaryMethod()},
 			options: map[string]string{
 				"default-transport": "grpc",
 			},
@@ -976,13 +980,13 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 		},
 		{
 			name:    "streaming method returns root types",
-			methods: []*api.Method{streamMethod},
+			methods: []*api.Method{newStreamMethod()},
 			options: map[string]string{},
 			want:    []string{req.ID, resp.ID},
 		},
 		{
 			name:    "mixed methods with default http returns only streaming root types",
-			methods: []*api.Method{unaryMethod, streamMethod},
+			methods: []*api.Method{newUnaryMethod(), newStreamMethod()},
 			options: map[string]string{},
 			want:    []string{req.ID, resp.ID},
 		},

@@ -206,7 +206,7 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("secrets").Build()).
 		WithPagination(pageTokenField)
 
 	iam := api.NewTestService("SecretManagerService").

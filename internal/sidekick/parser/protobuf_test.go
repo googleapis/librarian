@@ -423,12 +423,14 @@ func TestProtobuf_Comments(t *testing.T) {
 		WithDocumentation("Some RPC.\n\nIt does not do much.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
@@ -684,13 +686,15 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Gets a Foo resource.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("name").
+				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
-					WithMatch()),
+					WithMatch().
+					Build()).
+				Build(),
 		).
 		WithQueryParameters()
 	getFoo.SourceServiceID = ".test.TestService"
@@ -704,12 +708,14 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters("foo_id").
 		WithBodyFieldPath("foo")
@@ -723,13 +729,15 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("Deletes a Foo resource.").
 		WithVerb("DELETE").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("name").
+				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
-					WithMatch()),
+					WithMatch().
+					Build()).
+				Build(),
 		).
 		WithQueryParameters().
 		ReturnEmpty()
@@ -751,14 +759,16 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("A server-side streaming RPC.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("name").
+				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
-					WithMatch()).
-				WithVerb("Download"),
+					WithMatch().
+					Build()).
+				WithVerb("Download").
+				Build(),
 		).
 		WithQueryParameters().
 		WithServerSideStreaming()
@@ -799,12 +809,14 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 		WithDocumentation("Creates a new `Foo` resource. `Foo`s are containers for `Bar`s.\n\nShows how a `body: \"${field}\"` option works.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters("foo_id").
 		WithBodyFieldPath("bar")
@@ -818,14 +830,16 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 		WithDocumentation("Add a Bar resource.\n\nShows how a `body: \"*\"` option works.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
 					WithMatch().
 					WithLiteral("foos").
-					WithMatch()).
-				WithVerb("addFoo"),
+					WithMatch().
+					Build()).
+				WithVerb("addFoo").
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
@@ -895,12 +909,14 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 		WithID(".test.TestService." + name).
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters(queryParams...)
 	m.SourceServiceID = ".test.TestService"
@@ -1023,12 +1039,14 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("foo").
@@ -1046,12 +1064,14 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Creates a new Foo resource.").
 		WithVerb("POST").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
+				WithVariable(api.NewPathVariableBuilder("parent").
 					WithLiteral("projects").
-					WithMatch()).
-				WithLiteral("foos"),
+					WithMatch().
+					Build()).
+				WithLiteral("foos").
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("foo").
@@ -1069,11 +1089,13 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("Custom docs.").
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v2").
-				WithVariable(api.NewPathVariable("name").
+				WithVariable(api.NewPathVariableBuilder("name").
 					WithLiteral("operations").
-					WithMatch()),
+					WithMatch().
+					Build()).
+				Build(),
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
@@ -1311,10 +1333,10 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		shelfResourceDef := api.NewTestResource("library.googleapis.com/Shelf").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
 				},
 			)
 		// Find Shelf in the slice
@@ -1328,7 +1350,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if foundShelf == nil {
 			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Shelf' not found")
 		}
-		if diff := cmp.Diff(shelfResourceDef, foundShelf, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
+		if diff := cmp.Diff(shelfResourceDef, foundShelf, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1336,12 +1358,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		bookResourceDef := api.NewTestResource("library.googleapis.com/Book").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("books"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("books").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("book").WithMatch().Build()).Build(),
 				},
 			).
 			WithPlural("books").
@@ -1359,7 +1381,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 		// Note: Book resource has 'Self' populated because it's a message resource.
 		// Ignoring Self/Codec for comparison.
-		if diff := cmp.Diff(bookResourceDef, foundBook, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		if diff := cmp.Diff(bookResourceDef, foundBook, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -1391,18 +1413,18 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		wantBookResource := api.NewTestResource("library.googleapis.com/Book").
 			WithPatterns(
 				api.ResourcePattern{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("books"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
+					*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
+					*api.NewPathSegmentBuilder().WithLiteral("books").Build(),
+					*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("book").WithMatch().Build()).Build(),
 				},
 			).
 			WithPlural("books").
 			WithSingular("book")
 
-		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1552,21 +1574,21 @@ func TestParseResourcePatterns(t *testing.T) {
 		}
 		want := []api.ResourcePattern{
 			{
-				*(&api.PathSegment{}).WithLiteral("publishers"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-				*(&api.PathSegment{}).WithLiteral("shelves"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
+				*api.NewPathSegmentBuilder().WithLiteral("publishers").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("publisher").WithMatch().Build()).Build(),
+				*api.NewPathSegmentBuilder().WithLiteral("shelves").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("shelf").WithMatch().Build()).Build(),
 			},
 			{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+				*api.NewPathSegmentBuilder().WithLiteral("projects").Build(),
+				*api.NewPathSegmentBuilder().WithVariable(api.NewPathVariableBuilder("project").WithMatch().Build()).Build(),
 			},
 		}
 		got, err := parseResourcePatterns(patterns)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if diff := cmp.Diff(want, got); diff != "" {
+		if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})

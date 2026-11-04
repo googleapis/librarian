@@ -75,11 +75,12 @@ func MethodCreate() *api.Method {
 		WithID("..Service.CreateSecret").
 		WithDocumentation("Creates a new Secret containing no SecretVersions.").
 		WithVerb(http.MethodPost).
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
-			WithLiteral("secrets")).
+			WithLiteral("secrets").
+			Build()).
 		WithQueryParameters("secretId").
 		WithBodyFieldPath("body")
 	// Note: InputType and OutputType are intentionally left nil because OpenAPI parser tests
@@ -96,9 +97,10 @@ func MethodUpdate() *api.Method {
 		WithDocumentation("Updates metadata of an existing Secret.").
 		WithInput(UpdateRequest()).
 		WithVerb(http.MethodPatch).
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
-			WithVariableNamed("secret", "name")).
+			WithVariableNamed("secret", "name").
+			Build()).
 		WithQueryParameters("field_mask")
 	m.OutputTypeID = ".google.protobuf.Empty"
 	return m
@@ -110,13 +112,14 @@ func MethodAddSecretVersion() *api.Method {
 		WithID("..Service.AddSecretVersion").
 		WithDocumentation("Creates a new SecretVersion containing secret data and attaches\nit to an existing Secret.").
 		WithVerb(http.MethodPost).
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("secrets").
 			WithVariableNamed("secret").
-			WithVerb("addVersion")).
+			WithVerb("addVersion").
+			Build()).
 		WithQueryParameters().
 		WithBodyFieldPath("body")
 	m.InputTypeID = "..Service.AddSecretVersionRequest"
@@ -132,13 +135,14 @@ func MethodListSecretVersions() *api.Method {
 		WithInput(ListSecretVersionsRequest()).
 		WithOutput(ListSecretVersionsResponse()).
 		WithVerb(http.MethodPost).
-		WithPathTemplate((&api.PathTemplate{}).
+		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("parent").
 			WithLiteral("secrets").
 			WithVariableNamed("secret").
-			WithVerb("listSecretVersions")).
+			WithVerb("listSecretVersions").
+			Build()).
 		WithQueryParameters().
 		WithBodyFieldPath("*")
 }

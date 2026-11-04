@@ -797,15 +797,15 @@ func bodyAccessor(m *api.Method) string {
 
 func httpPathFmt(t *api.PathTemplate) string {
 	fmt := ""
-	for _, segment := range t.Segments {
-		if segment.Literal != "" {
-			fmt = fmt + "/" + segment.Literal
-		} else if segment.Variable != nil {
+	for _, segment := range t.Segments() {
+		if segment.Literal() != "" {
+			fmt = fmt + "/" + segment.Literal()
+		} else if segment.Variable() != nil {
 			fmt = fmt + "/{}"
 		}
 	}
-	if t.Verb != "" {
-		fmt = fmt + ":" + t.Verb
+	if t.Verb() != "" {
+		fmt = fmt + ":" + t.Verb()
 	}
 	return fmt
 }
@@ -1729,7 +1729,7 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
 		return false
 	}
-	return m.PathInfo.Bindings[0].PathTemplate != nil
+	return m.PathInfo.Bindings[0].PathTemplate() != nil
 }
 
 func (c *codec) templateSupportsGrpc() bool {

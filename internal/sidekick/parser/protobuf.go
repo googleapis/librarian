@@ -948,7 +948,7 @@ func parseResourcePatterns(patterns []string) ([]api.ResourcePattern, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse resource pattern %q: %w", p, err)
 		}
-		parsedPatterns = append(parsedPatterns, tmpl.Segments)
+		parsedPatterns = append(parsedPatterns, tmpl.Segments())
 	}
 	return parsedPatterns, nil
 }

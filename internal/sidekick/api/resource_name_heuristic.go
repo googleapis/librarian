@@ -82,16 +82,17 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 			}
 
 			// Parse the path template of the primary binding
-			tmpl := m.PathInfo.Bindings[0].PathTemplate
+			tmpl := m.PathInfo.Bindings[0].PathTemplate()
 			if tmpl == nil {
 				continue
 			}
 
 			// Iterate backwards.
-			for i, seg := range slices.Backward(tmpl.Segments) {
-				if seg.Variable != nil {
-					if i > 0 && tmpl.Segments[i-1].Literal != "" {
-						token := tmpl.Segments[i-1].Literal
+			segments := tmpl.Segments()
+			for i, seg := range slices.Backward(segments) {
+				if seg.Variable() != nil {
+					if i > 0 && segments[i-1].Literal() != "" {
+						token := segments[i-1].Literal()
 						// Do not add API version strings (e.g., v1, v1beta1) to the vocabulary
 						if isVersionString(token) {
 							continue

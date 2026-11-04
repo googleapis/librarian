@@ -555,12 +555,12 @@ func TestGenerateExtensibleBuilders(t *testing.T) {
 		WithInput(msg).
 		WithOutput(msg).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	method2 := api.NewTestMethod("ListResources").
 		WithInput(msg).
 		WithOutput(msg).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	svc1 := api.NewTestService("ExtensibleService").
 		WithPackage("test.v1").
 		WithMethods(method1, method2)
@@ -569,7 +569,7 @@ func TestGenerateExtensibleBuilders(t *testing.T) {
 		WithInput(msg).
 		WithOutput(msg).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{})
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	svc2 := api.NewTestService("PrivateService").
 		WithPackage("test.v1").
 		WithMethods(method3)

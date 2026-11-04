@@ -136,11 +136,11 @@ func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.Pa
 		return nil, "", err
 	}
 
-	return &api.PathBinding{
-		Verb:            verb,
-		PathTemplate:    pathTemplate,
-		QueryParameters: queryParameters,
-	}, body, nil
+	return api.NewPathBindingBuilder().
+		WithVerb(verb).
+		WithPathTemplate(pathTemplate).
+		WithQueryParameterMap(queryParameters).
+		Build(), body, nil
 }
 
 // resolveBodyFieldPath rewrites wildcard body mappings ("*") to the name of the
@@ -186,10 +186,10 @@ func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, 
 	for _, field := range msg.Fields {
 		params[field.Name] = true
 	}
-	for _, s := range pathTemplate.Segments {
-		if s.Variable != nil {
+	for _, s := range pathTemplate.Segments() {
+		if s.Variable() != nil {
 			// TODO(#2508) - Note that nested fields are not excluded
-			delete(params, strings.Join(s.Variable.FieldPath, "."))
+			delete(params, strings.Join(s.Variable().FieldPath(), "."))
 		}
 	}
 	if body != "" {

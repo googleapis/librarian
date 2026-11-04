@@ -262,7 +262,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		Title:               model.Title,
 		Description:         model.Description,
 		Revision:            model.Revision,
-		Services:            model.Services,
+		Services:            cloneServices(model.Services),
 		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return reachableMsgs[m.ID] }),
 		ExternalMessages:    externalMessages,
 		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return reachableEnums[e.ID] }),
@@ -329,4 +329,37 @@ func isGoogleRpcStatus(id string) bool {
 
 func isWKT(id string) bool {
 	return strings.HasPrefix(strings.TrimPrefix(id, "."), "google.protobuf.")
+}
+
+func cloneServices(services []*api.Service) []*api.Service {
+	if services == nil {
+		return nil
+	}
+	cloned := make([]*api.Service, len(services))
+	for i, s := range services {
+		svcCopy := *s
+		svcCopy.Codec = nil
+		if s.Methods != nil {
+			svcCopy.Methods = make([]*api.Method, len(s.Methods))
+			for j, m := range s.Methods {
+				mCopy := *m
+				mCopy.Codec = nil
+				mCopy.Service = &svcCopy
+				if m.PathInfo != nil {
+					piCopy := *m.PathInfo
+					piCopy.Codec = nil
+					if m.PathInfo.Bindings != nil {
+						piCopy.Bindings = make([]*api.PathBinding, len(m.PathInfo.Bindings))
+						for k, b := range m.PathInfo.Bindings {
+							piCopy.Bindings[k] = b.Clone()
+						}
+					}
+					mCopy.PathInfo = &piCopy
+				}
+				svcCopy.Methods[j] = &mCopy
+			}
+		}
+		cloned[i] = &svcCopy
+	}
+	return cloned
 }
