@@ -16,6 +16,7 @@ package ruby
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -29,9 +30,6 @@ import (
 func TestFormat(t *testing.T) {
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
-	if err := Format(t.Context()); err != nil {
-		t.Fatal(err)
-	}
 	installDir := filepath.Join(binDir, "ruby_tools")
 	configPath := filepath.Join(installDir, "gems", "gapic-generator-cloud-0.52.0", "cloud-rubocop.yml")
 	for _, dir := range []string{filepath.Dir(configPath), filepath.Join(installDir, "bin")} {
@@ -51,46 +49,66 @@ while [ $# -gt 0 ]; do
   esac
 done
 `)
-	outDir := t.TempDir()
-	want := map[string]string{
-		"foo/.toys.rb":           "x = 1\n# formatted\n",
-		"foo/Gemfile":            "x = 1\n# formatted\n",
-		"foo/snippets/Gemfile":   "x = 1\n# formatted\n",
-		"foo/lib/foo.rb":         "x = 1\n# formatted\n",
-		"foo/proto_docs/foo.rb":  "x = 1\n# formatted\n",
-		"foo/snippets/foo.rb":    "x = 1\n# formatted\n",
-		"foo/lib/foo_pb.rb":      "x = 1\n",
-		"foo/lib/kept.rb":        "x = 1\n",
-		"foo/lib/foo/version.rb": "x = 1\n",
-		"foo/test/foo_test.rb":   "x = 1\n",
-		"bar/lib/bar.rb":         "x = 1\n# formatted\n",
-	}
-	for relPath := range want {
-		filePath := filepath.Join(outDir, relPath)
-		if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	libraries := []*config.Library{
-		{Name: "foo", Output: filepath.Join(outDir, "foo"), Keep: []string{"lib/kept.rb"}},
-		{Name: "bar", Output: filepath.Join(outDir, "bar")},
-	}
-	if err := Format(t.Context(), libraries...); err != nil {
-		t.Fatal(err)
-	}
-	got := make(map[string]string)
-	for relPath := range want {
-		content, err := os.ReadFile(filepath.Join(outDir, relPath))
-		if err != nil {
-			t.Fatal(err)
-		}
-		got[relPath] = string(content)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name  string
+		count int
+	}{
+		{name: "no libraries", count: 0},
+		{name: "single library", count: 1},
+		{name: "multiple libraries", count: 4},
+		{name: "multiple batches", count: 26},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			var libraries []*config.Library
+			want := make(map[string]string)
+			for index := range test.count {
+				libraryName := fmt.Sprintf("foo%d", index)
+				libraries = append(libraries, &config.Library{
+					Name:   libraryName,
+					Output: filepath.Join(outDir, libraryName),
+					Keep:   []string{"lib/kept.rb"},
+				})
+				for relPath, wantContent := range map[string]string{
+					".toys.rb":                           "x = 1\n# formatted\n",
+					"Gemfile":                            "x = 1\n# formatted\n",
+					"snippets/Gemfile":                   "x = 1\n# formatted\n",
+					"lib/client.rb":                      "x = 1\n# formatted\n",
+					"lib/v1/client.rb":                   "x = 1\n# formatted\n",
+					"lib/v2/client.rb":                   "x = 1\n# formatted\n",
+					"proto_docs/doc.rb":                  "x = 1\n# formatted\n",
+					"snippets/snippet.rb":                "x = 1\n# formatted\n",
+					"lib/client_pb.rb":                   "x = 1\n",
+					"lib/kept.rb":                        "x = 1\n",
+					"lib/" + libraryName + "/version.rb": "x = 1\n",
+					"test/client_test.rb":                "x = 1\n",
+				} {
+					libraryRelPath := filepath.ToSlash(filepath.Join(libraryName, relPath))
+					want[libraryRelPath] = wantContent
+					filePath := filepath.Join(outDir, libraryRelPath)
+					if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			if err := Format(t.Context(), libraries...); err != nil {
+				t.Fatal(err)
+			}
+			got := make(map[string]string)
+			for relPath := range want {
+				content, err := os.ReadFile(filepath.Join(outDir, relPath))
+				if err != nil {
+					t.Fatal(err)
+				}
+				got[relPath] = string(content)
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
