@@ -35,6 +35,8 @@ func AllowUnexported() cmp.Option {
 		api.PathSegment{},
 		api.PathTemplate{},
 		api.PathVariable{},
+		api.ResourceNamePattern{},
+		api.ResourceReference{},
 		api.RoutingInfo{},
 		api.RoutingInfoCombo{},
 		api.RoutingInfoComboItem{},
@@ -58,17 +60,18 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 	t.Helper()
 	// Checking Parent, Messages, Fields, and OneOfs requires special handling.
 	if diff := cmp.Diff(want, got,
+		AllowUnexported(),
 		cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages", "Enums", "Resource"),
 		cmpopts.IgnoreFields(api.Field{}, "Parent"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Fields, got.Fields, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want.Fields, got.Fields, AllowUnexported(), cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Ignore parent because types are cyclic
-	if diff := cmp.Diff(want.OneOfs, got.OneOfs, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want.OneOfs, got.OneOfs, AllowUnexported(), cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

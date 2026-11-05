@@ -783,13 +783,13 @@ func (f *Field) WithSkipProtoConversion() *Field {
 
 // WithResourceReference sets the resource reference on a field.
 func (f *Field) WithResourceReference(refType string) *Field {
-	f.ResourceReference = &ResourceReference{Type: refType}
+	f.ResourceReference = NewResourceReferenceBuilder().WithType(refType).Build()
 	return f
 }
 
 // WithChildTypeReference sets the child type resource reference on a field.
 func (f *Field) WithChildTypeReference(childType string) *Field {
-	f.ResourceReference = &ResourceReference{ChildType: childType}
+	f.ResourceReference = NewResourceReferenceBuilder().WithChildType(childType).Build()
 	return f
 }
 
@@ -970,7 +970,7 @@ func (s *MethodSignature) WithFields(fields ...*Field) *MethodSignature {
 
 // NewTestResourceNamePattern creates a ResourceNamePattern with segments.
 func NewTestResourceNamePattern(segments ...ResourceNameSegment) *ResourceNamePattern {
-	return &ResourceNamePattern{Segments: segments}
+	return NewResourceNamePattern(segments...)
 }
 
 // NewTestRoutingInfo creates a RoutingInfo struct with variants.
