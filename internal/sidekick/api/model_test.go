@@ -89,22 +89,33 @@ func TestRoutingCombosFull(t *testing.T) {
 	vc1 := NewTestRoutingInfoVariant("vc1")
 	c := NewTestRoutingInfo("c", vc1)
 
-	method := NewTestMethod("test").WithRouting(a, b, c)
+	vd1 := NewTestRoutingInfoVariant("vd1")
+	vd2 := NewTestRoutingInfoVariant("vd2")
+	d := NewTestRoutingInfo("d", vd1, vd2)
 
-	make_combo := func(va *RoutingInfoVariant, vb *RoutingInfoVariant, vc *RoutingInfoVariant) *RoutingInfoCombo {
+	method := NewTestMethod("test").WithRouting(a, b, c, d)
+
+	make_combo := func(va *RoutingInfoVariant, vb *RoutingInfoVariant, vc *RoutingInfoVariant, vd *RoutingInfoVariant) *RoutingInfoCombo {
 		return NewRoutingInfoCombo(
 			NewRoutingInfoComboItem("a", va),
 			NewRoutingInfoComboItem("b", vb),
 			NewRoutingInfoComboItem("c", vc),
+			NewRoutingInfoComboItem("d", vd),
 		)
 	}
 	want := []*RoutingInfoCombo{
-		make_combo(va1, vb1, vc1),
-		make_combo(va1, vb2, vc1),
-		make_combo(va2, vb1, vc1),
-		make_combo(va2, vb2, vc1),
-		make_combo(va3, vb1, vc1),
-		make_combo(va3, vb2, vc1),
+		make_combo(va1, vb1, vc1, vd1),
+		make_combo(va1, vb1, vc1, vd2),
+		make_combo(va1, vb2, vc1, vd1),
+		make_combo(va1, vb2, vc1, vd2),
+		make_combo(va2, vb1, vc1, vd1),
+		make_combo(va2, vb1, vc1, vd2),
+		make_combo(va2, vb2, vc1, vd1),
+		make_combo(va2, vb2, vc1, vd2),
+		make_combo(va3, vb1, vc1, vd1),
+		make_combo(va3, vb1, vc1, vd2),
+		make_combo(va3, vb2, vc1, vd1),
+		make_combo(va3, vb2, vc1, vd2),
 	}
 	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

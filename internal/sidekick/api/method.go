@@ -168,7 +168,7 @@ func (m *Method) RoutingCombos() []*RoutingInfoCombo {
 		for _, c := range combos {
 			for _, v := range info.Variants() {
 				next = append(next, &RoutingInfoCombo{
-					items: append(c.items, &RoutingInfoComboItem{
+					items: append(slices.Clone(c.items), &RoutingInfoComboItem{
 						name:    info.Name(),
 						variant: v,
 					}),
