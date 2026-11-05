@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -78,40 +80,53 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	var pc *config.Protoc
-	if cfg.Tools != nil {
-		pc = cfg.Tools.Protoc
-	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
-	for i, api := range library.APIs {
+	if err := generateAPIs(ctx, cfg, library, googleapisDir, repoRoot); err != nil {
+		return err
+	}
+	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
+		return fmt.Errorf("failed to run post processor: %w", err)
+	}
+	if library.Name == "google-cloud-compute" {
+		if err := injectV1SmallExports(outdir); err != nil {
+			return fmt.Errorf("failed to inject v1small exports: %w", err)
+		}
+	}
+	return nil
+}
+
+func generateAPIs(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot string) error {
+	var protocConfig *config.Protoc
+	if cfg.Tools != nil {
+		protocConfig = cfg.Tools.Protoc
+	}
+	// Use errgroup.WithContext to fail fast on the first error and cancel any
+	// in-flight protoc subprocesses, matching the fail-fast behavior of other
+	// languages and generateLibraries.
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(runtime.GOMAXPROCS(0))
+	for index, api := range library.APIs {
 		// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
 		// generate v1small. This package is not meant to be used and will be
 		// deprecated and removed in a future major release. Remove this workaround once resolved.
 		if api.Path == "google/cloud/compute/v1small" {
 			continue
 		}
-		if err := generateAPI(ctx, generateAPIParams{
-			apiIndex:      i,
-			api:           api,
-			library:       library,
-			googleapisDir: googleapisDir,
-			repoRoot:      repoRoot,
-			protoc:        pc,
-		}); err != nil {
-			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
-		}
+		group.Go(func() error {
+			if err := generateAPI(groupCtx, generateAPIParams{
+				apiIndex:      index,
+				api:           api,
+				library:       library,
+				googleapisDir: googleapisDir,
+				repoRoot:      repoRoot,
+				protoc:        protocConfig,
+			}); err != nil {
+				return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
+			}
+			return nil
+		})
 	}
-	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
-		return fmt.Errorf("failed to run post processor: %w", err)
-	}
-
-	if library.Name == "google-cloud-compute" {
-		if err := injectV1SmallExports(outdir); err != nil {
-			return fmt.Errorf("failed to inject v1small exports: %w", err)
-		}
-	}
-
-	return nil
+	return group.Wait()
 }
 
 func requireCachedTool(toolName string) (string, error) {
