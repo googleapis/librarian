@@ -68,7 +68,7 @@ jobs:
           gem --version
       - name: Run internal/librarian/ruby tests and check coverage
         if: matrix.task == 'unit-test'
-        run: go run ./tool/cmd/coverage ./internal/librarian/ruby
+        run: go run ./tool/cmd/coverage -summary-output="$GITHUB_STEP_SUMMARY" ./internal/librarian/ruby
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test'
         working-directory: google-cloud-ruby

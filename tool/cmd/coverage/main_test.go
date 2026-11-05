@@ -15,6 +15,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -85,6 +87,68 @@ total:					(statements)	89.6%`,
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestWriteSummary(t *testing.T) {
+	t.Chdir(t.TempDir())
+	profile := `mode: atomic
+example.com/b/z.go:1.1,2.2 2 0
+example.com/b/z.go:3.1,4.2 2 5
+example.com/a/x.go:1.1,2.2 3 1
+example.com/a/y.go:1.1,2.2 1 0
+example.com/empty/e.go:1.1,2.2 0 0
+`
+	if err := os.WriteFile("coverage.out", []byte(profile), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	summary := filepath.Join(t.TempDir(), "summary.md")
+	if err := os.WriteFile(summary, []byte("existing\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeSummary(summary, 62.5, 80); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(summary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "existing\n" +
+		"### Coverage: 62.5% (target: 80%)\n\n" +
+		"| Package | Coverage |\n|---|---:|\n" +
+		"| `example.com/a` | 75.0% |\n" +
+		"| `example.com/b` | 50.0% |\n\n"
+	if diff := cmp.Diff(want, string(got)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWriteSummary_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		profile string
+		output  func(t *testing.T) string
+	}{
+		{
+			name:    "malformed profile",
+			profile: "mode: atomic\nnot a block\n",
+			output:  func(t *testing.T) string { return filepath.Join(t.TempDir(), "summary.md") },
+		},
+		{
+			name:    "output is a directory",
+			profile: "mode: atomic\n",
+			output:  func(t *testing.T) string { return t.TempDir() },
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			if err := os.WriteFile("coverage.out", []byte(test.profile), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := writeSummary(test.output(t), 100, 80); err == nil {
+				t.Fatal("expected error, got nil")
 			}
 		})
 	}

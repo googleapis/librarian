@@ -99,7 +99,7 @@ jobs:
           test -x "$(which protoc-gen-java_gapic)"
       - name: Run internal/librarian/java tests and check coverage
         if: matrix.task == 'unit-test'
-        run: go run ./tool/cmd/coverage ./internal/librarian/java
+        run: go run ./tool/cmd/coverage -summary-output="$GITHUB_STEP_SUMMARY" ./internal/librarian/java
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test'
         working-directory: google-cloud-java
