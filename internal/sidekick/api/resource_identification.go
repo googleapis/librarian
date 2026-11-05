@@ -36,7 +36,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 			if method.PathInfo == nil {
 				continue
 			}
-			for _, binding := range method.PathInfo.Bindings {
+			for _, binding := range method.PathInfo.Bindings() {
 				if err := identifyTargetResourceForBinding(method, binding, vocabulary, enableHeuristics); err != nil {
 					return err
 				}
