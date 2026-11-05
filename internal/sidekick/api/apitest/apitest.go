@@ -32,6 +32,8 @@ func AllowUnexported() cmp.Option {
 		api.PathSegment{},
 		api.PathTemplate{},
 		api.PathVariable{},
+		api.RoutingInfoVariant{},
+		api.RoutingPathSpec{},
 		api.TargetResource{},
 	)
 }

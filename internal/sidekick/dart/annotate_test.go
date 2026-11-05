@@ -261,26 +261,25 @@ func TestAnnotateModel_Options(t *testing.T) {
 }
 
 func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
-	method := sample.MethodListSecretVersions()
-	service := api.NewTestService(sample.ServiceName).
-		WithPackage(sample.Package).
-		WithDocumentation(sample.APIDescription).
-		WithDefaultHost(sample.DefaultHost).
-		WithMethods(method)
-	model := api.NewTestAPI(
-		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
-			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
-			sample.CustomerManagedEncryption()},
-		[]*api.Enum{sample.EnumState()},
-		[]*api.Service{service},
-	)
-
 	var tests = []string{
 		"api-keys-environment-variables",
 		"issue-tracker-url",
 	}
 
 	for _, test := range tests {
+		method := sample.MethodListSecretVersions()
+		service := api.NewTestService(sample.ServiceName).
+			WithPackage(sample.Package).
+			WithDocumentation(sample.APIDescription).
+			WithDefaultHost(sample.DefaultHost).
+			WithMethods(method)
+		model := api.NewTestAPI(
+			[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+				sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
+				sample.CustomerManagedEncryption()},
+			[]*api.Enum{sample.EnumState()},
+			[]*api.Service{service},
+		)
 		annotate := newAnnotateModel(model)
 		options := maps.Clone(requiredConfig)
 		delete(options, test)
@@ -418,7 +417,6 @@ func TestAnnotateMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotate.annotateMethod(method)
 	codec := method.Codec.(*methodAnnotation)
 
 	got := codec.Name

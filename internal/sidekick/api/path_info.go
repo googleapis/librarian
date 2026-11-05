@@ -48,7 +48,12 @@ func (p *PathInfo) Codec() any {
 }
 
 // SetAnnotations sets the language-specific annotations for the path info.
+//
+// It panics if the annotations have already been set.
 func (p *PathInfo) SetAnnotations(codec any) {
+	if p.codec != nil {
+		panic("PathInfo.SetAnnotations called more than once")
+	}
 	p.codec = codec
 }
 

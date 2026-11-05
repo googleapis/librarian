@@ -48,6 +48,17 @@ func TestPathInfo(t *testing.T) {
 	}
 }
 
+func TestPathInfoSetAnnotationsPanicsWhenAlreadySet(t *testing.T) {
+	pi := NewPathInfoBuilder().Build()
+	pi.SetAnnotations("first")
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("expected panic when calling SetAnnotations a second time, got none")
+		}
+	}()
+	pi.SetAnnotations("second")
+}
+
 func TestPathInfoClone(t *testing.T) {
 	var nilPathInfo *PathInfo
 	if got := nilPathInfo.Clone(); got != nil {
