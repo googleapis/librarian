@@ -21,14 +21,14 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func makeServiceMethods(model *api.API, service *api.Service, doc *document, resource *resource) error {
+func makeServiceMethods(model *api.API, service *api.ServiceBuilder, doc *document, resource *resource) error {
 	// It is Okay to reuse the ID, sidekick uses different the namespaces
 	// for messages vs. services.
 	parentBuilder := api.NewMessageBuilder().
-		WithName(service.Name).
-		WithID(service.ID).
-		WithPackage(service.Package).
-		WithDocumentation(fmt.Sprintf("Synthetic messages for the [%s][%s] service", service.Name, service.ID[1:])).
+		WithName(service.Name()).
+		WithID(service.ID()).
+		WithPackage(service.Package()).
+		WithDocumentation(fmt.Sprintf("Synthetic messages for the [%s][%s] service", service.Name(), service.ID()[1:])).
 		WithServicePlaceholder(true)
 	parent := parentBuilder.Build()
 	model.AddMessage(parent)
@@ -39,7 +39,7 @@ func makeServiceMethods(model *api.API, service *api.Service, doc *document, res
 			return err
 		}
 		model.AddMethod(method)
-		service.Methods = append(service.Methods, method)
+		service.AddMethod(method)
 	}
 
 	return nil

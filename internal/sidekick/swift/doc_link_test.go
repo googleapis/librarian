@@ -263,7 +263,7 @@ func TestDocLink_NameOverrides(t *testing.T) {
 		t.Errorf("serviceDocLink() = %q, want %q", gotService, wantService)
 	}
 
-	gotMethod, err := c.methodDocLink(service.Methods[0])
+	gotMethod, err := c.methodDocLink(service.Methods()[0])
 	if err != nil {
 		t.Fatal(err)
 	}

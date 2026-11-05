@@ -475,11 +475,11 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		return
 	}
 
-	wantService := sample.Service()
-	wantService.Package = ""
-	wantService.Name = "Service"
-	wantService.ID = "..Service"
-	if diff := cmp.Diff(wantService, service, cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
+	wantService := sample.Service().
+		WithPackage("").
+		WithName("Service").
+		WithID("..Service")
+	if diff := cmp.Diff(wantService, service, apitest.AllowUnexported(), apitest.IgnoreServiceFields("methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 

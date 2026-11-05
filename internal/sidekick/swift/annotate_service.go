@@ -150,26 +150,26 @@ func (ann *serviceAnnotations) HasLROs() bool {
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (*serviceAnnotations, error) {
-	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
+	docLines, err := c.formatDocumentation(service.Documentation(), service.Scopes())
 	if err != nil {
 		return nil, err
 	}
 	requiredServices := make(map[string]*api.Service)
 	var methods []*api.Method
-	for _, method := range service.Methods {
+	for _, method := range service.Methods() {
 		if c.shouldGenerateMethod(method) {
 			if err := c.annotateMethod(method, model); err != nil {
 				return nil, err
 			}
 			methods = append(methods, method)
-			if method.IsLroPoller() && method.SourceService() != nil && method.SourceService().Package == service.Package {
-				requiredServices[method.SourceService().ID] = method.SourceService()
+			if method.IsLroPoller() && method.SourceService() != nil && method.SourceService().Package() == service.Package() {
+				requiredServices[method.SourceService().ID()] = method.SourceService()
 			}
 		}
 	}
 	var quickstartMethod *api.Method
-	if service.QuickstartMethod != nil && c.shouldGenerateMethod(service.QuickstartMethod) {
-		quickstartMethod = service.QuickstartMethod
+	if service.QuickstartMethod() != nil && c.shouldGenerateMethod(service.QuickstartMethod()) {
+		quickstartMethod = service.QuickstartMethod()
 	}
 	// The client snippet creates the client and then runs the body of the
 	// quickstart method's snippet, so it names whatever either of them names.
@@ -179,21 +179,21 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	// separate field, and a service can name a method that is not in
 	// `service.Methods`. In that case the client snippet falls back to the
 	// service's own deprecation, which is all it can name anyway.
-	diagnoseClientSnippet := service.Deprecated
+	diagnoseClientSnippet := service.Deprecated()
 	if quickstartMethod != nil {
 		if ann, ok := quickstartMethod.Codec().(*methodAnnotations); ok {
 			diagnoseClientSnippet = diagnoseClientSnippet || ann.DiagnoseSnippet
 		}
 	}
 
-	desc := extractServiceDescription(service.Documentation, service.Name)
+	desc := extractServiceDescription(service.Documentation(), service.Name())
 
 	name := c.traitName(service)
 	annotations := &serviceAnnotations{
 		Name:                  name,
-		ClientName:            pascalCase(service.Name + "Client"),
-		StubPrefix:            pascalCaseNoMangling(service.Name),
-		HostnameShort:         strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
+		ClientName:            pascalCase(service.Name() + "Client"),
+		StubPrefix:            pascalCaseNoMangling(service.Name()),
+		HostnameShort:         strings.TrimSuffix(service.DefaultHost(), ".googleapis.com"),
 		DocLines:              docLines,
 		Description:           desc,
 		Methods:               methods,
@@ -205,7 +205,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		ModulePath:            c.ModulePath,
 		IsGrpc:                c.isGrpc(),
 		DiagnoseClientSnippet: diagnoseClientSnippet,
-		DiagnoseSnippetRunner: service.Deprecated,
+		DiagnoseSnippetRunner: service.Deprecated(),
 	}
 	if c.PerServiceTraits {
 		annotations.IsGated = true
@@ -290,7 +290,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		}
 	}
 
-	service.Codec = annotations
+	service.SetAnnotations(annotations)
 	if err := c.addFeatureAnnotations(service); err != nil {
 		return nil, err
 	}
@@ -443,7 +443,7 @@ func (c *codec) addFeatureAnnotations(
 		return nil
 	}
 	traitName := c.traitName(service)
-	deps := api.FindServiceDependencies(c.Model, service.ID)
+	deps := api.FindServiceDependencies(c.Model, service.ID())
 	for _, id := range deps.Enums {
 		enum := c.Model.Enum(id)
 		// Some messages are not annotated (e.g. external messages).
@@ -478,7 +478,7 @@ func (c *codec) addFeatureAnnotations(
 }
 
 func (c *codec) traitName(service *api.Service) string {
-	return pascalCase(service.Name)
+	return pascalCase(service.Name())
 }
 
 func insertGatingTrait(gatedBy []string, traitName string) []string {

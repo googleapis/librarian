@@ -132,17 +132,18 @@ func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], serv
 		return nil
 	}
 	sID := fmt.Sprintf(".%s.%s", packageName, serviceName)
-	service := &api.Service{
-		Name:          serviceName,
-		ID:            sID,
-		Package:       packageName,
-		Documentation: a.Description,
-		DefaultHost:   defaultHost(model),
-	}
-	err := makeMethods(a, service, model, serviceConfig, packageName, sID)
+	methods, err := makeMethods(a, model, serviceConfig, packageName, serviceName, sID)
 	if err != nil {
 		return err
 	}
+	service := api.NewServiceBuilder().
+		WithName(serviceName).
+		WithID(sID).
+		WithPackage(packageName).
+		WithDocumentation(a.Description).
+		WithDefaultHost(defaultHost(model)).
+		WithMethods(methods...).
+		Build()
 	a.Services = append(a.Services, service)
 	a.AddService(service)
 	return nil
@@ -162,28 +163,29 @@ func defaultHost(model *libopenapi.DocumentModel[v3.Document]) string {
 	return strings.TrimPrefix(defaultHost, "https://")
 }
 
-func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentModel[v3.Document], serviceConfig *serviceconfig.Service, packageName, serviceID string) error {
+func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], serviceConfig *serviceconfig.Service, packageName, serviceName, serviceID string) ([]*api.Method, error) {
 	if model.Model.Paths == nil {
 		// The method has no path, there is nothing to generate.
-		return nil
+		return nil, nil
 	}
 
 	// It is Okay to reuse the ID, sidekick uses different the namespaces
 	// for messages vs. services.
 	parentBuilder := api.NewMessageBuilder().
-		WithName(service.Name).
-		WithID(service.ID).
-		WithPackage(service.Package).
-		WithDocumentation(fmt.Sprintf("Synthetic messages for the [%s][%s] service.", service.Name, service.ID[1:])).
+		WithName(serviceName).
+		WithID(serviceID).
+		WithPackage(packageName).
+		WithDocumentation(fmt.Sprintf("Synthetic messages for the [%s][%s] service.", serviceName, serviceID[1:])).
 		WithServicePlaceholder(true)
 	parent := parentBuilder.Build()
 	a.AddMessage(parent)
 	a.Messages = append(a.Messages, parent)
 
+	var methods []*api.Method
 	for pattern, item := range model.Model.Paths.PathItems.FromOldest() {
 		pathTemplate, err := httprule.ParseSegments(pattern)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		type NamedOperation struct {
@@ -206,11 +208,11 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 			}
 			requestMessage, bodyFieldPath, err := makeRequestMessage(a, parentBuilder, op.Operation, packageName, pattern)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			responseMessage, err := makeResponseMessage(a, op.Operation, packageName)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			queryParameters := makeQueryParameters(op.Operation)
 			pathInfo := api.NewPathInfoBuilder().
@@ -235,10 +237,10 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 				WithAutoPopulated(findAutoPopulatedFields(serviceConfig, mID, requestMessage)).
 				Build()
 			a.AddMethod(m)
-			service.Methods = append(service.Methods, m)
+			methods = append(methods, m)
 		}
 	}
-	return nil
+	return methods, nil
 }
 
 // makeRequestMessage creates (if needed) the request message for `operation`. Returns the message

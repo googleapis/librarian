@@ -48,7 +48,7 @@ func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 			continue
 		}
 		if svc := model.Service(id); svc != nil {
-			if err := patchElementDocs(&svc.Documentation, &override); err != nil {
+			if err := patchElementDocs(&svc.documentation, &override); err != nil {
 				return err
 			}
 			continue
@@ -109,7 +109,7 @@ func patchEnumValueDocs(enu *Enum, name string, override *DocumentationOverride)
 }
 
 func patchMethodDocs(svc *Service, name string, override *DocumentationOverride) error {
-	for _, m := range svc.Methods {
+	for _, m := range svc.methods {
 		if m.name != name {
 			continue
 		}
@@ -118,7 +118,7 @@ func patchMethodDocs(svc *Service, name string, override *DocumentationOverride)
 		}
 		return nil
 	}
-	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, svc.ID)
+	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, svc.id)
 }
 
 func patchElementDocs(documentation *string, override *DocumentationOverride) error {

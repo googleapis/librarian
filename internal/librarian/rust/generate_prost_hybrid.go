@@ -272,7 +272,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	}
 	for _, s := range hybridModel.Services {
 		hybridModel.AddService(s)
-		for _, m := range s.Methods {
+		for _, m := range s.Methods() {
 			hybridModel.AddMethod(m)
 		}
 	}

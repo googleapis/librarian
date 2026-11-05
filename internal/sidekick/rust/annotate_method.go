@@ -340,9 +340,9 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	if err != nil {
 		return nil, err
 	}
-	hasVeneer := c.serviceHasVeneer(m.Service().ID)
-	internalBuilders := c.serviceInternalBuilders(m.Service().ID)
-	generateRpcSamples := c.serviceGenerateRpcSamples(m.Service().ID)
+	hasVeneer := c.serviceHasVeneer(m.Service().ID())
+	internalBuilders := c.serviceInternalBuilders(m.Service().ID())
+	generateRpcSamples := c.serviceGenerateRpcSamples(m.Service().ID())
 	annotation := &methodAnnotation{
 		Name:                      toSnake(m.Name()),
 		NameNoMangling:            toSnakeNoMangling(m.Name()),
@@ -424,7 +424,7 @@ func isDiscoveryLro(m *api.Method) bool {
 	if m.Service() == nil {
 		return false
 	}
-	return slices.ContainsFunc(m.Service().Methods, func(meth *api.Method) bool {
+	return slices.ContainsFunc(m.Service().Methods(), func(meth *api.Method) bool {
 		return meth.DiscoveryLro() != nil
 	})
 }

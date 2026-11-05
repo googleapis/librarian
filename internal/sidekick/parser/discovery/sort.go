@@ -25,5 +25,5 @@ func compareMessages(a, b *api.Message) int {
 }
 
 func compareServices(a, b *api.Service) int {
-	return strings.Compare(a.Name, b.Name)
+	return strings.Compare(a.Name(), b.Name())
 }

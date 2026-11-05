@@ -69,10 +69,10 @@ func (enum *Enum) hasDeprecatedEntities() bool {
 }
 
 func (service *Service) hasDeprecatedEntities() bool {
-	if service.Deprecated {
+	if service.deprecated {
 		return true
 	}
-	for _, m := range service.Methods {
+	for _, m := range service.methods {
 		if m.deprecated {
 			return true
 		}
