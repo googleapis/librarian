@@ -32,12 +32,17 @@ import (
 func TestGenerateProstHybrid(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "cargo")
-	msg := api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")
+	msg := api.NewTestMessage("Request").
+		WithPackage("google.cloud.test.v1").
+		WithFields(api.NewTestField("name").WithType(api.TypezString))
+	variant := api.NewRoutingInfoVariantBuilder().WithFieldPath("name").Build()
+	variant.SetAnnotations("initial-rv-codec")
 	method := api.NewTestMethod("Get").
 		WithInput(msg).
 		WithOutput(msg).
 		WithVerb("GET").
-		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build())
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build()).
+		WithRouting(api.NewTestRoutingInfo("name", variant))
 	method.PathInfo.SetAnnotations("initial-pi-codec")
 	method.PathInfo.Bindings()[0].SetAnnotations("initial-codec")
 	svc := api.NewTestService("Service").WithPackage("google.cloud.test.v1").WithMethods(method)
