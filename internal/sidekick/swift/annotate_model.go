@@ -173,7 +173,7 @@ func (c *codec) annotateModel() error {
 	if c.QuickstartServiceOverride != "" {
 		idx := slices.IndexFunc(c.Model.Services, func(s *api.Service) bool {
 			clientName := pascalCase(c.ServiceName(s) + "Client")
-			return strings.EqualFold(s.Name, c.QuickstartServiceOverride) ||
+			return strings.EqualFold(s.Name(), c.QuickstartServiceOverride) ||
 				strings.EqualFold(c.ServiceName(s), c.QuickstartServiceOverride) ||
 				strings.EqualFold(clientName, c.QuickstartServiceOverride)
 		})

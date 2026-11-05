@@ -158,7 +158,7 @@ func (a *API) AddService(s *Service) {
 	if a.serviceByID == nil {
 		a.serviceByID = make(map[string]*Service)
 	}
-	a.serviceByID[s.ID] = s
+	a.serviceByID[s.id] = s
 }
 
 // Method returns a method that is associated with the API.

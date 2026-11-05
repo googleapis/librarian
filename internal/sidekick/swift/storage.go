@@ -61,15 +61,15 @@ func GenerateStorage(
 
 	defaultHost := "storage.googleapis.com"
 	for _, s := range controlModel.Services {
-		if s.DefaultHost != "" {
-			defaultHost = s.DefaultHost
+		if s.DefaultHost() != "" {
+			defaultHost = s.DefaultHost()
 			break
 		}
 	}
 	if defaultHost == "storage.googleapis.com" {
 		for _, s := range storageModel.Services {
-			if s.DefaultHost != "" {
-				defaultHost = s.DefaultHost
+			if s.DefaultHost() != "" {
+				defaultHost = s.DefaultHost()
 				break
 			}
 		}
@@ -79,7 +79,7 @@ func GenerateStorage(
 	importSet := make(map[string]bool)
 	for _, model := range []*api.API{storageModel, controlModel} {
 		for _, s := range model.Services {
-			if sa, ok := s.Codec.(*serviceAnnotations); ok {
+			if sa, ok := s.Codec().(*serviceAnnotations); ok {
 				for _, imp := range sa.PublicServiceImports() {
 					// StorageControl only defines unified methods for bucket, folder, and IAM operations,
 					// none of which expose GoogleWKT types in their public signatures.
