@@ -642,51 +642,57 @@ func TestGenerateSetterSamples(t *testing.T) {
 }
 
 func TestModelAnnotationsHasStreaming(t *testing.T) {
-	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+	bidiService := func(msg *api.Message) *api.Service {
+		bidiChat := api.NewTestMethod("Chat").
+			WithInput(msg).
+			WithOutput(msg).
+			WithBidiStreaming().
+			WithBindings()
+		return api.NewTestService("BidiService").
+			WithPackage("test.v1").
+			WithMethods(bidiChat)
+	}
 
-	bidiChat := api.NewTestMethod("Chat").
-		WithInput(msg).
-		WithOutput(msg).
-		WithBidiStreaming().
-		WithBindings()
-	bidiService := api.NewTestService("BidiService").
-		WithPackage("test.v1").
-		WithMethods(bidiChat)
+	unaryService := func(msg *api.Message) *api.Service {
+		unaryGet := api.NewTestMethod("Get").
+			WithInput(msg).
+			WithOutput(msg).
+			WithBindings()
+		return api.NewTestService("UnaryService").
+			WithPackage("test.v1").
+			WithMethods(unaryGet)
+	}
 
-	unaryGet := api.NewTestMethod("Get").
-		WithInput(msg).
-		WithOutput(msg).
-		WithBindings()
-	unaryService := api.NewTestService("UnaryService").
-		WithPackage("test.v1").
-		WithMethods(unaryGet)
+	serverStreamingService := func(msg *api.Message) *api.Service {
+		serverExpand := api.NewTestMethod("Expand").
+			WithInput(msg).
+			WithOutput(msg).
+			WithServerSideStreaming().
+			WithBindings()
+		return api.NewTestService("ServerStreamingService").
+			WithPackage("test.v1").
+			WithMethods(serverExpand)
+	}
 
-	serverExpand := api.NewTestMethod("Expand").
-		WithInput(msg).
-		WithOutput(msg).
-		WithServerSideStreaming().
-		WithBindings()
-	serverStreamingService := api.NewTestService("ServerStreamingService").
-		WithPackage("test.v1").
-		WithMethods(serverExpand)
-
-	mixedChat := api.NewTestMethod("Chat").
-		WithInput(msg).
-		WithOutput(msg).
-		WithBidiStreaming().
-		WithBindings()
-	mixedExpand := api.NewTestMethod("Expand").
-		WithInput(msg).
-		WithOutput(msg).
-		WithServerSideStreaming().
-		WithBindings()
-	mixedService := api.NewTestService("MixedService").
-		WithPackage("test.v1").
-		WithMethods(mixedChat, mixedExpand)
+	mixedService := func(msg *api.Message) *api.Service {
+		mixedChat := api.NewTestMethod("Chat").
+			WithInput(msg).
+			WithOutput(msg).
+			WithBidiStreaming().
+			WithBindings()
+		mixedExpand := api.NewTestMethod("Expand").
+			WithInput(msg).
+			WithOutput(msg).
+			WithServerSideStreaming().
+			WithBindings()
+		return api.NewTestService("MixedService").
+			WithPackage("test.v1").
+			WithMethods(mixedChat, mixedExpand)
+	}
 
 	for _, test := range []struct {
 		name                 string
-		service              *api.Service
+		service              func(*api.Message) *api.Service
 		options              map[string]string
 		wantBidi             bool
 		wantServer           bool
@@ -801,7 +807,9 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := api.NewTestAPI([]*api.Message{msg}, nil, []*api.Service{test.service})
+			msg := api.NewTestMessage("Request").WithPackage("test.v1")
+			svc := test.service(msg)
+			model := api.NewTestAPI([]*api.Message{msg}, nil, []*api.Service{svc})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -810,7 +818,7 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			sAnn := test.service.Codec.(*serviceAnnotations)
+			sAnn := svc.Codec.(*serviceAnnotations)
 			if sAnn.HasBidiStreaming() != test.wantBidi {
 				t.Errorf("HasBidiStreaming = %v, want %v", sAnn.HasBidiStreaming(), test.wantBidi)
 			}
