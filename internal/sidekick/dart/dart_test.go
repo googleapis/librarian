@@ -40,7 +40,7 @@ func TestMessageNames(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := messageName(test.message); got != test.want {
-				t.Errorf("messageName(%v) = %q, want %q", test.message.Name, got, test.want)
+				t.Errorf("messageName(%v) = %q, want %q", test.message.Name(), got, test.want)
 			}
 		})
 	}
@@ -60,7 +60,7 @@ func TestEnumNames(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := enumName(test.enum); got != test.want {
-				t.Errorf("enumName(%v) = %q, want %q", test.enum.Name, got, test.want)
+				t.Errorf("enumName(%v) = %q, want %q", test.enum.Name(), got, test.want)
 			}
 		})
 	}
@@ -94,7 +94,7 @@ func TestResolveMessageName(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := annotate.resolveMessageName(test.message, true)
 			if got != test.want {
-				t.Errorf("resolveMessageName(%s) = %s, want %s", test.message.Name, got, test.want)
+				t.Errorf("resolveMessageName(%s) = %s, want %s", test.message.Name(), got, test.want)
 			}
 		})
 	}
@@ -192,7 +192,7 @@ func TestResolveMessageNameImportPrefixes(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := annotate.resolveMessageName(test.message, true)
 			if got != test.want {
-				t.Errorf("resolveMessageName(%s) = %s, want %s", test.message.Name, got, test.want)
+				t.Errorf("resolveMessageName(%s) = %s, want %s", test.message.Name(), got, test.want)
 			}
 		})
 	}
@@ -261,13 +261,13 @@ func TestFieldType(t *testing.T) {
 	got := annotate.fieldType(msgField)
 	want := "CreateSecretRequest"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", msgField.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", msgField.Name(), got, want)
 	}
 
 	got = annotate.fieldType(enumField)
 	want = "State"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", enumField.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", enumField.Name(), got, want)
 	}
 }
 
@@ -282,7 +282,7 @@ func TestFieldType_Maps(t *testing.T) {
 	got := annotate.fieldType(field)
 	want := "Map<String, int>"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", field.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", field.Name(), got, want)
 	}
 }
 
@@ -295,7 +295,7 @@ func TestFieldType_Bytes(t *testing.T) {
 	got := annotate.fieldType(field)
 	want := "Uint8List"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", field.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", field.Name(), got, want)
 	}
 }
 
@@ -365,13 +365,13 @@ func TestFieldType_Repeated(t *testing.T) {
 	got := annotate.fieldType(repeatedMsgField)
 	want := "List<CreateSecretRequest>"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", repeatedMsgField.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", repeatedMsgField.Name(), got, want)
 	}
 
 	got = annotate.fieldType(repeatedEnumField)
 	want = "List<State>"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", repeatedEnumField.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", repeatedEnumField.Name(), got, want)
 	}
 }
 
@@ -503,8 +503,8 @@ func TestHttpPathFmt(t *testing.T) {
 		{method: sample.MethodAddSecretVersion(), want: "/v1/projects/${request.project}/secrets/${request.secret}:addVersion"},
 		{method: sample.MethodListSecretVersions(), want: "/v1/projects/${request.parent}/secrets/${request.secret}:listSecretVersions"},
 	} {
-		t.Run(test.method.Name, func(t *testing.T) {
-			if got := httpPathFmt(test.method.PathInfo); got != test.want {
+		t.Run(test.method.Name(), func(t *testing.T) {
+			if got := httpPathFmt(test.method.PathInfo()); got != test.want {
 				t.Errorf("unexpected httpPathFmt, got=%q, want=%q", got, test.want)
 			}
 		})

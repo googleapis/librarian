@@ -81,7 +81,7 @@ func TestUsedByServicesNoServices(t *testing.T) {
 }
 
 func TestUsedByLROsWithLRO(t *testing.T) {
-	method := api.NewTestMethod("CreateResource").WithOperationInfo(&api.OperationInfo{})
+	method := api.NewTestMethod("CreateResource").WithOperationInfo(api.NewOperationInfoBuilder().Build())
 	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
@@ -377,17 +377,19 @@ func TestFindUsedPackages(t *testing.T) {
 	method := api.NewTestMethod("CreateResource").
 		WithInput(createResourceReq).
 		WithOutput(operation).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: operationMetadata.ID,
-			ResponseTypeID: resource.ID,
-		})
+		WithOperationInfo(api.NewOperationInfoBuilder().
+			WithMetadataTypeID(operationMetadata.ID()).
+			WithResponseTypeID(resource.ID()).
+			Build())
 	service := api.NewTestService("LroService").
 		WithPackage("test").
 		WithMethods(method)
 
 	model := api.NewTestAPI([]*api.Message{resource, createResourceReq}, nil, []*api.Service{service})
-	model.AddMessage(operation)
-	model.AddMessage(operationMetadata)
+	model = api.NewAPIBuilderFrom(model).
+		AddMessage(operation).
+		AddMessage(operationMetadata).
+		BuildSyntaxTree()
 
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:common":      "package=google-cloud-common,source=google.cloud.common",
@@ -434,7 +436,7 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 	message.WithFields(mapField)
 
 	model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapEntry)
-	model.AddMessage(externalMessage)
+	model = api.NewAPIBuilderFrom(model).AddMessage(externalMessage).BuildSyntaxTree()
 
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:external": "package=external-package,source=external",

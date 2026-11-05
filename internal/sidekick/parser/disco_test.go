@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -37,17 +37,17 @@ func TestDisco_Parse(t *testing.T) {
 	wantTitle := "Secret Manager API"
 	wantDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
 	wantPackageName := "google.cloud.secretmanager.v1"
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	if got.Name() != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name())
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	if got.Title() != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title())
 	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+	if diff := cmp.Diff(wantDescription, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if got.PackageName != wantPackageName {
-		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName)
+	if got.PackageName() != wantPackageName {
+		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName())
 	}
 }
 
@@ -68,13 +68,13 @@ func TestDisco_FindSources(t *testing.T) {
 	wantName := "compute"
 	wantTitle := "Compute Engine API"
 	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	if got.Name() != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name())
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	if got.Title() != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title())
 	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+	if diff := cmp.Diff(wantDescription, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -91,13 +91,13 @@ func TestDisco_ParseNoServiceConfig(t *testing.T) {
 	wantName := "compute"
 	wantTitle := "Compute Engine API"
 	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	if got.Name() != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name())
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	if got.Title() != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title())
 	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+	if diff := cmp.Diff(wantDescription, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -117,11 +117,11 @@ func TestDisco_ParsePagination(t *testing.T) {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
 	wantPagination := api.NewTestField("pageToken").
+		WithID("..zones.listRequest.pageToken").
 		WithType(api.TypezString).
 		WithTypezID("string").
 		WithOptional()
-	wantPagination.ID = "..zones.listRequest.pageToken"
-	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
+	if diff := cmp.Diff(wantPagination, got.Pagination(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -141,11 +141,11 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
 	wantPagination := api.NewTestField("pageToken").
+		WithID("..machineTypes.aggregatedListRequest.pageToken").
 		WithType(api.TypezString).
 		WithTypezID("string").
 		WithOptional()
-	wantPagination.ID = "..machineTypes.aggregatedListRequest.pageToken"
-	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
+	if diff := cmp.Diff(wantPagination, got.Pagination(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -160,15 +160,15 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 	}
 	wantEnum := api.NewTestEnum("code").
 		WithID("..AcceleratorTypeAggregatedList.warning.code")
-	got := model.Enum(wantEnum.ID)
+	got := model.Enum(wantEnum.ID())
 	if got == nil {
-		t.Fatalf("expected method %s in the API model", wantEnum.ID)
+		t.Fatalf("expected method %s in the API model", wantEnum.ID())
 	}
-	if len(got.Values) < 7 {
+	if len(got.Values()) < 7 {
 		t.Fatalf("expected at least 7 values in the enum value list, got=%v", got)
 	}
-	if !got.Values[6].Deprecated {
-		t.Errorf("expected a deprecated enum value, got=%v", got.Values[6])
+	if !got.Values()[6].Deprecated() {
+		t.Errorf("expected a deprecated enum value, got=%v", got.Values()[6])
 	}
 }
 

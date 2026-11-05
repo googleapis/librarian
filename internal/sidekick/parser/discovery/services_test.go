@@ -45,10 +45,10 @@ func TestService(t *testing.T) {
 			WithVariableNamed("zone").
 			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("")
-	getMethod.InputTypeID = "..zones.getRequest"
-	getMethod.OutputTypeID = "..Zone"
-	getMethod.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone"}}}
+		WithBodyFieldPath("").
+		WithInputTypeID("..zones.getRequest").
+		WithOutputTypeID("..Zone").
+		WithRawSignatures(api.NewTestMethodSignature("project", "zone"))
 
 	listMethod := api.NewTestMethod("list").
 		WithID("..zones.list").
@@ -68,15 +68,15 @@ func TestService(t *testing.T) {
 			"pageToken",
 			"returnPartialSuccess",
 		).
-		WithBodyFieldPath("")
-	listMethod.InputTypeID = "..zones.listRequest"
-	listMethod.OutputTypeID = "..ZoneList"
-	listMethod.Signatures = []*api.MethodSignature{{Names: []string{"project"}}}
+		WithBodyFieldPath("").
+		WithInputTypeID("..zones.listRequest").
+		WithOutputTypeID("..ZoneList").
+		WithRawSignatures(api.NewTestMethodSignature("project"))
 
 	want := newDiscoveryTestService("zones").
 		WithDocumentation("Service for the `zones` resource.").
-		WithDefaultHost("compute.googleapis.com")
-	want.Methods = []*api.Method{getMethod, listMethod}
+		WithDefaultHost("compute.googleapis.com").
+		WithMethods(getMethod, listMethod)
 	apitest.CheckService(t, got, want)
 }
 
@@ -85,20 +85,21 @@ func TestServiceDeprecated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 	doc := document{}
 	input := resource{
 		Name:       "TestDeprecated",
 		Deprecated: true,
 	}
-	if err := addService(model, &doc, &input); err != nil {
+	if err := addService(ab, &doc, &input); err != nil {
 		t.Fatal(err)
 	}
 	want := newDiscoveryTestService("TestDeprecated").
 		WithDocumentation("Service for the `TestDeprecated` resource.").
 		WithDeprecated(true)
-	got := model.Service(want.ID)
+	got := ab.Service(want.ID())
 	if got == nil {
-		t.Fatalf("missing service %s", want.ID)
+		t.Fatalf("missing service %s", want.ID())
 	}
 	apitest.CheckService(t, got, want)
 }
@@ -121,11 +122,11 @@ func TestServiceMessages(t *testing.T) {
 	want := newDiscoveryTestMessage("zones").
 		WithID("..zones").
 		WithDocumentation("Synthetic messages for the [zones][.zones] service").
-		WithMessages(getMessage, listMessage)
-	want.ServicePlaceholder = true
-	got := model.Message(want.ID)
+		WithMessages(getMessage, listMessage).
+		WithServicePlaceholder()
+	got := model.Message(want.ID())
 	if got == nil {
-		t.Fatalf("expected service %s in the API model", want.ID)
+		t.Fatalf("expected service %s in the API model", want.ID())
 	}
 	apitest.CheckMessage(t, got, want)
 }
@@ -147,14 +148,15 @@ func TestServiceTopLevelMethodErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 	doc := document{}
 	input := resource{
 		Methods: []*method{
 			{MediaUpload: &mediaUpload{}},
 		},
 	}
-	if err := addServiceRecursive(model, &doc, &input); err == nil {
-		t.Errorf("expected error in addServiceRecursive invalid top-level method, got=%v", model.Services)
+	if err := addServiceRecursive(ab, &doc, &input); err == nil {
+		t.Errorf("expected error in addServiceRecursive invalid top-level method, got=%v", ab.Services())
 	}
 }
 
@@ -163,6 +165,7 @@ func TestServiceChildMethodErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 	doc := document{}
 	input := resource{
 		Resources: []*resource{
@@ -173,7 +176,7 @@ func TestServiceChildMethodErrors(t *testing.T) {
 			},
 		},
 	}
-	if err := addServiceRecursive(model, &doc, &input); err == nil {
-		t.Errorf("expected error in addServiceRecursive invalid child method, got=%v", model.Services)
+	if err := addServiceRecursive(ab, &doc, &input); err == nil {
+		t.Errorf("expected error in addServiceRecursive invalid child method, got=%v", ab.Services())
 	}
 }

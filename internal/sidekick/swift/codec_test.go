@@ -407,8 +407,7 @@ func makeRequiredServicesTestModel() *api.API {
 		WithPackage("external").
 		WithMethods(externalMethod)
 
-	placeholder := api.NewTestMessage("zoneOperations")
-	placeholder.ServicePlaceholder = true
+	placeholder := api.NewTestMessage("zoneOperations").WithServicePlaceholder()
 
 	inputType := api.NewTestMessage("GetOperationRequest").
 		WithID(".test.zoneOperations.GetOperationRequest")
@@ -423,21 +422,22 @@ func makeRequiredServicesTestModel() *api.API {
 	sourceService := api.NewTestService("zoneOperations").
 		WithPackage("test").
 		WithMethods(sourceMethod)
-	sourceMethod.Service = sourceService
-	internalMixin := api.NewTestMethod(sourceMethod.Name).
-		WithSourceMethod(sourceMethod)
-	internalMixin.IsLroPoller = true
-	externalMixin := api.NewTestMethod(externalMethod.Name).
-		WithSourceMethod(externalMethod)
-	externalMixin.IsLroPoller = true
+	sourceMethod.WithService(sourceService)
+	internalMixin := api.NewTestMethod(sourceMethod.Name()).
+		WithSourceMethod(sourceMethod).
+		WithIsLroPoller()
+	externalMixin := api.NewTestMethod(externalMethod.Name()).
+		WithSourceMethod(externalMethod).
+		WithIsLroPoller()
 	targetService := api.NewTestService("TestService").
 		WithPackage("test").
 		WithMethods(internalMixin, externalMixin)
 
-	model := api.NewTestAPI([]*api.Message{placeholder, inputType, outputType}, nil, []*api.Service{sourceService, targetService})
-	model.AddMessage(externalRequest)
-	model.AddMessage(externalResponse)
-	model.AddService(externalService)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{placeholder, inputType, outputType}, nil, []*api.Service{sourceService, targetService})).
+		AddMessage(externalRequest).
+		AddMessage(externalResponse).
+		AddService(externalService).
+		BuildSyntaxTree()
 	api.CrossReference(model)
 	return model
 }

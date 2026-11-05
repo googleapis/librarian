@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestEnrichSamplesEnumValues(t *testing.T) {
@@ -38,25 +37,25 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 			name:   "more than 3 good values",
 			values: []*EnumValue{vGood1, vGood2, vGood3, vGood4},
 			wantExamples: []*SampleValue{
-				{EnumValue: vGood1, Index: 0},
-				{EnumValue: vGood2, Index: 1},
-				{EnumValue: vGood3, Index: 2},
+				NewSampleValue(vGood1, 0),
+				NewSampleValue(vGood2, 1),
+				NewSampleValue(vGood3, 2),
 			},
 		},
 		{
 			name:   "less than 3 good values",
 			values: []*EnumValue{vGood1, vGood2, vBadDeprecated},
 			wantExamples: []*SampleValue{
-				{EnumValue: vGood1, Index: 0},
-				{EnumValue: vGood2, Index: 1},
+				NewSampleValue(vGood1, 0),
+				NewSampleValue(vGood2, 1),
 			},
 		},
 		{
 			name:   "no good values",
 			values: []*EnumValue{vBadDefault, vBadDeprecated},
 			wantExamples: []*SampleValue{
-				{EnumValue: vBadDefault, Index: 0},
-				{EnumValue: vBadDeprecated, Index: 1},
+				NewSampleValue(vBadDefault, 0),
+				NewSampleValue(vBadDeprecated, 1),
 			},
 		},
 		{
@@ -68,8 +67,8 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 			name:   "mixed good and bad values",
 			values: []*EnumValue{vBadDefault, vGood1, vBadDeprecated, vGood2},
 			wantExamples: []*SampleValue{
-				{EnumValue: vGood1, Index: 0},
-				{EnumValue: vGood2, Index: 1},
+				NewSampleValue(vGood1, 0),
+				NewSampleValue(vGood2, 1),
 			},
 		},
 	} {
@@ -82,8 +81,9 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got := enum.ValuesForExamples
-			if diff := cmp.Diff(test.wantExamples, got, cmpopts.IgnoreFields(EnumValue{}, "Parent")); diff != "" {
+			got := enum.ValuesForExamples()
+			ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+			if diff := cmp.Diff(test.wantExamples, got, allowUnexported(), ignoreParent); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -161,8 +161,11 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got := group.ExampleField
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			got := group.ExampleField()
+			ignoreFieldCycle := cmp.FilterPath(func(p cmp.Path) bool {
+				return p.Last().String() == ".parent" || p.Last().String() == ".group"
+			}, cmp.Ignore())
+			if diff := cmp.Diff(test.want, got, allowUnexported(), ignoreFieldCycle); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -188,9 +191,9 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		got := field.ResourceNamePattern
-		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "resources", Variable: "resource"})
-		if diff := cmp.Diff(want, got); diff != "" {
+		got := field.ResourceNamePattern()
+		want := NewTestResourceNamePattern(NewResourceNameSegment("resources", "resource"))
+		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -208,15 +211,15 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 			WithChildTypeReference("test.googleapis.com/Child")
 		message := NewTestMessage("Message").WithFields(field)
 		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
-		model.AddResource(res)
+		model.addResource(res)
 
 		if err := CrossReference(model); err != nil {
 			t.Fatal(err)
 		}
 
-		got := field.ResourceNamePattern
-		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "parents", Variable: "parent"})
-		if diff := cmp.Diff(want, got); diff != "" {
+		got := field.ResourceNamePattern()
+		want := NewTestResourceNamePattern(NewResourceNameSegment("parents", "parent"))
+		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -231,16 +234,16 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 		message := NewTestMessage("ResourceMessage").
 			WithFields(field).
 			WithResource(res)
-		field.MessageType = message
+		field.WithMessageType(message)
 		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
 
 		if err := CrossReference(model); err != nil {
 			t.Fatal(err)
 		}
 
-		got := field.ResourceNamePattern
-		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "resources", Variable: "resource"})
-		if diff := cmp.Diff(want, got); diff != "" {
+		got := field.ResourceNamePattern()
+		want := NewTestResourceNamePattern(NewResourceNameSegment("resources", "resource"))
+		if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -261,7 +264,7 @@ func TestToResourceNamePattern(t *testing.T) {
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
-				ResourceNameSegment{Literal: "projects", Variable: "project"},
+				NewResourceNameSegment("projects", "project"),
 			),
 		},
 		{
@@ -274,8 +277,8 @@ func TestToResourceNamePattern(t *testing.T) {
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
-				ResourceNameSegment{Literal: "projects", Variable: "project"},
-				ResourceNameSegment{Literal: "secrets", Variable: "secret"},
+				NewResourceNameSegment("projects", "project"),
+				NewResourceNameSegment("secrets", "secret"),
 			),
 		},
 		{
@@ -288,7 +291,7 @@ func TestToResourceNamePattern(t *testing.T) {
 			},
 			skipLast: true,
 			want: NewTestResourceNamePattern(
-				ResourceNameSegment{Literal: "projects", Variable: "project"},
+				NewResourceNameSegment("projects", "project"),
 			),
 		},
 		{
@@ -300,14 +303,14 @@ func TestToResourceNamePattern(t *testing.T) {
 			},
 			skipLast: false,
 			want: NewTestResourceNamePattern(
-				ResourceNameSegment{Literal: "projects", Variable: "project"},
-				ResourceNameSegment{Literal: "config", Variable: ""},
+				NewResourceNameSegment("projects", "project"),
+				NewResourceNameSegment("config", ""),
 			),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := toResourceNamePattern(test.pattern, test.skipLast)
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

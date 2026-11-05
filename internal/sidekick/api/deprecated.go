@@ -16,17 +16,17 @@ package api
 
 // HasDeprecatedEntities returns true if the API has any deprecated entities.
 func (model *API) HasDeprecatedEntities() bool {
-	for _, e := range model.Enums {
+	for _, e := range model.enums {
 		if e.hasDeprecatedEntities() {
 			return true
 		}
 	}
-	for _, m := range model.Messages {
+	for _, m := range model.messages {
 		if m.hasDeprecatedEntities() {
 			return true
 		}
 	}
-	for _, s := range model.Services {
+	for _, s := range model.services {
 		if s.hasDeprecatedEntities() {
 			return true
 		}
@@ -35,21 +35,21 @@ func (model *API) HasDeprecatedEntities() bool {
 }
 
 func (message *Message) hasDeprecatedEntities() bool {
-	if message.Deprecated {
+	if message.deprecated {
 		return true
 	}
-	for _, m := range message.Messages {
+	for _, m := range message.messages {
 		if m.hasDeprecatedEntities() {
 			return true
 		}
 	}
-	for _, e := range message.Enums {
+	for _, e := range message.enums {
 		if e.hasDeprecatedEntities() {
 			return true
 		}
 	}
-	for _, f := range message.Fields {
-		if f.Deprecated {
+	for _, f := range message.fields {
+		if f.deprecated {
 			return true
 		}
 	}
@@ -57,11 +57,11 @@ func (message *Message) hasDeprecatedEntities() bool {
 }
 
 func (enum *Enum) hasDeprecatedEntities() bool {
-	if enum.Deprecated {
+	if enum.deprecated {
 		return true
 	}
-	for _, v := range enum.Values {
-		if v.Deprecated {
+	for _, v := range enum.values {
+		if v.Deprecated() {
 			return true
 		}
 	}
@@ -69,11 +69,11 @@ func (enum *Enum) hasDeprecatedEntities() bool {
 }
 
 func (service *Service) hasDeprecatedEntities() bool {
-	if service.Deprecated {
+	if service.deprecated {
 		return true
 	}
-	for _, m := range service.Methods {
-		if m.Deprecated {
+	for _, m := range service.methods {
+		if m.deprecated {
 			return true
 		}
 	}

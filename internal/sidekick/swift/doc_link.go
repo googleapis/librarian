@@ -41,7 +41,7 @@ func (c *codec) docLink(packageName, name string) string {
 	// Swift keywords are escaped with backticks in code (e.g. `get`, `protocol`),
 	// but DocC symbol links require unescaped symbol names.
 	name = strings.ReplaceAll(name, "`", "")
-	if packageName != c.Model.PackageName {
+	if packageName != c.Model.PackageName() {
 		// TODO(#5072) - we have not implemented cross-reference links to external packages.
 		return fmt.Sprintf("https://www.google.com/search?q=Swift+%s+%s", packageName, name)
 	}
@@ -58,14 +58,14 @@ func (c *codec) tryDocLinkWithId(id string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return c.docLink(m.Package, name), nil
+		return c.docLink(m.Package(), name), nil
 	}
 	if e := c.Model.Enum(id); e != nil {
 		name, err := c.enumTypeName(e)
 		if err != nil {
 			return "", err
 		}
-		return c.docLink(e.Package, name), nil
+		return c.docLink(e.Package(), name), nil
 	}
 	if me := c.Model.Method(id); me != nil {
 		return c.methodDocLink(me)
@@ -93,27 +93,27 @@ func (c *codec) tryFieldDocLink(id string) (string, error) {
 	if m == nil {
 		return "", nil
 	}
-	for _, f := range m.Fields {
-		if f.Name == fieldName {
+	for _, f := range m.Fields() {
+		if f.Name() == fieldName {
 			messageName, err := c.messageTypeName(m)
 			if err != nil {
 				return "", err
 			}
-			swiftName := camelCase(f.Name)
-			if f.Group == nil {
-				return c.docLink(m.Package, fmt.Sprintf("%s/%s", messageName, swiftName)), nil
+			swiftName := camelCase(f.Name())
+			if f.Group() == nil {
+				return c.docLink(m.Package(), fmt.Sprintf("%s/%s", messageName, swiftName)), nil
 			}
-			groupName := OneOfName(f.Group.Name)
-			return c.docLink(m.Package, fmt.Sprintf("%s/%s/%s(_:)", messageName, groupName, swiftName)), nil
+			groupName := OneOfName(f.Group().Name())
+			return c.docLink(m.Package(), fmt.Sprintf("%s/%s/%s(_:)", messageName, groupName, swiftName)), nil
 		}
 	}
-	for _, o := range m.OneOfs {
-		if o.Name == fieldName {
+	for _, o := range m.OneOfs() {
+		if o.Name() == fieldName {
 			p, err := c.messageTypeName(m)
 			if err != nil {
 				return "", err
 			}
-			return c.docLink(m.Package, fmt.Sprintf("%s/%s", p, OneOfName(o.Name))), nil
+			return c.docLink(m.Package(), fmt.Sprintf("%s/%s", p, OneOfName(o.Name()))), nil
 		}
 	}
 	return "", nil
@@ -130,13 +130,13 @@ func (c *codec) tryEnumValueDocLink(id string) (string, error) {
 	if e == nil {
 		return "", nil
 	}
-	for _, v := range e.Values {
-		if v.Name == valueName {
+	for _, v := range e.Values() {
+		if v.Name() == valueName {
 			p, err := c.enumTypeName(e)
 			if err != nil {
 				return "", err
 			}
-			return c.docLink(e.Package, fmt.Sprintf("%s/%s", p, enumValueCaseName(v))), nil
+			return c.docLink(e.Package(), fmt.Sprintf("%s/%s", p, enumValueCaseName(v))), nil
 		}
 	}
 	return "", nil
@@ -145,25 +145,25 @@ func (c *codec) tryEnumValueDocLink(id string) (string, error) {
 func (c *codec) methodDocLink(m *api.Method) (string, error) {
 	// Swift does not yet support streaming RPCs.
 	// See https://github.com/googleapis/google-cloud-swift/issues/451
-	if m.ClientSideStreaming || m.ServerSideStreaming {
+	if m.ClientSideStreaming() || m.ServerSideStreaming() {
 		return "", nil
 	}
-	idx := strings.LastIndex(m.ID, ".")
+	idx := strings.LastIndex(m.ID(), ".")
 	if idx == -1 {
 		return "", nil
 	}
-	serviceId := m.ID[0:idx]
+	serviceId := m.ID()[0:idx]
 	s := c.Model.Service(serviceId)
 	if s == nil {
 		return "", nil
 	}
 	serviceName := c.ServiceName(s)
-	name := fmt.Sprintf("%sClient/%s(request:options:)", pascalCaseNoMangling(serviceName), camelCase(m.Name))
-	return c.docLink(s.Package, name), nil
+	name := fmt.Sprintf("%sClient/%s(request:options:)", pascalCaseNoMangling(serviceName), camelCase(m.Name()))
+	return c.docLink(s.Package(), name), nil
 }
 
 func (c *codec) serviceDocLink(s *api.Service) string {
 	serviceName := c.ServiceName(s)
 	name := fmt.Sprintf("%sClient", pascalCaseNoMangling(serviceName))
-	return c.docLink(s.Package, name)
+	return c.docLink(s.Package(), name)
 }

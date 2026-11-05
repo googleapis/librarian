@@ -24,7 +24,7 @@ import (
 
 // PackageName returns the Swift package name for the API.
 func PackageName(api *api.API) string {
-	return strings.ReplaceAll(api.PackageName, ".", "-")
+	return strings.ReplaceAll(api.PackageName(), ".", "-")
 }
 
 // PackageRepoName derives the split repository name for a library.

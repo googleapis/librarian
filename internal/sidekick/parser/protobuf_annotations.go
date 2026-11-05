@@ -54,11 +54,10 @@ func parseOperationInfo(packagez string, m *descriptorpb.MethodDescriptorProto) 
 		return nil
 	}
 	protobufInfo := proto.GetExtension(m.GetOptions(), extensionId).(*longrunningpb.OperationInfo)
-	operationInfo := &api.OperationInfo{
-		MetadataTypeID: normalizeTypeID(packagez, protobufInfo.GetMetadataType()),
-		ResponseTypeID: normalizeTypeID(packagez, protobufInfo.GetResponseType()),
-	}
-	return operationInfo
+	return api.NewOperationInfoBuilder().
+		WithMetadataTypeID(normalizeTypeID(packagez, protobufInfo.GetMetadataType())).
+		WithResponseTypeID(normalizeTypeID(packagez, protobufInfo.GetResponseType())).
+		Build()
 }
 
 func parsePathInfo(m *descriptorpb.MethodDescriptorProto, model *api.API) (*api.PathInfo, error) {
@@ -162,11 +161,12 @@ func resolveBodyFieldPath(msgID, body string, model *api.API) string {
 	if msg == nil {
 		return body
 	}
-	idx := slices.IndexFunc(msg.Fields, func(f *api.Field) bool {
-		return f.Typez == api.TypezMessage && f.TypezID == ".google.api.HttpBody"
+	fields := msg.Fields()
+	idx := slices.IndexFunc(fields, func(f *api.Field) bool {
+		return f.Typez() == api.TypezMessage && f.TypezID() == ".google.api.HttpBody"
 	})
 	if idx != -1 {
-		return msg.Fields[idx].Name
+		return fields[idx].Name()
 	}
 	return body
 }
@@ -182,8 +182,8 @@ func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, 
 		return params, nil
 	}
 	// Start with all the fields marked as query parameters.
-	for _, field := range msg.Fields {
-		params[field.Name] = true
+	for _, field := range msg.Fields() {
+		params[field.Name()] = true
 	}
 	for _, s := range pathTemplate.Segments() {
 		if s.Variable() != nil {

@@ -46,57 +46,57 @@ import "strings"
 
 // Scopes returns the scopes for a service.
 func (x *Service) Scopes() []string {
-	return []string{strings.TrimPrefix(x.ID, "."), x.Package}
+	return []string{strings.TrimPrefix(x.id, "."), x.packagez}
 }
 
 // Scopes returns the scopes for a message.
 func (x *Message) Scopes() []string {
-	localScope := strings.TrimPrefix(x.ID, ".")
-	if x.Parent == nil {
-		return []string{localScope, x.Package} // simplify some test set-up
+	localScope := strings.TrimPrefix(x.id, ".")
+	if x.parent == nil {
+		return []string{localScope, x.packagez} // simplify some test set-up
 	}
-	return append([]string{localScope}, x.Parent.Scopes()...)
+	return append([]string{localScope}, x.parent.Scopes()...)
 }
 
 // Scopes returns the scopes for an enum.
 func (x *Enum) Scopes() []string {
-	localScope := strings.TrimPrefix(x.ID, ".")
-	if x.Parent == nil {
-		return []string{localScope, x.Package} // simplify some test set-up
+	localScope := strings.TrimPrefix(x.id, ".")
+	if x.parent == nil {
+		return []string{localScope, x.packagez} // simplify some test set-up
 	}
-	return append([]string{localScope}, x.Parent.Scopes()...)
+	return append([]string{localScope}, x.parent.Scopes()...)
 }
 
 // Scopes returns the scopes for an enum value.
 func (x *EnumValue) Scopes() []string {
-	if x.Parent != nil {
-		return x.Parent.Scopes()
+	if x.parent != nil {
+		return x.parent.Scopes()
 	}
-	return fallbackScopes(x.ID)
+	return fallbackScopes(x.id)
 }
 
 // Scopes returns the scopes for a field.
 func (x *Field) Scopes() []string {
-	if x.Parent != nil {
-		return x.Parent.Scopes()
+	if x.parent != nil {
+		return x.parent.Scopes()
 	}
-	return fallbackScopes(x.ID)
+	return fallbackScopes(x.id)
 }
 
 // Scopes returns the scopes for a method.
 func (x *Method) Scopes() []string {
-	if x.Service != nil {
-		return x.Service.Scopes()
+	if x.service != nil {
+		return x.service.Scopes()
 	}
-	return fallbackScopes(x.ID)
+	return fallbackScopes(x.id)
 }
 
 // Scopes returns the scopes for a oneof.
 func (x *OneOf) Scopes() []string {
-	if len(x.Fields) > 0 {
-		return x.Fields[0].Scopes()
+	if len(x.fields) > 0 {
+		return x.fields[0].Scopes()
 	}
-	return fallbackScopes(x.ID)
+	return fallbackScopes(x.id)
 }
 
 // A fallback so we can be lazy in test set-up.

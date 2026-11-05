@@ -51,77 +51,77 @@ const (
 	WktBoolValueID = ".google.protobuf.BoolValue"
 )
 
-// LoadWellKnownTypes adds well-known types to `state`.
+// loadWellKnownTypes adds well-known types to `state`.
 //
 // Some source specification formats (Discovery, OpenAPI) must manually add the
 // well-known types. In Protobuf these types are automatically defined in the
 // protoc output.
-func (model *API) LoadWellKnownTypes() {
+func (model *API) loadWellKnownTypes() {
 	for _, message := range wellKnownMessages {
-		model.AddMessage(message)
+		model.addMessage(message)
 	}
-	model.AddEnum(&Enum{
-		ID:      WktNullValueID,
-		Name:    "NullValue",
-		Package: "google.protobuf",
-	})
+	model.addEnum(NewEnumBuilder().
+		WithID(WktNullValueID).
+		WithName("NullValue").
+		WithPackage("google.protobuf").
+		Build())
 }
 
 var wellKnownMessages = []*Message{
 	{
-		ID:      WktAnyID,
-		Name:    "Any",
-		Package: "google.protobuf",
+		id:       WktAnyID,
+		name:     "Any",
+		packagez: "google.protobuf",
 	},
 	{
-		ID:      WktStructID,
-		Name:    "Struct",
-		Package: "google.protobuf",
+		id:       WktStructID,
+		name:     "Struct",
+		packagez: "google.protobuf",
 	},
 	{
-		ID:      WktValueID,
-		Name:    "Value",
-		Package: "google.protobuf",
+		id:       WktValueID,
+		name:     "Value",
+		packagez: "google.protobuf",
 	},
 	{
-		ID:      WktListValueID,
-		Name:    "ListValue",
-		Package: "google.protobuf",
+		id:       WktListValueID,
+		name:     "ListValue",
+		packagez: "google.protobuf",
 	},
 	{
-		ID:      WktEmptyID,
-		Name:    "Empty",
-		Package: "google.protobuf",
+		id:       WktEmptyID,
+		name:     "Empty",
+		packagez: "google.protobuf",
 	},
 	{
-		ID:      WktFieldMaskID,
-		Name:    "FieldMask",
-		Package: "google.protobuf",
-		Fields: []*Field{
+		id:       WktFieldMaskID,
+		name:     "FieldMask",
+		packagez: "google.protobuf",
+		fields: []*Field{
 			{
-				Name:     "paths",
-				JSONName: "paths",
-				Typez:    TypezString,
-				Repeated: true,
+				name:     "paths",
+				jsonName: "paths",
+				typez:    TypezString,
+				repeated: true,
 			},
 		},
 	},
 	{
-		ID:      WktDurationID,
-		Name:    "Duration",
-		Package: "google.protobuf",
+		id:       WktDurationID,
+		name:     "Duration",
+		packagez: "google.protobuf",
 	},
 	{
-		ID:      WktTimestampID,
-		Name:    "Timestamp",
-		Package: "google.protobuf",
+		id:       WktTimestampID,
+		name:     "Timestamp",
+		packagez: "google.protobuf",
 	},
-	{ID: WktBytesValueID, Name: "BytesValue", Package: "google.protobuf"},
-	{ID: WktUInt64ValueID, Name: "UInt64Value", Package: "google.protobuf"},
-	{ID: WktInt64ValueID, Name: "Int64Value", Package: "google.protobuf"},
-	{ID: WktUInt32ValueID, Name: "UInt32Value", Package: "google.protobuf"},
-	{ID: WktInt32ValueID, Name: "Int32Value", Package: "google.protobuf"},
-	{ID: WktFloatValueID, Name: "FloatValue", Package: "google.protobuf"},
-	{ID: WktDoubleValueID, Name: "DoubleValue", Package: "google.protobuf"},
-	{ID: WktBoolValueID, Name: "BoolValue", Package: "google.protobuf"},
+	{id: WktBytesValueID, name: "BytesValue", packagez: "google.protobuf"},
+	{id: WktUInt64ValueID, name: "UInt64Value", packagez: "google.protobuf"},
+	{id: WktInt64ValueID, name: "Int64Value", packagez: "google.protobuf"},
+	{id: WktUInt32ValueID, name: "UInt32Value", packagez: "google.protobuf"},
+	{id: WktInt32ValueID, name: "Int32Value", packagez: "google.protobuf"},
+	{id: WktFloatValueID, name: "FloatValue", packagez: "google.protobuf"},
+	{id: WktDoubleValueID, name: "DoubleValue", packagez: "google.protobuf"},
+	{id: WktBoolValueID, name: "BoolValue", packagez: "google.protobuf"},
 }

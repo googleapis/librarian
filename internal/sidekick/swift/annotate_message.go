@@ -155,16 +155,17 @@ func (ann *messageAnnotations) GateExpression() string {
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
 	// If the message is already annotated, don't process again
-	if message.Codec != nil {
+	if message.Codec() != nil {
 		return nil
 	}
-	docLines, err := c.formatDocumentation(message.Documentation, message.Scopes())
+	docLines, err := c.formatDocumentation(message.Documentation(), message.Scopes())
 	if err != nil {
 		return err
 	}
+	fields := message.Fields()
 	sampleField := "<placeholder>"
-	if len(message.Fields) != 0 {
-		sampleField = camelCase(message.Fields[0].Name)
+	if len(fields) != 0 {
+		sampleField = camelCase(fields[0].Name())
 	}
 	parameterTypeName, err := c.messageTypeName(message)
 	if err != nil {
@@ -174,19 +175,19 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		Name:              messageName(message),
 		DocLines:          docLines,
 		Model:             model,
-		TypeURL:           typeURLPrefix + strings.TrimPrefix(message.ID, "."),
+		TypeURL:           typeURLPrefix + strings.TrimPrefix(message.ID(), "."),
 		DependsOn:         map[string]*Dependency{},
 		SampleField:       sampleField,
 		ParameterTypeName: parameterTypeName,
 		ProtoTypeName:     c.protoMessageTypeName(message),
 		ModulePath:        c.ModulePath,
 	}
-	if message.ServicePlaceholder {
-		annotations.PlaceholderName = pascalCase(message.Name + "Client")
+	if message.ServicePlaceholder() {
+		annotations.PlaceholderName = pascalCase(message.Name() + "Client")
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.
-	dep, err := c.addApiPackageDependency(message.Package)
+	dep, err := c.addApiPackageDependency(message.Package())
 	if err != nil {
 		return err
 	}
@@ -198,36 +199,36 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if err != nil {
 		return err
 	}
-	if wktDep != nil && wktDep.ApiPackage != c.Model.PackageName {
+	if wktDep != nil && wktDep.ApiPackage != c.Model.PackageName() {
 		// Messages generated in the library for WKT library (we have a few)
 		// should not import the library.
 		annotations.DependsOn[wktDep.Name] = wktDep
 	}
 
-	message.Codec = annotations
-	for _, oneof := range message.OneOfs {
+	message.SetAnnotations(annotations)
+	for _, oneof := range message.OneOfs() {
 		if err := c.annotateOneOf(oneof); err != nil {
 			return err
 		}
 	}
 	var hasData bool
-	for _, field := range message.Fields {
+	for _, field := range fields {
 		fieldCodec, err := c.annotateField(field, model)
 		if err != nil {
 			return err
 		}
-		// `message.Fields` includes the oneof variants, so this covers them too.
-		if !message.Deprecated && (field.Deprecated || fieldCodec.DiagnoseType) {
+		// `message.Fields()` includes the oneof variants, so this covers them too.
+		if !message.Deprecated() && (field.Deprecated() || fieldCodec.DiagnoseType) {
 			annotations.DiagnoseCodable = true
 		}
 		// A deprecated message suppresses deprecation diagnostics in its whole
 		// scope, so its property declarations need nothing. `annotateField`
 		// cannot see the enclosing message, so clear the flag here, after it
 		// has been consumed above.
-		if message.Deprecated {
+		if message.Deprecated() {
 			fieldCodec.DiagnoseType = false
 		}
-		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
+		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName() {
 			dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
 			if err != nil {
 				return err
@@ -241,7 +242,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 
-	if message.Pagination != nil {
+	if message.Pagination() != nil {
 		annotations.IsPaginatedResponse = true
 		// If this message is a paginated response, then require the pagination helpers package
 		paginationDep, err := c.addPackageDependency(paginationSwiftPackage)
@@ -250,23 +251,23 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 		annotations.DependsOn[paginationDep.Name] = paginationDep
 
-		itemField := message.Pagination.PageableItem
-		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
+		itemField := message.Pagination().PageableItem()
+		itemFieldCodec, ok := itemField.Codec().(*fieldAnnotations)
 		if !ok {
-			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name)
+			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name())
 		}
 		annotations.PageableItemField = itemFieldCodec.Name
 		switch {
-		case itemField.Repeated:
+		case itemField.Repeated():
 			annotations.PageableItemType = itemFieldCodec.BaseFieldType
-		case itemField.Typez == api.TypezMap:
+		case itemField.Typez() == api.TypezMap:
 			keyType, valueType, err := c.mapFieldTypeComponents(itemField)
 			if err != nil {
 				return err
 			}
 			annotations.PageableItemType = fmt.Sprintf("(%s, %s)", keyType, valueType)
 		default:
-			return fmt.Errorf("pageable item field should be a map or a repeated field: %s", message.ID)
+			return fmt.Errorf("pageable item field should be a map or a repeated field: %s", message.ID())
 		}
 
 		// `_getPaginatedItems()` returns the item type and reads the item
@@ -276,17 +277,17 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if err != nil {
 			return err
 		}
-		tokenDeprecated := message.Pagination.NextPageToken != nil &&
-			message.Pagination.NextPageToken.Deprecated
-		annotations.DiagnosePagination = !message.Deprecated &&
-			(itemField.Deprecated || itemTypeDeprecated || tokenDeprecated)
+		tokenDeprecated := message.Pagination().NextPageToken() != nil &&
+			message.Pagination().NextPageToken().Deprecated()
+		annotations.DiagnosePagination = !message.Deprecated() &&
+			(itemField.Deprecated() || itemTypeDeprecated || tokenDeprecated)
 	}
 
-	for _, nested := range message.Messages {
+	for _, nested := range message.Messages() {
 		if err := c.annotateMessage(nested, model); err != nil {
 			return err
 		}
-		if nestedCodec, ok := nested.Codec.(*messageAnnotations); ok {
+		if nestedCodec, ok := nested.Codec().(*messageAnnotations); ok {
 			// If there are required packages from nested messages, add them to the outer message as well
 			for _, dep := range nestedCodec.DependsOn {
 				if _, err := c.addDependency(dep); err != nil {
@@ -300,7 +301,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 	annotations.HasData = hasData
-	for _, enum := range message.Enums {
+	for _, enum := range message.Enums() {
 		if err := c.annotateEnum(enum, model); err != nil {
 			return err
 		}

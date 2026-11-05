@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestLookupMessage(t *testing.T) {
@@ -29,7 +30,7 @@ func TestLookupMessage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(msg, got); diff != "" {
+	if diff := cmp.Diff(msg, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -51,7 +52,7 @@ func TestLookupEnum(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(enum, got); diff != "" {
+	if diff := cmp.Diff(enum, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -73,7 +74,7 @@ func TestLookupField(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(field, got); diff != "" {
+	if diff := cmp.Diff(field, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -95,7 +96,7 @@ func TestLookupMap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(mapType, got); diff != "" {
+	if diff := cmp.Diff(mapType, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -109,7 +110,7 @@ func TestLookupMap_FromModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(mapType, got); diff != "" {
+	if diff := cmp.Diff(mapType, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -46,8 +46,8 @@ func GenerateConversions(ctx context.Context, model *api.API, outdir string, lib
 }
 
 func (c *codec) generateEnumConversions(outdir string) error {
-	for _, e := range c.Model.Enums {
-		if e.Parent != nil {
+	for _, e := range c.Model.Enums() {
+		if e.Parent() != nil {
 			continue
 		}
 		name := c.enumFileName(e)
@@ -64,8 +64,8 @@ func (c *codec) generateEnumConversions(outdir string) error {
 }
 
 func (c *codec) generateMessageConversions(outdir string) error {
-	for _, m := range c.Model.Messages {
-		if m.Parent != nil || m.ServicePlaceholder {
+	for _, m := range c.Model.Messages() {
+		if m.Parent() != nil || m.ServicePlaceholder() {
 			continue
 		}
 		name := c.messageFileName(m)

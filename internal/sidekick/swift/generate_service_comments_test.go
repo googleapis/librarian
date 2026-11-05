@@ -98,9 +98,7 @@ func TestGenerateService_DiscoveryLRODocComments(t *testing.T) {
 		WithOutput(op).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("compute").WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").WithLiteral("zones").WithVariableNamed("zone").WithLiteral("instances").Build()).
-		WithDiscoveryLro(&api.DiscoveryLro{
-			PollingPathParameters: []string{"project", "zone"},
-		})
+		WithDiscoveryLro(api.NewTestDiscoveryLro("project", "zone"))
 
 	service := api.NewTestService("Instances").
 		WithDocumentation("The Instances API.").

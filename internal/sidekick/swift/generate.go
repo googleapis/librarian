@@ -109,7 +109,7 @@ func (c *codec) generateDocc(outdir string, model *api.API) error {
 			OutputPath:   output,
 		},
 	}
-	if annotations, ok := model.Codec.(*modelAnnotations); ok && annotations.HasTraits() {
+	if annotations, ok := model.Codec().(*modelAnnotations); ok && annotations.HasTraits() {
 		files = append(files, language.GeneratedFile{
 			TemplatePath: "templates/docc/package_traits.md.gotmpl",
 			OutputPath:   filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", "PackageTraits.md"),
@@ -119,15 +119,15 @@ func (c *codec) generateDocc(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateMessages(outdir string, model *api.API) error {
-	for _, m := range model.Messages {
-		name := m.Name
-		if m.Parent == nil && m.Package == wellKnownProtobufPackage {
-			name = "WKT" + m.Name
+	for _, m := range model.Messages() {
+		name := m.Name()
+		if m.Parent() == nil && m.Package() == wellKnownProtobufPackage {
+			name = "WKT" + m.Name()
 		}
 		output := c.swiftFilename(name)
 		tmpl := "templates/common/message_file.swift.gotmpl"
-		if m.ServicePlaceholder {
-			output = c.swiftFilename(m.Name + "+Requests")
+		if m.ServicePlaceholder() {
+			output = c.swiftFilename(m.Name() + "+Requests")
 			tmpl = "templates/common/placeholder_file.swift.gotmpl"
 		}
 		generated := language.GeneratedFile{
@@ -142,10 +142,10 @@ func (c *codec) generateMessages(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateEnums(outdir string, model *api.API) error {
-	for _, e := range model.Enums {
-		name := e.Name
-		if e.Parent == nil && e.Package == wellKnownProtobufPackage {
-			name = "WKT" + e.Name
+	for _, e := range model.Enums() {
+		name := e.Name()
+		if e.Parent() == nil && e.Package() == wellKnownProtobufPackage {
+			name = "WKT" + e.Name()
 		}
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/enum_file.swift.gotmpl",
@@ -159,10 +159,10 @@ func (c *codec) generateEnums(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateServices(outdir string, model *api.API) error {
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/service.swift.gotmpl",
-			OutputPath:   c.swiftFilename(s.Name),
+			OutputPath:   c.swiftFilename(s.Name()),
 		}
 		if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 			return err
@@ -176,7 +176,7 @@ func (c *codec) generateStubs(outdir string, model *api.API) error {
 	if c.isGrpc() {
 		transportTemplate = "templates/grpc/transport.swift.gotmpl"
 	}
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		for _, stub := range []struct {
 			suffix   string
 			template string
@@ -188,7 +188,7 @@ func (c *codec) generateStubs(outdir string, model *api.API) error {
 		} {
 			generated := language.GeneratedFile{
 				TemplatePath: stub.template,
-				OutputPath:   c.swiftFilename(s.Name + stub.suffix),
+				OutputPath:   c.swiftFilename(s.Name() + stub.suffix),
 			}
 			if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 				return err
@@ -210,7 +210,7 @@ func (c *codec) generateLROAnyConverter(outdir string, model *api.API) error {
 		// gRPC transport generates.
 		return nil
 	}
-	annotations, ok := model.Codec.(*modelAnnotations)
+	annotations, ok := model.Codec().(*modelAnnotations)
 	if ok && annotations.HasLROAnyTypes() {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/grpc/lro_any_converter.swift.gotmpl",
@@ -222,7 +222,7 @@ func (c *codec) generateLROAnyConverter(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateSnippets(outdir string, model *api.API) error {
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		// If two services differ only in case (such as `fooService` and
 		// `FooService`), then this might generate clashing filenames in
 		// filesystems that are case insensitive.
@@ -240,18 +240,18 @@ func (c *codec) generateSnippets(outdir string, model *api.API) error {
 		// If I (coryan@) am wrong, we can fix the generator at that time.
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/client_snippet.swift.gotmpl",
-			OutputPath:   filepath.Join("Snippets", s.Name+"Quickstart.swift"),
+			OutputPath:   filepath.Join("Snippets", s.Name()+"Quickstart.swift"),
 		}
 		if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 			return err
 		}
-		for _, m := range s.Methods {
-			if !c.shouldGenerateMethod(m) || m.IsLroPoller {
+		for _, m := range s.Methods() {
+			if !c.shouldGenerateMethod(m) || m.IsLroPoller() {
 				continue
 			}
 			mGenerated := language.GeneratedFile{
 				TemplatePath: "templates/common/method_snippet.swift.gotmpl",
-				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name, m.Name)),
+				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name(), m.Name())),
 			}
 			if err := parsedTemplates.GenerateElement(outdir, m, mGenerated); err != nil {
 				return err
@@ -262,7 +262,7 @@ func (c *codec) generateSnippets(outdir string, model *api.API) error {
 }
 
 func (c *codec) generateClients(outdir string, model *api.API) error {
-	if len(model.Services) == 0 {
+	if len(model.Services()) == 0 {
 		return nil
 	}
 	generated := language.GeneratedFile{
@@ -273,7 +273,7 @@ func (c *codec) generateClients(outdir string, model *api.API) error {
 }
 
 func (c *codec) generatePackageVersion(outdir string, model *api.API) error {
-	if len(model.Services) > 0 {
+	if len(model.Services()) > 0 {
 		return nil
 	}
 	generated := language.GeneratedFile{

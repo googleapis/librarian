@@ -58,11 +58,11 @@ func TestCrossReferenceOneOfs(t *testing.T) {
 		{fields2[0], group2, message2},
 		{fields2[1], group2, message2},
 	} {
-		if test.field.Group != test.oneof {
-			t.Errorf("mismatched group for %s, got=%v, want=%v", test.field.Name, test.field.Group, test.oneof)
+		if test.field.Group() != test.oneof {
+			t.Errorf("mismatched group for %s, got=%v, want=%v", test.field.Name(), test.field.Group(), test.oneof)
 		}
-		if test.field.Parent != test.parent {
-			t.Errorf("mismatched parent for %s, got=%v, want=%v", test.field.Name, test.field.Parent, test.parent)
+		if test.field.Parent() != test.parent {
+			t.Errorf("mismatched parent for %s, got=%v, want=%v", test.field.Name(), test.field.Parent(), test.parent)
 		}
 	}
 }
@@ -74,11 +74,11 @@ func TestCrossReferenceFields(t *testing.T) {
 	// that CrossReference resolves and sets MessageType and EnumType from TypezID.
 	fieldM := NewTestField("message_field").
 		WithType(TypezMessage).
-		WithTypezID(messageT.ID)
+		WithTypezID(messageT.ID())
 	enumT := NewTestEnum("EnumT")
 	fieldE := NewTestField("enum_field").
 		WithType(TypezEnum).
-		WithTypezID(enumT.ID)
+		WithTypezID(enumT.ID())
 	message := NewTestMessage("Message").WithFields(fieldM, fieldE)
 
 	model := NewTestAPI([]*Message{messageT, message}, []*Enum{enumT}, []*Service{})
@@ -93,15 +93,15 @@ func TestCrossReferenceFields(t *testing.T) {
 		{fieldM, message},
 		{fieldE, message},
 	} {
-		if test.field.Parent != test.parent {
-			t.Errorf("mismatched parent for %s, got=%v, want=%v", test.field.Name, test.field.Parent, test.parent)
+		if test.field.Parent() != test.parent {
+			t.Errorf("mismatched parent for %s, got=%v, want=%v", test.field.Name(), test.field.Parent(), test.parent)
 		}
 	}
-	if fieldM.MessageType != messageT {
-		t.Errorf("mismatched message type for %s, got%v, want=%v", fieldM.Name, fieldM.MessageType, messageT)
+	if fieldM.MessageType() != messageT {
+		t.Errorf("mismatched message type for %s, got%v, want=%v", fieldM.Name(), fieldM.MessageType(), messageT)
 	}
-	if fieldE.EnumType != enumT {
-		t.Errorf("mismatched enum type for %s, got%v, want=%v", fieldE.Name, fieldE.EnumType, enumT)
+	if fieldE.EnumType() != enumT {
+		t.Errorf("mismatched enum type for %s, got%v, want=%v", fieldE.Name(), fieldE.EnumType(), enumT)
 	}
 }
 
@@ -122,11 +122,11 @@ func TestCrossReferenceMethod(t *testing.T) {
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	if method.InputType != request {
-		t.Errorf("mismatched input type, got=%v, want=%v", method.InputType, request)
+	if method.InputType() != request {
+		t.Errorf("mismatched input type, got=%v, want=%v", method.InputType(), request)
 	}
-	if method.OutputType != response {
-		t.Errorf("mismatched output type, got=%v, want=%v", method.OutputType, response)
+	if method.OutputType() != response {
+		t.Errorf("mismatched output type, got=%v, want=%v", method.OutputType(), response)
 	}
 }
 
@@ -135,22 +135,22 @@ func TestCrossReferenceService(t *testing.T) {
 	mixin := NewTestService("Mixin").WithID(".external.Mixin")
 
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{service})
-	model.AddService(mixin)
+	model.addService(mixin)
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	if service.Model != model {
-		t.Errorf("mismatched model, got=%v, want=%v", service.Model, model)
+	if service.Model() != model {
+		t.Errorf("mismatched model, got=%v, want=%v", service.Model(), model)
 	}
-	if mixin.Model != model {
-		t.Errorf("mismatched model, got=%v, want=%v", mixin.Model, model)
+	if mixin.Model() != model {
+		t.Errorf("mismatched model, got=%v, want=%v", mixin.Model(), model)
 	}
 }
 
 func TestCrossReferenceMap(t *testing.T) {
 	valMsg := NewTestMessage("ValueMessage")
 	key := NewTestField("key").WithType(TypezString)
-	val := NewTestField("value").WithType(TypezMessage).WithTypezID(valMsg.ID)
+	val := NewTestField("value").WithType(TypezMessage).WithTypezID(valMsg.ID())
 	mapType := NewTestMapWithFields("MapEntry", key, val)
 	mapField := NewTestField("map_field").WithMapType(mapType)
 	msg := NewTestMessage("Container").WithFields(mapField)
@@ -160,17 +160,16 @@ func TestCrossReferenceMap(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if mapField.MapType != mapType {
-		t.Errorf("mismatched MapType for %s, got=%v, want=%v", mapField.Name, mapField.MapType, mapType)
+	if mapField.MapType() != mapType {
+		t.Errorf("mismatched MapType for %s, got=%v, want=%v", mapField.Name(), mapField.MapType(), mapType)
 	}
-	if val.MessageType != valMsg {
-		t.Errorf("mismatched MessageType for map value %s, got=%v, want=%v", val.Name, val.MessageType, valMsg)
+	if val.MessageType() != valMsg {
+		t.Errorf("mismatched MessageType for map value %s, got=%v, want=%v", val.Name(), val.MessageType(), valMsg)
 	}
 }
 
 func TestCrossReferenceMap_Error(t *testing.T) {
-	mapField := NewTestField("map_field").WithType(TypezMap)
-	mapField.TypezID = ".test.NonExistentMap"
+	mapField := NewTestField("map_field").WithType(TypezMap).WithTypezID(".test.NonExistentMap")
 	msg := NewTestMessage("Container").WithFields(mapField)
 
 	model := NewTestAPI([]*Message{msg}, nil, nil)

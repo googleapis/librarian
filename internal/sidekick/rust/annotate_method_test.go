@@ -86,7 +86,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 			t.Errorf("missing method %s", test.MethodID)
 			continue
 		}
-		got := gotMethod.Codec.(*methodAnnotation)
+		got := gotMethod.Codec().(*methodAnnotation)
 		if diff := cmp.Diff(test.Want, got, cmpopts.IgnoreFields(methodAnnotation{}, "PathInfo", "SystemParameters")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
@@ -112,7 +112,7 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
 	}
-	got := gotMethod.DiscoveryLro.Codec.(*discoveryLroAnnotations)
+	got := gotMethod.DiscoveryLro().Codec().(*discoveryLroAnnotations)
 	want := &discoveryLroAnnotations{
 		MethodName:          "delete",
 		ReturnType:          "()",
@@ -149,7 +149,7 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := gotMethod.Codec.(*methodAnnotation)
+	got := gotMethod.Codec().(*methodAnnotation)
 	want := []systemParameter{
 		{Name: "$alt", Value: "json"},
 		{Name: "$apiVersion", Value: "v1_20260205"},
@@ -179,7 +179,7 @@ func TestAnnotateMethodInternalBuilders(t *testing.T) {
 	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
 	}
-	got := gotMethod.Codec.(*methodAnnotation)
+	got := gotMethod.Codec().(*methodAnnotation)
 	if !got.InternalBuilders {
 		t.Errorf("expected InternalBuilders to be true for method %s", methodID)
 	}
@@ -225,9 +225,9 @@ func annotateMethodModel(t *testing.T) *api.API {
 			WithLiteral("types").
 			WithVariableNamed("type").
 			Build()).
-		WithDiscoveryLro(&api.DiscoveryLro{
-			PollingPathParameters: []string{"project", "zone", "type"},
-		}).
+		WithDiscoveryLro(api.NewDiscoveryLroBuilder().
+			WithPollingPathParameters("project", "zone", "type").
+			Build()).
 		ReturnEmpty()
 
 	methodSelf := api.NewTestMethod("Self").
@@ -259,10 +259,10 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		if m == nil {
 			t.Fatalf("missing method %s", methodID)
 		}
-		if m.PathInfo != nil && len(m.PathInfo.Bindings()) > 0 {
+		if m.PathInfo() != nil && len(m.PathInfo().Bindings()) > 0 {
 			m.WithBindings(api.NewPathBindingBuilder().
-				WithVerb(m.PathInfo.Bindings()[0].Verb()).
-				WithQueryParameterMap(m.PathInfo.Bindings()[0].QueryParameters()).
+				WithVerb(m.PathInfo().Bindings()[0].Verb()).
+				WithQueryParameterMap(m.PathInfo().Bindings()[0].QueryParameters()).
 				WithPathTemplate(api.NewPathTemplateBuilder().
 					WithLiteral("projects").
 					WithVariableNamed("project").
@@ -379,7 +379,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			if m == nil {
 				t.Fatalf("missing method %s", test.id)
 			}
-			got := m.Codec.(*methodAnnotation)
+			got := m.Codec().(*methodAnnotation)
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotation{},
 				"Name", "NameNoMangling", "BuilderName", "Body", "DocLines",
 				"ServiceNameToPascal", "ServiceNameToCamel", "ServiceNameToSnake",
@@ -392,7 +392,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 
 			if test.wantBindings != nil {
 				for i, wantBinding := range test.wantBindings {
-					gotBinding := m.PathInfo.Bindings()[i].Codec().(*pathBindingAnnotation)
+					gotBinding := m.PathInfo().Bindings()[i].Codec().(*pathBindingAnnotation)
 					if diff := cmp.Diff(wantBinding, gotBinding, cmpopts.IgnoreFields(pathBindingAnnotation{}, "DetailedTracingAttributes", "PathFmt", "QueryParams", "Substitutions")); diff != "" {
 						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
@@ -470,19 +470,17 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 func TestAnnotateSampleInfo(t *testing.T) {
 	field := api.NewTestField("name").
 		WithType(api.TypezString).
-		WithResourceNamePattern(&api.ResourceNamePattern{
-			Segments: []api.ResourceNameSegment{
-				{Literal: "projects"},
-				{Variable: "project"},
-			},
-		})
+		WithResourceNamePattern(api.NewTestResourceNamePattern(
+			api.NewResourceNameSegment("projects", ""),
+			api.NewResourceNameSegment("", "project"),
+		))
 	message := api.NewTestMessage("TestMessage").
 		WithPackage("test.v1").
 		WithFields(field)
 	method := api.NewTestMethod("TestMethod")
-	si := &api.SampleInfo{
-		ResourceNameField: field,
-	}
+	si := api.NewSampleInfoBuilder().
+		WithResourceNameField(field).
+		Build()
 
 	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	if err := api.CrossReference(model); err != nil {
@@ -495,7 +493,7 @@ func TestAnnotateSampleInfo(t *testing.T) {
 
 	codec.annotateSampleInfo(si, method)
 
-	got := si.Codec.(*sampleInfoAnnotation)
+	got := si.Codec().(*sampleInfoAnnotation)
 	want := &sampleInfoAnnotation{
 		StringParameters:   []string{"project_id"},
 		FormatResourceName: true,
@@ -515,7 +513,7 @@ func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 		"detailed-tracing-attributes": "true",
 	})
 	annotateModel(model, codec)
-	got := method.Codec.(*methodAnnotation)
+	got := method.Codec().(*methodAnnotation)
 	if !got.DetailedTracingAttributes {
 		t.Errorf("methodAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
 	}
@@ -600,7 +598,7 @@ func TestMethodUsesGrpc(t *testing.T) {
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()
 
-	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(&api.OperationInfo{ResponseTypeID: msg.ID, MetadataTypeID: msg.ID})
+	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(api.NewTestOperationInfo(msg.ID(), msg.ID()))
 
 	for _, test := range []struct {
 		name             string
@@ -693,7 +691,7 @@ func TestAnnotateMethodIdempotencyHook(t *testing.T) {
 	if methodWithHook == nil {
 		t.Fatalf("missing method .test.v1.ResourceService.Delete")
 	}
-	got := methodWithHook.Codec.(*methodAnnotation)
+	got := methodWithHook.Codec().(*methodAnnotation)
 	if !got.HasIdempotencyHook {
 		t.Errorf("got.HasIdempotencyHook = false, want true")
 	}
@@ -716,7 +714,7 @@ func TestAnnotateMethodIdempotencyHook(t *testing.T) {
 	if methodWithoutHook == nil {
 		t.Fatalf("missing method .test.v1.ResourceService.Delete")
 	}
-	gotDefault := methodWithoutHook.Codec.(*methodAnnotation)
+	gotDefault := methodWithoutHook.Codec().(*methodAnnotation)
 	if gotDefault.HasIdempotencyHook {
 		t.Errorf("gotDefault.HasIdempotencyHook = true, want false")
 	}
@@ -742,7 +740,7 @@ func TestAnnotateMethodExtensibleBuilders(t *testing.T) {
 	if deleteMethod == nil {
 		t.Fatal("missing method .test.v1.ResourceService.Delete")
 	}
-	if !deleteMethod.Codec.(*methodAnnotation).ExtensibleBuilder {
+	if !deleteMethod.Codec().(*methodAnnotation).ExtensibleBuilder {
 		t.Error("expected ExtensibleBuilder to be true for .test.v1.ResourceService.Delete")
 	}
 
@@ -750,7 +748,7 @@ func TestAnnotateMethodExtensibleBuilders(t *testing.T) {
 	if moveMethod == nil {
 		t.Fatal("missing method .test.v1.ResourceService.move")
 	}
-	if moveMethod.Codec.(*methodAnnotation).ExtensibleBuilder {
+	if moveMethod.Codec().(*methodAnnotation).ExtensibleBuilder {
 		t.Error("expected ExtensibleBuilder to be false for .test.v1.ResourceService.move")
 	}
 }

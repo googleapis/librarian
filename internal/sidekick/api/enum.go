@@ -14,54 +14,127 @@
 
 package api
 
+import "slices"
+
 // Enum defines a message used in request/response handling.
 type Enum struct {
-	// Documentation for the message.
-	Documentation string
-	// Name of the attribute.
-	Name string
-	// ID is a unique identifier.
-	ID string
+	// documentation for the message.
+	documentation string
+	// name of the attribute.
+	name string
+	// id is a unique identifier.
+	id string
 	// Some source specifications allow marking enums as deprecated.
-	Deprecated bool
-	// Values associated with the Enum.
-	Values []*EnumValue
+	deprecated bool
+	// values associated with the Enum.
+	values []*EnumValue
 	// The unique integer values, some enums have multiple aliases for the
 	// same number (e.g. `enum X { a = 0, b = 0, c = 1 }`).
-	UniqueNumberValues []*EnumValue
-	// ValuesForExamples contains a subset of values suitable for use in generated samples.
+	uniqueNumberValues []*EnumValue
+	// valuesForExamples contains a subset of values suitable for use in generated samples.
 	// e.g. non-deprecated, non-zero values.
-	ValuesForExamples []*SampleValue
-	// Parent returns the ancestor of this node, if any.
-	Parent *Message
+	valuesForExamples []*SampleValue
+	// parent returns the ancestor of this node, if any.
+	parent *Message
 	// The Protobuf package this enum belongs to.
-	Package string
+	packagez string
 	// Language specific annotations.
-	Codec any
+	codec any
 }
+
+// Documentation returns the documentation for the enum.
+func (e *Enum) Documentation() string { return e.documentation }
+
+// Name returns the name of the enum.
+func (e *Enum) Name() string { return e.name }
+
+// ID returns the unique identifier of the enum.
+func (e *Enum) ID() string { return e.id }
+
+// Deprecated returns whether the enum is deprecated.
+func (e *Enum) Deprecated() bool { return e.deprecated }
+
+// Values returns the values associated with the enum.
+func (e *Enum) Values() []*EnumValue { return slices.Clone(e.values) }
+
+// UniqueNumberValues returns the enum values with unique integer numbers.
+func (e *Enum) UniqueNumberValues() []*EnumValue { return slices.Clone(e.uniqueNumberValues) }
+
+// ValuesForExamples returns the subset of enum values suitable for generated samples.
+func (e *Enum) ValuesForExamples() []*SampleValue { return slices.Clone(e.valuesForExamples) }
+
+// Parent returns the parent [Message] of this enum, if any.
+func (e *Enum) Parent() *Message { return e.parent }
+
+// Package returns the package this enum belongs to.
+func (e *Enum) Package() string { return e.packagez }
+
+// Codec returns the language-specific annotations.
+func (e *Enum) Codec() any { return e.codec }
+
+// SetAnnotations sets the language-specific annotations.
+func (e *Enum) SetAnnotations(codec any) { e.codec = codec }
 
 // EnumValue defines a value in an Enum.
 type EnumValue struct {
-	// Documentation for the message.
-	Documentation string
-	// Name of the attribute.
-	Name string
-	// ID is a unique identifier.
-	ID string
+	// documentation for the message.
+	documentation string
+	// name of the attribute.
+	name string
+	// id is a unique identifier.
+	id string
 	// Some source specifications allow marking enum values as deprecated.
-	Deprecated bool
-	// Number of the attribute.
-	Number int32
-	// Parent returns the ancestor of this node, if any.
-	Parent *Enum
+	deprecated bool
+	// number of the attribute.
+	number int32
+	// parent returns the ancestor of this node, if any.
+	parent *Enum
 	// Language specific annotations.
-	Codec any
+	codec any
 }
+
+// Documentation returns the documentation for the enum value.
+func (v *EnumValue) Documentation() string { return v.documentation }
+
+// Name returns the name of the enum value.
+func (v *EnumValue) Name() string { return v.name }
+
+// ID returns the unique identifier of the enum value.
+func (v *EnumValue) ID() string { return v.id }
+
+// Deprecated returns whether the enum value is deprecated.
+func (v *EnumValue) Deprecated() bool { return v.deprecated }
+
+// Number returns the integer value of the enum value.
+func (v *EnumValue) Number() int32 { return v.number }
+
+// Parent returns the parent [Enum] of this value.
+func (v *EnumValue) Parent() *Enum { return v.parent }
+
+// Codec returns the language-specific annotations.
+func (v *EnumValue) Codec() any { return v.codec }
+
+// SetAnnotations sets the language-specific annotations.
+func (v *EnumValue) SetAnnotations(codec any) { v.codec = codec }
 
 // SampleValue represents a value used in a sample.
 type SampleValue struct {
 	// The enum value.
-	EnumValue *EnumValue
+	enumValue *EnumValue
 	// The index of the value in the sample list (0-based).
-	Index int
+	index int
 }
+
+// NewSampleValue creates a new [SampleValue].
+func NewSampleValue(enumValue *EnumValue, index int) *SampleValue {
+	return &SampleValue{
+		enumValue: enumValue,
+		index:     index,
+	}
+}
+
+// EnumValue returns the [EnumValue] for this sample value.
+func (s *SampleValue) EnumValue() *EnumValue { return s.enumValue }
+
+// Index returns the 0-based index of the value in the sample list.
+func (s *SampleValue) Index() int { return s.index }

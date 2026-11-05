@@ -22,9 +22,7 @@ import (
 
 func TestBuildHeuristicVocabulary(t *testing.T) {
 	newAIPMethod := func(name string, pt *PathTemplate) *Method {
-		m := NewTestMethod(name).WithPathTemplate(pt)
-		m.IsAIPStandard = true
-		return m
+		return NewTestMethod(name).WithPathTemplate(pt).WithIsAIPStandard(true)
 	}
 
 	for _, test := range []struct {

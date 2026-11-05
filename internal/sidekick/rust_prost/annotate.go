@@ -69,26 +69,26 @@ func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error
 		IncludeFile:       codec.IncludeFile,
 		UnusedTypes:       codec.UnusedTypes,
 	}
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		codec.annotateService(s)
 	}
-	model.Codec = annotations
+	model.SetAnnotations(annotations)
 	return nil
 }
 
 func (codec *codec) annotateService(service *api.Service) {
 	annotations := &serviceAnnotations{
-		ID: strings.TrimPrefix(service.ID, "."),
+		ID: strings.TrimPrefix(service.ID(), "."),
 	}
-	for _, method := range service.Methods {
+	for _, method := range service.Methods() {
 		codec.annotateMethod(method)
 	}
-	service.Codec = annotations
+	service.SetAnnotations(annotations)
 }
 
 func (codec *codec) annotateMethod(method *api.Method) {
 	annotations := &methodAnnotations{
-		ID: strings.TrimPrefix(method.ID, "."),
+		ID: strings.TrimPrefix(method.ID(), "."),
 	}
-	method.Codec = annotations
+	method.SetAnnotations(annotations)
 }

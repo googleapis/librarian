@@ -61,25 +61,25 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *con
 	for _, api := range lib.APIs {
 		ownedPackages[toPackageName(api.Path)] = true
 	}
-	for _, s := range model.Services {
-		ownedPackages[s.Package] = true
+	for _, s := range model.Services() {
+		ownedPackages[s.Package()] = true
 	}
-	for _, m := range model.Messages {
-		ownedPackages[m.Package] = true
+	for _, m := range model.Messages() {
+		ownedPackages[m.Package()] = true
 	}
-	for _, e := range model.Enums {
-		ownedPackages[e.Package] = true
+	for _, e := range model.Enums() {
+		ownedPackages[e.Package()] = true
 	}
 	// Identify all dependencies.
 	var targetIDs []string
-	for _, s := range model.Services {
-		targetIDs = append(targetIDs, s.ID)
+	for _, s := range model.Services() {
+		targetIDs = append(targetIDs, s.ID())
 	}
-	for _, m := range model.Messages {
-		targetIDs = append(targetIDs, m.ID)
+	for _, m := range model.Messages() {
+		targetIDs = append(targetIDs, m.ID())
 	}
-	for _, e := range model.Enums {
-		targetIDs = append(targetIDs, e.ID)
+	for _, e := range model.Enums() {
+		targetIDs = append(targetIDs, e.ID())
 	}
 	allDeps, err := api.FindDependencies(model, targetIDs)
 	if err != nil {
@@ -90,11 +90,11 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *con
 	for id := range allDeps {
 		var pkg string
 		if s := model.Service(id); s != nil {
-			pkg = s.Package
+			pkg = s.Package()
 		} else if m := model.Message(id); m != nil {
-			pkg = m.Package
+			pkg = m.Package()
 		} else if e := model.Enum(id); e != nil {
-			pkg = e.Package
+			pkg = e.Package()
 		}
 		if pkg != "" && !ownedPackages[pkg] {
 			externalPackages[pkg] = true
