@@ -31,181 +31,195 @@ func TestExamples(t *testing.T) {
 	}{
 		{
 			".test.TestService.Example1",
-			[]*api.RoutingInfo{{
-				Name: "app_profile_id",
-				Variants: []*api.RoutingInfoVariant{
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("app_profile_id").
-						WithMatchingSegments("**").
-						Build(),
-				},
-			}},
+			[]*api.RoutingInfo{
+				api.NewRoutingInfoBuilder().
+					WithName("app_profile_id").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("app_profile_id").
+							WithMatchingSegments("**").
+							Build(),
+					).
+					Build(),
+			},
 		},
 		{
 			".test.TestService.Example2",
-			[]*api.RoutingInfo{{
-				Name: "routing_id",
-				Variants: []*api.RoutingInfoVariant{
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("app_profile_id").
-						WithMatchingSegments("**").
-						Build(),
-				},
-			}},
+			[]*api.RoutingInfo{
+				api.NewRoutingInfoBuilder().
+					WithName("routing_id").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("app_profile_id").
+							WithMatchingSegments("**").
+							Build(),
+					).
+					Build(),
+			},
 		},
 		{
 			".test.TestService.Example3a",
-			[]*api.RoutingInfo{{
-				Name: "table_name",
-				Variants: []*api.RoutingInfoVariant{
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("table_name").
-						WithMatchingSegments("projects", "*", "instances", "*", "**").
-						Build(),
-				},
-			}},
+			[]*api.RoutingInfo{
+				api.NewRoutingInfoBuilder().
+					WithName("table_name").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*", "instances", "*", "**").
+							Build(),
+					).
+					Build(),
+			},
 		},
 		{
 			".test.TestService.Example3b",
-			[]*api.RoutingInfo{{
-				Name: "table_name",
-				Variants: []*api.RoutingInfoVariant{
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("table_name").
-						WithMatchingSegments("regions", "*", "zones", "*", "**").
-						Build(),
-				},
-			}},
+			[]*api.RoutingInfo{
+				api.NewRoutingInfoBuilder().
+					WithName("table_name").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("regions", "*", "zones", "*", "**").
+							Build(),
+					).
+					Build(),
+			},
 		},
 		{
 			".test.TestService.Example3c",
-			[]*api.RoutingInfo{{
-				Name: "table_name",
-				Variants: []*api.RoutingInfoVariant{
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("table_name").
-						WithMatchingSegments("projects", "*", "instances", "*", "**").
-						Build(),
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("table_name").
-						WithMatchingSegments("regions", "*", "zones", "*", "**").
-						Build(),
-				},
-			}},
+			[]*api.RoutingInfo{
+				api.NewRoutingInfoBuilder().
+					WithName("table_name").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*", "instances", "*", "**").
+							Build(),
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("regions", "*", "zones", "*", "**").
+							Build(),
+					).
+					Build(),
+			},
 		},
 		{
 			".test.TestService.Example4",
-			[]*api.RoutingInfo{{
-				Name: "routing_id",
-				Variants: []*api.RoutingInfoVariant{
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("table_name").
-						WithMatchingSegments("projects", "*").
-						WithSuffixSegments("**").
-						Build(),
-				},
-			}},
+			[]*api.RoutingInfo{
+				api.NewRoutingInfoBuilder().
+					WithName("routing_id").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*").
+							WithSuffixSegments("**").
+							Build(),
+					).
+					Build(),
+			},
 		},
 		{
 			".test.TestService.Example5",
-			[]*api.RoutingInfo{{
-				Name: "routing_id",
-				Variants: []*api.RoutingInfoVariant{
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("table_name").
-						WithMatchingSegments("projects", "*", "instances", "*").
-						WithSuffixSegments("**").
-						Build(),
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("table_name").
-						WithMatchingSegments("projects", "*").
-						WithSuffixSegments("**").
-						Build(),
-				},
-			}},
+			[]*api.RoutingInfo{
+				api.NewRoutingInfoBuilder().
+					WithName("routing_id").
+					WithVariants(
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*", "instances", "*").
+							WithSuffixSegments("**").
+							Build(),
+						api.NewRoutingInfoVariantBuilder().
+							WithFieldPath("table_name").
+							WithMatchingSegments("projects", "*").
+							WithSuffixSegments("**").
+							Build(),
+					).
+					Build(),
+			},
 		},
 		{
 			".test.TestService.Example6a",
 			[]*api.RoutingInfo{
-				{
-					Name: "instance_id",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("instance_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("table_name").
 							WithPrefixSegments("projects", "*").
 							WithMatchingSegments("instances", "*").
 							WithSuffixSegments("**").
 							Build(),
-					},
-				},
-				{
-					Name: "project_id",
-					Variants: []*api.RoutingInfoVariant{
+					).
+					Build(),
+				api.NewRoutingInfoBuilder().
+					WithName("project_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("table_name").
 							WithMatchingSegments("projects", "*").
 							WithSuffixSegments("instances", "*", "**").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 		},
 		{
 			".test.TestService.Example6b",
 			[]*api.RoutingInfo{
-				{
-					Name: "instance_id",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("instance_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("table_name").
 							WithPrefixSegments("projects", "*").
 							WithMatchingSegments("instances", "*").
 							WithSuffixSegments("**").
 							Build(),
-					},
-				},
-				{
-					Name: "project_id",
-					Variants: []*api.RoutingInfoVariant{
+					).
+					Build(),
+				api.NewRoutingInfoBuilder().
+					WithName("project_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("table_name").
 							WithMatchingSegments("projects", "*").
 							WithSuffixSegments("**").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 		},
 		{
 			".test.TestService.Example7",
 			[]*api.RoutingInfo{
-				{
-					Name: "project_id",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("project_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("table_name").
 							WithMatchingSegments("projects", "*").
 							WithSuffixSegments("**").
 							Build(),
-					},
-				},
-				{
-					Name: "routing_id",
-					Variants: []*api.RoutingInfoVariant{
+					).
+					Build(),
+				api.NewRoutingInfoBuilder().
+					WithName("routing_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("app_profile_id").
 							WithMatchingSegments("**").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 		},
 		{
 			".test.TestService.Example8",
 			[]*api.RoutingInfo{
-				{
-					Name: "routing_id",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("routing_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("app_profile_id").
 							WithMatchingSegments("**").
@@ -220,16 +234,16 @@ func TestExamples(t *testing.T) {
 							WithMatchingSegments("projects", "*").
 							WithSuffixSegments("**").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 		},
 		{
 			".test.TestService.Example9",
 			[]*api.RoutingInfo{
-				{
-					Name: "routing_id",
-					Variants: []*api.RoutingInfoVariant{
+				api.NewRoutingInfoBuilder().
+					WithName("routing_id").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("app_profile_id").
 							WithPrefixSegments("profiles").
@@ -244,11 +258,11 @@ func TestExamples(t *testing.T) {
 							WithMatchingSegments("projects", "*").
 							WithSuffixSegments("**").
 							Build(),
-					},
-				},
-				{
-					Name: "table_location",
-					Variants: []*api.RoutingInfoVariant{
+					).
+					Build(),
+				api.NewRoutingInfoBuilder().
+					WithName("table_location").
+					WithVariants(
 						api.NewRoutingInfoVariantBuilder().
 							WithFieldPath("table_name").
 							WithMatchingSegments("regions", "*", "zones", "*").
@@ -260,8 +274,8 @@ func TestExamples(t *testing.T) {
 							WithMatchingSegments("instances", "*").
 							WithSuffixSegments("tables", "*").
 							Build(),
-					},
-				},
+					).
+					Build(),
 			},
 		},
 	} {
@@ -285,20 +299,20 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 	for _, test := range []struct {
 		fieldPath string
 		path      string
-		want      api.RoutingInfo
+		want      *api.RoutingInfo
 	}{
 		{
 			"default",
 			"",
-			api.RoutingInfo{
-				Name: "default",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("default").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("default").
 						WithMatchingSegments("**").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			// AIP-4222: An empty google.api.routing annotation is acceptable.
@@ -307,31 +321,31 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			// google.api.http annotation.
 			"",
 			"",
-			api.RoutingInfo{
-				Name: "",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath([]string{}...).
 						WithMatchingSegments([]string{}...).
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			// AIP-4222: It is acceptable to omit the pattern in the resource ID
 			// segment, `{parent}` for example, is equivalent to `{parent=*}`.
 			"parent",
 			"projects/{parent}",
-			api.RoutingInfo{
-				Name: "parent",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("parent").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("parent").
 						WithPrefixSegments("projects").
 						WithMatchingSegments("*").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			// AIP-4222: It is acceptable to omit the path_template field
@@ -340,126 +354,126 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			// the pattern `**`.
 			"parent",
 			"",
-			api.RoutingInfo{
-				Name: "parent",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("parent").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("parent").
 						WithMatchingSegments("**").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			"field.child",
 			"",
-			api.RoutingInfo{
-				Name: "field.child",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("field.child").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("field", "child").
 						WithMatchingSegments("**").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			"default",
 			"{**}",
-			api.RoutingInfo{
-				Name: "default",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("default").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("default").
 						WithMatchingSegments("**").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			"default",
 			"{routing=**}",
-			api.RoutingInfo{
-				Name: "routing",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("routing").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("default").
 						WithMatchingSegments("**").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			"default",
 			"{routing=a/*/b/**}",
-			api.RoutingInfo{
-				Name: "routing",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("routing").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("default").
 						WithMatchingSegments("a", "*", "b", "**").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			"default",
 			"p/*/q/*/{routing=a/*/b/**}",
-			api.RoutingInfo{
-				Name: "routing",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("routing").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("default").
 						WithMatchingSegments("a", "*", "b", "**").
 						WithPrefixSegments("p", "*", "q", "*").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			"default",
 			"p/*/q/*/{routing=a/*/b/*}/s/*/u/*/v/**",
-			api.RoutingInfo{
-				Name: "routing",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("routing").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("default").
 						WithMatchingSegments("a", "*", "b", "*").
 						WithPrefixSegments("p", "*", "q", "*").
 						WithSuffixSegments("s", "*", "u", "*", "v", "**").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			"default",
 			"p/*/q/*/{routing=a/*/b/**}/s/*/u/*/v/*",
-			api.RoutingInfo{
-				Name: "routing",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("routing").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("default").
 						WithMatchingSegments("a", "*", "b", "**").
 						WithPrefixSegments("p", "*", "q", "*").
 						WithSuffixSegments("s", "*", "u", "*", "v", "*").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 		{
 			"field.sub_field.child",
 			"p/*/q/*/{routing=a/*/b/*}/s/*/u/*/v/**",
-			api.RoutingInfo{
-				Name: "routing",
-				Variants: []*api.RoutingInfoVariant{
+			api.NewRoutingInfoBuilder().
+				WithName("routing").
+				WithVariants(
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("field", "sub_field", "child").
 						WithMatchingSegments("a", "*", "b", "*").
 						WithPrefixSegments("p", "*", "q", "*").
 						WithSuffixSegments("s", "*", "u", "*", "v", "**").
 						Build(),
-				},
-			},
+				).
+				Build(),
 		},
 	} {
 		t.Run(fmt.Sprintf("%s:%s", test.fieldPath, test.path), func(t *testing.T) {
@@ -467,7 +481,7 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(&test.want, got, apitest.AllowUnexported()); diff != "" {
+			if diff := cmp.Diff(test.want, got, apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

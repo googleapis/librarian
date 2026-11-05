@@ -37,7 +37,7 @@ import (
 //	would be e.g. implicitly from the google.api.http annotation.
 type RoutingInfo struct {
 	// The name in `x-goog-request-params`.
-	Name string
+	name string
 	// Group the possible variants for the given name.
 	//
 	// The variants are parsed into the reverse order of definition. AIP-4222
@@ -49,7 +49,35 @@ type RoutingInfo struct {
 	//
 	// Reversing the order allows us to implement "the first match wins". That
 	// is easier and more efficient in most languages.
-	Variants []*RoutingInfoVariant
+	variants []*RoutingInfoVariant
+}
+
+// Name returns the name in `x-goog-request-params`.
+func (r *RoutingInfo) Name() string {
+	return r.name
+}
+
+// Variants returns the possible variants for the given name.
+func (r *RoutingInfo) Variants() []*RoutingInfoVariant {
+	return slices.Clone(r.variants)
+}
+
+// Clone returns a copy of the RoutingInfo with cloned variants without their codec annotations.
+func (r *RoutingInfo) Clone() *RoutingInfo {
+	if r == nil {
+		return nil
+	}
+	var variants []*RoutingInfoVariant
+	if r.variants != nil {
+		variants = make([]*RoutingInfoVariant, len(r.variants))
+		for i, v := range r.variants {
+			variants[i] = v.Clone()
+		}
+	}
+	return &RoutingInfo{
+		name:     r.name,
+		variants: variants,
+	}
 }
 
 // RoutingInfoVariant represents the routing information stripped of its name.

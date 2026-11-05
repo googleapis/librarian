@@ -106,3 +106,100 @@ func TestRoutingInfoVariantClone(t *testing.T) {
 		t.Errorf("Clone() mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestRoutingInfo(t *testing.T) {
+	v1 := NewRoutingInfoVariantBuilder().
+		WithFieldPath("table_name").
+		WithMatchingSegments("projects", "*").
+		Build()
+	v2 := NewRoutingInfoVariantBuilder().
+		WithFieldPath("app_profile_id").
+		WithMatchingSegments("Profiles", "*").
+		Build()
+
+	got := NewRoutingInfoBuilder().
+		WithName("project_id").
+		WithVariants(v1).
+		WithVariant(v2).
+		Build()
+
+	want := &RoutingInfo{
+		name:     "project_id",
+		variants: []*RoutingInfoVariant{v1, v2},
+	}
+	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if got.Name() != want.name {
+		t.Errorf("Name() = %q, want %q", got.Name(), want.name)
+	}
+	if diff := cmp.Diff(want.variants, got.Variants(), allowUnexported()); diff != "" {
+		t.Errorf("Variants() mismatch (-want +got):\n%s", diff)
+	}
+
+	got.Variants()[0] = nil
+	if got.Variants()[0] != v1 {
+		t.Errorf("Variants() getter should return a defensive copy")
+	}
+}
+
+func TestRoutingInfoClone(t *testing.T) {
+	var nilRouting *RoutingInfo
+	if got := nilRouting.Clone(); got != nil {
+		t.Errorf("nilRouting.Clone() = %v, want nil", got)
+	}
+
+	v1 := NewRoutingInfoVariantBuilder().
+		WithFieldPath("table_name").
+		WithMatchingSegments("projects", "*").
+		Build()
+	v1.SetAnnotations("v1-codec")
+	orig := NewRoutingInfoBuilder().
+		WithName("project_id").
+		WithVariant(v1).
+		Build()
+
+	got := orig.Clone()
+	want := &RoutingInfo{
+		name: "project_id",
+		variants: []*RoutingInfoVariant{
+			{
+				fieldPath: []string{"table_name"},
+				matching:  RoutingPathSpec{segments: []string{"projects", "*"}},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
+		t.Errorf("Clone() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestRoutingInfoCombo(t *testing.T) {
+	v1 := NewRoutingInfoVariantBuilder().WithFieldPath("table_name").Build()
+	gotItem := NewRoutingInfoComboItem("project_id", v1)
+	wantItem := &RoutingInfoComboItem{
+		name:    "project_id",
+		variant: v1,
+	}
+	if diff := cmp.Diff(wantItem, gotItem, allowUnexported()); diff != "" {
+		t.Errorf("item mismatch (-want +got):\n%s", diff)
+	}
+	if gotItem.Name() != wantItem.name || gotItem.Variant() != v1 {
+		t.Errorf("unexpected RoutingInfoComboItem getters: (%q, %v)", gotItem.Name(), gotItem.Variant())
+	}
+
+	gotCombo := NewRoutingInfoCombo(gotItem)
+	wantCombo := &RoutingInfoCombo{
+		items: []*RoutingInfoComboItem{gotItem},
+	}
+	if diff := cmp.Diff(wantCombo, gotCombo, allowUnexported()); diff != "" {
+		t.Errorf("combo mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(wantCombo.items, gotCombo.Items(), allowUnexported()); diff != "" {
+		t.Errorf("Items() mismatch (-want +got):\n%s", diff)
+	}
+	gotCombo.Items()[0] = nil
+	if gotCombo.Items()[0] != gotItem {
+		t.Errorf("Items() getter should return a defensive copy")
+	}
+}
