@@ -82,10 +82,10 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 				WithMatch().
 				Build()).
 			Build()).
-		WithQueryParameters()
-	want.SourceServiceID = ".google.cloud.location.Locations"
-	want.InputTypeID = ".google.cloud.location.GetLocationRequest"
-	want.OutputTypeID = ".google.cloud.location.Location"
+		WithQueryParameters().
+		WithSourceServiceID(".google.cloud.location.Locations").
+		WithInputTypeID(".google.cloud.location.GetLocationRequest").
+		WithOutputTypeID(".google.cloud.location.Location")
 	apitest.CheckMethod(t, service, "GetLocation", want)
 }
 
@@ -148,10 +148,10 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 			WithVerb("getIamPolicy").
 			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	want.SourceServiceID = ".google.iam.v1.IAMPolicy"
-	want.InputTypeID = ".google.iam.v1.GetIamPolicyRequest"
-	want.OutputTypeID = ".google.iam.v1.Policy"
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".google.iam.v1.IAMPolicy").
+		WithInputTypeID(".google.iam.v1.GetIamPolicyRequest").
+		WithOutputTypeID(".google.iam.v1.Policy")
 	apitest.CheckMethod(t, service, "GetIamPolicy", want)
 }
 
@@ -219,11 +219,11 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 				Build()).
 			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	want.SourceServiceID = ".google.longrunning.Operations"
-	want.InputTypeID = ".google.longrunning.GetOperationRequest"
-	want.OutputTypeID = ".google.longrunning.Operation"
-	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".google.longrunning.Operations").
+		WithInputTypeID(".google.longrunning.GetOperationRequest").
+		WithOutputTypeID(".google.longrunning.Operation").
+		WithRawSignatures(api.NewTestMethodSignature("name"))
 	apitest.CheckMethod(t, service, "GetOperation", want)
 }
 
@@ -303,11 +303,11 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			Build()).
 		WithQueryParameters().
 		WithBodyFieldPath("*").
-		ReturnEmpty()
-	want.SourceServiceID = ".google.longrunning.Operations"
-	want.InputTypeID = ".google.longrunning.CancelOperationRequest"
-	want.OutputTypeID = ".google.protobuf.Empty"
-	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
+		ReturnEmpty().
+		WithSourceServiceID(".google.longrunning.Operations").
+		WithInputTypeID(".google.longrunning.CancelOperationRequest").
+		WithOutputTypeID(".google.protobuf.Empty").
+		WithRawSignatures(api.NewTestMethodSignature("name"))
 	apitest.CheckMethod(t, service, "CancelOperation", want)
 	got := test.Message(".google.protobuf.Empty")
 	if got == nil {
@@ -380,9 +380,9 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 				WithMatch().
 				Build()).
 			Build()).
-		WithQueryParameters()
-	want.SourceServiceID = ".test.LroService"
-	want.InputTypeID = ".google.longrunning.GetOperationRequest"
-	want.OutputTypeID = ".google.longrunning.Operation"
+		WithQueryParameters().
+		WithSourceServiceID(".test.LroService").
+		WithInputTypeID(".google.longrunning.GetOperationRequest").
+		WithOutputTypeID(".google.longrunning.Operation")
 	apitest.CheckMethod(t, service, "GetOperation", want)
 }

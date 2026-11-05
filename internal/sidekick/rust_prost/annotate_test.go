@@ -117,7 +117,7 @@ func TestMethodAnnotations(t *testing.T) {
 	if got == nil {
 		t.Fatalf("cannot find service %s", ".google.cloud.workflows.v1.Workflows.GetWorkflow")
 	}
-	if diff := cmp.Diff(want, got.Codec); diff != "" {
+	if diff := cmp.Diff(want, got.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

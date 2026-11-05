@@ -62,6 +62,25 @@ func IgnoreMessageFields(names ...string) cmp.Option {
 	}, cmp.Ignore())
 }
 
+// IgnoreMethodFields returns a [cmp.Option] that ignores the named unexported
+// fields on [api.Method].
+func IgnoreMethodFields(names ...string) cmp.Option {
+	set := make(map[string]bool, len(names))
+	for _, n := range names {
+		set["."+n] = true
+	}
+	methodType := reflect.TypeFor[api.Method]()
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != methodType {
+			return false
+		}
+		return set[p.Last().String()]
+	}, cmp.Ignore())
+}
+
 // AllowUnexported returns a [cmp.Option] that permits comparing unexported
 // fields on all read-only [api] AST and metadata structs.
 func AllowUnexported() cmp.Option {
@@ -72,6 +91,7 @@ func AllowUnexported() cmp.Option {
 		api.Field{},
 		api.Map{},
 		api.Message{},
+		api.Method{},
 		api.MethodSignature{},
 		api.OneOf{},
 		api.OperationInfo{},
@@ -90,6 +110,7 @@ func AllowUnexported() cmp.Option {
 		api.RoutingInfoComboItem{},
 		api.RoutingInfoVariant{},
 		api.RoutingPathSpec{},
+		api.SampleInfo{},
 		api.SampleValue{},
 		api.TargetResource{},
 	)
@@ -175,12 +196,12 @@ func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 	if diff := cmp.Diff(want, got, AllowUnexported(), cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	less := func(a, b *api.Method) bool { return a.Name < b.Name }
+	less := func(a, b *api.Method) bool { return a.Name() < b.Name() }
 	if diff := cmp.Diff(want.Methods, got.Methods,
 		AllowUnexported(),
 		cmpopts.SortSlices(less),
 		IgnoreFieldNames("parent"),
-		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
+		IgnoreMethodFields("service", "model"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -191,7 +212,7 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 	t.Helper()
 	findMethod := func(name string) (*api.Method, bool) {
 		for _, method := range service.Methods {
-			if method.Name == name {
+			if method.Name() == name {
 				return method, true
 			}
 		}
@@ -204,7 +225,7 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 	if diff := cmp.Diff(want, got,
 		AllowUnexported(),
 		IgnoreFieldNames("parent"),
-		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
+		IgnoreMethodFields("service", "model"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

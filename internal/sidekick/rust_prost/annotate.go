@@ -88,7 +88,7 @@ func (codec *codec) annotateService(service *api.Service) {
 
 func (codec *codec) annotateMethod(method *api.Method) {
 	annotations := &methodAnnotations{
-		ID: strings.TrimPrefix(method.ID, "."),
+		ID: strings.TrimPrefix(method.ID(), "."),
 	}
-	method.Codec = annotations
+	method.SetAnnotations(annotations)
 }

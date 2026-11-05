@@ -72,7 +72,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		model.PackageName = s.Package
 		model.serviceByID[s.ID] = s
 		for _, m := range s.Methods {
-			model.methodByID[m.ID] = m
+			model.methodByID[m.id] = m
 		}
 	}
 	for _, m := range messages {
@@ -372,10 +372,10 @@ func (s *Service) WithID(id string) *Service {
 // WithMethods adds methods to the service and updates their ID/Service.
 func (s *Service) WithMethods(methods ...*Method) *Service {
 	for _, m := range methods {
-		m.Service = s
+		m.service = s
 		// If method ID is generic/default, re-scope it to the service.
-		if strings.HasPrefix(m.ID, ".test.") || m.ID == "" {
-			m.ID = fmt.Sprintf("%s.%s", s.ID, m.Name)
+		if strings.HasPrefix(m.id, ".test.") || m.id == "" {
+			m.id = fmt.Sprintf("%s.%s", s.ID, m.name)
 		}
 	}
 	s.Methods = append(s.Methods, methods...)
@@ -403,36 +403,34 @@ func (s *Service) WithDefaultHost(host string) *Service {
 // NewTestMethod creates a method with defaults for testing.
 // Default package is "test" (implies ID .test.Name).
 func NewTestMethod(name string) *Method {
-	return &Method{
-		Name: name,
-		ID:   fmt.Sprintf(".%s.%s", "test", name),
-		PathInfo: &PathInfo{
-			bindings: []*PathBinding{{}},
-		},
-	}
+	return NewMethodBuilder().
+		WithName(name).
+		WithID(fmt.Sprintf(".%s.%s", "test", name)).
+		WithPathInfo(NewPathInfoBuilder().WithBindings(NewPathBindingBuilder().Build()).Build()).
+		Build()
 }
 
 // WithID overrides the method's ID.
 func (m *Method) WithID(id string) *Method {
-	m.ID = id
+	m.id = id
 	return m
 }
 
 // WithAPIVersion sets the APIVersion for the method.
 func (m *Method) WithAPIVersion(version string) *Method {
-	m.APIVersion = version
+	m.apiVersion = version
 	return m
 }
 
 // WithPathInfo sets the PathInfo for the method.
 func (m *Method) WithPathInfo(pathInfo *PathInfo) *Method {
-	m.PathInfo = pathInfo
+	m.pathInfo = pathInfo
 	return m
 }
 
 // WithRouting adds routing info to the method.
 func (m *Method) WithRouting(routing ...*RoutingInfo) *Method {
-	m.Routing = append(m.Routing, routing...)
+	m.routing = append(m.routing, routing...)
 	return m
 }
 
@@ -441,24 +439,24 @@ func (m *Method) WithAutoPopulated(fields ...*Field) *Method {
 	for _, f := range fields {
 		f.autoPopulated = true
 	}
-	m.AutoPopulated = append(m.AutoPopulated, fields...)
+	m.autoPopulated = append(m.autoPopulated, fields...)
 	return m
 }
 
 // WithDocumentation sets the documentation for the method.
 func (m *Method) WithDocumentation(doc string) *Method {
-	m.Documentation = doc
+	m.documentation = doc
 	return m
 }
 
 func (m *Method) ensureFirstBinding() *PathBinding {
-	if m.PathInfo == nil {
-		m.PathInfo = &PathInfo{}
+	if m.pathInfo == nil {
+		m.pathInfo = &PathInfo{}
 	}
-	if len(m.PathInfo.bindings) == 0 {
-		m.PathInfo.bindings = append(m.PathInfo.bindings, &PathBinding{})
+	if len(m.pathInfo.bindings) == 0 {
+		m.pathInfo.bindings = append(m.pathInfo.bindings, &PathBinding{})
 	}
-	return m.PathInfo.bindings[0]
+	return m.pathInfo.bindings[0]
 }
 
 // WithVerb sets the HTTP verb for the first binding.
@@ -470,9 +468,9 @@ func (m *Method) WithVerb(verb string) *Method {
 // WithInput sets the input type message for the method.
 // It sets both InputType and InputTypeID.
 func (m *Method) WithInput(msg *Message) *Method {
-	m.InputType = msg
+	m.inputType = msg
 	if msg != nil {
-		m.InputTypeID = msg.id
+		m.inputTypeID = msg.id
 	}
 	return m
 }
@@ -480,22 +478,22 @@ func (m *Method) WithInput(msg *Message) *Method {
 // WithOutput sets the output type message for the method.
 // It sets both OutputType and OutputTypeID.
 func (m *Method) WithOutput(msg *Message) *Method {
-	m.OutputType = msg
+	m.outputType = msg
 	if msg != nil {
-		m.OutputTypeID = msg.id
+		m.outputTypeID = msg.id
 	}
 	return m
 }
 
 // WithInputTypeID sets the input type ID for the method.
 func (m *Method) WithInputTypeID(id string) *Method {
-	m.InputTypeID = id
+	m.inputTypeID = id
 	return m
 }
 
 // WithOutputTypeID sets the output type ID for the method.
 func (m *Method) WithOutputTypeID(id string) *Method {
-	m.OutputTypeID = id
+	m.outputTypeID = id
 	return m
 }
 
@@ -508,20 +506,20 @@ func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
 // WithBindings sets the HTTP bindings for the method.
 // It initializes PathInfo if it is nil.
 func (m *Method) WithBindings(bindings ...*PathBinding) *Method {
-	if m.PathInfo == nil {
-		m.PathInfo = &PathInfo{}
+	if m.pathInfo == nil {
+		m.pathInfo = &PathInfo{}
 	}
-	m.PathInfo.bindings = bindings
+	m.pathInfo.bindings = bindings
 	return m
 }
 
 // WithBodyFieldPath sets the body field path for the method.
 // It initializes PathInfo if it is nil.
 func (m *Method) WithBodyFieldPath(path string) *Method {
-	if m.PathInfo == nil {
-		m.PathInfo = &PathInfo{}
+	if m.pathInfo == nil {
+		m.pathInfo = &PathInfo{}
 	}
-	m.PathInfo.bodyFieldPath = path
+	m.pathInfo.bodyFieldPath = path
 	return m
 }
 
@@ -538,61 +536,61 @@ func (m *Method) WithQueryParameters(params ...string) *Method {
 
 // WithSourceMethod defines mixin methods.
 func (m *Method) WithSourceMethod(source *Method) *Method {
-	m.WithOutput(source.OutputType).WithInput(source.InputType)
-	m.SourceService = source.Service
-	if m.SourceService != nil {
-		m.SourceServiceID = m.SourceService.ID
+	m.WithOutput(source.outputType).WithInput(source.inputType)
+	m.sourceService = source.service
+	if m.sourceService != nil {
+		m.sourceServiceID = m.sourceService.ID
 	}
-	m.PathInfo = source.PathInfo
+	m.pathInfo = source.pathInfo
 	return m
 }
 
 // WithSourceServiceID sets the source service ID for the method.
 func (m *Method) WithSourceServiceID(id string) *Method {
-	m.SourceServiceID = id
+	m.sourceServiceID = id
 	return m
 }
 
 // WithPagination sets the page token field for the request.
 func (m *Method) WithPagination(pageToken *Field) *Method {
-	m.IsList = true
-	m.Pagination = pageToken
+	m.isList = true
+	m.pagination = pageToken
 	return m
 }
 
 // WithOperationInfo sets the LRO information and flag.
 func (m *Method) WithOperationInfo(info *OperationInfo) *Method {
-	m.IsLRO = true
-	m.OperationInfo = info
+	m.isLRO = true
+	m.operationInfo = info
 	return m
 }
 
 // WithBidiStreaming sets the method as bidirectional streaming.
 func (m *Method) WithBidiStreaming() *Method {
-	m.ClientSideStreaming = true
-	m.ServerSideStreaming = true
+	m.clientSideStreaming = true
+	m.serverSideStreaming = true
 	return m
 }
 
 // WithServerSideStreaming sets the method as a server-side streaming
 // method. This method will not have client side streaming.
 func (m *Method) WithServerSideStreaming() *Method {
-	m.ClientSideStreaming = false
-	m.ServerSideStreaming = true
+	m.clientSideStreaming = false
+	m.serverSideStreaming = true
 	return m
 }
 
 // WithClientSideStreaming sets the method as a client-side streaming
 // method. This method will not have server-side streaming.
 func (m *Method) WithClientSideStreaming() *Method {
-	m.ClientSideStreaming = true
-	m.ServerSideStreaming = false
+	m.clientSideStreaming = true
+	m.serverSideStreaming = false
 	return m
 }
 
 // WithDiscoveryLro sets the discovery LRO information.
 func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
-	m.DiscoveryLro = info
+	m.discoveryLro = info
 	return m
 }
 
@@ -601,13 +599,13 @@ func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
 // A method signature typically maps to an overloads with a subset of
 // the request fields.
 func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
-	if m.InputType == nil {
-		panic(fmt.Sprintf("missing InputType for method: %s", m.Name))
+	if m.inputType == nil {
+		panic(fmt.Sprintf("missing InputType for method: %s", m.name))
 	}
 	for _, s := range signatures {
 		s.method = m
 		for _, name := range s.names {
-			for _, f := range m.InputType.fields {
+			for _, f := range m.inputType.fields {
 				if name != f.name {
 					continue
 				}
@@ -615,26 +613,119 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 				break
 			}
 		}
-		m.Signatures = append(m.Signatures, s)
+		m.signatures = append(m.signatures, s)
 	}
+	return m
+}
+
+// WithRawSignatures sets the method signatures directly without resolving fields.
+func (m *Method) WithRawSignatures(signatures ...*MethodSignature) *Method {
+	if m.signatures == nil {
+		m.signatures = []*MethodSignature{}
+	}
+	m.signatures = append(m.signatures, signatures...)
 	return m
 }
 
 // WithDeprecated sets whether the method is deprecated.
 func (m *Method) WithDeprecated(deprecated bool) *Method {
-	m.Deprecated = deprecated
+	m.deprecated = deprecated
 	return m
 }
 
 // WithSampleInfo sets the sample info for the method.
 func (m *Method) WithSampleInfo(sampleInfo *SampleInfo) *Method {
-	m.SampleInfo = sampleInfo
+	m.sampleInfo = sampleInfo
+	return m
+}
+
+// WithService sets the service for the method.
+func (m *Method) WithService(service *Service) *Method {
+	m.service = service
+	return m
+}
+
+// WithModel sets the API model for the method.
+func (m *Method) WithModel(model *API) *Method {
+	m.model = model
+	return m
+}
+
+// WithIsLroPoller marks the method as an LRO poller.
+func (m *Method) WithIsLroPoller() *Method {
+	m.isLroPoller = true
+	return m
+}
+
+// WithIsSimple sets whether the method is simple.
+func (m *Method) WithIsSimple(isSimple bool) *Method {
+	m.isSimple = isSimple
+	return m
+}
+
+// WithIsLRO sets whether the method is an LRO.
+func (m *Method) WithIsLRO(isLRO bool) *Method {
+	m.isLRO = isLRO
+	return m
+}
+
+// WithIsList sets whether the method is a list method.
+func (m *Method) WithIsList(isList bool) *Method {
+	m.isList = isList
+	return m
+}
+
+// WithIsStreaming sets whether the method is streaming.
+func (m *Method) WithIsStreaming(isStreaming bool) *Method {
+	m.isStreaming = isStreaming
+	return m
+}
+
+// WithIsAIPStandard sets whether the method is an AIP standard method.
+func (m *Method) WithIsAIPStandard(isStandard bool) *Method {
+	m.isAIPStandard = isStandard
+	return m
+}
+
+// WithIsAIPStandardGet sets whether the method is an AIP standard get method.
+func (m *Method) WithIsAIPStandardGet(isGet bool) *Method {
+	m.isAIPStandardGet = isGet
+	return m
+}
+
+// WithIsAIPStandardDelete sets whether the method is an AIP standard delete method.
+func (m *Method) WithIsAIPStandardDelete(isDelete bool) *Method {
+	m.isAIPStandardDelete = isDelete
+	return m
+}
+
+// WithIsAIPStandardUndelete sets whether the method is an AIP standard undelete method.
+func (m *Method) WithIsAIPStandardUndelete(isUndelete bool) *Method {
+	m.isAIPStandardUndelete = isUndelete
+	return m
+}
+
+// WithIsAIPStandardCreate sets whether the method is an AIP standard create method.
+func (m *Method) WithIsAIPStandardCreate(isCreate bool) *Method {
+	m.isAIPStandardCreate = isCreate
+	return m
+}
+
+// WithIsAIPStandardUpdate sets whether the method is an AIP standard update method.
+func (m *Method) WithIsAIPStandardUpdate(isUpdate bool) *Method {
+	m.isAIPStandardUpdate = isUpdate
+	return m
+}
+
+// WithIsAIPStandardList sets whether the method is an AIP standard list method.
+func (m *Method) WithIsAIPStandardList(isList bool) *Method {
+	m.isAIPStandardList = isList
 	return m
 }
 
 // ReturnEmpty marks the method as returning an empty response.
 func (m *Method) ReturnEmpty() *Method {
-	m.ReturnsEmpty = true
+	m.returnsEmpty = true
 	return m
 }
 
@@ -1043,7 +1134,7 @@ func NewTestDiscoveryLro(pollingParams ...string) *DiscoveryLro {
 
 // NewTestSampleInfo creates a SampleInfo initialized with a resource name field.
 func NewTestSampleInfo(resourceNameField *Field) *SampleInfo {
-	return &SampleInfo{ResourceNameField: resourceNameField}
+	return NewSampleInfoBuilder().WithResourceNameField(resourceNameField).Build()
 }
 
 // NewTestPaginationInfo creates a PaginationInfo for pagination responses.

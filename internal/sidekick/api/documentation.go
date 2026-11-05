@@ -110,10 +110,10 @@ func patchEnumValueDocs(enu *Enum, name string, override *DocumentationOverride)
 
 func patchMethodDocs(svc *Service, name string, override *DocumentationOverride) error {
 	for _, m := range svc.Methods {
-		if m.Name != name {
+		if m.name != name {
 			continue
 		}
-		if err := patchElementDocs(&m.Documentation, override); err != nil {
+		if err := patchElementDocs(&m.documentation, override); err != nil {
 			return err
 		}
 		return nil

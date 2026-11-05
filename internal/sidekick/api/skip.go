@@ -70,16 +70,16 @@ func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func
 	model.Services = slices.DeleteFunc(model.Services, func(x *Service) bool { return skip(x.ID) })
 
 	for service := range model.AllServices() {
-		service.Methods = slices.DeleteFunc(service.Methods, func(x *Method) bool { return skip(x.ID) })
+		service.Methods = slices.DeleteFunc(service.Methods, func(x *Method) bool { return skip(x.id) })
 		for _, method := range service.Methods {
-			if method.Pagination != nil && skipField(method.Pagination.id) {
-				return fmt.Errorf("unsupported: skipping field %s which enables pagination", method.Pagination.id)
+			if method.pagination != nil && skipField(method.pagination.id) {
+				return fmt.Errorf("unsupported: skipping field %s which enables pagination", method.pagination.id)
 			}
-			idx := slices.IndexFunc(method.Signatures, func(s *MethodSignature) bool {
+			idx := slices.IndexFunc(method.signatures, func(s *MethodSignature) bool {
 				return slices.ContainsFunc(s.Fields(), func(f *Field) bool { return skipField(f.id) })
 			})
 			if idx != -1 {
-				return fmt.Errorf("unsupported: skipping field that is in one of the method signatures for method: %s", method.ID)
+				return fmt.Errorf("unsupported: skipping field that is in one of the method signatures for method: %s", method.id)
 			}
 		}
 	}

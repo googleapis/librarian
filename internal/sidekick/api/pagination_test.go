@@ -48,8 +48,8 @@ func TestPageSimple(t *testing.T) {
 		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
-	if method.Pagination != request.Fields()[1] {
-		t.Errorf("mismatch, want=%v, got=%v", request.Fields()[1], method.Pagination)
+	if method.Pagination() != request.Fields()[1] {
+		t.Errorf("mismatch, want=%v, got=%v", request.Fields()[1], method.Pagination())
 	}
 	want := NewTestPaginationInfo(response.Fields()[0], response.Fields()[1])
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
@@ -94,8 +94,8 @@ func TestPageWithOverride(t *testing.T) {
 		{ID: ".package.Service.List", ItemField: "items"},
 	}
 	UpdateMethodPagination(overrides, model)
-	if method.Pagination != request.Fields()[1] {
-		t.Errorf("mismatch, want=%v, got=%v", request.Fields()[1], method.Pagination)
+	if method.Pagination() != request.Fields()[1] {
+		t.Errorf("mismatch, want=%v, got=%v", request.Fields()[1], method.Pagination())
 	}
 	want := NewTestPaginationInfo(response.Fields()[0], response.Fields()[2])
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
@@ -125,8 +125,8 @@ func TestPageMissingInputType(t *testing.T) {
 		WithMethods(method)
 	model := NewTestAPI([]*Message{response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
-	if method.Pagination != nil {
-		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
+	if method.Pagination() != nil {
+		t.Errorf("mismatch, want=nil, got=%v", method.Pagination())
 	}
 }
 
@@ -148,8 +148,8 @@ func TestPageMissingOutputType(t *testing.T) {
 		WithMethods(method)
 	model := NewTestAPI([]*Message{request, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
-	if method.Pagination != nil {
-		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
+	if method.Pagination() != nil {
+		t.Errorf("mismatch, want=nil, got=%v", method.Pagination())
 	}
 }
 
@@ -175,8 +175,8 @@ func TestPageBadRequest(t *testing.T) {
 		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
-	if method.Pagination != nil {
-		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
+	if method.Pagination() != nil {
+		t.Errorf("mismatch, want=nil, got=%v", method.Pagination())
 	}
 }
 
@@ -205,8 +205,8 @@ func TestPageBadResponse(t *testing.T) {
 		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
-	if method.Pagination != nil {
-		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
+	if method.Pagination() != nil {
+		t.Errorf("mismatch, want=nil, got=%v", method.Pagination())
 	}
 }
 

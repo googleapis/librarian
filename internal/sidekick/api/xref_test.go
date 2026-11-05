@@ -122,11 +122,11 @@ func TestCrossReferenceMethod(t *testing.T) {
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	if method.InputType != request {
-		t.Errorf("mismatched input type, got=%v, want=%v", method.InputType, request)
+	if method.InputType() != request {
+		t.Errorf("mismatched input type, got=%v, want=%v", method.InputType(), request)
 	}
-	if method.OutputType != response {
-		t.Errorf("mismatched output type, got=%v, want=%v", method.OutputType, response)
+	if method.OutputType() != response {
+		t.Errorf("mismatched output type, got=%v, want=%v", method.OutputType(), response)
 	}
 }
 

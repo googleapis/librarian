@@ -61,18 +61,18 @@ func (p *PaginationInfo) PageableItem() *Field {
 // [AIP-4233](https://google.aip.dev/client-libraries/4233) as pageable.
 func UpdateMethodPagination(overrides []PaginationOverride, a *API) {
 	for m := range a.AllMethods() {
-		reqMsg := a.Message(m.InputTypeID)
+		reqMsg := a.Message(m.inputTypeID)
 		pageTokenField := paginationRequestInfo(reqMsg)
 		if pageTokenField == nil {
 			continue
 		}
 
-		respMsg := a.Message(m.OutputTypeID)
-		paginationInfo := paginationResponseInfo(overrides, m.ID, respMsg)
+		respMsg := a.Message(m.outputTypeID)
+		paginationInfo := paginationResponseInfo(overrides, m.id, respMsg)
 		if paginationInfo == nil {
 			continue
 		}
-		m.Pagination = pageTokenField
+		m.pagination = pageTokenField
 		respMsg.pagination = paginationInfo
 	}
 }

@@ -45,10 +45,10 @@ func TestService(t *testing.T) {
 			WithVariableNamed("zone").
 			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("")
-	getMethod.InputTypeID = "..zones.getRequest"
-	getMethod.OutputTypeID = "..Zone"
-	getMethod.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "zone")}
+		WithBodyFieldPath("").
+		WithInputTypeID("..zones.getRequest").
+		WithOutputTypeID("..Zone").
+		WithRawSignatures(api.NewTestMethodSignature("project", "zone"))
 
 	listMethod := api.NewTestMethod("list").
 		WithID("..zones.list").
@@ -68,10 +68,10 @@ func TestService(t *testing.T) {
 			"pageToken",
 			"returnPartialSuccess",
 		).
-		WithBodyFieldPath("")
-	listMethod.InputTypeID = "..zones.listRequest"
-	listMethod.OutputTypeID = "..ZoneList"
-	listMethod.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project")}
+		WithBodyFieldPath("").
+		WithInputTypeID("..zones.listRequest").
+		WithOutputTypeID("..ZoneList").
+		WithRawSignatures(api.NewTestMethodSignature("project"))
 
 	want := newDiscoveryTestService("zones").
 		WithDocumentation("Service for the `zones` resource.").
