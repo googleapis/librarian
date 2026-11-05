@@ -38,10 +38,10 @@ func TestAnnotateSampleInfo(t *testing.T) {
 				field := api.NewTestField("secret").
 					WithType(api.TypezString).
 					WithResourceNamePattern(api.NewTestResourceNamePattern(
-						api.ResourceNameSegment{Literal: "projects"},
-						api.ResourceNameSegment{Variable: "project"},
-						api.ResourceNameSegment{Literal: "secrets"},
-						api.ResourceNameSegment{Variable: "secret"},
+						api.NewResourceNameSegment("projects", ""),
+						api.NewResourceNameSegment("", "project"),
+						api.NewResourceNameSegment("secrets", ""),
+						api.NewResourceNameSegment("", "secret"),
 					))
 				field.Codec = &fieldAnnotations{
 					Name: "secretField",
