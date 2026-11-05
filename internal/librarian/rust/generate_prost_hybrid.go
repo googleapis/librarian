@@ -272,7 +272,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	}
 	for _, s := range hybridModel.Services {
 		hybridModel.AddService(s)
-		for _, m := range s.Methods {
+		for _, m := range s.Methods() {
 			hybridModel.AddMethod(m)
 		}
 	}
@@ -326,15 +326,7 @@ func cloneServices(services []*api.Service) []*api.Service {
 	}
 	cloned := make([]*api.Service, len(services))
 	for i, s := range services {
-		svcCopy := *s
-		svcCopy.Codec = nil
-		if s.Methods != nil {
-			svcCopy.Methods = make([]*api.Method, len(s.Methods))
-			for j, m := range s.Methods {
-				svcCopy.Methods[j] = m.CloneForService(&svcCopy)
-			}
-		}
-		cloned[i] = &svcCopy
+		cloned[i] = s.Clone()
 	}
 	return cloned
 }

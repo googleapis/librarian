@@ -41,9 +41,9 @@ func TestAnnotateService(t *testing.T) {
 			if err := c.annotateModel(model); err != nil {
 				t.Fatal(err)
 			}
-			got, ok := test.service.Codec.(*serviceAnnotations)
+			got, ok := test.service.Codec().(*serviceAnnotations)
 			if !ok {
-				t.Fatalf("expected *serviceAnnotations, got %T", test.service.Codec)
+				t.Fatalf("expected *serviceAnnotations, got %T", test.service.Codec())
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

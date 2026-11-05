@@ -136,11 +136,11 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 	}
 	lroServices := discoveryConfig.LroServices()
 	for _, svc := range model.Services {
-		if _, ok := lroServices[svc.ID]; ok {
+		if _, ok := lroServices[svc.ID()]; ok {
 			continue
 		}
 		var svcMixin *Method
-		for _, method := range svc.Methods {
+		for _, method := range svc.Methods() {
 			if method.OutputTypeID() != discoveryConfig.OperationID {
 				continue
 			}
@@ -165,7 +165,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 		}
 		method := NewMethodBuilder().
 			WithName("getOperation").
-			WithID(fmt.Sprintf("%s.getOperation", svc.ID)).
+			WithID(fmt.Sprintf("%s.getOperation", svc.ID())).
 			WithDocumentation(svcMixin.Documentation()).
 			WithInputTypeID(svcMixin.InputTypeID()).
 			WithOutputTypeID(svcMixin.OutputTypeID()).
@@ -178,7 +178,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 			WithSourceServiceID(sourceID).
 			WithIsLroPoller(true).
 			Build()
-		svc.Methods = append(svc.Methods, method)
+		svc.methods = append(svc.methods, method)
 		model.AddMethod(method)
 	}
 	return nil

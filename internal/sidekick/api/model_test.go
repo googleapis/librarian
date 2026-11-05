@@ -50,6 +50,7 @@ func allowUnexported() cmp.Option {
 		RoutingPathSpec{},
 		SampleInfo{},
 		SampleValue{},
+		Service{},
 		TargetResource{},
 	)
 }

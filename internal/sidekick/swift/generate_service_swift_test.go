@@ -305,7 +305,7 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 			var messages []*api.Message
-			for _, m := range test.service.Methods {
+			for _, m := range test.service.Methods() {
 				if m.InputType() != nil {
 					messages = append(messages, m.InputType())
 				}
@@ -321,7 +321,7 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
-			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.service.Name+".swift")
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.service.Name()+".swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)
