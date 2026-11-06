@@ -584,13 +584,13 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 		panic(fmt.Sprintf("missing InputType for method: %s", m.Name))
 	}
 	for _, s := range signatures {
-		s.Method = m
-		for _, name := range s.Names {
+		s.method = m
+		for _, name := range s.names {
 			for _, f := range m.InputType.Fields {
 				if name != f.Name {
 					continue
 				}
-				s.Fields = append(s.Fields, f)
+				s.fields = append(s.fields, f)
 				break
 			}
 		}
@@ -959,12 +959,12 @@ func ParseTemplateForTest(template string) []PathSegment {
 
 // NewTestMethodSignature creates a MethodSignature with parameter names.
 func NewTestMethodSignature(names ...string) *MethodSignature {
-	return &MethodSignature{Names: names}
+	return NewMethodSignatureBuilder().WithNames(names...).Build()
 }
 
 // WithFields appends the resolved fields to the signature.
 func (s *MethodSignature) WithFields(fields ...*Field) *MethodSignature {
-	s.Fields = append(s.Fields, fields...)
+	s.fields = append(s.fields, fields...)
 	return s
 }
 

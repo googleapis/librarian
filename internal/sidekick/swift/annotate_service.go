@@ -417,7 +417,7 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 }
 
 func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signature *api.MethodSignature) error {
-	for _, field := range signature.Fields {
+	for _, field := range signature.Fields() {
 		if err := c.addFieldDependencies(annotations, field); err != nil {
 			return err
 		}

@@ -28,6 +28,7 @@ import (
 func AllowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
 		api.DiscoveryLro{},
+		api.MethodSignature{},
 		api.OperationInfo{},
 		api.PathBinding{},
 		api.PathInfo{},

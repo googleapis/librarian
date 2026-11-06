@@ -59,7 +59,7 @@ func TestLroAnnotations(t *testing.T) {
 			Build())
 	want.InputTypeID = "..instances.insertRequest"
 	want.OutputTypeID = "..Operation"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}}
+	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "zone", "body")}
 	got := model.Method(want.ID)
 	if got == nil {
 		t.Fatalf("missing method %s in model", want.ID)
