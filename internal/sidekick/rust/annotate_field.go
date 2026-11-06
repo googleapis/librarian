@@ -40,7 +40,10 @@ type fieldAnnotations struct {
 	DocLines           []string
 	FieldType          string
 	PrimitiveFieldType string
-	AddQueryParameter  string
+	// The Rust type of this field in the prost-generated message or enum.
+	// Used in convert-prost templates to qualify `gaxi::prost::ToProto::<ProstType>::to_proto`.
+	ProstType         string
+	AddQueryParameter string
 	// For fields that are singular mesaage or list of messages, this is the
 	// message type.
 	MessageType *api.Message
@@ -198,6 +201,10 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
+	prostType, err := c.prostFieldType(field, model)
+	if err != nil {
+		return nil, err
+	}
 	fieldName := c.FieldName(field)
 	ann := &fieldAnnotations{
 		FieldName:             toSnake(fieldName),
@@ -208,6 +215,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		DocLines:              docLines,
 		FieldType:             fieldType,
 		PrimitiveFieldType:    primitiveFieldType,
+		ProstType:             prostType,
 		AddQueryParameter:     c.addQueryParameter(field),
 		SerdeAs:               c.primitiveSerdeAs(field),
 		SkipIfIsDefault:       field.Typez != api.TypezString && field.Typez != api.TypezBytes,

@@ -23,7 +23,7 @@ impl gaxi::prost::ToProto<{{ .Codec.ProstRelativeName }}> for {{ .Codec.Qualifie
             {{- if .SkipProtoConversion }}
             Self::{{ .Codec.BranchName }}(_) => Ok(Self::Output::{{ .Codec.ProstBranchName }}(std::default::Default::default())),
             {{- else }}
-            Self::{{ .Codec.BranchName }}(v) => Ok(Self::Output::{{ .Codec.ProstBranchName }}({{- if .Codec.MapToBoxed }}std::boxed::Box::new({{- end }}{{- if .Codec.IsBoxed }}(*v){{- else }}v{{- end }}.to_proto()?{{- if .Codec.MapToBoxed }}){{- end }})),
+            Self::{{ .Codec.BranchName }}(v) => Ok(Self::Output::{{ .Codec.ProstBranchName }}({{- if .Codec.MapToBoxed }}std::boxed::Box::new({{- end }}gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto({{- if .Codec.IsBoxed }}*v{{- else }}v{{- end }})?{{- if .Codec.MapToBoxed }}){{- end }})),
             {{- end }}
             {{- end }}
         }

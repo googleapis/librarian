@@ -33,32 +33,34 @@ impl gaxi::prost::ToProto<{{ .Codec.ProstRelativeName }}> for {{ .Codec.Qualifie
             {{- if .Singular }}
             {{- if .Optional }}
             {{- if .Codec.MapToBoxed }}
-            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| v.to_proto().map(std::boxed::Box::new)).transpose()?,
+            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto({{- if .Codec.IsBoxed }}*v{{- else }}v{{- end }}).map(std::boxed::Box::new)).transpose()?,
+            {{- else if .Codec.IsBoxed }}
+            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto(*v)).transpose()?,
             {{- else }}
-            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| v.to_proto()).transpose()?,
+            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto).transpose()?,
             {{- end }}
             {{- else if .Proto2Optional }}
             {{- /* The generated model stores "not set" as zero, so zero maps to None. */}}
-            {{ .Codec.FieldName }}: Some(self.{{ .Codec.FieldName }}.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
+            {{ .Codec.FieldName }}: Some(gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto(self.{{ .Codec.FieldName }})?).filter(|v| !wkt::internal::is_default(v)),
             {{- else }}
-            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.to_proto()?,
+            {{ .Codec.FieldName }}: gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto(self.{{ .Codec.FieldName }})?,
             {{- end }}
             {{- else if .Repeated }}
             {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}
                 .into_iter()
-                .map(|v| v.to_proto())
+                .map(gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto)
                 .collect::<std::result::Result<std::vec::Vec<_>, _>>()?,
             {{- else if .Map }}
             {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}
                 .into_iter()
                 .map(|(k, v)| {
-                    gaxi::prost::pair_transpose(k.to_proto(), v.to_proto())
+                    gaxi::prost::pair_transpose(gaxi::prost::ToProto::<{{ .Codec.KeyField.Codec.ProstType }}>::to_proto(k), gaxi::prost::ToProto::<{{ .Codec.ValueField.Codec.ProstType }}>::to_proto(v))
                 }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?,
             {{- end }}
             {{- end }}
             {{- end }}
             {{- range .OneOfs }}
-            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| v.to_proto()).transpose()?,
+            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(gaxi::prost::ToProto::<{{ .Codec.ProstRelativeName }}>::to_proto).transpose()?,
             {{- end }}
             {{- if .HasSkippedProtoConversionFields }}
             ..Self::Output::default()

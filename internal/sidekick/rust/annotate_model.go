@@ -276,25 +276,6 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 	}
 
-	// ExternalEnums (e.g. google.type.Date) and ExternalMessages (e.g. google.api.HttpBody)
-	// are populated for convert-prost generation in hybrid crates.
-	// Override ProstRelativeName after all method annotations so ToProto and FromProto
-	// resolve to crate::prost::<pkg>::<TypeName>.
-	prostPrefix := "crate::prost::"
-	if codec.prostPath != "" {
-		prostPrefix = codec.prostPath + "::"
-	}
-	for _, e := range model.ExternalEnums {
-		if ann, ok := e.Codec.(*enumAnnotation); ok {
-			ann.ProstRelativeName = prostPrefix + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
-		}
-	}
-	for _, m := range model.ExternalMessages {
-		if ann, ok := m.Codec.(*messageAnnotation); ok {
-			ann.ProstRelativeName = prostPrefix + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
-		}
-	}
-
 	servicesSubset := language.FilterSlice(model.Services, func(s *api.Service) bool {
 		return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return codec.generateMethod(m) })
 	})

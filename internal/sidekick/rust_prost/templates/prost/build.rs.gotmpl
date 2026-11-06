@@ -46,16 +46,9 @@ fn main() {
         let prost_types_path = "::prost_types";
         config.compile_well_known_types();
         config.extern_path(".google.protobuf", prost_types_path);
-        config.extern_path(".google.protobuf.BoolValue", "bool");
-        config.extern_path(".google.protobuf.BytesValue", format!("{prost_path}::bytes::Bytes"));
-        config.extern_path(".google.protobuf.DoubleValue", "f64");
-        config.extern_path(".google.protobuf.Empty", "()");
-        config.extern_path(".google.protobuf.FloatValue", "f32");
-        config.extern_path(".google.protobuf.Int32Value", "i32");
-        config.extern_path(".google.protobuf.Int64Value", "i64");
-        config.extern_path(".google.protobuf.StringValue", format!("{prost_path}::alloc::string::String"));
-        config.extern_path(".google.protobuf.UInt32Value", "u32");
-        config.extern_path(".google.protobuf.UInt64Value", "u64");
+        {{- range .Codec.WktTypes }}
+        config.extern_path("{{ .ProtoPath }}", {{ .ExternPath }});
+        {{- end }}
         {{- range .Codec.UnusedTypes }}
         config.extern_path("{{ . }}", "crate::prost::unused::NonexistentType");
         {{- end }}

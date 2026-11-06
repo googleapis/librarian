@@ -79,7 +79,7 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 		ModuleName:        c.MessageModuleName(m),
 		QualifiedName:     qualifiedName,
 		RelativeName:      relativeName,
-		ProstRelativeName: prostMessageRelativePath(m),
+		ProstRelativeName: c.prostTypeName(m.Package, prostMessageRelativePath(m), model.PackageName),
 		NameInExamples:    nameInExamples,
 		PackageModuleName: packageToModuleName(m.Package),
 		SourceFQN:         strings.TrimPrefix(m.ID, "."),

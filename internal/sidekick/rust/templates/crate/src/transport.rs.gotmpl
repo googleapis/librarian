@@ -301,7 +301,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
             .execute(
                 extensions,
                 path,
-                req.to_proto().map_err(Error::deser)?,
+                ToProto::<crate::prost::{{ .InputType.Codec.PackageModuleName }}::{{ .InputType.Codec.ProstRelativeName }}>::to_proto(req).map_err(Error::deser)?,
                 options,
                 &crate::info::X_GOOG_API_CLIENT_GRPC_HEADER,
                 &x_goog_request_params,

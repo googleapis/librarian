@@ -39,6 +39,8 @@ type modelAnnotations struct {
 	// They are configured with prost_build's extern_path to be mapped to a nonexistent
 	// type so prost omits them from generation.
 	UnusedTypes []string
+	// WktTypes maps well-known types for prost_build extern_path configuration.
+	WktTypes []rust.ProstWktType
 }
 
 type serviceAnnotations struct {
@@ -68,6 +70,7 @@ func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error
 		PostProcessProtos: codec.PostProcessProtos,
 		IncludeFile:       codec.IncludeFile,
 		UnusedTypes:       codec.UnusedTypes,
+		WktTypes:          rust.ProstWktTypes(),
 	}
 	for _, s := range model.Services {
 		codec.annotateService(s)

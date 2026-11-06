@@ -45,8 +45,8 @@ func TestGenerateConvert(t *testing.T) {
     type Output = SimpleMessage;
     fn to_proto(self) -> std::result::Result<SimpleMessage, gaxi::prost::ConvertError> {
         Ok(Self::Output {
-            field1: self.field1.to_proto()?,
-            field2: self.field2.to_proto()?,
+            field1: gaxi::prost::ToProto::<std::string::String>::to_proto(self.field1)?,
+            field2: gaxi::prost::ToProto::<std::string::String>::to_proto(self.field2)?,
         })
     }
 }
@@ -75,7 +75,7 @@ impl gaxi::prost::FromProto<crate::model::SimpleMessage> for SimpleMessage {
     type Output = MessageWithSkippedString;
     fn to_proto(self) -> std::result::Result<MessageWithSkippedString, gaxi::prost::ConvertError> {
         Ok(Self::Output {
-            field1: self.field1.to_proto()?,
+            field1: gaxi::prost::ToProto::<std::string::String>::to_proto(self.field1)?,
             ..Self::Output::default()
         })
     }
@@ -105,7 +105,7 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedString> for MessageW
     type Output = MessageWithSkippedAny;
     fn to_proto(self) -> std::result::Result<MessageWithSkippedAny, gaxi::prost::ConvertError> {
         Ok(Self::Output {
-            field1: self.field1.to_proto()?,
+            field1: gaxi::prost::ToProto::<std::string::String>::to_proto(self.field1)?,
             ..Self::Output::default()
         })
     }
@@ -137,11 +137,11 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedAny> for MessageWith
     type Output = Proto2Message;
     fn to_proto(self) -> std::result::Result<Proto2Message, gaxi::prost::ConvertError> {
         Ok(Self::Output {
-            name: Some(self.name.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
-            number: Some(self.number.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
-            label: Some(self.label.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
-            enabled: Some(self.enabled.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
-            required_name: self.required_name.to_proto()?,
+            name: Some(gaxi::prost::ToProto::<std::string::String>::to_proto(self.name)?).filter(|v| !wkt::internal::is_default(v)),
+            number: Some(gaxi::prost::ToProto::<i32>::to_proto(self.number)?).filter(|v| !wkt::internal::is_default(v)),
+            label: Some(gaxi::prost::ToProto::<proto2_message::Label>::to_proto(self.label)?).filter(|v| !wkt::internal::is_default(v)),
+            enabled: Some(gaxi::prost::ToProto::<bool>::to_proto(self.enabled)?).filter(|v| !wkt::internal::is_default(v)),
+            required_name: gaxi::prost::ToProto::<std::string::String>::to_proto(self.required_name)?,
         })
     }
 }
@@ -159,6 +159,65 @@ impl gaxi::prost::FromProto<crate::model::Proto2Message> for Proto2Message {
     }
 }`,
 		},
+		{
+			name: "message with optional, repeated, map, and oneof fields",
+			makeMessage: func() (*api.Message, []string) {
+				childMsg := api.NewTestMessage("Child").WithFields(
+					api.NewTestField("value").WithType(api.TypezString),
+				)
+				mapType := api.NewTestMap("$Map", api.TypezString, api.TypezInt32)
+				oneof := api.NewTestOneOf("choice").WithFields(
+					api.NewTestField("option_a").WithType(api.TypezString),
+				)
+				msg := api.NewTestMessage("ComplexMessage").
+					WithPackage("test.v1").
+					WithMessages(childMsg).
+					WithOneOfs(oneof)
+				msg.WithFields(
+					api.NewTestField("opt_child").WithMessageType(childMsg).WithOptional(),
+					api.NewTestField("parent").WithMessageType(msg).WithOptional(),
+					api.NewTestField("tags").WithType(api.TypezString).WithRepeated(),
+					api.NewTestField("labels").WithMapType(mapType),
+				)
+				return msg, nil
+			},
+			want: `impl gaxi::prost::ToProto<ComplexMessage> for crate::model::ComplexMessage {
+    type Output = ComplexMessage;
+    fn to_proto(self) -> std::result::Result<ComplexMessage, gaxi::prost::ConvertError> {
+        Ok(Self::Output {
+            opt_child: self.opt_child.map(gaxi::prost::ToProto::<complex_message::Child>::to_proto).transpose()?,
+            parent: self.parent.map(|v| gaxi::prost::ToProto::<ComplexMessage>::to_proto(*v).map(std::boxed::Box::new)).transpose()?,
+            tags: self.tags
+                .into_iter()
+                .map(gaxi::prost::ToProto::<std::string::String>::to_proto)
+                .collect::<std::result::Result<std::vec::Vec<_>, _>>()?,
+            labels: self.labels
+                .into_iter()
+                .map(|(k, v)| {
+                    gaxi::prost::pair_transpose(gaxi::prost::ToProto::<std::string::String>::to_proto(k), gaxi::prost::ToProto::<i32>::to_proto(v))
+                }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?,
+            choice: self.choice.map(gaxi::prost::ToProto::<complex_message::Choice>::to_proto).transpose()?,
+        })
+    }
+}
+
+impl gaxi::prost::FromProto<crate::model::ComplexMessage> for ComplexMessage {
+    fn cnv(self) -> std::result::Result<crate::model::ComplexMessage, gaxi::prost::ConvertError> {
+        Ok(
+            crate::model::ComplexMessage::new()
+                .set_or_clear_opt_child(self.opt_child.map(|v| v.cnv()).transpose()?)
+                .set_or_clear_parent(self.parent.map(|v| v.cnv()).transpose()?)
+                .set_tags(self.tags.into_iter().map(|v| v.cnv())
+                    .collect::<std::result::Result<std::vec::Vec<_>, _>>()?)
+                .set_labels(self.labels.into_iter()
+                    .map(|(k, v)| {
+                        gaxi::prost::pair_transpose(k.cnv(), v.cnv())
+                    }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
+                .set_choice(self.choice.map(|v| v.cnv()).transpose()?)
+        )
+    }
+}`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			message, skippedIDs := test.makeMessage()
@@ -167,6 +226,7 @@ impl gaxi::prost::FromProto<crate::model::Proto2Message> for Proto2Message {
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
+			api.LabelRecursiveFields(model)
 			if len(skippedIDs) > 0 {
 				if err := api.SkipModelElements(model, api.ModelOverride{SkippedIDs: skippedIDs}); err != nil {
 					t.Fatal(err)
@@ -238,9 +298,9 @@ func TestGenerateConvertOneOf(t *testing.T) {
     type Output = type_schema::Schema;
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
         match self {
-            Self::InlineSchema(v) => Ok(Self::Output::InlineSchema(std::boxed::Box::new((*v).to_proto()?))),
-            Self::ReferenceSchema(v) => Ok(Self::Output::ReferenceSchema((*v).to_proto()?)),
-            Self::Name(v) => Ok(Self::Output::Name(v.to_proto()?)),
+            Self::InlineSchema(v) => Ok(Self::Output::InlineSchema(std::boxed::Box::new(gaxi::prost::ToProto::<InlineSchema>::to_proto(*v)?))),
+            Self::ReferenceSchema(v) => Ok(Self::Output::ReferenceSchema(gaxi::prost::ToProto::<ReferenceSchema>::to_proto(*v)?)),
+            Self::Name(v) => Ok(Self::Output::Name(gaxi::prost::ToProto::<std::string::String>::to_proto(v)?)),
         }
     }
 }`
@@ -306,6 +366,7 @@ func TestGenerateConvertAcronyms(t *testing.T) {
 			"package:wkt":               "source=google.protobuf,package=google-cloud-wkt",
 			"package:google-cloud-type": "source=google.type,package=google-cloud-type",
 			"template-override":         "templates/convert-prost",
+			"prost-path":                "crate::prost",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -332,7 +393,7 @@ func TestGenerateConvertAcronyms(t *testing.T) {
     type Output = VertexAiSearch;
     fn to_proto(self) -> std::result::Result<VertexAiSearch, gaxi::prost::ConvertError> {
         Ok(Self::Output {
-            serving_config: self.serving_config.to_proto()?,
+            serving_config: gaxi::prost::ToProto::<std::string::String>::to_proto(self.serving_config)?,
         })
     }
 }`,
@@ -358,7 +419,7 @@ func TestGenerateConvertAcronyms(t *testing.T) {
     type Output = vertex_ai_search::DataStoreSpec;
     fn to_proto(self) -> std::result::Result<vertex_ai_search::DataStoreSpec, gaxi::prost::ConvertError> {
         Ok(Self::Output {
-            data_store: self.data_store.to_proto()?,
+            data_store: gaxi::prost::ToProto::<std::string::String>::to_proto(self.data_store)?,
         })
     }
 }`,
@@ -393,8 +454,8 @@ func TestGenerateConvertAcronyms(t *testing.T) {
     type Output = retrieval::Source;
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
         match self {
-            Self::VertexAiSearch(v) => Ok(Self::Output::VertexAiSearch((*v).to_proto()?)),
-            Self::DisableAttribution(v) => Ok(Self::Output::DisableAttribution(v.to_proto()?)),
+            Self::VertexAiSearch(v) => Ok(Self::Output::VertexAiSearch(gaxi::prost::ToProto::<VertexAiSearch>::to_proto(*v)?)),
+            Self::DisableAttribution(v) => Ok(Self::Output::DisableAttribution(gaxi::prost::ToProto::<bool>::to_proto(v)?)),
         }
     }
 }`,
@@ -455,7 +516,7 @@ func TestGenerateConvertOneOfWithSkippedProtoConversion(t *testing.T) {
     type Output = type_schema::Schema;
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
         match self {
-            Self::Name(v) => Ok(Self::Output::Name(v.to_proto()?)),
+            Self::Name(v) => Ok(Self::Output::Name(gaxi::prost::ToProto::<std::string::String>::to_proto(v)?)),
             Self::Details(_) => Ok(Self::Output::Details(std::default::Default::default())),
         }
     }
@@ -535,9 +596,9 @@ func TestGenerateConvertOneOf_ReservedRawIdentifiers(t *testing.T) {
     type Output = primary_product_data_source::DefaultRule;
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
         match self {
-            Self::Self_(v) => Ok(Self::Output::Self_(v.to_proto()?)),
-            Self::Crate(v) => Ok(Self::Output::Crate(v.to_proto()?)),
-            Self::Super(v) => Ok(Self::Output::Super(v.to_proto()?)),
+            Self::Self_(v) => Ok(Self::Output::Self_(gaxi::prost::ToProto::<bool>::to_proto(v)?)),
+            Self::Crate(v) => Ok(Self::Output::Crate(gaxi::prost::ToProto::<std::string::String>::to_proto(v)?)),
+            Self::Super(v) => Ok(Self::Output::Super(gaxi::prost::ToProto::<i32>::to_proto(v)?)),
         }
     }
 }`
