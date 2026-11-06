@@ -128,6 +128,7 @@ Examples:
 Flags:
 
 	--all       generate all libraries
+	--force     generate libraries even if skip_generate is set
 
 A typical librarian workflow for regenerating every library against the
 latest API definitions is:

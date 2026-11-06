@@ -57,7 +57,7 @@ jobs:
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test'
         working-directory: google-cloud-python
-        run: librarian generate google-cloud-secret-manager
+        run: librarian generate --force google-cloud-secret-manager
   integration-test:
     name: Integration test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

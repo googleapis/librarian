@@ -102,7 +102,7 @@ jobs:
           librarian install
       - name: Generate a single library (smoke test)
         working-directory: google-cloud-php
-        run: librarian generate secretmanager
+        run: librarian generate --force secretmanager
   integration-test:
     name: Integration test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

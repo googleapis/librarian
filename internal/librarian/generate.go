@@ -76,9 +76,14 @@ latest API definitions is:
 				Name:  "all",
 				Usage: "generate all libraries",
 			},
+			&cli.BoolFlag{
+				Name:  "force",
+				Usage: "generate libraries even if skip_generate is set",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			all := cmd.Bool("all")
+			force := cmd.Bool("force")
 			libraryName := cmd.Args().First()
 			if !all && libraryName == "" {
 				return errMissingLibraryOrAllFlag
@@ -90,12 +95,12 @@ latest API definitions is:
 			if err != nil {
 				return err
 			}
-			return runGenerate(ctx, cfg, all, libraryName)
+			return runGenerate(ctx, cfg, all, force, libraryName)
 		},
 	}
 }
 
-func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName string) error {
+func runGenerate(ctx context.Context, cfg *config.Config, all, force bool, libraryName string) error {
 	sources, err := LoadSources(ctx, cfg.Sources)
 	if err != nil {
 		return err
@@ -111,7 +116,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		if !all && isPreview && lib.Name == baseName && lib.Preview == nil {
 			return fmt.Errorf("%w: %q", errNoPreviewVariant, baseName)
 		}
-		if !shouldGenerate(lib, all, libraryName) {
+		if !shouldGenerate(lib, all, force, libraryName) {
 			continue
 		}
 		prepared, err := applyDefaults(cfg.Language, lib, cfg.Default)
@@ -412,13 +417,15 @@ func deriveAPIPath(language string, name string) string {
 	}
 }
 
-func shouldGenerate(lib *config.Library, all bool, libraryName string) bool {
+func shouldGenerate(lib *config.Library, all, force bool, libraryName string) bool {
 	isPreview := isPreviewName(libraryName)
-	if lib.SkipGenerate && !isPreview {
-		return false
-	}
-	if isPreview && lib.Preview != nil && lib.Preview.SkipGenerate {
-		return false
+	if !force {
+		if lib.SkipGenerate && !isPreview {
+			return false
+		}
+		if isPreview && lib.Preview != nil && lib.Preview.SkipGenerate {
+			return false
+		}
 	}
 	return all || lib.Name == libraryName || (isPreview && lib.Name == trimPreviewName(libraryName))
 }
