@@ -22,6 +22,8 @@ import (
 
 func allowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
+		DiscoveryLro{},
+		OperationInfo{},
 		PathBinding{},
 		PathInfo{},
 		PathSegment{},

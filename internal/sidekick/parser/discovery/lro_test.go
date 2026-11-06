@@ -54,9 +54,9 @@ func TestLroAnnotations(t *testing.T) {
 			"sourceMachineImage",
 		).
 		WithBodyFieldPath("body").
-		WithDiscoveryLro(&api.DiscoveryLro{
-			PollingPathParameters: []string{"project", "zone"},
-		})
+		WithDiscoveryLro(api.NewDiscoveryLroBuilder().
+			WithPollingPathParameters("project", "zone").
+			Build())
 	want.InputTypeID = "..instances.insertRequest"
 	want.OutputTypeID = "..Operation"
 	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}}

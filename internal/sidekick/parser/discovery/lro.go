@@ -39,9 +39,9 @@ func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 			if mixin == nil {
 				continue
 			}
-			method.DiscoveryLro = &api.DiscoveryLro{
-				PollingPathParameters: pathParams,
-			}
+			method.DiscoveryLro = api.NewDiscoveryLroBuilder().
+				WithPollingPathParameters(pathParams...).
+				Build()
 			if svcMixin != nil && mixin != svcMixin {
 				return fmt.Errorf("mismatched LRO mixin, want=%v, got=%v", svcMixin, mixin)
 			}

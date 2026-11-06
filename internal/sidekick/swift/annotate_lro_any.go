@@ -70,8 +70,8 @@ func (c *codec) lroAnyTypes(methods []*api.Method) ([]*lroAnyType, error) {
 			continue
 		}
 		for _, id := range []string{
-			method.OperationInfo.MetadataTypeID,
-			method.OperationInfo.ResponseTypeID,
+			method.OperationInfo.MetadataTypeID(),
+			method.OperationInfo.ResponseTypeID(),
 		} {
 			if id == "" || seen[id] {
 				continue
