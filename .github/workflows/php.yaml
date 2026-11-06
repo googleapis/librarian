@@ -16,53 +16,19 @@ on: [push, pull_request, merge_group]
 permissions:
   contents: read
 jobs:
-  unit-test:
-    name: Unit test
+  build-and-test:
+    name: ${{ matrix.job-name }}
     runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
+    # Presubmit jobs must complete within 5 minutes.
     timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-librarian
-        with:
-          include_pnpm: 'true'
-          include_python: 'true'
-      - name: Checkout google-cloud-php (Sparse)
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          repository: googleapis/google-cloud-php
-          path: google-cloud-php
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            composer.json
-            dev/
-            librarian.yaml
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, xml, bcmath
-      - name: Cache Librarian Tools
-        id: cache-tools
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |
-            ~/.cache/librarian
-          key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
-      - name: Run librarian install
-        working-directory: google-cloud-php
-        run: |
-          librarian install
-      - name: Run internal/librarian/php tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/librarian/php
-  smoke-test:
-    name: Smoke test
-    runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
-    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - job-name: 'Unit Tests'
+            task: 'unit-test'
+          - job-name: 'Smoke Test'
+            task: 'smoke-test'
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -95,12 +61,19 @@ jobs:
         with:
           path: |
             ~/.cache/librarian
-          key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
+            google-cloud-php/dev/vendor
+            ${{ env.pythonLocation }}/lib/python3.14/site-packages
+          key: librarian-php-tools-v3-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
       - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-php
         run: |
           librarian install
+      - name: Run internal/librarian/php tests and check coverage
+        if: matrix.task == 'unit-test'
+        run: go run ./tool/cmd/coverage ./internal/librarian/php
       - name: Generate a single library (smoke test)
+        if: matrix.task == 'smoke-test'
         working-directory: google-cloud-php
         run: librarian generate secretmanager
   integration-test:
@@ -133,8 +106,11 @@ jobs:
         with:
           path: |
             ~/.cache/librarian
-          key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
+            google-cloud-php/dev/vendor
+            ${{ env.pythonLocation }}/lib/python3.14/site-packages
+          key: librarian-php-tools-v3-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml', 'google-cloud-php/dev/composer.json') }}
       - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-php
         run: |
           librarian install
@@ -142,7 +118,7 @@ jobs:
         working-directory: google-cloud-php
         run: librarian generate --all
   create-issue-on-failure:
-    needs: [unit-test, smoke-test, integration-test]
+    needs: [build-and-test, integration-test]
     permissions:
       contents: read
       issues: write
