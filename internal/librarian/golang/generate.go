@@ -142,7 +142,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if toolchain != "" {
 		env = map[string]string{"GOTOOLCHAIN": toolchain}
 	}
-	return runInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
+	return runInDirWithEnvRetry(ctx, outDir, env, command.Go, "mod", "tidy")
 }
 
 func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *config.Protoc, googleapisDir, version, outDir string) error {
