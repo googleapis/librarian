@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.52.0](https://github.com/googleapis/librarian/compare/v0.51.0...v0.52.0) (2026-11-07)
+
+
+### Features
+
+* **internal/librarian/nodejs:** parallelize API generation across library.APIs ([#7812](https://github.com/googleapis/librarian/issues/7812)) ([b08dd20](https://github.com/googleapis/librarian/commit/b08dd20b82eacf25696fd6d5ce3693832887bbd0))
+
+
+### Bug Fixes
+
+* **golang:** retry go install and mod tidy ([#7900](https://github.com/googleapis/librarian/issues/7900)) ([335be0b](https://github.com/googleapis/librarian/commit/335be0ba2b560e3bdc94df7b1e21bfa9258e49b0))
+* **rust:** clone services in generateProstHybrid  ([#7889](https://github.com/googleapis/librarian/issues/7889)) ([202690c](https://github.com/googleapis/librarian/commit/202690c07af9e101f7a225932e76e4a96ea1767e))
+
 ## [0.51.0](https://github.com/googleapis/librarian/compare/v0.50.0...v0.51.0) (2026-10-31)
 
 
