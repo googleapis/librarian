@@ -144,21 +144,22 @@ func makeMethod(model *api.API, parentBuilder *api.MessageBuilder, doc *document
 	if len(signatureNames) != 0 {
 		signatures = append(signatures, api.NewMethodSignatureBuilder().WithNames(signatureNames...).Build())
 	}
-	method := &api.Method{
-		ID:            id,
-		Name:          input.Name,
-		Documentation: input.Description,
-		Deprecated:    input.Deprecated,
-		InputTypeID:   requestMessageID,
-		OutputTypeID:  outputID,
-		ReturnsEmpty:  outputID == ".google.protobuf.Empty",
-		PathInfo: api.NewPathInfoBuilder().
+
+	method := api.NewMethodBuilder().
+		WithID(id).
+		WithName(input.Name).
+		WithDocumentation(input.Description).
+		WithDeprecated(input.Deprecated).
+		WithInputTypeID(requestMessageID).
+		WithOutputTypeID(outputID).
+		WithReturnsEmpty(outputID == ".google.protobuf.Empty").
+		WithPathInfo(api.NewPathInfoBuilder().
 			WithBindings(binding).
 			WithBodyFieldPath(bodyPathField).
-			Build(),
-		Signatures: signatures,
-		APIVersion: input.APIVersion,
-	}
+			Build()).
+		WithSignatures(signatures).
+		WithAPIVersion(input.APIVersion).
+		Build()
 	return method, nil
 }
 

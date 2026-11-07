@@ -494,17 +494,17 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			WithLiteral("locations").
 			Build()).
 		WithQueryParameters("filter", "pageSize", "pageToken").
-		WithPagination(pageToken)
-	wantListLocationsMethod.IsList = false
-	wantListLocationsMethod.InputTypeID = "..Service.ListLocationsRequest"
-	wantListLocationsMethod.OutputTypeID = "..ListLocationsResponse"
+		WithPagination(pageToken).
+		WithIsList(false).
+		WithInputTypeID("..Service.ListLocationsRequest").
+		WithOutputTypeID("..ListLocationsResponse")
 	apitest.CheckMethod(t, service, "ListLocations", wantListLocationsMethod)
 
 	cs := sample.MethodCreate()
-	apitest.CheckMethod(t, service, cs.Name, cs)
+	apitest.CheckMethod(t, service, cs.Name(), cs)
 
 	asv := sample.MethodAddSecretVersion()
-	apitest.CheckMethod(t, service, asv.Name, asv)
+	apitest.CheckMethod(t, service, asv.Name(), asv)
 }
 
 func TestOpenAPI_ServicePlaceholder(t *testing.T) {
@@ -695,10 +695,10 @@ func TestOpenAPI_Pagination(t *testing.T) {
 				WithType(api.TypezString).
 				WithTypezID("string").
 				WithOptional(),
-		)
-	listFoosMethod.IsList = false
-	listFoosMethod.InputTypeID = "..Service.ListFoosRequest"
-	listFoosMethod.OutputTypeID = "..ListFoosResponse"
+		).
+		WithIsList(false).
+		WithInputTypeID("..Service.ListFoosRequest").
+		WithOutputTypeID("..ListFoosResponse")
 
 	wantService := api.NewTestService("Service").
 		WithPackage("").
@@ -824,7 +824,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	wantField := []*api.Field{requestID, requestIDExplicit}
-	if diff := cmp.Diff(wantField, method.AutoPopulated, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
+	if diff := cmp.Diff(wantField, method.AutoPopulated(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -860,9 +860,9 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 				WithLiteral("a").
 				Build(),
 		).
-		WithQueryParameters("filter")
-	rpcA.InputTypeID = "..Service.RpcARequest"
-	rpcA.OutputTypeID = "..Response"
+		WithQueryParameters("filter").
+		WithInputTypeID("..Service.RpcARequest").
+		WithOutputTypeID("..Response")
 	apitest.CheckMethod(t, service, "RpcA", rpcA)
 
 	rpcB := api.NewTestMethod("RpcB").
@@ -878,9 +878,9 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 				WithLiteral("b").
 				Build(),
 		).
-		WithQueryParameters()
-	rpcB.InputTypeID = "..Service.RpcBRequest"
-	rpcB.OutputTypeID = "..Response"
+		WithQueryParameters().
+		WithInputTypeID("..Service.RpcBRequest").
+		WithOutputTypeID("..Response")
 	apitest.CheckMethod(t, service, "RpcB", rpcB)
 
 	response := test.Message("..Response")

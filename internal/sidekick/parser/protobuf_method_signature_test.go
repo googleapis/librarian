@@ -68,7 +68,7 @@ func TestProtobuf_Signatures(t *testing.T) {
 	// Ignore the MethodSignature.method and Field.Parent back-pointers to avoid recursive cycle testing.
 	if diff := cmp.Diff(
 		wantSignatures,
-		gotMethod.Signatures,
+		gotMethod.Signatures(),
 		apitest.AllowUnexported(),
 		cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".method" }, cmp.Ignore()),
 		apitest.IgnoreFieldNames("parent")); diff != "" {

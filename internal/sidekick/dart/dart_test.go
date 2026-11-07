@@ -503,8 +503,8 @@ func TestHttpPathFmt(t *testing.T) {
 		{method: sample.MethodAddSecretVersion(), want: "/v1/projects/${request.project}/secrets/${request.secret}:addVersion"},
 		{method: sample.MethodListSecretVersions(), want: "/v1/projects/${request.parent}/secrets/${request.secret}:listSecretVersions"},
 	} {
-		t.Run(test.method.Name, func(t *testing.T) {
-			if got := httpPathFmt(test.method.PathInfo); got != test.want {
+		t.Run(test.method.Name(), func(t *testing.T) {
+			if got := httpPathFmt(test.method.PathInfo()); got != test.want {
 				t.Errorf("unexpected httpPathFmt, got=%q, want=%q", got, test.want)
 			}
 		})

@@ -131,7 +131,7 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 	}
 	var gotNames []string
 	for _, m := range serviceCodec.Methods {
-		gotNames = append(gotNames, m.Name)
+		gotNames = append(gotNames, m.Name())
 	}
 	wantNames := []string{"ValidMethod"}
 	if diff := cmp.Diff(wantNames, gotNames); diff != "" {
@@ -246,7 +246,7 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 	wantRequired := map[string]*api.Service{
 		sourceService.ID: sourceService,
 	}
-	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Model"), cmpopts.IgnoreFields(api.Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), apitest.IgnoreMethodFields("model"), cmpopts.IgnoreFields(api.Service{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -616,7 +616,7 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 
 			if test.updateMask {
 				maskField := api.NewTestField("update_mask")
-				method.WithSampleInfo(&api.SampleInfo{UpdateMaskField: maskField})
+				method.WithSampleInfo(api.NewSampleInfoBuilder().WithUpdateMaskField(maskField).Build())
 			}
 
 			codec := newTestCodec(t, model, nil)
@@ -691,7 +691,7 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 
 	var gotMethods []string
 	for _, m := range annotations.Methods {
-		gotMethods = append(gotMethods, m.Name)
+		gotMethods = append(gotMethods, m.Name())
 	}
 	wantMethods := []string{"Unary"}
 	if diff := cmp.Diff(wantMethods, gotMethods); diff != "" {

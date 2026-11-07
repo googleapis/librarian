@@ -614,7 +614,7 @@ func TestRoutingRequired(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !method.Codec.(*methodAnnotation).RoutingRequired {
+	if !method.Codec().(*methodAnnotation).RoutingRequired {
 		t.Errorf("codec setting `routing-required` not respected")
 	}
 }

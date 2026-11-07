@@ -49,7 +49,7 @@ type Service struct {
 // that support client-side streaming.
 func (s *Service) HasClientSideStreaming() bool {
 	return slices.ContainsFunc(s.Methods, func(m *Method) bool {
-		return m.ClientSideStreaming
+		return m.clientSideStreaming
 	})
 }
 
@@ -57,7 +57,7 @@ func (s *Service) HasClientSideStreaming() bool {
 // that support bidirectional streaming.
 func (s *Service) HasBidiStreaming() bool {
 	return slices.ContainsFunc(s.Methods, func(m *Method) bool {
-		return m.ClientSideStreaming && m.ServerSideStreaming
+		return m.clientSideStreaming && m.serverSideStreaming
 	})
 }
 
@@ -65,6 +65,6 @@ func (s *Service) HasBidiStreaming() bool {
 // that support server-side streaming and are not bidirectional.
 func (s *Service) HasServerSideStreaming() bool {
 	return slices.ContainsFunc(s.Methods, func(m *Method) bool {
-		return !m.ClientSideStreaming && m.ServerSideStreaming
+		return !m.clientSideStreaming && m.serverSideStreaming
 	})
 }

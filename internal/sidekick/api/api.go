@@ -176,7 +176,7 @@ func (a *API) AddMethod(m *Method) {
 	if a.methodByID == nil {
 		a.methodByID = make(map[string]*Method)
 	}
-	a.methodByID[m.ID] = m
+	a.methodByID[m.id] = m
 }
 
 // Message returns a message that is associated with the API.

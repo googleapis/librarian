@@ -65,7 +65,7 @@ type serviceAnnotations struct {
 // HasGrpc returns true if the service has at least one generated gRPC method.
 func (s *serviceAnnotations) HasGrpc() bool {
 	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
-		if ann, ok := m.Codec.(*methodAnnotation); ok {
+		if ann, ok := m.Codec().(*methodAnnotation); ok {
 			return ann.IsGrpc
 		}
 		return false
@@ -75,7 +75,7 @@ func (s *serviceAnnotations) HasGrpc() bool {
 // HasHttp returns true if the service has at least one generated HTTP method.
 func (s *serviceAnnotations) HasHttp() bool {
 	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
-		if ann, ok := m.Codec.(*methodAnnotation); ok {
+		if ann, ok := m.Codec().(*methodAnnotation); ok {
 			return ann.IsHttp()
 		}
 		return false
@@ -85,7 +85,7 @@ func (s *serviceAnnotations) HasHttp() bool {
 // HasBidiStreaming returns true if the service has at least one generated bidirectional streaming method.
 func (s *serviceAnnotations) HasBidiStreaming() bool {
 	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
-		if ann, ok := m.Codec.(*methodAnnotation); ok {
+		if ann, ok := m.Codec().(*methodAnnotation); ok {
 			return ann.IsBidiStreaming()
 		}
 		return false
@@ -95,7 +95,7 @@ func (s *serviceAnnotations) HasBidiStreaming() bool {
 // HasServerStreaming returns true if the service has at least one generated server streaming method.
 func (s *serviceAnnotations) HasServerStreaming() bool {
 	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
-		if ann, ok := m.Codec.(*methodAnnotation); ok {
+		if ann, ok := m.Codec().(*methodAnnotation); ok {
 			return ann.IsServerStreaming()
 		}
 		return false
@@ -135,14 +135,14 @@ func (s *serviceAnnotations) HasLROs() bool {
 	if len(s.LROTypes) > 0 {
 		return true
 	}
-	return slices.IndexFunc(s.Methods, func(m *api.Method) bool { return m.DiscoveryLro != nil }) != -1
+	return slices.IndexFunc(s.Methods, func(m *api.Method) bool { return m.DiscoveryLro() != nil }) != -1
 }
 
 // NeedsRequestBuilder returns true if the service has at least one method that uses RequestBuilder
 // (i.e. methods that are not bidirectional streaming, such as unary or server-streaming methods).
 func (s *serviceAnnotations) NeedsRequestBuilder() bool {
 	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
-		ann, ok := m.Codec.(*methodAnnotation)
+		ann, ok := m.Codec().(*methodAnnotation)
 		return !ok || !ann.IsBidiStreaming()
 	})
 }
@@ -151,7 +151,7 @@ func (s *serviceAnnotations) NeedsRequestBuilder() bool {
 // (i.e. bidirectional streaming methods).
 func (s *serviceAnnotations) NeedsBidiStreamBuilder() bool {
 	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
-		ann, ok := m.Codec.(*methodAnnotation)
+		ann, ok := m.Codec().(*methodAnnotation)
 		return ok && ann.IsBidiStreaming()
 	})
 }
@@ -159,7 +159,7 @@ func (s *serviceAnnotations) NeedsBidiStreamBuilder() bool {
 // HasExtensibleBuilder returns true if the service has at least one method with an extensible builder.
 func (s *serviceAnnotations) HasExtensibleBuilder() bool {
 	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
-		if ann, ok := m.Codec.(*methodAnnotation); ok {
+		if ann, ok := m.Codec().(*methodAnnotation); ok {
 			return ann.ExtensibleBuilder
 		}
 		return false
@@ -172,8 +172,8 @@ func (s *serviceAnnotations) MaximumAPIVersion() string {
 	if len(s.Methods) == 0 {
 		return ""
 	}
-	max := slices.MaxFunc(s.Methods, func(a, b *api.Method) int { return cmp.Compare(a.APIVersion, b.APIVersion) })
-	return max.APIVersion
+	max := slices.MaxFunc(s.Methods, func(a, b *api.Method) int { return cmp.Compare(a.APIVersion(), b.APIVersion()) })
+	return max.APIVersion()
 }
 
 // FeatureName returns the feature name for the service.
@@ -184,7 +184,7 @@ func (a *serviceAnnotations) FeatureName() string {
 // EnabledFeatures returns the other features enabled by the service.
 func (a *serviceAnnotations) EnabledFeatures() []string {
 	for _, m := range a.Methods {
-		if m.DiscoveryLro != nil {
+		if m.DiscoveryLro() != nil {
 			return []string{lroOperationFeature}
 		}
 	}
@@ -199,14 +199,14 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 	seenLROTypes := make(map[string]bool)
 	var lroTypes []*api.Message
 	for _, m := range methods {
-		if m.OperationInfo != nil {
-			if _, ok := seenLROTypes[m.OperationInfo.MetadataTypeID()]; !ok {
-				seenLROTypes[m.OperationInfo.MetadataTypeID()] = true
-				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.MetadataTypeID()))
+		if m.OperationInfo() != nil {
+			if _, ok := seenLROTypes[m.OperationInfo().MetadataTypeID()]; !ok {
+				seenLROTypes[m.OperationInfo().MetadataTypeID()] = true
+				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo().MetadataTypeID()))
 			}
-			if _, ok := seenLROTypes[m.OperationInfo.ResponseTypeID()]; !ok {
-				seenLROTypes[m.OperationInfo.ResponseTypeID()] = true
-				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.ResponseTypeID()))
+			if _, ok := seenLROTypes[m.OperationInfo().ResponseTypeID()]; !ok {
+				seenLROTypes[m.OperationInfo().ResponseTypeID()] = true
+				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo().ResponseTypeID()))
 			}
 		}
 	}

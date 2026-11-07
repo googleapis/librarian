@@ -306,11 +306,11 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 			outDir := t.TempDir()
 			var messages []*api.Message
 			for _, m := range test.service.Methods {
-				if m.InputType != nil {
-					messages = append(messages, m.InputType)
+				if m.InputType() != nil {
+					messages = append(messages, m.InputType())
 				}
-				if m.OutputType != nil {
-					messages = append(messages, m.OutputType)
+				if m.OutputType() != nil {
+					messages = append(messages, m.OutputType())
 				}
 			}
 			model := api.NewTestAPI(messages, nil, []*api.Service{test.service}).

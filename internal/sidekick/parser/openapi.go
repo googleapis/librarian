@@ -117,15 +117,14 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 		result.AddMessage(message)
 	}
 
-	err := makeServices(result, model, packageName, serviceName)
+	err := makeServices(result, model, serviceConfig, packageName, serviceName)
 	if err != nil {
 		return nil, err
 	}
-	updateAutoPopulatedFields(serviceConfig, result)
 	return result, nil
 }
 
-func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], packageName, serviceName string) error {
+func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], serviceConfig *serviceconfig.Service, packageName, serviceName string) error {
 	// It is hard to imagine an OpenAPI specification without at least some
 	// RPCs, but we can simplify the tests if we support specifications without
 	// paths or without any useful methods in the paths.
@@ -140,7 +139,7 @@ func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], pack
 		Documentation: a.Description,
 		DefaultHost:   defaultHost(model),
 	}
-	err := makeMethods(a, service, model, packageName, sID)
+	err := makeMethods(a, service, model, serviceConfig, packageName, sID)
 	if err != nil {
 		return err
 	}
@@ -163,7 +162,7 @@ func defaultHost(model *libopenapi.DocumentModel[v3.Document]) string {
 	return strings.TrimPrefix(defaultHost, "https://")
 }
 
-func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentModel[v3.Document], packageName, serviceID string) error {
+func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentModel[v3.Document], serviceConfig *serviceconfig.Service, packageName, serviceID string) error {
 	if model.Model.Paths == nil {
 		// The method has no path, there is nothing to generate.
 		return nil
@@ -225,15 +224,16 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 				WithBodyFieldPath(bodyFieldPath).
 				Build()
 			mID := fmt.Sprintf("%s.%s", serviceID, op.Operation.OperationId)
-			m := &api.Method{
-				Name:          op.Operation.OperationId,
-				ID:            mID,
-				Deprecated:    op.Operation.Deprecated != nil && *op.Operation.Deprecated,
-				Documentation: op.Operation.Description,
-				InputTypeID:   requestMessage.ID(),
-				OutputTypeID:  responseMessage.ID(),
-				PathInfo:      pathInfo,
-			}
+			m := api.NewMethodBuilder().
+				WithName(op.Operation.OperationId).
+				WithID(mID).
+				WithDeprecated(op.Operation.Deprecated != nil && *op.Operation.Deprecated).
+				WithDocumentation(op.Operation.Description).
+				WithInputTypeID(requestMessage.ID()).
+				WithOutputTypeID(responseMessage.ID()).
+				WithPathInfo(pathInfo).
+				WithAutoPopulated(findAutoPopulatedFields(serviceConfig, mID, requestMessage)).
+				Build()
 			a.AddMethod(m)
 			service.Methods = append(service.Methods, m)
 		}

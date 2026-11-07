@@ -218,7 +218,7 @@ type methodAnnotation struct {
 
 // HasBody returns true if the method has a body.
 func (m *methodAnnotation) HasBody() bool {
-	return m.Parent.PathInfo.BodyFieldPath() != ""
+	return m.Parent.PathInfo().BodyFieldPath() != ""
 }
 
 // HasQueryLines returns true if the method has query lines.
@@ -524,7 +524,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 
 	if exampleService, exampleMethod := findExampleMethod(model.Services); exampleService != nil && exampleMethod != nil {
 		exampleServiceName = exampleService.Codec.(*serviceAnnotations).Name
-		mAnn := exampleMethod.Codec.(*methodAnnotation)
+		mAnn := exampleMethod.Codec().(*methodAnnotation)
 		exampleMethodName = mAnn.Name
 		exampleMethodRequestType = mAnn.RequestType
 		exampleMethodResponseType = mAnn.ResponseType
@@ -698,7 +698,7 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 
 	for i, m := range methods {
 		annotate.annotateMethod(m)
-		m.Codec.(*methodAnnotation).IsLast = (i == len(methods)-1)
+		m.Codec().(*methodAnnotation).IsLast = (i == len(methods)-1)
 	}
 	ann := &serviceAnnotations{
 		Name:        s.Name,
@@ -789,19 +789,19 @@ func createToStringLines(message *api.Message) []string {
 
 func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	// Ignore imports added from the input and output messages.
-	if method.InputType.Codec() == nil {
-		annotate.annotateMessage(method.InputType)
+	if method.InputType().Codec() == nil {
+		annotate.annotateMessage(method.InputType())
 	}
-	if method.OutputType.Codec() == nil {
-		annotate.annotateMessage(method.OutputType)
+	if method.OutputType().Codec() == nil {
+		annotate.annotateMessage(method.OutputType())
 	}
 
 	pathInfoAnnotation := &pathInfoAnnotation{
-		PathFmt: httpPathFmt(method.PathInfo),
+		PathFmt: httpPathFmt(method.PathInfo()),
 	}
-	method.PathInfo.SetAnnotations(pathInfoAnnotation)
+	method.PathInfo().SetAnnotations(pathInfoAnnotation)
 
-	bodyMessageName := method.PathInfo.BodyFieldPath()
+	bodyMessageName := method.PathInfo().BodyFieldPath()
 	if bodyMessageName == "*" {
 		bodyMessageName = "request"
 	} else if bodyMessageName != "" {
@@ -810,17 +810,17 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 
 	// For 'GetOperation' mixins, we augment the method generation with
 	// additional generic type parameters.
-	isGetOperation := method.Name == "GetOperation" &&
-		method.OutputTypeID == ".google.longrunning.Operation"
-	if method.ID == ".google.longrunning.Operations.GetOperation" {
+	isGetOperation := method.Name() == "GetOperation" &&
+		method.OutputTypeID() == ".google.longrunning.Operation"
+	if method.ID() == ".google.longrunning.Operations.GetOperation" {
 		isGetOperation = false
 	}
 
-	if method.OperationInfo != nil {
-		annotate.annotateOperationInfo(method.OperationInfo)
+	if method.OperationInfo() != nil {
+		annotate.annotateOperationInfo(method.OperationInfo())
 	}
 
-	primaryBinding := method.PathInfo.Bindings()[0]
+	primaryBinding := method.PathInfo().Bindings()[0]
 	queryParams := language.QueryParams(method, primaryBinding)
 	queryLines := []string{}
 	for _, field := range queryParams {
@@ -829,19 +829,19 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 
 	annotation := &methodAnnotation{
 		Parent:              method,
-		Name:                strcase.ToLowerCamel(method.Name),
+		Name:                strcase.ToLowerCamel(method.Name()),
 		RequestMethod:       strings.ToLower(primaryBinding.Verb()),
-		RequestType:         annotate.resolveMessageName(method.InputType, true),
-		ResponseType:        annotate.resolveMessageName(method.OutputType, true),
-		DocLines:            formatDocComments(method.Documentation, annotate.model),
-		ReturnsValue:        !method.ReturnsEmpty,
+		RequestType:         annotate.resolveMessageName(method.InputType(), true),
+		ResponseType:        annotate.resolveMessageName(method.OutputType(), true),
+		DocLines:            formatDocComments(method.Documentation(), annotate.model),
+		ReturnsValue:        !method.ReturnsEmpty(),
 		BodyMessageName:     bodyMessageName,
 		QueryLines:          queryLines,
 		IsLROGetOperation:   isGetOperation,
-		ServerSideStreaming: method.ServerSideStreaming,
-		EnableSSE:           method.ServerSideStreaming && annotate.supportsSSE,
+		ServerSideStreaming: method.ServerSideStreaming(),
+		EnableSSE:           method.ServerSideStreaming() && annotate.supportsSSE,
 	}
-	method.Codec = annotation
+	method.SetAnnotations(annotation)
 }
 
 func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.OperationInfo) {
@@ -1580,17 +1580,17 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 		}
 		sAnn := s.Codec.(*serviceAnnotations)
 		for _, m := range sAnn.Methods {
-			if !m.IsSimple || m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
+			if !m.IsSimple() || m.OperationInfo() != nil || m.OutputTypeID() == ".google.longrunning.Operation" {
 				continue
 			}
 			candidates = append(candidates, exampleMethod{
 				service:                   s,
 				method:                    m,
-				requestTypeInSamePackage:  inSamePackage(m.InputType),
-				responseTypeInSamePackage: inSamePackage(m.OutputType),
-				returnsEmpty:              m.ReturnsEmpty,
-				requestTypeHasRequired:    hasRequired(m.InputType),
-				responseTypeHasRequired:   hasRequired(m.OutputType),
+				requestTypeInSamePackage:  inSamePackage(m.InputType()),
+				responseTypeInSamePackage: inSamePackage(m.OutputType()),
+				returnsEmpty:              m.ReturnsEmpty(),
+				requestTypeHasRequired:    hasRequired(m.InputType()),
+				responseTypeHasRequired:   hasRequired(m.OutputType()),
 			})
 		}
 	}

@@ -236,7 +236,7 @@ func TestPatchCommentsMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(m0.Documentation, Want); diff != "" {
+	if diff := cmp.Diff(m0.Documentation(), Want); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
