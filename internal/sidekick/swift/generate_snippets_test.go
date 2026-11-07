@@ -352,7 +352,7 @@ func TestGenerateSnippets_LRO(t *testing.T) {
 		WithInput(createThingRequest).
 		WithOutput(operationType).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
-		WithOperationInfo(api.NewTestOperationInfo(thing.ID, metadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(thing.ID(), metadataType.ID()))
 	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(createThing)
 	model := api.NewTestAPI([]*api.Message{thing, metadataType, createThingRequest, operationType}, nil, []*api.Service{testService}).
 		WithPackageName("test")
@@ -396,7 +396,7 @@ func TestGenerateSnippets_LRO_Empty(t *testing.T) {
 		WithInput(deleteThingRequest).
 		WithOutput(operationType).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
-		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID()))
 	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(deleteThing)
 	model := api.NewTestAPI([]*api.Message{metadataType, deleteThingRequest, operationType}, nil, []*api.Service{testService}).
 		WithPackageName("test")

@@ -176,17 +176,17 @@ func pascalCase(s string) string {
 // messageName returns the Swift type name for a message, prefixing top-level
 // well-known protobuf types (google.protobuf) with "WKT".
 func messageName(m *api.Message) string {
-	if m.Parent == nil && m.Package == wellKnownProtobufPackage {
-		return escapeKeyword("WKT" + pascalCaseNoMangling(m.Name))
+	if m.Parent() == nil && m.Package() == wellKnownProtobufPackage {
+		return escapeKeyword("WKT" + pascalCaseNoMangling(m.Name()))
 	}
-	return pascalCase(m.Name)
+	return pascalCase(m.Name())
 }
 
 // messageSimpleName returns the simple Swift type name for a message, taking
 // into account well-known types and service placeholders.
 func messageSimpleName(m *api.Message) string {
 	name := messageName(m)
-	if m.ServicePlaceholder {
+	if m.ServicePlaceholder() {
 		return pascalCase(name + "Client")
 	}
 	return name

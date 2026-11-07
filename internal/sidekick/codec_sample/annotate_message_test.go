@@ -50,19 +50,19 @@ func TestAnnotateMessage(t *testing.T) {
 			if err := c.annotateModel(model); err != nil {
 				t.Fatal(err)
 			}
-			got, ok := test.message.Codec.(*messageAnnotations)
+			got, ok := test.message.Codec().(*messageAnnotations)
 			if !ok {
-				t.Fatalf("expected *messageAnnotations, got %T", test.message.Codec)
+				t.Fatalf("expected *messageAnnotations, got %T", test.message.Codec())
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-			for _, child := range test.message.Messages {
-				if _, ok := child.Codec.(*messageAnnotations); !ok {
-					t.Errorf("expected nested message codec *messageAnnotations, got %T", child.Codec)
+			for _, child := range test.message.Messages() {
+				if _, ok := child.Codec().(*messageAnnotations); !ok {
+					t.Errorf("expected nested message codec *messageAnnotations, got %T", child.Codec())
 				}
 			}
-			for _, e := range test.message.Enums {
+			for _, e := range test.message.Enums() {
 				if _, ok := e.Codec().(*enumAnnotations); !ok {
 					t.Errorf("expected nested enum codec *enumAnnotations, got %T", e.Codec())
 				}

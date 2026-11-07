@@ -24,17 +24,17 @@ import (
 func makeServiceMethods(model *api.API, service *api.Service, doc *document, resource *resource) error {
 	// It is Okay to reuse the ID, sidekick uses different the namespaces
 	// for messages vs. services.
-	parent := &api.Message{
-		Name:               service.Name,
-		ID:                 service.ID,
-		Package:            service.Package,
-		Documentation:      fmt.Sprintf("Synthetic messages for the [%s][%s] service", service.Name, service.ID[1:]),
-		ServicePlaceholder: true,
-	}
+	parentBuilder := api.NewMessageBuilder().
+		WithName(service.Name).
+		WithID(service.ID).
+		WithPackage(service.Package).
+		WithDocumentation(fmt.Sprintf("Synthetic messages for the [%s][%s] service", service.Name, service.ID[1:])).
+		WithServicePlaceholder(true)
+	parent := parentBuilder.Build()
 	model.AddMessage(parent)
 	model.Messages = append(model.Messages, parent)
 	for _, input := range resource.Methods {
-		method, err := makeMethod(model, parent, doc, input)
+		method, err := makeMethod(model, parentBuilder, doc, input)
 		if err != nil {
 			return err
 		}
@@ -45,8 +45,9 @@ func makeServiceMethods(model *api.API, service *api.Service, doc *document, res
 	return nil
 }
 
-func makeMethod(model *api.API, parent *api.Message, doc *document, input *method) (*api.Method, error) {
-	id := fmt.Sprintf("%s.%s", parent.ID, input.Name)
+func makeMethod(model *api.API, parentBuilder *api.MessageBuilder, doc *document, input *method) (*api.Method, error) {
+	parent := parentBuilder.Build()
+	id := fmt.Sprintf("%s.%s", parent.ID(), input.Name)
 	if input.MediaUpload != nil {
 		return nil, fmt.Errorf("media upload methods are not supported, id=%s", id)
 	}
@@ -60,17 +61,18 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 	}
 
 	// Discovery doc methods get a synthetic request message.
-	requestMessage := &api.Message{
-		Name:             fmt.Sprintf("%sRequest", input.Name),
-		ID:               fmt.Sprintf("%s.%sRequest", parent.ID, input.Name),
-		Package:          model.PackageName,
-		SyntheticRequest: true,
-		Documentation:    fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", input.Name, id[1:]),
-		Parent:           parent,
-		Deprecated:       input.Deprecated,
-	}
+	requestMessageID := fmt.Sprintf("%s.%sRequest", parent.ID(), input.Name)
+	requestBuilder := api.NewMessageBuilder().
+		WithName(fmt.Sprintf("%sRequest", input.Name)).
+		WithID(requestMessageID).
+		WithPackage(model.PackageName).
+		WithSyntheticRequest(true).
+		WithDocumentation(fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", input.Name, id[1:])).
+		WithParent(parent).
+		WithDeprecated(input.Deprecated)
+	requestMessage := requestBuilder.Build()
 	model.AddMessage(requestMessage)
-	parent.Messages = append(parent.Messages, requestMessage)
+	parentBuilder.AddMessage(requestMessage)
 
 	var uriTemplate string
 	if strings.HasSuffix(doc.ServicePath, "/") {
@@ -97,11 +99,11 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 			Name:   p.Name,
 			Schema: &p.schema,
 		}
-		field, err := makeField(model, requestMessage, prop, !p.Required)
+		field, err := makeField(model, requestBuilder, prop, !p.Required)
 		if err != nil {
 			return nil, err
 		}
-		requestMessage.Fields = append(requestMessage.Fields, field)
+		requestBuilder.AddField(field)
 		fieldNames[field.Name()] = true
 	}
 	binding := bindingBuilder.Build()
@@ -121,12 +123,12 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 			WithDocumentation(fmt.Sprintf("Synthetic request body field for the [%s()][%s] method.", input.Name, id[1:])).
 			WithName(name).
 			WithJSONName(name).
-			WithID(fmt.Sprintf("%s.%s", requestMessage.ID, name)).
+			WithID(fmt.Sprintf("%s.%s", requestMessageID, name)).
 			WithTypez(api.TypezMessage).
 			WithTypezID(bodyID).
 			WithOptional(true).
 			Build()
-		requestMessage.Fields = append(requestMessage.Fields, body)
+		requestBuilder.AddField(body)
 		bodyPathField = name
 		if len(signatureNames) != 0 {
 			// The body, if present, is required for signature requests.
@@ -147,7 +149,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		Name:          input.Name,
 		Documentation: input.Description,
 		Deprecated:    input.Deprecated,
-		InputTypeID:   requestMessage.ID,
+		InputTypeID:   requestMessageID,
 		OutputTypeID:  outputID,
 		ReturnsEmpty:  outputID == ".google.protobuf.Empty",
 		PathInfo: api.NewPathInfoBuilder().

@@ -104,7 +104,7 @@ func TestResourceReferenceSetAnnotationsPanicsWhenAlreadySet(t *testing.T) {
 }
 
 func TestResource(t *testing.T) {
-	msg := NewTestMessage("Book")
+	msg := NewMessageBuilder().WithName("Book").Build()
 	segProjects := *NewPathSegmentBuilder().WithLiteral("projects").Build()
 	got := NewResourceBuilder().
 		WithType("test.googleapis.com/Book").

@@ -47,7 +47,7 @@ func TestMessageAnnotations(t *testing.T) {
 		HasNestedTypes:    true,
 		BasicFields:       []*api.Field{},
 	}
-	if diff := cmp.Diff(want, message.Codec); diff != "" {
+	if diff := cmp.Diff(want, message.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -64,7 +64,7 @@ func TestMessageAnnotations(t *testing.T) {
 		HasNestedTypes:    false,
 		BasicFields:       []*api.Field{},
 	}
-	if diff := cmp.Diff(want, nested.Codec); diff != "" {
+	if diff := cmp.Diff(want, nested.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -84,14 +84,14 @@ func TestSetterSampleAnnotations(t *testing.T) {
 	})
 	annotateModel(model, codec)
 
-	if message.Codec.(*messageAnnotation).NameInExamples != "google_cloud_test_v1::model::TestMessage" {
-		t.Errorf("mismatch in message NameInExamples: got %q", message.Codec.(*messageAnnotation).NameInExamples)
+	if message.Codec().(*messageAnnotation).NameInExamples != "google_cloud_test_v1::model::TestMessage" {
+		t.Errorf("mismatch in message NameInExamples: got %q", message.Codec().(*messageAnnotation).NameInExamples)
 	}
 	if enum.Codec().(*enumAnnotation).NameInExamples != "google_cloud_test_v1::model::TestEnum" {
 		t.Errorf("mismatch in enum NameInExamples: got %q", enum.Codec().(*enumAnnotation).NameInExamples)
 	}
 
-	enumField := message.Fields[0]
+	enumField := message.Fields()[0]
 	if enumField.Parent() != message {
 		t.Errorf("mismatch in enum_field.Parent")
 	}
@@ -99,7 +99,7 @@ func TestSetterSampleAnnotations(t *testing.T) {
 		t.Errorf("mismatch in enum_field.EnumType")
 	}
 
-	messageField := message.Fields[1]
+	messageField := message.Fields()[1]
 	if messageField.Parent() != message {
 		t.Errorf("mismatch in message_field.Parent")
 	}
@@ -118,13 +118,13 @@ func TestInternalMessageOverrides(t *testing.T) {
 	})
 	annotateModel(model, codec)
 
-	if public.Codec.(*messageAnnotation).Internal {
+	if public.Codec().(*messageAnnotation).Internal {
 		t.Errorf("Public method should not be flagged as internal")
 	}
-	if !private1.Codec.(*messageAnnotation).Internal {
+	if !private1.Codec().(*messageAnnotation).Internal {
 		t.Errorf("Private method should not be flagged as internal")
 	}
-	if !private2.Codec.(*messageAnnotation).Internal {
+	if !private2.Codec().(*messageAnnotation).Internal {
 		t.Errorf("Private method should not be flagged as internal")
 	}
 }
@@ -133,8 +133,8 @@ func TestMessageModuleNameOverrides(t *testing.T) {
 	childReq := api.NewTestMessage("GetRequest")
 	servicePlaceholder := api.NewTestMessage("globalFrontendSettings").
 		WithPackage("google.cloud.compute.v1").
-		WithMessages(childReq)
-	servicePlaceholder.ServicePlaceholder = true
+		WithMessages(childReq).
+		WithServicePlaceholder()
 
 	schemaChild := api.NewTestMessage("NestedType")
 	schemaMessage := api.NewTestMessage("GlobalFrontendSettings").
@@ -150,7 +150,7 @@ func TestMessageModuleNameOverrides(t *testing.T) {
 		t.Fatalf("failed to annotate model: %v", err)
 	}
 
-	placeholderAnn, ok := servicePlaceholder.Codec.(*messageAnnotation)
+	placeholderAnn, ok := servicePlaceholder.Codec().(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on servicePlaceholder")
 	}
@@ -158,7 +158,7 @@ func TestMessageModuleNameOverrides(t *testing.T) {
 		t.Errorf("got servicePlaceholder.ModuleName = %q, want %q", placeholderAnn.ModuleName, "global_frontend_settings_requests")
 	}
 
-	childAnn, ok := childReq.Codec.(*messageAnnotation)
+	childAnn, ok := childReq.Codec().(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on childReq")
 	}
@@ -166,7 +166,7 @@ func TestMessageModuleNameOverrides(t *testing.T) {
 		t.Errorf("got childReq.QualifiedName = %q, want %q", childAnn.QualifiedName, "crate::model::global_frontend_settings_requests::GetRequest")
 	}
 
-	schemaAnn, ok := schemaMessage.Codec.(*messageAnnotation)
+	schemaAnn, ok := schemaMessage.Codec().(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on schemaMessage")
 	}
@@ -176,7 +176,7 @@ func TestMessageModuleNameOverrides(t *testing.T) {
 	if schemaAnn.QualifiedName != "crate::model::GlobalFrontendSettings" {
 		t.Errorf("got schemaMessage.QualifiedName = %q, want %q", schemaAnn.QualifiedName, "crate::model::GlobalFrontendSettings")
 	}
-	schemaChildAnn, ok := schemaChild.Codec.(*messageAnnotation)
+	schemaChildAnn, ok := schemaChild.Codec().(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on schemaChild")
 	}

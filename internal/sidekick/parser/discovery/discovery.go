@@ -69,16 +69,16 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConf
 		if schema.Type != "object" {
 			return nil, fmt.Errorf("schema %s is not an object: %q", id, schema.Type)
 		}
-		message := &api.Message{
-			Name:          name,
-			ID:            id,
-			Package:       packageName,
-			Documentation: schema.Description,
-		}
-		err := makeMessageFields(result, message, schema)
+		mb := api.NewMessageBuilder().
+			WithName(name).
+			WithID(id).
+			WithPackage(packageName).
+			WithDocumentation(schema.Description)
+		err := makeMessageFields(result, mb, schema)
 		if err != nil {
 			return nil, err
 		}
+		message := mb.Build()
 		result.Messages = append(result.Messages, message)
 		result.AddMessage(message)
 	}

@@ -145,8 +145,8 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
 	name := messageSimpleName(m)
-	if m.Parent == nil {
-		prefix, err := c.typePrefix(m.Package, name)
+	if m.Parent() == nil {
+		prefix, err := c.typePrefix(m.Package(), name)
 		if err != nil {
 			return "", err
 		}
@@ -155,7 +155,7 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 		}
 		return name, nil
 	}
-	parent, err := c.messageTypeName(m.Parent)
+	parent, err := c.messageTypeName(m.Parent())
 	if err != nil {
 		return "", err
 	}
@@ -164,12 +164,12 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 
 func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 	name := messageSimpleName(m)
-	if m.Parent == nil {
-		if m.Package == "" {
+	if m.Parent() == nil {
+		if m.Package() == "" {
 			// there is no package, so return the bare type name
 			return name, nil
 		}
-		if m.Package == c.Model.PackageName {
+		if m.Package() == c.Model.PackageName {
 			// this is the current package
 			if c.Module || c.LibraryName == "" {
 				// LibraryName is intentionally left empty when generating a module
@@ -181,13 +181,13 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 			}
 			return fmt.Sprintf("%s.%s", c.LibraryName, name), nil
 		}
-		dep, ok := c.ApiPackages[m.Package]
+		dep, ok := c.ApiPackages[m.Package()]
 		if !ok {
-			return "", fmt.Errorf("package %q not found in ApiPackages", m.Package)
+			return "", fmt.Errorf("package %q not found in ApiPackages", m.Package())
 		}
 		return fmt.Sprintf("%s.%s", dep.Name, name), nil
 	}
-	parent, err := c.fullyQualifiedMessageTypeName(m.Parent)
+	parent, err := c.fullyQualifiedMessageTypeName(m.Parent())
 	if err != nil {
 		return "", err
 	}

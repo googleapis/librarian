@@ -131,9 +131,9 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	}
 
 	msg := model.Messages[0]
-	msgAnn, ok := msg.Codec.(*messageAnnotations)
+	msgAnn, ok := msg.Codec().(*messageAnnotations)
 	if !ok {
-		t.Fatalf("expected message.Codec to be *messageAnnotations, got %T", msg.Codec)
+		t.Fatalf("expected message.Codec() to be *messageAnnotations, got %T", msg.Codec())
 	}
 	if msgAnn.Model != ann {
 		t.Errorf("expected msgAnn.Model to be %p, got %p", ann, msgAnn.Model)
