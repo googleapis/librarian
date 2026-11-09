@@ -65,7 +65,7 @@ jobs:
         working-directory: google-cloud-node
       - name: Run tests
         if: matrix.task == 'unit-test'
-        run: go run ./tool/cmd/coverage ./internal/librarian/nodejs
+        run: go run ./tool/cmd/coverage -summary-output="$GITHUB_STEP_SUMMARY" ./internal/librarian/nodejs
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test'
         working-directory: google-cloud-node

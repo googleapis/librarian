@@ -53,7 +53,7 @@ jobs:
         working-directory: google-cloud-python
       - name: Run Unit Tests
         if: matrix.task == 'unit-test'
-        run: go run ./tool/cmd/coverage ./internal/librarian/python
+        run: go run ./tool/cmd/coverage -summary-output="$GITHUB_STEP_SUMMARY" ./internal/librarian/python
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test'
         working-directory: google-cloud-python

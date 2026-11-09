@@ -57,7 +57,7 @@ jobs:
         run: |
           librarian install
       - name: Run internal/librarian/php tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/librarian/php
+        run: go run ./tool/cmd/coverage -summary-output="$GITHUB_STEP_SUMMARY" ./internal/librarian/php
   smoke-test:
     name: Smoke test
     runs-on: ubuntu-24.04
