@@ -28,7 +28,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"text/template"
+	"text/template" // NOLINT
 	"unicode"
 	"unicode/utf8"
 
