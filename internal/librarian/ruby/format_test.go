@@ -52,25 +52,52 @@ func TestFormat_MultipleBatches(t *testing.T) {
 
 func TestFormat_MissingOutputDir_Error(t *testing.T) {
 	outDir := filepath.Join(t.TempDir(), "nonexistent")
-	gotErr := Format(t.Context(), &config.Library{Name: "foo", Output: outDir})
+	tools := &config.Tools{
+		Gem: []*config.GemTool{{Name: generatorGemName, Version: "0.55.0"}},
+	}
+	gotErr := Format(t.Context(), tools, &config.Library{Name: "foo", Output: outDir})
 	if !errors.Is(gotErr, fs.ErrNotExist) {
 		t.Errorf("Format() error = %v, wantErr %v", gotErr, fs.ErrNotExist)
 	}
 }
 
 func TestFormat_MissingRubocopConfig_Error(t *testing.T) {
-	t.Setenv("LIBRARIAN_BIN", t.TempDir())
-	outDir := t.TempDir()
-	filePath := filepath.Join(outDir, "lib", "foo.rb")
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	gotErr := Format(t.Context(), &config.Library{Name: "foo", Output: outDir})
-	if !errors.Is(gotErr, ErrRubocopConfigNotFound) {
-		t.Errorf("Format() error = %v, wantErr %v", gotErr, ErrRubocopConfigNotFound)
+	for _, test := range []struct {
+		name  string
+		tools *config.Tools
+	}{
+		{
+			name:  "nil tools",
+			tools: nil,
+		},
+		{
+			name: "missing generator gem in tools",
+			tools: &config.Tools{
+				Gem: []*config.GemTool{{Name: "toys", Version: "0.22.0"}},
+			},
+		},
+		{
+			name: "installed gem config file does not exist",
+			tools: &config.Tools{
+				Gem: []*config.GemTool{{Name: generatorGemName, Version: "0.55.0"}},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv("LIBRARIAN_BIN", t.TempDir())
+			outDir := t.TempDir()
+			filePath := filepath.Join(outDir, "lib", "foo.rb")
+			if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filePath, []byte("x = 1\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			gotErr := Format(t.Context(), test.tools, &config.Library{Name: "foo", Output: outDir})
+			if !errors.Is(gotErr, ErrRubocopConfigNotFound) {
+				t.Errorf("Format() error = %v, wantErr %v", gotErr, ErrRubocopConfigNotFound)
+			}
+		})
 	}
 }
 
@@ -79,24 +106,35 @@ func testFormatLibraries(t *testing.T, count int) {
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
 	installDir := filepath.Join(binDir, "ruby_tools")
-	configPath := filepath.Join(installDir, "gems", "gapic-generator-cloud-0.52.0", "cloud-rubocop.yml")
-	for _, dir := range []string{filepath.Dir(configPath), filepath.Join(installDir, "bin")} {
+	staleConfigPath := filepath.Join(installDir, "gems", "gapic-generator-cloud-0.52.0", "cloud-rubocop.yml")
+	pinnedConfigPath := filepath.Join(installDir, "gems", "gapic-generator-cloud-0.55.0", "cloud-rubocop.yml")
+	for _, dir := range []string{filepath.Dir(staleConfigPath), filepath.Dir(pinnedConfigPath), filepath.Join(installDir, "bin")} {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(configPath, []byte("AllCops:\n"), 0o644); err != nil {
+	if err := os.WriteFile(staleConfigPath, []byte("# stale\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(pinnedConfigPath, []byte("# formatted\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.WriteExecutable(t, filepath.Join(installDir, "bin", "rubocop"), `#!/bin/sh
+config_file=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --cache|--fail-level|-c) shift 2 ;;
+    -c) config_file="$2"; shift 2 ;;
+    --cache|--fail-level) shift 2 ;;
     -*) shift ;;
-    *) echo "# formatted" >> "$1"; shift ;;
+    *) cat "$config_file" >> "$1"; shift ;;
   esac
 done
 `)
+	tools := &config.Tools{
+		Gem: []*config.GemTool{
+			{Name: generatorGemName, Version: "0.55.0"},
+		},
+	}
 	outDir := t.TempDir()
 	var libraries []*config.Library
 	want := make(map[string]string)
@@ -132,7 +170,7 @@ done
 			}
 		}
 	}
-	if err := Format(t.Context(), libraries...); err != nil {
+	if err := Format(t.Context(), tools, libraries...); err != nil {
 		t.Fatal(err)
 	}
 	got := make(map[string]string)

@@ -317,7 +317,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		if err := g.Wait(); err != nil {
 			return err
 		}
-		if err := ruby.Format(ctx, libraries...); err != nil {
+		if err := ruby.Format(ctx, cfg.Tools, libraries...); err != nil {
 			return fmt.Errorf("format ruby libraries (%s): %w", cfg.Language, err)
 		}
 		return nil
