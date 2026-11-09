@@ -100,7 +100,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 		ModuleName:        toSnake(enumName(e)),
 		QualifiedName:     qualifiedName,
 		RelativeName:      relativeName,
-		ProstRelativeName: prostEnumRelativePath(e),
+		ProstRelativeName: c.prostTypeName(e.Package, prostEnumRelativePath(e), model.PackageName),
 		NameInExamples:    nameInExamples,
 		IsWktNullValue:    nameInExamples == "wkt::NullValue",
 		SerializeAsString: c.serializeEnumsAsStrings,

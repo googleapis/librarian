@@ -92,7 +92,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		EnumName:                   enumName,
 		QualifiedName:              qualifiedName,
 		RelativeName:               relativeEnumName,
-		ProstRelativeName:          prostMessageModulePath(message) + "::" + toProstPascal(enumName),
+		ProstRelativeName:          c.prostTypeName(message.Package, prostMessageModulePath(message)+"::"+toProstPascal(enumName), model.PackageName),
 		StructQualifiedName:        structQualifiedName,
 		NameInExamples:             nameInExamples,
 		FieldType:                  fmt.Sprintf("%s::%s", scope, enumName),

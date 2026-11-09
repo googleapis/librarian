@@ -49,6 +49,8 @@ const (
 	WktDoubleValueID = ".google.protobuf.DoubleValue"
 	// WktBoolValueID is the well-known type ID for google.protobuf.BoolValue.
 	WktBoolValueID = ".google.protobuf.BoolValue"
+	// WktStringValueID is the well-known type ID for google.protobuf.StringValue.
+	WktStringValueID = ".google.protobuf.StringValue"
 )
 
 // LoadWellKnownTypes adds well-known types to `state`.
@@ -124,4 +126,5 @@ var wellKnownMessages = []*Message{
 	{ID: WktFloatValueID, Name: "FloatValue", Package: "google.protobuf"},
 	{ID: WktDoubleValueID, Name: "DoubleValue", Package: "google.protobuf"},
 	{ID: WktBoolValueID, Name: "BoolValue", Package: "google.protobuf"},
+	{ID: WktStringValueID, Name: "StringValue", Package: "google.protobuf"},
 }
