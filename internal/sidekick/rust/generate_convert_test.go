@@ -205,15 +205,57 @@ impl gaxi::prost::FromProto<crate::model::ComplexMessage> for ComplexMessage {
     fn cnv(self) -> std::result::Result<crate::model::ComplexMessage, gaxi::prost::ConvertError> {
         Ok(
             crate::model::ComplexMessage::new()
-                .set_or_clear_opt_child(self.opt_child.map(|v| v.cnv()).transpose()?)
-                .set_or_clear_parent(self.parent.map(|v| v.cnv()).transpose()?)
-                .set_tags(self.tags.into_iter().map(|v| v.cnv())
+                .set_or_clear_opt_child(self.opt_child.map(gaxi::prost::FromProto::<crate::model::complex_message::Child>::cnv).transpose()?)
+                .set_or_clear_parent(self.parent.map(|v| gaxi::prost::FromProto::<crate::model::ComplexMessage>::cnv(*v)).transpose()?)
+                .set_tags(self.tags.into_iter().map(gaxi::prost::FromProto::<std::string::String>::cnv)
                     .collect::<std::result::Result<std::vec::Vec<_>, _>>()?)
                 .set_labels(self.labels.into_iter()
                     .map(|(k, v)| {
-                        gaxi::prost::pair_transpose(k.cnv(), v.cnv())
+                        gaxi::prost::pair_transpose(gaxi::prost::FromProto::<std::string::String>::cnv(k), gaxi::prost::FromProto::<i32>::cnv(v))
                     }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
-                .set_choice(self.choice.map(|v| v.cnv()).transpose()?)
+                .set_choice(self.choice.map(gaxi::prost::FromProto::<crate::model::complex_message::Choice>::cnv).transpose()?)
+        )
+    }
+}`,
+		},
+		{
+			name: "message with optional enum and enum-valued map",
+			makeMessage: func() (*api.Message, []string) {
+				enum := api.NewTestEnum("State").WithValues(api.NewTestEnumValue("STATE_ACTIVE", 1))
+				msg := api.NewTestMessage("EnumMessage").WithPackage("test.v1").WithEnums(enum)
+				mapType := api.NewTestMapWithFields("$Map",
+					api.NewTestField("key").WithType(api.TypezString),
+					api.NewTestField("value").WithEnumType(enum),
+				)
+				msg.WithFields(
+					api.NewTestField("opt_state").WithEnumType(enum).WithOptional(),
+					api.NewTestField("states").WithMapType(mapType),
+				)
+				return msg, nil
+			},
+			want: `impl gaxi::prost::ToProto<EnumMessage> for crate::model::EnumMessage {
+    type Output = EnumMessage;
+    fn to_proto(self) -> std::result::Result<EnumMessage, gaxi::prost::ConvertError> {
+        Ok(Self::Output {
+            opt_state: self.opt_state.map(gaxi::prost::ToProto::<enum_message::State>::to_proto).transpose()?,
+            states: self.states
+                .into_iter()
+                .map(|(k, v)| {
+                    gaxi::prost::pair_transpose(gaxi::prost::ToProto::<std::string::String>::to_proto(k), gaxi::prost::ToProto::<enum_message::State>::to_proto(v))
+                }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?,
+        })
+    }
+}
+
+impl gaxi::prost::FromProto<crate::model::EnumMessage> for EnumMessage {
+    fn cnv(self) -> std::result::Result<crate::model::EnumMessage, gaxi::prost::ConvertError> {
+        Ok(
+            crate::model::EnumMessage::new()
+                .set_or_clear_opt_state(self.opt_state.map(crate::model::enum_message::State::from))
+                .set_states(self.states.into_iter()
+                    .map(|(k, v)| {
+                        gaxi::prost::pair_transpose(gaxi::prost::FromProto::<std::string::String>::cnv(k), Ok(crate::model::enum_message::State::from(v)))
+                    }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
         )
     }
 }`,
@@ -293,8 +335,10 @@ func TestGenerateConvertOneOf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	contentStr := string(contents)
 
-	wantToProto := `impl gaxi::prost::ToProto<type_schema::Schema> for crate::model::type_schema::Schema {
+	t.Run("ToProto", func(t *testing.T) {
+		want := `impl gaxi::prost::ToProto<type_schema::Schema> for crate::model::type_schema::Schema {
     type Output = type_schema::Schema;
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
         match self {
@@ -304,10 +348,28 @@ func TestGenerateConvertOneOf(t *testing.T) {
         }
     }
 }`
-	gotToProto := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<type_schema::Schema>", "\n        }\n    }\n}")
-	if diff := cmp.Diff(wantToProto, gotToProto); diff != "" {
-		t.Errorf("mismatch ToProto (-want +got):\n%s", diff)
-	}
+		got := extractBlock(t, contentStr, "impl gaxi::prost::ToProto<type_schema::Schema>", "\n        }\n    }\n}")
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("FromProto", func(t *testing.T) {
+		want := `impl gaxi::prost::FromProto<crate::model::type_schema::Schema> for type_schema::Schema {
+    fn cnv(self) -> std::result::Result<crate::model::type_schema::Schema, gaxi::prost::ConvertError> {
+        use crate::model::type_schema::Schema as T;
+        match self {
+            Self::InlineSchema(v) => Ok(T::InlineSchema(std::boxed::Box::new(gaxi::prost::FromProto::<crate::model::InlineSchema>::cnv(*v)?))),
+            Self::ReferenceSchema(v) => Ok(T::ReferenceSchema(std::boxed::Box::new(gaxi::prost::FromProto::<crate::model::ReferenceSchema>::cnv(v)?))),
+            Self::Name(v) => Ok(T::Name(gaxi::prost::FromProto::<std::string::String>::cnv(v)?)),
+        }
+    }
+}`
+		got := extractBlock(t, contentStr, "impl gaxi::prost::FromProto<crate::model::type_schema::Schema>", "\n        }\n    }\n}")
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 }
 
 func TestGenerateConvertAcronyms(t *testing.T) {
@@ -613,9 +675,9 @@ func TestGenerateConvertOneOf_ReservedRawIdentifiers(t *testing.T) {
     fn cnv(self) -> std::result::Result<crate::model::primary_product_data_source::DefaultRule, gaxi::prost::ConvertError> {
         use crate::model::primary_product_data_source::DefaultRule as T;
         match self {
-            Self::Self_(v) => Ok(T::Self_(v.cnv()?)),
-            Self::Crate(v) => Ok(T::Crate(v.cnv()?)),
-            Self::Super(v) => Ok(T::Super(v.cnv()?)),
+            Self::Self_(v) => Ok(T::Self_(gaxi::prost::FromProto::<bool>::cnv(v)?)),
+            Self::Crate(v) => Ok(T::Crate(gaxi::prost::FromProto::<std::string::String>::cnv(v)?)),
+            Self::Super(v) => Ok(T::Super(gaxi::prost::FromProto::<i32>::cnv(v)?)),
         }
     }
 }`

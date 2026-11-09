@@ -356,8 +356,8 @@ pub(crate) fn lro_any_from_prost(
         {{- range .Codec.LROTypes }}
         "type.googleapis.com/{{ .Codec.SourceFQN }}" => value
             .to_msg::<crate::{{ .Codec.PackageModuleName }}::{{ .Codec.ProstRelativeName }}>()
-            .map_err(ConvertError::other)?
-            .cnv()
+            .map_err(ConvertError::other)
+            .and_then(FromProto::<{{ .Codec.QualifiedName }}>::cnv)
             .and_then(|our_msg| wkt::Any::from_msg(&our_msg).map_err(ConvertError::other)),
         {{- end }}
         {{- end }}
