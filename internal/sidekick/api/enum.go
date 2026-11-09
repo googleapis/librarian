@@ -80,6 +80,9 @@ func (v *EnumValue) Parent() *Enum { return v.parent }
 func (v *EnumValue) Codec() any { return v.codec }
 
 // SetAnnotations sets the language-specific annotations.
+//
+// Note: the Rust codec sets the attribute twice.
+// TODO(https://github.com/googleapis/librarian/issues/7911): clean up the caller and change this to panic if called more than once.
 func (v *EnumValue) SetAnnotations(codec any) { v.codec = codec }
 
 // SampleValue represents a value used in a sample.
