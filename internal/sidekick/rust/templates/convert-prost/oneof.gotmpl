@@ -41,9 +41,9 @@ impl gaxi::prost::FromProto<{{ .Codec.QualifiedName }}> for {{ .Codec.ProstRelat
             {{- else if .IsEnum }}
             Self::{{ .Codec.ProstBranchName }}(v) => Ok(T::{{ .Codec.BranchName }}(v.into())),
             {{- else if .Codec.IsBoxed }}
-            Self::{{ .Codec.ProstBranchName }}(v) => Ok(T::{{ .Codec.BranchName }}(std::boxed::Box::new(v.cnv()?))),
+            Self::{{ .Codec.ProstBranchName }}(v) => Ok(T::{{ .Codec.BranchName }}(std::boxed::Box::new(gaxi::prost::FromProto::<{{ .Codec.PrimitiveFieldType }}>::cnv({{- if .Codec.MapToBoxed }}*v{{- else }}v{{- end }})?))),
             {{- else }}
-            Self::{{ .Codec.ProstBranchName }}(v) => Ok(T::{{ .Codec.BranchName }}(v.cnv()?)),
+            Self::{{ .Codec.ProstBranchName }}(v) => Ok(T::{{ .Codec.BranchName }}(gaxi::prost::FromProto::<{{ .Codec.PrimitiveFieldType }}>::cnv(v)?)),
             {{- end }}
             {{- end }}
         }

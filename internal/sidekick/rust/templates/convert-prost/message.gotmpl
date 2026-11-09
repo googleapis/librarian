@@ -80,7 +80,13 @@ impl gaxi::prost::FromProto<{{ .Codec.QualifiedName }}> for {{ .Codec.ProstRelat
                 {{- if not .SkipProtoConversion }}
                 {{- if .Singular }}
                 {{- if .Optional }}
-                .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(|v| v.cnv()).transpose()?)
+                {{- if .IsEnum }}
+                .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map({{ .Codec.PrimitiveFieldType }}::from))
+                {{- else if .Codec.MapToBoxed }}
+                .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(|v| gaxi::prost::FromProto::<{{ .Codec.PrimitiveFieldType }}>::cnv(*v)).transpose()?)
+                {{- else }}
+                .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(gaxi::prost::FromProto::<{{ .Codec.PrimitiveFieldType }}>::cnv).transpose()?)
+                {{- end }}
                 {{- else if .Proto2Optional }}
                 .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.unwrap_or_default())
                 {{- else }}
@@ -90,19 +96,23 @@ impl gaxi::prost::FromProto<{{ .Codec.QualifiedName }}> for {{ .Codec.ProstRelat
                 {{- if .IsEnum }}
                 .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter().map({{ .Codec.PrimitiveFieldType }}::from))
                 {{- else }}
-                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter().map(|v| v.cnv())
+                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter().map(gaxi::prost::FromProto::<{{ .Codec.PrimitiveFieldType }}>::cnv)
                     .collect::<std::result::Result<std::vec::Vec<_>, _>>()?)
                 {{- end }}
                 {{- else if .Map }}
                 .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter()
                     .map(|(k, v)| {
-                        gaxi::prost::pair_transpose(k.cnv(), v.cnv())
+                        {{- if .Codec.ValueField.IsEnum }}
+                        gaxi::prost::pair_transpose(gaxi::prost::FromProto::<{{ .Codec.KeyType }}>::cnv(k), Ok({{ .Codec.ValueType }}::from(v)))
+                        {{- else }}
+                        gaxi::prost::pair_transpose(gaxi::prost::FromProto::<{{ .Codec.KeyType }}>::cnv(k), gaxi::prost::FromProto::<{{ .Codec.ValueType }}>::cnv(v))
+                        {{- end }}
                     }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
                 {{- end }}
                 {{- end }}
                 {{- end }}
                 {{- range .OneOfs }}
-                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(|v| v.cnv()).transpose()?)
+                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(gaxi::prost::FromProto::<{{ .Codec.QualifiedName }}>::cnv).transpose()?)
                 {{- end }}
         )
     }
