@@ -30,6 +30,7 @@ func allowUnexported() cmp.Option {
 		PathSegment{},
 		PathTemplate{},
 		PathVariable{},
+		Resource{},
 		ResourceNamePattern{},
 		ResourceNameSegment{},
 		ResourceReference{},

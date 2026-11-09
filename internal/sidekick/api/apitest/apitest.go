@@ -35,6 +35,7 @@ func AllowUnexported() cmp.Option {
 		api.PathSegment{},
 		api.PathTemplate{},
 		api.PathVariable{},
+		api.Resource{},
 		api.ResourceNamePattern{},
 		api.ResourceNameSegment{},
 		api.ResourceReference{},
