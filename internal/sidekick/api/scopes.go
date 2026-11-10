@@ -69,10 +69,10 @@ func (x *Enum) Scopes() []string {
 
 // Scopes returns the scopes for an enum value.
 func (x *EnumValue) Scopes() []string {
-	if x.parent != nil {
-		return x.parent.Scopes()
+	if x.Parent() != nil {
+		return x.Parent().Scopes()
 	}
-	return fallbackScopes(x.id)
+	return fallbackScopes(x.ID())
 }
 
 // Scopes returns the scopes for a field.

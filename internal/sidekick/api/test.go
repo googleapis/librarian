@@ -875,8 +875,8 @@ func (e *Enum) WithParent(parent *Message) *Enum {
 		}
 		for _, v := range e.Values {
 			v.parent = e
-			if strings.HasPrefix(v.id, ".test.") || v.id == "" {
-				v.id = fmt.Sprintf("%s.%s", e.ID, v.name)
+			if strings.HasPrefix(v.ID(), ".test.") || v.ID() == "" {
+				v.WithID(fmt.Sprintf("%s.%s", e.ID, v.Name()))
 			}
 		}
 	}
@@ -887,19 +887,19 @@ func (e *Enum) WithParent(parent *Message) *Enum {
 func (e *Enum) WithValues(values ...*EnumValue) *Enum {
 	for _, v := range values {
 		v.parent = e
-		if strings.HasPrefix(v.id, ".test.") || v.id == "" {
-			v.id = fmt.Sprintf("%s.%s", e.ID, v.name)
+		if strings.HasPrefix(v.ID(), ".test.") || v.ID() == "" {
+			v.WithID(fmt.Sprintf("%s.%s", e.ID, v.Name()))
 		}
 	}
 	e.Values = append(e.Values, values...)
 	seen := make(map[int32]bool)
 	for _, v := range e.UniqueNumberValues {
-		seen[v.number] = true
+		seen[v.Number()] = true
 	}
 	for _, v := range values {
-		if !seen[v.number] {
+		if !seen[v.Number()] {
 			e.UniqueNumberValues = append(e.UniqueNumberValues, v)
-			seen[v.number] = true
+			seen[v.Number()] = true
 		}
 	}
 	return e

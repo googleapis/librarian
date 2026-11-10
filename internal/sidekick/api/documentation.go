@@ -97,7 +97,7 @@ func patchFieldDocs(msg *Message, fieldName string, override *DocumentationOverr
 
 func patchEnumValueDocs(enu *Enum, name string, override *DocumentationOverride) error {
 	for _, v := range enu.Values {
-		if v.name != name {
+		if v.Name() != name {
 			continue
 		}
 		if err := patchElementDocs(&v.documentation, override); err != nil {
