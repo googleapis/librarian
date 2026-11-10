@@ -538,8 +538,8 @@ by readability and test output clarity:
   boundaries, include inline comments explaining what each case verifies.
 - Separate top-level test functions (e.g., `TestFormat_SingleLibrary`,
   `TestFormat_MultipleBatches`) with doc comments and a shared helper function
-  are also welcome when they make distinct behavioral scenarios, complex setup,
-  or failure output easier to read.
+  are also welcome when they make complex setup, distinct behavioral scenarios,
+  or failure output easier to follow.
 - Do not use table-driven tests when there is only a single test case. Write a
   straightforward unit test without the table boilerplate until more test cases
   are added.
