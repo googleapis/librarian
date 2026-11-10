@@ -293,18 +293,24 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 	// `state.MessageByID` and `state.EnumByID` symbol tables. We may not need
 	// to generate these elements, but we need them to be available to generate
 	// any RPC that uses them.
+	fileComments := map[*descriptorpb.FileDescriptorProto]map[string]string{}
+	for _, f := range req.GetSourceFileDescriptors() {
+		fileComments[f] = extractSourceComments(f)
+	}
+
 	for _, f := range append(req.GetProtoFile(), mixinFileDesc...) {
 		fFQN := "." + f.GetPackage()
-		for _, m := range f.MessageType {
+		comments := fileComments[f]
+		for i, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
-			if _, err := processMessage(result, m, mFQN, f.GetPackage(), isProto2(f), nil); err != nil {
+			if _, err := processMessage(result, m, mFQN, f.GetPackage(), isProto2(f), nil, comments, []int32{fileDescriptorMessageType, int32(i)}); err != nil {
 				return nil, err
 			}
 		}
 
-		for _, e := range f.EnumType {
+		for i, e := range f.EnumType {
 			eFQN := fFQN + "." + e.GetName()
-			_ = processEnum(result, e, eFQN, f.GetPackage(), nil)
+			_ = processEnum(result, e, eFQN, f.GetPackage(), nil, comments, []int32{fileDescriptorEnumType, int32(i)})
 		}
 		resources, err := processFileResourceDefinitions(f)
 		if err != nil {
@@ -625,7 +631,7 @@ func isProto2(f *descriptorpb.FileDescriptorProto) bool {
 	return f.GetSyntax() == "" || f.GetSyntax() == "proto2"
 }
 
-func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, proto2 bool, parent *api.Message) (*api.Message, error) {
+func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, proto2 bool, parent *api.Message, comments map[string]string, pathPrefix []int32) (*api.Message, error) {
 	message := &api.Message{
 		Name:       m.GetName(),
 		ID:         mFQN,
@@ -641,7 +647,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		}
 	}
 	if len(m.GetNestedType()) > 0 {
-		for _, nm := range m.GetNestedType() {
+		for i, nm := range m.GetNestedType() {
 			nmFQN := mFQN + "." + nm.GetName()
 			if nm.GetOptions().GetMapEntry() {
 				if err := processMapEntry(model, nm, nmFQN); err != nil {
@@ -649,16 +655,16 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 				}
 				continue
 			}
-			nmsg, err := processMessage(model, nm, nmFQN, packagez, proto2, message)
+			nmsg, err := processMessage(model, nm, nmFQN, packagez, proto2, message, comments, append(pathPrefix, messageDescriptorNestedType, int32(i)))
 			if err != nil {
 				return nil, err
 			}
 			message.Messages = append(message.Messages, nmsg)
 		}
 	}
-	for _, e := range m.GetEnumType() {
+	for i, e := range m.GetEnumType() {
 		eFQN := mFQN + "." + e.GetName()
-		e := processEnum(model, e, eFQN, packagez, message)
+		e := processEnum(model, e, eFQN, packagez, message, comments, append(pathPrefix, messageDescriptorEnum, int32(i)))
 		message.Enums = append(message.Enums, e)
 	}
 	for _, oneof := range m.OneofDecl {
@@ -830,7 +836,7 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.F
 	return nil
 }
 
-func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message) *api.Enum {
+func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message, comments map[string]string, pathPrefix []int32) *api.Enum {
 	enum := &api.Enum{
 		Name:       e.GetName(),
 		ID:         eFQN,
@@ -839,32 +845,63 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 		Deprecated: e.GetOptions().GetDeprecated(),
 	}
 	model.AddEnum(enum)
-	for _, ev := range e.Value {
-		enumValue := &api.EnumValue{
-			Name:       ev.GetName(),
-			Number:     ev.GetNumber(),
-			Parent:     enum,
-			Deprecated: ev.GetOptions().GetDeprecated(),
-		}
+	for i, ev := range e.Value {
+		enumValue := api.NewEnumValueBuilder().
+			WithName(ev.GetName()).
+			WithNumber(ev.GetNumber()).
+			WithParent(enum).
+			WithDocumentation(lookupComment(comments, append(pathPrefix, enumDescriptorValue, int32(i)))).
+			WithDeprecated(ev.GetOptions().GetDeprecated()).
+			Build()
 		enum.Values = append(enum.Values, enumValue)
 	}
 	numbers := map[int32]*api.EnumValue{}
 	for _, v := range enum.Values {
 		matchesStyle := func(v *api.EnumValue) bool {
-			return strings.ToUpper(v.Name) == v.Name
+			return strings.ToUpper(v.Name()) == v.Name()
 		}
-		if ev, ok := numbers[v.Number]; ok {
-			if len(ev.Name) > len(v.Name) || (matchesStyle(v) && !matchesStyle(ev)) {
-				numbers[v.Number] = v
+		if ev, ok := numbers[v.Number()]; ok {
+			if len(ev.Name()) > len(v.Name()) || (matchesStyle(v) && !matchesStyle(ev)) {
+				numbers[v.Number()] = v
 			}
 		} else {
-			numbers[v.Number] = v
+			numbers[v.Number()] = v
 		}
 	}
 	unique := slices.Collect(maps.Values(numbers))
-	slices.SortFunc(unique, func(a, b *api.EnumValue) int { return int(a.Number - b.Number) })
+	slices.SortFunc(unique, func(a, b *api.EnumValue) int { return int(a.Number() - b.Number()) })
 	enum.UniqueNumberValues = unique
 	return enum
+}
+
+func extractSourceComments(f *descriptorpb.FileDescriptorProto) map[string]string {
+	comments := map[string]string{}
+	for _, loc := range f.GetSourceCodeInfo().GetLocation() {
+		p := loc.GetPath()
+		if loc.GetLeadingComments() == "" || len(p) == 0 {
+			continue
+		}
+		comments[commentPathKey(p)] = trimLeadingSpacesInDocumentation(loc.GetLeadingComments())
+	}
+	return comments
+}
+
+func lookupComment(comments map[string]string, path []int32) string {
+	if len(comments) == 0 {
+		return ""
+	}
+	return comments[commentPathKey(path)]
+}
+
+func commentPathKey(path []int32) string {
+	var b strings.Builder
+	for i, v := range path {
+		if i > 0 {
+			b.WriteByte('.')
+		}
+		fmt.Fprintf(&b, "%d", v)
+	}
+	return b.String()
 }
 
 func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string) {
@@ -931,7 +968,7 @@ func addEnumDocumentation(model *api.API, p []int32, doc string, eFQN string) {
 		// This is a comment for an enum
 		model.Enum(eFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == enumDescriptorValue && len(p) == 2:
-		model.Enum(eFQN).Values[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		// EnumValue documentation is populated when constructing the EnumValue.
 	case p[0] == enumDescriptorValue:
 		slog.Warn("enumValue comments with missing index", "loc", p, "docs", doc)
 	case p[0] == enumDescriptorReservedRange:

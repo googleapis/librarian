@@ -276,13 +276,13 @@ func enrichEnumSamples(e *Enum) {
 	var orderedNorms []string
 
 	isGood := func(v *EnumValue) bool {
-		return !v.Deprecated && v.Number != 0
+		return !v.Deprecated() && v.Number() != 0
 	}
 
 	for _, ev := range e.Values {
 		// A simple heuristic to avoid duplicates.
 		// This is not perfect, but it should handle the most common cases.
-		name := strcase.ToCamel(strings.ToLower(ev.Name))
+		name := strcase.ToCamel(strings.ToLower(ev.Name()))
 		existing, ok := bestByNorm[name]
 		if !ok {
 			bestByNorm[name] = ev
@@ -322,10 +322,7 @@ func enrichEnumSamples(e *Enum) {
 
 	e.ValuesForExamples = make([]*SampleValue, len(result))
 	for i, ev := range result {
-		e.ValuesForExamples[i] = &SampleValue{
-			EnumValue: ev,
-			Index:     i,
-		}
+		e.ValuesForExamples[i] = NewSampleValue(ev, i)
 	}
 }
 

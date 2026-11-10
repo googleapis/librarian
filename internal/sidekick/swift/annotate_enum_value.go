@@ -28,33 +28,33 @@ type enumValueAnnotations struct {
 }
 
 func (c *codec) annotateUniqueEnumValue(ev *api.EnumValue) error {
-	docLines, err := c.formatDocumentation(ev.Documentation, ev.Scopes())
+	docLines, err := c.formatDocumentation(ev.Documentation(), ev.Scopes())
 	if err != nil {
 		return err
 	}
 	ann := &enumValueAnnotations{
 		CaseName:    enumValueCaseName(ev),
-		Number:      ev.Number,
-		StringValue: ev.Name,
+		Number:      ev.Number(),
+		StringValue: ev.Name(),
 		DocLines:    docLines,
 	}
-	ev.Codec = ann
+	ev.SetAnnotations(ann)
 	return nil
 }
 
 func (c *codec) annotateEnumValue(ev *api.EnumValue, unique map[int32]*enumValueAnnotations) error {
-	if ev.Codec != nil {
+	if ev.Codec() != nil {
 		return nil
 	}
-	existing, ok := unique[ev.Number]
+	existing, ok := unique[ev.Number()]
 	if !ok {
-		return fmt.Errorf("expected an existing annotation for %s as it duplicates the integer value %d", ev.Name, ev.Number)
+		return fmt.Errorf("expected an existing annotation for %s as it duplicates the integer value %d", ev.Name(), ev.Number())
 	}
 	ann := &enumValueAnnotations{
 		CaseName:    existing.CaseName,
-		Number:      ev.Number,
-		StringValue: ev.Name,
+		Number:      ev.Number(),
+		StringValue: ev.Name(),
 	}
-	ev.Codec = ann
+	ev.SetAnnotations(ann)
 	return nil
 }
