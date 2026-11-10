@@ -524,25 +524,12 @@ multiline strings or nested structs.
 
 ### Table-driven tests
 
-Use table-driven tests when they keep test cases compact, extensible, and easy
-to scan. They make it straightforward to add new scenarios and reduce
-repetition.
+Use table-driven tests when they reduce repetition for highly similar scenarios
+and maintain good readability. Otherwise, use separate top-level test functions
+with clear test names.
 
-Choosing between a table-driven test and separate top-level test functions
-(sharing a parameterized helper when appropriate) is a stylistic choice guided
-by readability and test output clarity:
-
-- Prefer a table-driven test when cases share the same testing logic and the
-  subtest names (`t.Run(test.name, ...)`) and failure messages clearly identify
-  what went wrong. When table entries exercise distinct functional behaviors or
-  boundaries, include inline comments explaining what each case verifies.
-- Separate top-level test functions (e.g., `TestFormat_SingleLibrary`,
-  `TestFormat_MultipleBatches`) with doc comments and a shared helper function
-  are also welcome when they make complex setup, distinct behavioral scenarios,
-  or failure output easier to follow.
-- Do not use table-driven tests when there is only a single test case. Write a
-  straightforward unit test without the table boilerplate until more test cases
-  are added.
+In all cases, provide succinct comments or descriptions for each test case to
+explain why it is there and, if not obvious, what it is testing.
 
 When writing a table-driven test, use this structure:
 
@@ -567,6 +554,10 @@ When writing a table-driven test, use this structure:
   struct if the same logic can be controlled by checking the zero-value or empty
   status of an existing field (e.g., checking `wantErr != nil` or
   `content != ""`).
+
+- Do not use table-driven tests when there is only a single test case. Write a
+  straightforward unit test without the table boilerplate until more test cases
+  are added.
 
 Example:
 
