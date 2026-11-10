@@ -311,13 +311,16 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				if err := ruby.Generate(gctx, cfg, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
-				if err := ruby.Format(gctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
 				return nil
 			})
 		}
-		return g.Wait()
+		if err := g.Wait(); err != nil {
+			return err
+		}
+		if err := ruby.Format(ctx, cfg.Tools, libraries...); err != nil {
+			return fmt.Errorf("format ruby libraries (%s): %w", cfg.Language, err)
+		}
+		return nil
 	case config.LanguageRust:
 		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
