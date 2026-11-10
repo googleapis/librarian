@@ -524,10 +524,14 @@ multiline strings or nested structs.
 
 ### Table-driven tests
 
-Use table-driven tests to keep test cases compact, extensible, and easy to
-scan. They make it straightforward to add new scenarios and reduce repetition.
+Use table-driven tests when they reduce repetition for highly similar scenarios
+and maintain good readability. Otherwise, use separate top-level test functions
+with clear test names.
 
-Use this structure:
+In all cases, provide succinct comments or descriptions for each test case to
+explain why it is there and, if not obvious, what it is testing.
+
+When writing a table-driven test, use this structure:
 
 - Write `for _, test := range []struct { ... }{ ... }` directly. Don't name the
   slice. This makes the code more concise and easier to grep.
