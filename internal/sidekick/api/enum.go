@@ -75,7 +75,8 @@ func (e *Enum) Codec() any { return e.codec }
 // SetAnnotations sets the language-specific annotations.
 //
 // Note: the Rust and Swift codecs set the attribute twice.
-// TODO(https://github.com/googleapis/librarian/issues/7911): clean up the caller and change this to panic if called more than once.
+// TODO(https://github.com/googleapis/librarian/issues/7911): clean up the
+// callers and change this to panic if called more than once.
 func (e *Enum) SetAnnotations(codec any) { e.codec = codec }
 
 // EnumValue defines a value in an Enum.
@@ -120,7 +121,8 @@ func (v *EnumValue) Codec() any { return v.codec }
 // SetAnnotations sets the language-specific annotations.
 //
 // Note: the Rust codec sets the attribute twice.
-// TODO(https://github.com/googleapis/librarian/issues/7911): clean up the caller and change this to panic if called more than once.
+// TODO(https://github.com/googleapis/librarian/issues/7911): clean up the
+// caller and change this to panic if called more than once.
 func (v *EnumValue) SetAnnotations(codec any) { v.codec = codec }
 
 // SampleValue represents a value used in a sample.
