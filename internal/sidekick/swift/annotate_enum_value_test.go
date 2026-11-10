@@ -31,7 +31,7 @@ func TestAnnotateEnumValue_WithDocs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ann, ok := ev.Codec.(*enumValueAnnotations)
+	ann, ok := ev.Codec().(*enumValueAnnotations)
 	if !ok {
 		t.Fatal("expected enumValueAnnotations")
 	}
@@ -61,8 +61,8 @@ func TestAnnotateEnumValue_Multiple(t *testing.T) {
 	}
 
 	var got []*enumValueAnnotations
-	for _, ev := range enum.Values {
-		got = append(got, ev.Codec.(*enumValueAnnotations))
+	for _, ev := range enum.Values() {
+		got = append(got, ev.Codec().(*enumValueAnnotations))
 	}
 
 	want := []*enumValueAnnotations{
@@ -98,8 +98,8 @@ func TestAnnotateEnumValue_Aliases(t *testing.T) {
 	}
 
 	var got []*enumValueAnnotations
-	for _, ev := range enum.Values {
-		got = append(got, ev.Codec.(*enumValueAnnotations))
+	for _, ev := range enum.Values() {
+		got = append(got, ev.Codec().(*enumValueAnnotations))
 	}
 
 	want := []*enumValueAnnotations{

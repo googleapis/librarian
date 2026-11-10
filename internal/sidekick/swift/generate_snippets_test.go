@@ -98,13 +98,13 @@ func TestGenerateSnippets(t *testing.T) {
 				WithPlural("things")
 			thing := api.NewTestMessage("Thing").WithResource(thingResource).WithFields(
 				api.NewTestField("name").WithType(api.TypezString).WithResourceReference(
-					thingResource.Type,
+					thingResource.Type(),
 				),
 				api.NewTestField("cool_attribute").WithType(api.TypezBytes),
 			)
 			name := api.NewTestField("name").
 				WithType(api.TypezString).
-				WithResourceReference(thingResource.Type)
+				WithResourceReference(thingResource.Type())
 			if test.repeated {
 				name = name.WithRepeated()
 			}
@@ -181,13 +181,13 @@ func TestGenerateSnippets_Diagnose(t *testing.T) {
 				WithPlural("things")
 			thing := api.NewTestMessage("Thing").WithResource(thingResource).WithFields(
 				api.NewTestField("name").WithType(api.TypezString).WithResourceReference(
-					thingResource.Type,
+					thingResource.Type(),
 				),
 			)
 			getThingRequest := api.NewTestMessage("GetThingRequest").WithFields(
 				api.NewTestField("name").
 					WithType(api.TypezString).
-					WithResourceReference(thingResource.Type).
+					WithResourceReference(thingResource.Type()).
 					WithDeprecated(test.fieldDeprecated),
 			)
 			getThing := api.NewTestMethod("GetThing").
@@ -240,12 +240,12 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 		WithPlural("things")
 	thing := api.NewTestMessage("Thing").WithResource(thingResource).WithFields(
 		api.NewTestField("name").WithType(api.TypezString).WithResourceReference(
-			thingResource.Type,
+			thingResource.Type(),
 		),
 	)
 	updateMask := api.NewTestField("update_mask").WithType(api.TypezMessage).WithTypezID(api.WktFieldMaskID)
 	updateThingRequest := api.NewTestMessage("UpdateThingRequest").WithFields(
-		api.NewTestField("name").WithType(api.TypezString).WithResourceReference(thingResource.Type),
+		api.NewTestField("name").WithType(api.TypezString).WithResourceReference(thingResource.Type()),
 		updateMask,
 	)
 	updateThing := api.NewTestMethod("UpdateThing").
@@ -352,10 +352,7 @@ func TestGenerateSnippets_LRO(t *testing.T) {
 		WithInput(createThingRequest).
 		WithOutput(operationType).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: thing.ID,
-			MetadataTypeID: metadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(thing.ID, metadataType.ID))
 	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(createThing)
 	model := api.NewTestAPI([]*api.Message{thing, metadataType, createThingRequest, operationType}, nil, []*api.Service{testService}).
 		WithPackageName("test")
@@ -399,10 +396,7 @@ func TestGenerateSnippets_LRO_Empty(t *testing.T) {
 		WithInput(deleteThingRequest).
 		WithOutput(operationType).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: metadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID))
 	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(deleteThing)
 	model := api.NewTestAPI([]*api.Message{metadataType, deleteThingRequest, operationType}, nil, []*api.Service{testService}).
 		WithPackageName("test")

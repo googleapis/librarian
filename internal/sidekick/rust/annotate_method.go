@@ -307,18 +307,18 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		return nil, err
 	}
 	for _, routing := range m.Routing {
-		for _, variant := range routing.Variants {
+		for _, variant := range routing.Variants() {
 			fieldAccessors, err := c.annotateRoutingAccessors(variant, m)
 			if err != nil {
 				return nil, err
 			}
 			routingVariantAnnotations := &routingVariantAnnotations{
 				FieldAccessors:   fieldAccessors,
-				PrefixSegments:   annotateSegments(variant.Prefix.Segments),
-				MatchingSegments: annotateSegments(variant.Matching.Segments),
-				SuffixSegments:   annotateSegments(variant.Suffix.Segments),
+				PrefixSegments:   annotateSegments(variant.Prefix().Segments()),
+				MatchingSegments: annotateSegments(variant.Matching().Segments()),
+				SuffixSegments:   annotateSegments(variant.Suffix().Segments()),
 			}
-			variant.Codec = routingVariantAnnotations
+			variant.SetAnnotations(routingVariantAnnotations)
 		}
 	}
 	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model, m.Model.PackageName)
@@ -382,11 +382,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		annotation.Attributes = []string{"#[allow(clippy::should_implement_trait)]"}
 	}
 	if m.OperationInfo != nil {
-		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model, m.Model.PackageName)
+		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID(), m.Model, m.Model.PackageName)
 		if err != nil {
 			return nil, err
 		}
-		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model, m.Model.PackageName)
+		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID(), m.Model, m.Model.PackageName)
 		if err != nil {
 			return nil, err
 		}
@@ -395,7 +395,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			ResponseType:     responseType,
 			PackageNamespace: c.rootModuleName(m.Model),
 		}
-		m.OperationInfo.Codec = opInfo
+		m.OperationInfo.SetAnnotations(opInfo)
 		annotation.OperationInfo = opInfo
 	}
 	if m.DiscoveryLro != nil {
@@ -404,14 +404,14 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			ReturnType:          returnType,
 			ServiceNameToPascal: annotation.ServiceNameToPascal,
 		}
-		for _, p := range m.DiscoveryLro.PollingPathParameters {
+		for _, p := range m.DiscoveryLro.PollingPathParameters() {
 			a := discoveryLroPathParameter{
 				Name:       toSnake(p),
 				SetterName: toSnakeNoMangling(p),
 			}
 			lroAnnotation.PollingPathParameters = append(lroAnnotation.PollingPathParameters, a)
 		}
-		m.DiscoveryLro.Codec = lroAnnotation
+		m.DiscoveryLro.SetAnnotations(lroAnnotation)
 	}
 	m.Codec = annotation
 	return annotation, nil
@@ -430,7 +430,7 @@ func isDiscoveryLro(m *api.Method) bool {
 }
 
 func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) ([]string, error) {
-	return makeAccessors(variant.FieldPath, m)
+	return makeAccessors(variant.FieldPath(), m)
 }
 
 func makeAccessors(fields []string, m *api.Method) ([]string, error) {

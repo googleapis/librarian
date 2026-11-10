@@ -262,10 +262,7 @@ func TestAnnotateService_LRO(t *testing.T) {
 		WithOutput(outputType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: lroResponseType.ID,
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -426,17 +423,17 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 		},
 		{
 			name:        "unrealistic, but good for testing",
-			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id"}}},
+			signatures:  []*api.MethodSignature{api.NewTestMethodSignature("parent", "thing_id")},
 			wantImports: []string{},
 		},
 		{
 			name:        "with external field",
-			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "external_thing"}}},
+			signatures:  []*api.MethodSignature{api.NewTestMethodSignature("parent", "thing_id", "external_thing")},
 			wantImports: []string{"GoogleCloudExternal"},
 		},
 		{
 			name:        "with bytes field",
-			signatures:  []*api.MethodSignature{{Names: []string{"parent", "data"}}},
+			signatures:  []*api.MethodSignature{api.NewTestMethodSignature("parent", "data")},
 			wantImports: []string{},
 			wantHasData: true,
 		},

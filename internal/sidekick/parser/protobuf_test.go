@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -348,8 +349,8 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 			api.NewTestEnumValue("WHITE", 1),
 			api.NewTestEnumValue("BLUE", 2),
 		)
-	for _, v := range wantEnum.Values {
-		v.ID = ""
+	for _, v := range wantEnum.Values() {
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *enum, *wantEnum)
 	// Only `LocalMessage` should be found in the messages list:
@@ -409,8 +410,8 @@ func TestProtobuf_Comments(t *testing.T) {
 			api.NewTestEnumValue("READY", 1).
 				WithDocumentation("The second enum value description."),
 		)
-	for _, v := range wantStatus.Values {
-		v.ID = ""
+	for _, v := range wantStatus.Values() {
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantStatus)
 
@@ -470,11 +471,12 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 		api.NewTestEnumValue("FOLLOWS_STYLE", 3).WithID(""),
 	}
 
-	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(fullList, withAlias.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	less := func(a, b *api.EnumValue) bool { return a.Name() < b.Name() }
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(fullList, withAlias.Values(), apitest.AllowUnexported(), cmpopts.SortSlices(less), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues(), apitest.AllowUnexported(), cmpopts.SortSlices(less), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -701,7 +703,7 @@ func TestProtobuf_Service(t *testing.T) {
 	getFoo.SourceServiceID = ".test.TestService"
 	getFoo.InputTypeID = ".test.GetFooRequest"
 	getFoo.OutputTypeID = ".test.Foo"
-	getFoo.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+	getFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
 
 	createFoo := api.NewTestMethod("CreateFoo").
 		WithID(".test.TestService.CreateFoo").
@@ -722,7 +724,7 @@ func TestProtobuf_Service(t *testing.T) {
 	createFoo.SourceServiceID = ".test.TestService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
 	createFoo.OutputTypeID = ".test.Foo"
-	createFoo.Signatures = []*api.MethodSignature{{Names: []string{"parent", "foo_id", "foo"}}}
+	createFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "foo_id", "foo")}
 
 	deleteFoo := api.NewTestMethod("DeleteFoo").
 		WithID(".test.TestService.DeleteFoo").
@@ -823,7 +825,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 	createFoo.SourceServiceID = ".test.TestService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
 	createFoo.OutputTypeID = ".test.Foo"
-	createFoo.Signatures = []*api.MethodSignature{{Names: []string{"parent", "foo_id", "bar"}}}
+	createFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "foo_id", "bar")}
 
 	addBar := api.NewTestMethod("AddBar").
 		WithID(".test.TestService.AddBar").
@@ -846,7 +848,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 	addBar.SourceServiceID = ".test.TestService"
 	addBar.InputTypeID = ".test.AddBarRequest"
 	addBar.OutputTypeID = ".test.Bar"
-	addBar.Signatures = []*api.MethodSignature{{Names: []string{"parent", "payload"}}}
+	addBar.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "payload")}
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -875,8 +877,8 @@ func TestProtobuf_Enum(t *testing.T) {
 			api.NewTestEnumValue("UNKNOWN", 1).
 				WithDocumentation("Unknown error."),
 		)
-	for _, v := range wantEnum.Values {
-		v.ID = ""
+	for _, v := range wantEnum.Values() {
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnum)
 }
@@ -922,7 +924,7 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 	m.SourceServiceID = ".test.TestService"
 	m.InputTypeID = ".test." + inputType
 	m.OutputTypeID = ".test.ListFooResponse"
-	m.Signatures = []*api.MethodSignature{{Names: []string{"parent"}}}
+	m.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent")}
 	if pageTokenReq != "" {
 		m.WithPagination(
 			api.NewTestField("page_token").
@@ -1050,10 +1052,10 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("foo").
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: ".google.protobuf.Empty",
-			ResponseTypeID: ".test.Foo",
-		})
+		WithOperationInfo(api.NewOperationInfoBuilder().
+			WithMetadataTypeID(".google.protobuf.Empty").
+			WithResponseTypeID(".test.Foo").
+			Build())
 	createFoo.SourceServiceID = ".test.LroService"
 	createFoo.InputTypeID = ".test.CreateFooRequest"
 	createFoo.OutputTypeID = ".google.longrunning.Operation"
@@ -1075,10 +1077,10 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("foo").
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: ".test.CreateMetadata",
-			ResponseTypeID: ".test.Foo",
-		})
+		WithOperationInfo(api.NewOperationInfoBuilder().
+			WithMetadataTypeID(".test.CreateMetadata").
+			WithResponseTypeID(".test.Foo").
+			Build())
 	createFooWithProgress.SourceServiceID = ".test.LroService"
 	createFooWithProgress.InputTypeID = ".test.CreateFooRequest"
 	createFooWithProgress.OutputTypeID = ".google.longrunning.Operation"
@@ -1102,7 +1104,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 	getOperation.SourceServiceID = ".google.longrunning.Operations"
 	getOperation.InputTypeID = ".google.longrunning.GetOperationRequest"
 	getOperation.OutputTypeID = ".google.longrunning.Operation"
-	getOperation.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+	getOperation.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
 
 	wantService := api.NewTestService("LroService").
 		WithPackage("test").
@@ -1293,8 +1295,8 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		WithValues(
 			api.NewTestEnumValue("ENUM_A_UNSPECIFIED", 0),
 		)
-	for _, v := range wantEnumA.Values {
-		v.ID = ""
+	for _, v := range wantEnumA.Values() {
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnumA)
 
@@ -1310,8 +1312,8 @@ func TestProtobuf_Deprecated(t *testing.T) {
 			api.NewTestEnumValue("GREEN", 2),
 			api.NewTestEnumValue("BLUE", 3),
 		)
-	for _, v := range wantEnumB.Values {
-		v.ID = ""
+	for _, v := range wantEnumB.Values() {
+		v.WithID("")
 	}
 	apitest.CheckEnum(t, *e, *wantEnumB)
 }
@@ -1342,7 +1344,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		// Find Shelf in the slice
 		var foundShelf *api.Resource
 		for _, r := range test.ResourceDefinitions {
-			if r.Type == "library.googleapis.com/Shelf" {
+			if r.Type() == "library.googleapis.com/Shelf" {
 				foundShelf = r
 				break
 			}
@@ -1350,7 +1352,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if foundShelf == nil {
 			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Shelf' not found")
 		}
-		if diff := cmp.Diff(shelfResourceDef, foundShelf, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
+		ignoreResourceFields := func(fields ...string) cmp.Option {
+			return cmp.FilterPath(func(p cmp.Path) bool {
+				return slices.Contains(fields, p.Last().String())
+			}, cmp.Ignore())
+		}
+		if diff := cmp.Diff(shelfResourceDef, foundShelf, apitest.AllowUnexported(), ignoreResourceFields(".self", ".codec", ".plural", ".singular")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1371,7 +1378,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		// Find Book in the slice
 		var foundBook *api.Resource
 		for _, r := range test.ResourceDefinitions {
-			if r.Type == "library.googleapis.com/Book" {
+			if r.Type() == "library.googleapis.com/Book" {
 				foundBook = r
 				break
 			}
@@ -1381,7 +1388,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 		// Note: Book resource has 'Self' populated because it's a message resource.
 		// Ignoring Self/Codec for comparison.
-		if diff := cmp.Diff(bookResourceDef, foundBook, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		if diff := cmp.Diff(bookResourceDef, foundBook, apitest.AllowUnexported(), ignoreResourceFields(".self", ".codec")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -1395,11 +1402,11 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if bookResource == nil {
 			t.Fatalf("Expected resource 'library.googleapis.com/Book' not found in ResourceByType map")
 		}
-		if bookResource.Type != "library.googleapis.com/Book" {
-			t.Errorf("bookResource.Type = %q; want %q", bookResource.Type, "library.googleapis.com/Book")
+		if bookResource.Type() != "library.googleapis.com/Book" {
+			t.Errorf("bookResource.Type() = %q; want %q", bookResource.Type(), "library.googleapis.com/Book")
 		}
-		if bookResource.Self.Name != "Book" {
-			t.Errorf("bookResource.Self.Name = %q; want %q", bookResource.Self.Name, "Book")
+		if bookResource.Self().Name != "Book" {
+			t.Errorf("bookResource.Self().Name = %q; want %q", bookResource.Self().Name, "Book")
 		}
 	})
 
@@ -1424,7 +1431,11 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			WithPlural("books").
 			WithSingular("book")
 
-		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		ignoreSelfCodec := cmp.FilterPath(func(p cmp.Path) bool {
+			s := p.Last().String()
+			return s == ".self" || s == ".codec"
+		}, cmp.Ignore())
+		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, apitest.AllowUnexported(), ignoreSelfCodec); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1518,12 +1529,12 @@ func TestProtobuf_ResourceCoverage(t *testing.T) {
 			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
 		}
 		got := test.ResourceDefinitions[0]
-		if got.Singular != "book_message" {
-			t.Errorf("Expected singular 'book_message', got %q", got.Singular)
+		if got.Singular() != "book_message" {
+			t.Errorf("Expected singular 'book_message', got %q", got.Singular())
 		}
 		// Verify Self is set (only message resources have Self populated by processResourceAnnotation)
-		if got.Self == nil {
-			t.Errorf("Expected Resource.Self to be populated for message-level resource")
+		if got.Self() == nil {
+			t.Errorf("Expected Resource.Self() to be populated for message-level resource")
 		}
 	})
 

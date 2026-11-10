@@ -72,16 +72,16 @@ func CrossReference(model *API) error {
 		m.InputType = input
 		m.OutputType = output
 		if m.OperationInfo != nil {
-			m.OperationInfo.Method = m
+			m.OperationInfo.method = m
 		}
 		for _, signature := range m.Signatures {
-			signature.Method = m
-			for _, name := range signature.Names {
+			signature.method = m
+			for _, name := range signature.names {
 				idx := slices.IndexFunc(input.Fields, func(f *Field) bool { return f.Name == name })
 				if idx == -1 {
 					return fmt.Errorf("cannot find field %s in method signature for method %s", name, m.ID)
 				}
-				signature.Fields = append(signature.Fields, input.Fields[idx])
+				signature.fields = append(signature.fields, input.Fields[idx])
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func findQuickstartMethod(s *Service) *Method {
 		for _, m := range searchList {
 			res := standardMethodOutputResource(m)
 			if res != nil {
-				if strings.ToLower(res.Singular) == lowerStripped || strings.ToLower(res.Plural) == lowerStripped {
+				if strings.ToLower(res.Singular()) == lowerStripped || strings.ToLower(res.Plural()) == lowerStripped {
 					return m
 				}
 			}
@@ -276,13 +276,13 @@ func enrichEnumSamples(e *Enum) {
 	var orderedNorms []string
 
 	isGood := func(v *EnumValue) bool {
-		return !v.Deprecated && v.Number != 0
+		return !v.Deprecated() && v.Number() != 0
 	}
 
-	for _, ev := range e.Values {
+	for _, ev := range e.Values() {
 		// A simple heuristic to avoid duplicates.
 		// This is not perfect, but it should handle the most common cases.
-		name := strcase.ToCamel(strings.ToLower(ev.Name))
+		name := strcase.ToCamel(strings.ToLower(ev.Name()))
 		existing, ok := bestByNorm[name]
 		if !ok {
 			bestByNorm[name] = ev
@@ -320,12 +320,9 @@ func enrichEnumSamples(e *Enum) {
 		result = result[:3]
 	}
 
-	e.ValuesForExamples = make([]*SampleValue, len(result))
+	e.valuesForExamples = make([]*SampleValue, len(result))
 	for i, ev := range result {
-		e.ValuesForExamples[i] = &SampleValue{
-			EnumValue: ev,
-			Index:     i,
-		}
+		e.valuesForExamples[i] = NewSampleValue(ev, i)
 	}
 }
 
@@ -378,7 +375,7 @@ func enrichMethodSamples(m *Method) {
 	}
 
 	if m.OperationInfo != nil && m.Model != nil {
-		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID)
+		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID())
 	}
 
 	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"
@@ -408,9 +405,9 @@ func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
 
 	if f.ResourceReference != nil {
 		// The field is a resource reference.
-		if res := model.Resource(f.ResourceReference.Type); res != nil {
+		if res := model.Resource(f.ResourceReference.Type()); res != nil {
 			resource = res
-		} else if res := model.Resource(f.ResourceReference.ChildType); res != nil {
+		} else if res := model.Resource(f.ResourceReference.ChildType()); res != nil {
 			resource = res
 			truncateChild = true
 		}
@@ -419,8 +416,10 @@ func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
 		resource = m.Resource
 	}
 
-	if resource != nil && len(resource.Patterns) > 0 {
-		f.ResourceNamePattern = toResourceNamePattern(resource.Patterns[0], truncateChild)
+	if resource != nil {
+		if patterns := resource.Patterns(); len(patterns) > 0 {
+			f.ResourceNamePattern = toResourceNamePattern(patterns[0], truncateChild)
+		}
 	}
 }
 
@@ -433,35 +432,37 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 			continue
 		}
 		seg := ResourceNameSegment{
-			Literal: s.Literal(),
+			literal: s.Literal(),
 		}
-		if s.Variable() != nil && len(s.Variable().FieldPath()) > 0 {
-			// The parser used for parsing resource name patterns is the same used for
-			// parsing HTTP rules. Resource patterns do not have "field paths",
-			// instead they only have "placeholders" for each of the resource IDs of
-			// the resources that are part of the resource name hierarchy.
-			// These placeholders end up on the first, and only, field path
-			// that results when parsing a segment of a resource name pattern.
-			seg.Variable = s.Variable().FieldPath()[0]
+		if s.Variable() != nil {
+			if fieldPath := s.Variable().FieldPath(); len(fieldPath) > 0 {
+				// The parser used for parsing resource name patterns is the same used for
+				// parsing HTTP rules. Resource patterns do not have "field paths",
+				// instead they only have "placeholders" for each of the resource IDs of
+				// the resources that are part of the resource name hierarchy.
+				// These placeholders end up on the first, and only, field path
+				// that results when parsing a segment of a resource name pattern.
+				seg.variable = fieldPath[0]
+			}
 		}
 
 		// Try to combine with next segment if this is a literal and next is variable
 		if s.Literal() != "" && i+1 < len(pattern) && pattern[i+1].Variable() != nil {
-			if len(pattern[i+1].Variable().FieldPath()) > 0 {
-				seg.Variable = pattern[i+1].Variable().FieldPath()[0]
+			if fieldPath := pattern[i+1].Variable().FieldPath(); len(fieldPath) > 0 {
+				seg.variable = fieldPath[0]
 			}
 			i++
 		}
 
 		// Clean up leading and trailing slashes
-		seg.Literal = strings.TrimSuffix(strings.TrimPrefix(seg.Literal, "/"), "/")
+		seg.literal = strings.TrimSuffix(strings.TrimPrefix(seg.literal, "/"), "/")
 
 		segments = append(segments, seg)
 	}
 	if skipLast && len(segments) > 0 {
 		segments = segments[:len(segments)-1]
 	}
-	return &ResourceNamePattern{Segments: segments}
+	return NewResourceNamePattern(segments...)
 }
 
 func aipStandardGetInfo(m *Method) *SampleInfo {
@@ -481,12 +482,12 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
+	if outputResource.Singular() != "" &&
+		strings.ToLower(outputResource.Singular()) != maybeSingular {
 		return nil
 	}
 
-	resourceField := findBestResourceFieldByType(m.InputType, m.Model, outputResource.Type)
+	resourceField := findBestResourceFieldByType(m.InputType, m.Model, outputResource.Type())
 
 	if resourceField == nil {
 		return nil
@@ -566,19 +567,19 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
+	if outputResource.Singular() != "" &&
+		strings.ToLower(outputResource.Singular()) != maybeSingular {
 		return nil
 	}
 
-	parentField := findBestParentFieldByType(m.InputType, outputResource.Type)
+	parentField := findBestParentFieldByType(m.InputType, outputResource.Type())
 	if parentField == nil {
 		return nil
 	}
 
 	var targetTypeID string
-	if outputResource.Self != nil {
-		targetTypeID = outputResource.Self.ID
+	if outputResource.Self() != nil {
+		targetTypeID = outputResource.Self().ID
 	}
 	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
 	if resourceField == nil {
@@ -614,14 +615,14 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("update%srequest", maybeSingular) {
 		return nil
 	}
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
+	if outputResource.Singular() != "" &&
+		strings.ToLower(outputResource.Singular()) != maybeSingular {
 		return nil
 	}
 
 	var targetTypeID string
-	if outputResource.Self != nil {
-		targetTypeID = outputResource.Self.ID
+	if outputResource.Self() != nil {
+		targetTypeID = outputResource.Self().ID
 	}
 	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
 	if resourceField == nil {
@@ -675,7 +676,7 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 	if pageableItem == nil || pageableItem.MessageType == nil || pageableItem.MessageType.Resource == nil {
 		return nil
 	}
-	resourceType := pageableItem.MessageType.Resource.Type
+	resourceType := pageableItem.MessageType.Resource.Type()
 
 	parentField := findBestParentFieldByType(m.InputType, resourceType)
 
@@ -695,14 +696,14 @@ func findBestResourceFieldByType(message *Message, model *API, targetType string
 		if field.ResourceReference == nil {
 			continue
 		}
-		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+		if field.ResourceReference.Type() == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource := model.Resource(field.ResourceReference.Type)
+		resource := model.Resource(field.ResourceReference.Type())
 		if resource == nil {
 			continue
 		}
-		if resource.Type == targetType {
+		if resource.Type() == targetType {
 			if field.Name == StandardFieldNameForResourceRef {
 				return field
 			}
@@ -718,14 +719,14 @@ func findBestResourceFieldBySingular(message *Message, model *API, targetSingula
 		if field.ResourceReference == nil {
 			continue
 		}
-		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+		if field.ResourceReference.Type() == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource := model.Resource(field.ResourceReference.Type)
+		resource := model.Resource(field.ResourceReference.Type())
 		if resource == nil {
 			continue
 		}
-		actualSingular := strings.ToLower(resource.Singular)
+		actualSingular := strings.ToLower(resource.Singular())
 		matchesTarget := actualSingular == targetSingular
 		if field.Name == StandardFieldNameForResourceRef && (matchesTarget || actualSingular == "") {
 			return field
@@ -743,7 +744,7 @@ func findBestParentFieldByType(message *Message, childType string) *Field {
 		if field.Name == StandardFieldNameForParentResourceRef {
 			return field
 		}
-		if field.ResourceReference != nil && field.ResourceReference.ChildType == childType {
+		if field.ResourceReference != nil && field.ResourceReference.ChildType() == childType {
 			bestField = field
 		}
 	}

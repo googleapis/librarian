@@ -216,7 +216,7 @@ func initModule(ctx context.Context, dir, modPath, toolchain string) error {
 	if err := command.RunInDirWithEnv(ctx, dir, env, command.Go, "mod", "init", modPath); err != nil {
 		return err
 	}
-	return command.RunInDirWithEnv(ctx, dir, env, command.Go, "mod", "tidy")
+	return runInDirWithEnvRetry(ctx, dir, env, command.Go, "mod", "tidy")
 }
 
 // defaultImportPathAndClientPkg returns the default Go import path and client package name

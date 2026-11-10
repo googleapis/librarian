@@ -184,9 +184,9 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 				WithID(".package.Message.enumMapField.PROVISIONING").
 				WithDocumentation("The description for the PROVISIONING state."),
 		)
-	gotEnum := model.Enum(wantEnum.ID)
+	gotEnum := model.Enum(wantEnum.ID())
 	if gotEnum == nil {
-		t.Fatalf("missing enum %s", wantEnum.ID)
+		t.Fatalf("missing enum %s", wantEnum.ID())
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
 }

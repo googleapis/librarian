@@ -250,10 +250,10 @@ func (c *codec) annotateModel() error {
 		}
 	}
 	for enum := range c.Model.AllEnums() {
-		if enum.Codec == nil {
+		if enum.Codec() == nil {
 			continue
 		}
-		annotation := enum.Codec.(*enumAnnotations)
+		annotation := enum.Codec().(*enumAnnotations)
 		if len(annotation.GatedBy) > 0 {
 			continue
 		}

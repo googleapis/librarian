@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
@@ -42,7 +43,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if tools == nil || len(tools.Go) == 0 {
 		return errNoToolsSpecified
 	}
-	return installGoTools(ctx, tools.Go)
+	return installGoTools(ctx, tools.Go, defaultRetryBackoff)
 }
 
 // InstallDir gets the directory where tools should be installed.
@@ -54,7 +55,7 @@ func InstallDir() (string, error) {
 	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
-func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
+func installGoTools(ctx context.Context, goTools []*config.GoTool, initialBackoff time.Duration) error {
 	installDir, err := InstallDir()
 	if err != nil {
 		return err
@@ -65,7 +66,7 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)
 		}
 		toolStr := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
-		if err := runWithEnv(ctx, env, command.Go, "install", toolStr); err != nil {
+		if err := runInDirWithEnvAndBackoff(ctx, "", env, initialBackoff, command.Go, "install", toolStr); err != nil {
 			return err
 		}
 	}

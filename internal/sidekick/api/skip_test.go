@@ -50,7 +50,7 @@ func TestSkipEnums(t *testing.T) {
 
 	want := []*Enum{e0, e2}
 
-	if diff := cmp.Diff(want, model.Enums); diff != "" {
+	if diff := cmp.Diff(want, model.Enums, allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -82,7 +82,7 @@ func TestSkipNestedEnums(t *testing.T) {
 	})
 
 	want := []*Enum{e0, e2}
-	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
+	if diff := cmp.Diff(want, m.Enums, allowUnexported(), cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -179,7 +179,7 @@ func TestIncludeNestedEnums(t *testing.T) {
 	})
 
 	want := []*Enum{e0}
-	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
+	if diff := cmp.Diff(want, m.Enums, allowUnexported(), cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

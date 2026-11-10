@@ -33,32 +33,34 @@ impl gaxi::prost::ToProto<{{ .Codec.ProstRelativeName }}> for {{ .Codec.Qualifie
             {{- if .Singular }}
             {{- if .Optional }}
             {{- if .Codec.MapToBoxed }}
-            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| v.to_proto().map(std::boxed::Box::new)).transpose()?,
+            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto({{- if .Codec.IsBoxed }}*v{{- else }}v{{- end }}).map(std::boxed::Box::new)).transpose()?,
+            {{- else if .Codec.IsBoxed }}
+            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto(*v)).transpose()?,
             {{- else }}
-            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| v.to_proto()).transpose()?,
+            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto).transpose()?,
             {{- end }}
             {{- else if .Proto2Optional }}
             {{- /* The generated model stores "not set" as zero, so zero maps to None. */}}
-            {{ .Codec.FieldName }}: Some(self.{{ .Codec.FieldName }}.to_proto()?).filter(|v| !wkt::internal::is_default(v)),
+            {{ .Codec.FieldName }}: Some(gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto(self.{{ .Codec.FieldName }})?).filter(|v| !wkt::internal::is_default(v)),
             {{- else }}
-            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.to_proto()?,
+            {{ .Codec.FieldName }}: gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto(self.{{ .Codec.FieldName }})?,
             {{- end }}
             {{- else if .Repeated }}
             {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}
                 .into_iter()
-                .map(|v| v.to_proto())
+                .map(gaxi::prost::ToProto::<{{ .Codec.ProstType }}>::to_proto)
                 .collect::<std::result::Result<std::vec::Vec<_>, _>>()?,
             {{- else if .Map }}
             {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}
                 .into_iter()
                 .map(|(k, v)| {
-                    gaxi::prost::pair_transpose(k.to_proto(), v.to_proto())
+                    gaxi::prost::pair_transpose(gaxi::prost::ToProto::<{{ .Codec.KeyField.Codec.ProstType }}>::to_proto(k), gaxi::prost::ToProto::<{{ .Codec.ValueField.Codec.ProstType }}>::to_proto(v))
                 }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?,
             {{- end }}
             {{- end }}
             {{- end }}
             {{- range .OneOfs }}
-            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(|v| v.to_proto()).transpose()?,
+            {{ .Codec.FieldName }}: self.{{ .Codec.FieldName }}.map(gaxi::prost::ToProto::<{{ .Codec.ProstRelativeName }}>::to_proto).transpose()?,
             {{- end }}
             {{- if .HasSkippedProtoConversionFields }}
             ..Self::Output::default()
@@ -78,7 +80,13 @@ impl gaxi::prost::FromProto<{{ .Codec.QualifiedName }}> for {{ .Codec.ProstRelat
                 {{- if not .SkipProtoConversion }}
                 {{- if .Singular }}
                 {{- if .Optional }}
-                .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(|v| v.cnv()).transpose()?)
+                {{- if .IsEnum }}
+                .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map({{ .Codec.PrimitiveFieldType }}::from))
+                {{- else if .Codec.MapToBoxed }}
+                .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(|v| gaxi::prost::FromProto::<{{ .Codec.PrimitiveFieldType }}>::cnv(*v)).transpose()?)
+                {{- else }}
+                .set_or_clear_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(gaxi::prost::FromProto::<{{ .Codec.PrimitiveFieldType }}>::cnv).transpose()?)
+                {{- end }}
                 {{- else if .Proto2Optional }}
                 .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.unwrap_or_default())
                 {{- else }}
@@ -88,19 +96,23 @@ impl gaxi::prost::FromProto<{{ .Codec.QualifiedName }}> for {{ .Codec.ProstRelat
                 {{- if .IsEnum }}
                 .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter().map({{ .Codec.PrimitiveFieldType }}::from))
                 {{- else }}
-                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter().map(|v| v.cnv())
+                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter().map(gaxi::prost::FromProto::<{{ .Codec.PrimitiveFieldType }}>::cnv)
                     .collect::<std::result::Result<std::vec::Vec<_>, _>>()?)
                 {{- end }}
                 {{- else if .Map }}
                 .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter()
                     .map(|(k, v)| {
-                        gaxi::prost::pair_transpose(k.cnv(), v.cnv())
+                        {{- if .Codec.ValueField.IsEnum }}
+                        gaxi::prost::pair_transpose(gaxi::prost::FromProto::<{{ .Codec.KeyType }}>::cnv(k), Ok({{ .Codec.ValueType }}::from(v)))
+                        {{- else }}
+                        gaxi::prost::pair_transpose(gaxi::prost::FromProto::<{{ .Codec.KeyType }}>::cnv(k), gaxi::prost::FromProto::<{{ .Codec.ValueType }}>::cnv(v))
+                        {{- end }}
                     }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
                 {{- end }}
                 {{- end }}
                 {{- end }}
                 {{- range .OneOfs }}
-                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(|v| v.cnv()).transpose()?)
+                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.map(gaxi::prost::FromProto::<{{ .Codec.QualifiedName }}>::cnv).transpose()?)
                 {{- end }}
         )
     }

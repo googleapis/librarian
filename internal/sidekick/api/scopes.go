@@ -60,19 +60,19 @@ func (x *Message) Scopes() []string {
 
 // Scopes returns the scopes for an enum.
 func (x *Enum) Scopes() []string {
-	localScope := strings.TrimPrefix(x.ID, ".")
-	if x.Parent == nil {
-		return []string{localScope, x.Package} // simplify some test set-up
+	localScope := strings.TrimPrefix(x.ID(), ".")
+	if x.Parent() == nil {
+		return []string{localScope, x.Package()} // simplify some test set-up
 	}
-	return append([]string{localScope}, x.Parent.Scopes()...)
+	return append([]string{localScope}, x.Parent().Scopes()...)
 }
 
 // Scopes returns the scopes for an enum value.
 func (x *EnumValue) Scopes() []string {
-	if x.Parent != nil {
-		return x.Parent.Scopes()
+	if x.Parent() != nil {
+		return x.Parent().Scopes()
 	}
-	return fallbackScopes(x.ID)
+	return fallbackScopes(x.ID())
 }
 
 // Scopes returns the scopes for a field.

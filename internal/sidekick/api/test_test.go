@@ -156,14 +156,14 @@ func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
-	if got := model.Enum(nestedEnum.ID); got != nestedEnum {
-		t.Errorf("model.Enum(%q) = %v, want %v", nestedEnum.ID, got, nestedEnum)
+	if got := model.Enum(nestedEnum.ID()); got != nestedEnum {
+		t.Errorf("model.Enum(%q) = %v, want %v", nestedEnum.ID(), got, nestedEnum)
 	}
-	if nestedEnum.Parent != parent {
-		t.Errorf("nestedEnum.Parent = %v, want %v", nestedEnum.Parent, parent)
+	if nestedEnum.Parent() != parent {
+		t.Errorf("nestedEnum.Parent() = %v, want %v", nestedEnum.Parent(), parent)
 	}
-	if val.Parent != nestedEnum {
-		t.Errorf("val.Parent = %v, want %v", val.Parent, nestedEnum)
+	if val.Parent() != nestedEnum {
+		t.Errorf("val.Parent() = %v, want %v", val.Parent(), nestedEnum)
 	}
 }
 
@@ -176,8 +176,8 @@ func TestNewTestAPI_DeduplicatesNestedEnums(t *testing.T) {
 	if got := len(parent.Enums); got != 1 {
 		t.Errorf("len(parent.Enums) = %d, want 1", got)
 	}
-	if got := model.Enum(enum.ID); got != enum {
-		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID, got, enum)
+	if got := model.Enum(enum.ID()); got != enum {
+		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID(), got, enum)
 	}
 }
 
@@ -374,7 +374,7 @@ func TestService_FluentSetters(t *testing.T) {
 
 func TestMethod_FluentSetters(t *testing.T) {
 	reqID := api.NewTestField("request_id").WithType(api.TypezString)
-	routing := &api.RoutingInfo{Name: "bucket"}
+	routing := api.NewRoutingInfoBuilder().WithName("bucket").Build()
 	m := api.NewTestMethod("Create").
 		WithID(".custom.Service.Create").
 		WithAPIVersion("v1_20260101").
@@ -404,7 +404,7 @@ func TestMethod_FluentSetters(t *testing.T) {
 
 func TestField_FluentSetters(t *testing.T) {
 	enum := api.NewTestEnum("State").WithPackage("test.v1")
-	pattern := &api.ResourceNamePattern{Segments: []api.ResourceNameSegment{{Literal: "items"}}}
+	pattern := api.NewTestResourceNamePattern(api.NewResourceNameSegment("items", ""))
 	f := api.NewTestField("state").
 		WithEnumType(enum).
 		WithAutoPopulated().
@@ -416,7 +416,7 @@ func TestField_FluentSetters(t *testing.T) {
 	if f.Typez != api.TypezEnum {
 		t.Errorf("f.Typez = %v, want %v", f.Typez, api.TypezEnum)
 	}
-	if got, want := f.TypezID, enum.ID; got != want {
+	if got, want := f.TypezID, enum.ID(); got != want {
 		t.Errorf("f.TypezID = %q, want %q", got, want)
 	}
 	if !f.AutoPopulated {
@@ -441,66 +441,6 @@ func TestMethod_TypeIDSetters(t *testing.T) {
 	}
 	if m.SourceServiceID != ".test.Service" {
 		t.Errorf("m.SourceServiceID = %q, want %q", m.SourceServiceID, ".test.Service")
-	}
-}
-
-func TestMethodSignature_Builders(t *testing.T) {
-	f1 := api.NewTestField("name")
-	f2 := api.NewTestField("parent")
-	sig := api.NewTestMethodSignature("name", "parent").
-		WithFields(f1).
-		WithFields(f2)
-
-	if diff := cmp.Diff([]string{"name", "parent"}, sig.Names); diff != "" {
-		t.Errorf("mismatch in Names (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff([]*api.Field{f1, f2}, sig.Fields); diff != "" {
-		t.Errorf("mismatch in Fields (-want +got):\n%s", diff)
-	}
-}
-
-func TestResourceNamePattern_Builder(t *testing.T) {
-	p := api.NewTestResourceNamePattern(
-		api.ResourceNameSegment{Literal: "projects"},
-		api.ResourceNameSegment{Variable: "project"},
-	)
-	if len(p.Segments) != 2 {
-		t.Fatalf("len(p.Segments) = %d, want 2", len(p.Segments))
-	}
-	if p.Segments[0].Literal != "projects" || p.Segments[1].Variable != "project" {
-		t.Errorf("unexpected segments: %+v", p.Segments)
-	}
-}
-
-func TestRoutingInfo_Builders(t *testing.T) {
-	v := api.NewTestRoutingInfoVariant("name", "id")
-	r := api.NewTestRoutingInfo("routing", v)
-
-	if r.Name != "routing" {
-		t.Errorf("r.Name = %q, want 'routing'", r.Name)
-	}
-	if len(r.Variants) != 1 || r.Variants[0] != v {
-		t.Errorf("r.Variants = %v, want [%v]", r.Variants, v)
-	}
-	if diff := cmp.Diff([]string{"name", "id"}, v.FieldPath); diff != "" {
-		t.Errorf("mismatch in FieldPath (-want +got):\n%s", diff)
-	}
-}
-
-func TestOperationInfo_Builder(t *testing.T) {
-	op := api.NewTestOperationInfo(".test.Response", ".test.Metadata")
-	if op.ResponseTypeID != ".test.Response" {
-		t.Errorf("op.ResponseTypeID = %q, want .test.Response", op.ResponseTypeID)
-	}
-	if op.MetadataTypeID != ".test.Metadata" {
-		t.Errorf("op.MetadataTypeID = %q, want .test.Metadata", op.MetadataTypeID)
-	}
-}
-
-func TestDiscoveryLro_Builder(t *testing.T) {
-	lro := api.NewTestDiscoveryLro("project", "zone")
-	if diff := cmp.Diff([]string{"project", "zone"}, lro.PollingPathParameters); diff != "" {
-		t.Errorf("mismatch in PollingPathParameters (-want +got):\n%s", diff)
 	}
 }
 

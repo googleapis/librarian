@@ -49,6 +49,8 @@ const (
 	WktDoubleValueID = ".google.protobuf.DoubleValue"
 	// WktBoolValueID is the well-known type ID for google.protobuf.BoolValue.
 	WktBoolValueID = ".google.protobuf.BoolValue"
+	// WktStringValueID is the well-known type ID for google.protobuf.StringValue.
+	WktStringValueID = ".google.protobuf.StringValue"
 )
 
 // LoadWellKnownTypes adds well-known types to `state`.
@@ -60,11 +62,11 @@ func (model *API) LoadWellKnownTypes() {
 	for _, message := range wellKnownMessages {
 		model.AddMessage(message)
 	}
-	model.AddEnum(&Enum{
-		ID:      WktNullValueID,
-		Name:    "NullValue",
-		Package: "google.protobuf",
-	})
+	model.AddEnum(NewEnumBuilder().
+		WithID(WktNullValueID).
+		WithName("NullValue").
+		WithPackage("google.protobuf").
+		Build())
 }
 
 var wellKnownMessages = []*Message{
@@ -124,4 +126,5 @@ var wellKnownMessages = []*Message{
 	{ID: WktFloatValueID, Name: "FloatValue", Package: "google.protobuf"},
 	{ID: WktDoubleValueID, Name: "DoubleValue", Package: "google.protobuf"},
 	{ID: WktBoolValueID, Name: "BoolValue", Package: "google.protobuf"},
+	{ID: WktStringValueID, Name: "StringValue", Package: "google.protobuf"},
 }

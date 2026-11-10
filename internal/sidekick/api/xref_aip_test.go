@@ -35,18 +35,18 @@ type aipTestFixture struct {
 func newAIPTestFixture() *aipTestFixture {
 	resource := NewTestResource("google.cloud.secretmanager.v1/Secret").WithSingular("secret")
 	resourceWithoutSingular := NewTestResource("google.cloud.secretmanager.v1/SecretWithoutSingular")
-	resourceNameField := NewTestField("name").WithResourceReference(resource.Type)
-	resourceOtherNameField := NewTestField("other_name").WithResourceReference(resource.Type)
-	resourceNameNoSingularField := NewTestField("name").WithResourceReference(resourceWithoutSingular.Type)
-	resourceOtherNameNoSingularField := NewTestField("other_name").WithResourceReference(resourceWithoutSingular.Type)
+	resourceNameField := NewTestField("name").WithResourceReference(resource.Type())
+	resourceOtherNameField := NewTestField("other_name").WithResourceReference(resource.Type())
+	resourceNameNoSingularField := NewTestField("name").WithResourceReference(resourceWithoutSingular.Type())
+	resourceOtherNameNoSingularField := NewTestField("other_name").WithResourceReference(resourceWithoutSingular.Type())
 	nonExistentResourceField := NewTestField("name").WithResourceReference("nonexistent.googleapis.com/NonExistent")
 	wildcardResourceField := NewTestField("name").WithResourceReference("*")
 
 	model := &API{
 		ResourceDefinitions: []*Resource{resource, resourceWithoutSingular},
 		resourceByType: map[string]*Resource{
-			resource.Type:                resource,
-			resourceWithoutSingular.Type: resourceWithoutSingular,
+			resource.Type():                resource,
+			resourceWithoutSingular.Type(): resourceWithoutSingular,
 		},
 	}
 
@@ -297,7 +297,7 @@ func TestAIPStandardGetInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -418,7 +418,7 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -548,7 +548,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -563,13 +563,13 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 
 	parentField := NewTestField("parent").
 		WithType(TypezString).
-		WithChildTypeReference(f.resource.Type)
+		WithChildTypeReference(f.resource.Type())
 	resourceField := NewTestField("secret").
 		WithMessageType(secretMessage)
 	idField := NewTestField("secret_id").
 		WithType(TypezString)
 	output := NewTestMessage("Response").WithResource(f.resource)
-	f.resource.Self = secretMessage
+	f.resource.WithSelf(secretMessage)
 
 	testCases := []struct {
 		name   string
@@ -621,7 +621,7 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -641,7 +641,7 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 	updateMaskField := NewTestField("update_mask").
 		WithTypezID(".google.protobuf.FieldMask")
 	output := NewTestMessage("Response").WithResource(f.resource)
-	f.resource.Self = secretMessage
+	f.resource.WithSelf(secretMessage)
 
 	testCases := []struct {
 		name   string
@@ -713,7 +713,7 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -845,7 +845,7 @@ func TestAIPStandardListInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

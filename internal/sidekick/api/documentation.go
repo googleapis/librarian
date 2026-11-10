@@ -42,7 +42,7 @@ func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 			continue
 		}
 		if enu := model.Enum(id); enu != nil {
-			if err := patchElementDocs(&enu.Documentation, &override); err != nil {
+			if err := patchElementDocs(&enu.documentation, &override); err != nil {
 				return err
 			}
 			continue
@@ -96,16 +96,16 @@ func patchFieldDocs(msg *Message, fieldName string, override *DocumentationOverr
 }
 
 func patchEnumValueDocs(enu *Enum, name string, override *DocumentationOverride) error {
-	for _, v := range enu.Values {
-		if v.Name != name {
+	for _, v := range enu.Values() {
+		if v.Name() != name {
 			continue
 		}
-		if err := patchElementDocs(&v.Documentation, override); err != nil {
+		if err := patchElementDocs(&v.documentation, override); err != nil {
 			return err
 		}
 		return nil
 	}
-	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, enu.ID)
+	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, enu.ID())
 }
 
 func patchMethodDocs(svc *Service, name string, override *DocumentationOverride) error {

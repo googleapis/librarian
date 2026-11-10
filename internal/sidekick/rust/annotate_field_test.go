@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func newTestCodec(t *testing.T, specificationFormat, packageName string, options map[string]string) *codec {
@@ -88,6 +89,7 @@ func TestFieldAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "std::string::String",
 		PrimitiveFieldType: "std::string::String",
+		ProstType:          "std::string::String",
 		AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
 	}
 	if diff := cmp.Diff(wantField, singularField.Codec); diff != "" {
@@ -108,6 +110,7 @@ func TestFieldAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "std::vec::Vec<std::string::String>",
 		PrimitiveFieldType: "std::string::String",
+		ProstType:          "std::string::String",
 		AddQueryParameter:  `let builder = req.repeated_field.iter().fold(builder, |builder, p| builder.query(&[("repeatedField", p)]));`,
 	}
 	if diff := cmp.Diff(wantField, repeatedField.Codec); diff != "" {
@@ -136,7 +139,7 @@ func TestFieldAnnotations(t *testing.T) {
 		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, wkt::internal::I64>",
 		SkipIfIsDefault:    true,
 	}
-	if diff := cmp.Diff(wantField, mapField.Codec); diff != "" {
+	if diff := cmp.Diff(wantField, mapField.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = ""
@@ -155,6 +158,7 @@ func TestFieldAnnotations(t *testing.T) {
 		FieldType:             "std::option::Option<std::boxed::Box<crate::model::TestMessage>>",
 		MessageType:           message,
 		PrimitiveFieldType:    "crate::model::TestMessage",
+		ProstType:             "TestMessage",
 		AddQueryParameter:     `let builder = req.boxed_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "boxedField") });`,
 		IsBoxed:               true,
 		MapToBoxed:            true,
@@ -255,6 +259,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		FieldType:             "std::boxed::Box<crate::model::TestMessage>",
 		MessageType:           message,
 		PrimitiveFieldType:    "crate::model::TestMessage",
+		ProstType:             "TestMessage",
 		AddQueryParameter:     `let builder = req.oneof_field().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofField") });`,
 		IsBoxed:               true,
 		MapToBoxed:            true,
@@ -281,6 +286,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		FieldType:             "std::vec::Vec<crate::model::TestMessage>",
 		MessageType:           message,
 		PrimitiveFieldType:    "crate::model::TestMessage",
+		ProstType:             "TestMessage",
 		AddQueryParameter:     `let builder = req.repeated_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "repeatedField") });`,
 		IsBoxed:               true,
 		MapToBoxed:            false,
@@ -306,6 +312,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		FieldType:             "std::boxed::Box<crate::model::TestMessage>",
 		MessageType:           message,
 		PrimitiveFieldType:    "crate::model::TestMessage",
+		ProstType:             "TestMessage",
 		AddQueryParameter:     `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.message_field).map_err(Error::ser)?.add(builder, "messageField") };`,
 		IsBoxed:               true,
 		MapToBoxed:            true,
@@ -410,6 +417,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		FieldType:          "std::boxed::Box<rusty_test_inner_v1::model::TestMessage>",
 		MessageType:        innerMessage,
 		PrimitiveFieldType: "rusty_test_inner_v1::model::TestMessage",
+		ProstType:          "crate::test::v1::inner::TestMessage",
 		AddQueryParameter:  `let builder = req.oneof_field().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofField") });`,
 		IsBoxed:            true,
 		MapToBoxed:         false,
@@ -436,6 +444,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		FieldType:          "std::vec::Vec<rusty_test_inner_v1::model::TestMessage>",
 		MessageType:        innerMessage,
 		PrimitiveFieldType: "rusty_test_inner_v1::model::TestMessage",
+		ProstType:          "crate::test::v1::inner::TestMessage",
 		AddQueryParameter:  `let builder = req.repeated_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "repeatedField") });`,
 		SkipIfIsDefault:    true,
 		AliasInExamples:    "RepeatedField",
@@ -459,6 +468,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		FieldType:          "rusty_test_inner_v1::model::TestMessage",
 		MessageType:        innerMessage,
 		PrimitiveFieldType: "rusty_test_inner_v1::model::TestMessage",
+		ProstType:          "crate::test::v1::inner::TestMessage",
 		AddQueryParameter:  `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.message_field).map_err(Error::ser)?.add(builder, "messageField") };`,
 		SkipIfIsDefault:    true,
 		AliasInExamples:    "MessageField",
@@ -513,6 +523,7 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 				FQMessageName:      "crate::model::TestMessage",
 				FieldType:          test.wantType,
 				PrimitiveFieldType: test.wantType,
+				ProstType:          test.wantType,
 				SerdeAs:            test.wantSerdeAs,
 				AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
 				SkipIfIsDefault:    true,
@@ -554,6 +565,7 @@ func TestBytesAnnotations(t *testing.T) {
 				FQMessageName:      "crate::model::TestMessage",
 				FieldType:          test.wantType,
 				PrimitiveFieldType: test.wantType,
+				ProstType:          test.wantType,
 				SerdeAs:            test.wantSerdeAs,
 				AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
 			}
@@ -566,18 +578,21 @@ func TestBytesAnnotations(t *testing.T) {
 
 func TestWrapperFieldAnnotations(t *testing.T) {
 	for _, test := range []struct {
-		wantType    string
-		wantSerdeAs string
-		name        string
+		wantType      string
+		wantProstType string
+		wantSerdeAs   string
+		name          string
 	}{
-		{"wkt::BytesValue", "serde_with::base64::Base64", "BytesValue"},
-		{"wkt::UInt64Value", "wkt::internal::U64", "UInt64Value"},
-		{"wkt::Int64Value", "wkt::internal::I64", "Int64Value"},
-		{"wkt::UInt32Value", "wkt::internal::U32", "UInt32Value"},
-		{"wkt::Int32Value", "wkt::internal::I32", "Int32Value"},
-		{"wkt::FloatValue", "wkt::internal::F32", "FloatValue"},
-		{"wkt::DoubleValue", "wkt::internal::F64", "DoubleValue"},
-		{"wkt::BoolValue", "", "BoolValue"},
+		{"wkt::BytesValue", "::bytes::Bytes", "serde_with::base64::Base64", "BytesValue"},
+		{"wkt::UInt64Value", "u64", "wkt::internal::U64", "UInt64Value"},
+		{"wkt::Int64Value", "i64", "wkt::internal::I64", "Int64Value"},
+		{"wkt::UInt32Value", "u32", "wkt::internal::U32", "UInt32Value"},
+		{"wkt::Int32Value", "i32", "wkt::internal::I32", "Int32Value"},
+		{"wkt::FloatValue", "f32", "wkt::internal::F32", "FloatValue"},
+		{"wkt::DoubleValue", "f64", "wkt::internal::F64", "DoubleValue"},
+		{"wkt::BoolValue", "bool", "", "BoolValue"},
+		{"wkt::StringValue", "std::string::String", "", "StringValue"},
+		{"wkt::Empty", "gaxi::prost::Empty", "", "Empty"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			wkt := api.NewTestMessage(test.name).WithPackage("google.protobuf")
@@ -588,10 +603,14 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 				WithFields(singularField).
 				WithDocumentation("A test message.")
 			model := api.NewTestAPI([]*api.Message{message}, nil, nil)
-			api.CrossReference(model)
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
 			api.LabelRecursiveFields(model)
 			codec := createRustCodec()
-			annotateModel(model, codec)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
 
 			wantField := &fieldAnnotations{
 				FieldName:          "singular_field",
@@ -601,6 +620,7 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 				FQMessageName:      "crate::model::TestMessage",
 				FieldType:          fmt.Sprintf("std::option::Option<%s>", test.wantType),
 				PrimitiveFieldType: test.wantType,
+				ProstType:          test.wantProstType,
 				SerdeAs:            test.wantSerdeAs,
 				SkipIfIsDefault:    true,
 			}
@@ -665,7 +685,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 	}
 	// We ignore the Parent.Codec field of Fields, as that points to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
-	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec")); diff != "" {
+	if diff := cmp.Diff(wantMessage, message.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent(), cmpopts.IgnoreFields(api.Field{}, "Parent.Codec")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -677,6 +697,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "crate::model::TestEnum",
 		PrimitiveFieldType: "crate::model::TestEnum",
+		ProstType:          "TestEnum",
 		AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
 		SkipIfIsDefault:    true,
 	}
@@ -692,6 +713,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "std::vec::Vec<crate::model::TestEnum>",
 		PrimitiveFieldType: "crate::model::TestEnum",
+		ProstType:          "TestEnum",
 		AddQueryParameter:  `let builder = req.repeated_field.iter().fold(builder, |builder, p| builder.query(&[("repeatedField", p)]));`,
 		SkipIfIsDefault:    true,
 	}
@@ -707,6 +729,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "std::option::Option<crate::model::TestEnum>",
 		PrimitiveFieldType: "crate::model::TestEnum",
+		ProstType:          "TestEnum",
 		AddQueryParameter:  `let builder = req.optional_field.iter().fold(builder, |builder, p| builder.query(&[("optionalField", p)]));`,
 		SkipIfIsDefault:    true,
 	}
@@ -724,6 +747,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "wkt::NullValue",
 		PrimitiveFieldType: "wkt::NullValue",
+		ProstType:          "prost_types::NullValue",
 		AddQueryParameter:  `let builder = builder.query(&[("nullValueField", &req.null_value_field)]);`,
 		SkipIfIsDefault:    true,
 		IsWktNullValue:     true,
@@ -747,7 +771,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		ValueField:         valueField,
 		SkipIfIsDefault:    true,
 	}
-	if diff := cmp.Diff(wantField, mapField.Codec); diff != "" {
+	if diff := cmp.Diff(wantField, mapField.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -761,12 +785,12 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 	}{
 		{name: "standard",
 			segments: []api.ResourceNameSegment{
-				{Literal: "projects"},
-				{Variable: "project"},
-				{Literal: "locations"},
-				{Variable: "location"},
-				{Literal: "secrets"},
-				{Variable: "secret"},
+				api.NewResourceNameSegment("projects", ""),
+				api.NewResourceNameSegment("", "project"),
+				api.NewResourceNameSegment("locations", ""),
+				api.NewResourceNameSegment("", "location"),
+				api.NewResourceNameSegment("secrets", ""),
+				api.NewResourceNameSegment("", "secret"),
 			},
 			wantString: "projects/{project_id}/locations/{location_id}/secrets/{secret_id}",
 			wantArgs:   []string{"project_id", "location_id", "secret_id"},
@@ -774,8 +798,8 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 		{
 			name: "with name suffix",
 			segments: []api.ResourceNameSegment{
-				{Literal: "topics"},
-				{Variable: "topicName"},
+				api.NewResourceNameSegment("topics", ""),
+				api.NewResourceNameSegment("", "topicName"),
 			},
 			wantString: "topics/{topic_name}",
 			wantArgs:   []string{"topic_name"},
@@ -783,8 +807,8 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 		{
 			name: "already has id suffix",
 			segments: []api.ResourceNameSegment{
-				{Literal: "projects"},
-				{Variable: "projectId"},
+				api.NewResourceNameSegment("projects", ""),
+				api.NewResourceNameSegment("", "projectId"),
 			},
 			wantString: "projects/{project_id}",
 			wantArgs:   []string{"project_id"},
@@ -848,6 +872,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 		DocLines:           nil,
 		FieldType:          "std::string::String",
 		PrimitiveFieldType: "std::string::String",
+		ProstType:          "std::string::String",
 		AddQueryParameter:  `let builder = builder.query(&[("parent", &req.parent)]);`,
 		KeyType:            "",
 		ValueType:          "",
@@ -865,6 +890,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 		DocLines:           nil,
 		FieldType:          "std::string::String",
 		PrimitiveFieldType: "std::string::String",
+		ProstType:          "std::string::String",
 		AddQueryParameter:  `let builder = builder.query(&[("public_key", &req.custom_key)]);`,
 		KeyType:            "",
 		ValueType:          "",
@@ -882,6 +908,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 		DocLines:           nil,
 		FieldType:          "i32",
 		PrimitiveFieldType: "i32",
+		ProstType:          "i32",
 		AddQueryParameter:  `let builder = builder.query(&[("readTime", &req.read_time)]);`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
@@ -899,6 +926,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 		DocLines:           nil,
 		FieldType:          "std::option::Option<i32>",
 		PrimitiveFieldType: "i32",
+		ProstType:          "i32",
 		AddQueryParameter:  `let builder = req.optional.iter().fold(builder, |builder, p| builder.query(&[("optional", p)]));`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
@@ -916,6 +944,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 		DocLines:           nil,
 		FieldType:          "std::vec::Vec<i32>",
 		PrimitiveFieldType: "i32",
+		ProstType:          "i32",
 		AddQueryParameter:  `let builder = req.repeated.iter().fold(builder, |builder, p| builder.query(&[("repeated", p)]));`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
@@ -994,6 +1023,7 @@ func TestAnnotateField_ReservedRawIdentifiers(t *testing.T) {
 		FQMessageName:      "crate::model::Message",
 		FieldType:          "bool",
 		PrimitiveFieldType: "bool",
+		ProstType:          "bool",
 		AddQueryParameter:  `let builder = builder.query(&[("self", &req.self_)]);`,
 		SkipIfIsDefault:    true,
 	}
@@ -1011,6 +1041,7 @@ func TestAnnotateField_ReservedRawIdentifiers(t *testing.T) {
 		FQMessageName:      "crate::model::Message",
 		FieldType:          "std::string::String",
 		PrimitiveFieldType: "std::string::String",
+		ProstType:          "std::string::String",
 		AddQueryParameter:  `let builder = builder.query(&[("crate", &req.crate_)]);`,
 	}
 	t.Run("crate", func(t *testing.T) {
@@ -1027,6 +1058,7 @@ func TestAnnotateField_ReservedRawIdentifiers(t *testing.T) {
 		FQMessageName:      "crate::model::Message",
 		FieldType:          "i32",
 		PrimitiveFieldType: "i32",
+		ProstType:          "i32",
 		AddQueryParameter:  `let builder = builder.query(&[("super", &req.super_)]);`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,

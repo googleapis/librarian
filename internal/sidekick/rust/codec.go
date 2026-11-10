@@ -693,7 +693,7 @@ func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecifi
 }
 
 func (c *codec) enumScopeName(e *api.Enum, sourceSpecificationPackageName string) (string, error) {
-	return c.messageScopeName(e.Parent, e.Package, sourceSpecificationPackageName)
+	return c.messageScopeName(e.Parent(), e.Package(), sourceSpecificationPackageName)
 }
 
 func (c *codec) fullyQualifiedMessageName(m *api.Message, sourceSpecificationPackageName string) (string, error) {
@@ -705,21 +705,21 @@ func (c *codec) fullyQualifiedMessageName(m *api.Message, sourceSpecificationPac
 }
 
 func enumName(e *api.Enum) string {
-	return toPascal(e.Name)
+	return toPascal(e.Name())
 }
 
 func (c *codec) fullyQualifiedEnumName(e *api.Enum, sourceSpecificationPackageName string) (string, error) {
-	p, err := c.messageScopeName(e.Parent, e.Package, sourceSpecificationPackageName)
+	p, err := c.messageScopeName(e.Parent(), e.Package(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return p + "::" + toPascal(e.Name), nil
+	return p + "::" + toPascal(e.Name()), nil
 }
 
 func enumValueName(e *api.EnumValue) string {
 	// The Protobuf naming convention is to use SCREAMING_SNAKE_CASE, but
 	// sometimes it is not followed.
-	return escapeKeyword(toScreamingSnake(e.Name))
+	return escapeKeyword(toScreamingSnake(e.Name()))
 }
 
 // enumValueVariantName returns the name of the Rust enumeration variant for a
@@ -764,24 +764,24 @@ func enumValueVariantName(e *api.EnumValue) string {
 	// `INSTANCE_PRIVATE_IPV6_GOOGLE_ACCESS` in enum values, while the automatic
 	// transformation would map it as `INSTANCE_PRIVATE_IPV_6_GOOGLE_ACCESS`.
 	// Note the extra `_` in `IPV_6` in the second case.
-	prefix := toScreamingSnake(e.Parent.Name) + "_"
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	prefix := toScreamingSnake(e.Parent().Name()) + "_"
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
 	trimNumbers := regexp.MustCompile(`_([0-9])`)
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
-	return toPascal(e.Name)
+	return toPascal(e.Name())
 }
 
 func (c *codec) fullyQualifiedEnumValueName(v *api.EnumValue, sourceSpecificationPackageName string) (string, error) {
-	p, err := c.enumScopeName(v.Parent, sourceSpecificationPackageName)
+	p, err := c.enumScopeName(v.Parent(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s::%s::%s", p, enumName(v.Parent), enumValueVariantName(v)), nil
+	return fmt.Sprintf("%s::%s::%s", p, enumName(v.Parent()), enumValueVariantName(v)), nil
 }
 
 func bodyAccessor(m *api.Method) string {
@@ -976,11 +976,11 @@ func prostMessageRelativePath(m *api.Message) string {
 // prostEnumRelativePath returns the type name of the enum relative to the package's prost module.
 // E.g., `TopEnum` for top-level, or `parent::NestedEnum` for nested enums.
 func prostEnumRelativePath(e *api.Enum) string {
-	name := toProstPascal(e.Name)
-	if e.Parent == nil {
+	name := toProstPascal(e.Name())
+	if e.Parent() == nil {
 		return name
 	}
-	return prostMessageModulePath(e.Parent) + "::" + name
+	return prostMessageModulePath(e.Parent()) + "::" + name
 }
 
 // toScreamingSnake converts a name to `SCREAMING_SNAKE_CASE`. The Rust naming
@@ -1484,8 +1484,8 @@ func (c *codec) tryEnumValueRustdocLink(id string, model *api.API, scope string)
 	if e == nil {
 		return "", nil
 	}
-	for _, v := range e.Values {
-		if v.Name == valueName {
+	for _, v := range e.Values() {
+		if v.Name() == valueName {
 			return c.fullyQualifiedEnumValueName(v, scope)
 		}
 	}
@@ -1543,7 +1543,7 @@ func findUsedPackagesMessage(message *api.Message, model *api.API, c *codec, vis
 	visited[message.ID] = true
 	usePackage(message.Package, model, c)
 	for _, e := range message.Enums {
-		usePackage(e.Package, model, c)
+		usePackage(e.Package(), model, c)
 	}
 	for _, m := range message.Messages {
 		findUsedPackagesMessage(m, model, c, visited)
@@ -1575,7 +1575,7 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 		}
 	case api.TypezEnum:
 		if fe := model.Enum(f.TypezID); fe != nil {
-			usePackage(fe.Package, model, c)
+			usePackage(fe.Package(), model, c)
 		}
 	}
 }
@@ -1585,7 +1585,7 @@ func findUsedPackages(model *api.API, c *codec) {
 		findUsedPackagesMessage(message, model, c, map[string]bool{})
 	}
 	for _, enum := range model.Enums {
-		usePackage(enum.Package, model, c)
+		usePackage(enum.Package(), model, c)
 	}
 	for _, s := range model.Services {
 		for _, method := range s.Methods {
@@ -1596,10 +1596,10 @@ func findUsedPackages(model *api.API, c *codec) {
 				usePackage(m.Package, model, c)
 			}
 			if method.OperationInfo != nil {
-				if m := model.Message(method.OperationInfo.MetadataTypeID); m != nil {
+				if m := model.Message(method.OperationInfo.MetadataTypeID()); m != nil {
 					usePackage(m.Package, model, c)
 				}
-				if m := model.Message(method.OperationInfo.ResponseTypeID); m != nil {
+				if m := model.Message(method.OperationInfo.ResponseTypeID()); m != nil {
 					usePackage(m.Package, model, c)
 				}
 			}

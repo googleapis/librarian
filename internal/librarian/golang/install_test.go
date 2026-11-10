@@ -20,25 +20,93 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestInstall_Error(t *testing.T) {
+	t.Setenv(cache.EnvLibrarianBin, t.TempDir())
 	for _, test := range []struct {
-		name  string
-		tools *config.Tools
+		name    string
+		tools   *config.Tools
+		wantErr error
 	}{
-		{"nil tools", nil},
-		{"empty tools", &config.Tools{}},
+		{
+			name:    "nil tools",
+			tools:   nil,
+			wantErr: errNoToolsSpecified,
+		},
+		{
+			name:    "empty tools",
+			tools:   &config.Tools{},
+			wantErr: errNoToolsSpecified,
+		},
+		{
+			name: "missing tool version",
+			tools: &config.Tools{
+				Go: []*config.GoTool{
+					{Name: "golang.org/x/tools/cmd/goimports"},
+				},
+			},
+			wantErr: errMissingToolVersion,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := Install(t.Context(), test.tools); !errors.Is(err, errNoToolsSpecified) {
-				t.Fatalf("Install() error = %v, want %v", err, errNoToolsSpecified)
+			gotErr := Install(t.Context(), test.tools)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Fatalf("Install() error = %v, want %v", gotErr, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestInstallGoTools_RetrySucceeds(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping shell script stub test on Windows")
+	}
+	t.Setenv(cache.EnvLibrarianBin, t.TempDir())
+	stubDir := t.TempDir()
+	attemptsFile := filepath.Join(t.TempDir(), "attempts.txt")
+	createFlakyStubExecutable(t, filepath.Join(stubDir, command.Go), attemptsFile, 3)
+	t.Setenv(envPath, stubDir+string(filepath.ListSeparator)+os.Getenv(envPath))
+
+	goTools := []*config.GoTool{
+		{Name: "golang.org/x/tools/cmd/goimports", Version: "v0.44.0"},
+	}
+	if err := installGoTools(t.Context(), goTools, time.Millisecond); err != nil {
+		t.Fatal(err)
+	}
+	got := countLines(t, attemptsFile)
+	want := 3
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestInstallGoTools_RetryExhausted(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping shell script stub test on Windows")
+	}
+	t.Setenv(cache.EnvLibrarianBin, t.TempDir())
+	stubDir := t.TempDir()
+	attemptsFile := filepath.Join(t.TempDir(), "attempts.txt")
+	createFlakyStubExecutable(t, filepath.Join(stubDir, command.Go), attemptsFile, 10)
+	t.Setenv(envPath, stubDir+string(filepath.ListSeparator)+os.Getenv(envPath))
+
+	goTools := []*config.GoTool{
+		{Name: "golang.org/x/tools/cmd/goimports", Version: "v0.44.0"},
+	}
+	if err := installGoTools(t.Context(), goTools, time.Millisecond); err == nil {
+		t.Fatal("installGoTools() error = nil, want error")
+	}
+	got := countLines(t, attemptsFile)
+	want := maxRetryAttempts
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

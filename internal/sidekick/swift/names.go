@@ -195,10 +195,10 @@ func messageSimpleName(m *api.Message) string {
 // enumName returns the Swift type name for an enum, prefixing top-level
 // well-known protobuf types (google.protobuf) with "WKT".
 func enumName(e *api.Enum) string {
-	if e.Parent == nil && e.Package == wellKnownProtobufPackage {
-		return escapeKeyword("WKT" + pascalCaseNoMangling(e.Name))
+	if e.Parent() == nil && e.Package() == wellKnownProtobufPackage {
+		return escapeKeyword("WKT" + pascalCaseNoMangling(e.Name()))
 	}
-	return pascalCase(e.Name)
+	return pascalCase(e.Name())
 }
 
 // pascalCaseNoMangling converts an identifier to PascalCase (note the leading uppercase).
@@ -221,15 +221,15 @@ func pascalCaseNoMangling(s string) string {
 
 // enumValueCaseName returns the name of the Swift enumeration case for a given enumeration value.
 func enumValueCaseName(e *api.EnumValue) string {
-	prefix := strcase.ToScreamingSnake(e.Parent.Name) + "_"
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	prefix := strcase.ToScreamingSnake(e.Parent().Name()) + "_"
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return camelCase(trimmed)
 	}
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return camelCase(trimmed)
 	}
-	return camelCase(e.Name)
+	return camelCase(e.Name())
 }
 
 // ProtoPackagePrefix returns the SwiftProtobuf prefix for a given protobuf package name.

@@ -261,26 +261,25 @@ func TestAnnotateModel_Options(t *testing.T) {
 }
 
 func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
-	method := sample.MethodListSecretVersions()
-	service := api.NewTestService(sample.ServiceName).
-		WithPackage(sample.Package).
-		WithDocumentation(sample.APIDescription).
-		WithDefaultHost(sample.DefaultHost).
-		WithMethods(method)
-	model := api.NewTestAPI(
-		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
-			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
-			sample.CustomerManagedEncryption()},
-		[]*api.Enum{sample.EnumState()},
-		[]*api.Service{service},
-	)
-
 	var tests = []string{
 		"api-keys-environment-variables",
 		"issue-tracker-url",
 	}
 
 	for _, test := range tests {
+		method := sample.MethodListSecretVersions()
+		service := api.NewTestService(sample.ServiceName).
+			WithPackage(sample.Package).
+			WithDocumentation(sample.APIDescription).
+			WithDefaultHost(sample.DefaultHost).
+			WithMethods(method)
+		model := api.NewTestAPI(
+			[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+				sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
+				sample.CustomerManagedEncryption()},
+			[]*api.Enum{sample.EnumState()},
+			[]*api.Service{service},
+		)
 		annotate := newAnnotateModel(model)
 		options := maps.Clone(requiredConfig)
 		delete(options, test)
@@ -418,7 +417,6 @@ func TestAnnotateMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotate.annotateMethod(method)
 	codec := method.Codec.(*methodAnnotation)
 
 	got := codec.Name
@@ -1711,7 +1709,7 @@ func TestAnnotateEnum(t *testing.T) {
 	} {
 		t.Run(test.wantEnumName, func(t *testing.T) {
 			annotate.annotateEnum(test.enum)
-			codec := test.enum.Codec.(*enumAnnotation)
+			codec := test.enum.Codec().(*enumAnnotation)
 			gotEnumName := codec.Name
 			gotEnumDefaultValue := codec.DefaultValue
 
@@ -1722,11 +1720,11 @@ func TestAnnotateEnum(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
-			for i, value := range test.enum.Values {
-				testName := fmt.Sprintf("TestAnnotateEnum(%q) [value annotation %d]", test.enum.Name, i)
+			for i, value := range test.enum.Values() {
+				testName := fmt.Sprintf("TestAnnotateEnum(%q) [value annotation %d]", test.enum.Name(), i)
 				t.Run(testName, func(t *testing.T) {
 					wantValueAnnotation := test.wantValueAnnotations[i]
-					gotValueAnnotation := value.Codec.(*enumValueAnnotation)
+					gotValueAnnotation := value.Codec().(*enumValueAnnotation)
 					if diff := cmp.Diff(wantValueAnnotation.wantValueName, gotValueAnnotation.Name); diff != "" {
 						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
@@ -1968,7 +1966,7 @@ func TestFindExampleMethod(t *testing.T) {
 		WithPackage("otherpackage").
 		WithFields(api.NewTestField("optional"))
 
-	lroMethod := api.NewTestMethod("LroMethod").WithOperationInfo(&api.OperationInfo{})
+	lroMethod := api.NewTestMethod("LroMethod").WithOperationInfo(api.NewOperationInfoBuilder().Build())
 
 	streamingMethod := api.NewTestMethod("StreamingMethod")
 	streamingMethod.IsSimple = false

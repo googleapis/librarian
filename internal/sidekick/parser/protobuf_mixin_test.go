@@ -223,7 +223,7 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 	want.SourceServiceID = ".google.longrunning.Operations"
 	want.InputTypeID = ".google.longrunning.GetOperationRequest"
 	want.OutputTypeID = ".google.longrunning.Operation"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
 	apitest.CheckMethod(t, service, "GetOperation", want)
 }
 
@@ -307,7 +307,7 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 	want.SourceServiceID = ".google.longrunning.Operations"
 	want.InputTypeID = ".google.longrunning.CancelOperationRequest"
 	want.OutputTypeID = ".google.protobuf.Empty"
-	want.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
 	apitest.CheckMethod(t, service, "CancelOperation", want)
 	got := test.Message(".google.protobuf.Empty")
 	if got == nil {

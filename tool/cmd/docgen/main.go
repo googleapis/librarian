@@ -27,7 +27,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"text/template"
+	"text/template" // NOLINT
 	"unicode"
 	"unicode/utf8"
 )

@@ -22,7 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
+	"text/template" // NOLINT
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"

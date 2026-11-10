@@ -15,6 +15,7 @@
 package api
 
 import (
+	"slices"
 	"strings"
 )
 
@@ -53,9 +54,39 @@ type Poller struct {
 // This is one of the `Method` attributes.
 type DiscoveryLro struct {
 	// The path parameters required by the polling operation.
-	PollingPathParameters []string
+	pollingPathParameters []string
 	// Language specific annotations.
-	Codec any
+	codec any
+}
+
+// PollingPathParameters returns the path parameters required by the polling operation.
+func (d *DiscoveryLro) PollingPathParameters() []string {
+	return slices.Clone(d.pollingPathParameters)
+}
+
+// Codec returns the language-specific annotations.
+func (d *DiscoveryLro) Codec() any {
+	return d.codec
+}
+
+// SetAnnotations sets the language-specific annotations.
+//
+// It panics if the annotations have already been set.
+func (d *DiscoveryLro) SetAnnotations(codec any) {
+	if d.codec != nil {
+		panic("DiscoveryLro.SetAnnotations called more than once")
+	}
+	d.codec = codec
+}
+
+// Clone returns a copy of the DiscoveryLro without its codec annotation.
+func (d *DiscoveryLro) Clone() *DiscoveryLro {
+	if d == nil {
+		return nil
+	}
+	return &DiscoveryLro{
+		pollingPathParameters: slices.Clone(d.pollingPathParameters),
+	}
 }
 
 // LroServices returns the set of Discovery LRO services.

@@ -100,8 +100,8 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			add(method.InputTypeID)
 			add(method.OutputTypeID)
 			if method.OperationInfo != nil {
-				add(method.OperationInfo.MetadataTypeID)
-				add(method.OperationInfo.ResponseTypeID)
+				add(method.OperationInfo.MetadataTypeID())
+				add(method.OperationInfo.ResponseTypeID())
 			}
 			continue
 		}
@@ -149,8 +149,8 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if enum := model.Enum(id); enum != nil {
-			if enum.Parent != nil {
-				add(enum.Parent.ID)
+			if enum.Parent() != nil {
+				add(enum.Parent().ID)
 			}
 			continue
 		}

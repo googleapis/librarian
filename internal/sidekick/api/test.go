@@ -41,7 +41,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	indexMessage = func(m *Message) {
 		model.messageByID[m.ID] = m
 		if m.Resource != nil {
-			model.resourceByType[m.Resource.Type] = m.Resource
+			model.resourceByType[m.Resource.typez] = m.Resource
 		}
 		for _, f := range m.Fields {
 			if f.MapType != nil {
@@ -49,10 +49,10 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 			}
 		}
 		for _, e := range m.Enums {
-			model.enumByID[e.ID] = e
-			e.Parent = m
-			for _, ev := range e.Values {
-				ev.Parent = e
+			model.enumByID[e.ID()] = e
+			e.parent = m
+			for _, ev := range e.Values() {
+				ev.parent = e
 			}
 		}
 		for _, child := range m.Messages {
@@ -65,8 +65,8 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		indexMessage(m)
 	}
 	for _, e := range enums {
-		model.PackageName = e.Package
-		model.enumByID[e.ID] = e
+		model.PackageName = e.Package()
+		model.enumByID[e.ID()] = e
 	}
 	for _, s := range services {
 		model.PackageName = s.Package
@@ -86,15 +86,15 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 	}
 	for _, e := range enums {
-		parent := model.messageByID[parentName(e.ID)]
+		parent := model.messageByID[parentName(e.ID())]
 		if parent != nil {
-			e.Parent = parent
+			e.parent = parent
 			if !slices.Contains(parent.Enums, e) {
 				parent.Enums = append(parent.Enums, e)
 			}
 		}
-		for _, ev := range e.Values {
-			ev.Parent = e
+		for _, ev := range e.Values() {
+			ev.parent = e
 		}
 	}
 
@@ -275,7 +275,7 @@ func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
 func (m *Message) WithResource(resource *Resource) *Message {
 	m.Resource = resource
 	if resource != nil {
-		resource.Self = m
+		resource.self = m
 	}
 	return m
 }
@@ -584,13 +584,13 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 		panic(fmt.Sprintf("missing InputType for method: %s", m.Name))
 	}
 	for _, s := range signatures {
-		s.Method = m
-		for _, name := range s.Names {
+		s.method = m
+		for _, name := range s.names {
 			for _, f := range m.InputType.Fields {
 				if name != f.Name {
 					continue
 				}
-				s.Fields = append(s.Fields, f)
+				s.fields = append(s.fields, f)
 				break
 			}
 		}
@@ -746,7 +746,7 @@ func (f *Field) WithEnumType(enum *Enum) *Field {
 	f.EnumType = enum
 	f.Typez = TypezEnum
 	if enum != nil {
-		f.TypezID = enum.ID
+		f.TypezID = enum.ID()
 	}
 	return f
 }
@@ -783,13 +783,13 @@ func (f *Field) WithSkipProtoConversion() *Field {
 
 // WithResourceReference sets the resource reference on a field.
 func (f *Field) WithResourceReference(refType string) *Field {
-	f.ResourceReference = &ResourceReference{Type: refType}
+	f.ResourceReference = NewResourceReferenceBuilder().WithType(refType).Build()
 	return f
 }
 
 // WithChildTypeReference sets the child type resource reference on a field.
 func (f *Field) WithChildTypeReference(childType string) *Field {
-	f.ResourceReference = &ResourceReference{ChildType: childType}
+	f.ResourceReference = NewResourceReferenceBuilder().WithChildType(childType).Build()
 	return f
 }
 
@@ -807,72 +807,76 @@ func (f *Field) WithDocumentation(documentation string) *Field {
 
 // NewTestResource creates a resource with defaults.
 func NewTestResource(typez string) *Resource {
-	return &Resource{
-		Type: typez,
-	}
+	return NewResourceBuilder().WithType(typez).Build()
 }
 
 // WithPatterns adds patterns to the resource.
 func (r *Resource) WithPatterns(patterns ...ResourcePattern) *Resource {
-	r.Patterns = append(r.Patterns, patterns...)
+	r.patterns = append(r.patterns, patterns...)
 	return r
 }
 
 // WithSingular sets the singular name of the resource.
 func (r *Resource) WithSingular(name string) *Resource {
-	r.Singular = name
+	r.singular = name
 	return r
 }
 
 // WithPlural sets the plural name of the resource.
 func (r *Resource) WithPlural(name string) *Resource {
-	r.Plural = name
+	r.plural = name
+	return r
+}
+
+// WithSelf sets the Message that defines this resource.
+func (r *Resource) WithSelf(self *Message) *Resource {
+	r.self = self
 	return r
 }
 
 // NewTestEnum creates an Enum with defaults for testing.
 // Default package is "test".
 func NewTestEnum(name string) *Enum {
-	return (&Enum{Name: name}).WithPackage("test")
+	return NewEnumBuilder().WithName(name).Build().WithPackage("test")
 }
 
 // WithPackage sets the package for the enum and updates its ID.
 func (e *Enum) WithPackage(pkg string) *Enum {
-	e.Package = pkg
-	e.ID = fmt.Sprintf(".%s.%s", pkg, e.Name)
+	e.packagez = pkg
+	e.id = fmt.Sprintf(".%s.%s", pkg, e.Name())
 	return e
 }
 
 // WithID overrides the enum's ID.
 func (e *Enum) WithID(id string) *Enum {
-	e.ID = id
+	e.id = id
 	return e
 }
 
 // WithDocumentation sets the documentation for the enum.
 func (e *Enum) WithDocumentation(doc string) *Enum {
-	e.Documentation = doc
+	e.documentation = doc
 	return e
 }
 
 // WithDeprecated sets whether the enum is deprecated.
 func (e *Enum) WithDeprecated(deprecated bool) *Enum {
-	e.Deprecated = deprecated
+	e.deprecated = deprecated
 	return e
 }
 
 // WithParent sets the parent message for the enum and updates its ID.
 func (e *Enum) WithParent(parent *Message) *Enum {
-	e.Parent = parent
+	e.parent = parent
 	if parent != nil {
-		e.Package = parent.Package
-		if strings.HasPrefix(e.ID, ".test.") || e.ID == "" {
-			e.ID = fmt.Sprintf("%s.%s", parent.ID, e.Name)
+		e.packagez = parent.Package
+		if strings.HasPrefix(e.ID(), ".test.") || e.ID() == "" {
+			e.id = fmt.Sprintf("%s.%s", parent.ID, e.Name())
 		}
-		for _, v := range e.Values {
-			v.Parent = e
-			if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
-				v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+		for _, v := range e.Values() {
+			v.parent = e
+			if strings.HasPrefix(v.ID(), ".test.") || v.ID() == "" {
+				v.WithID(fmt.Sprintf("%s.%s", e.ID(), v.Name()))
 			}
 		}
 	}
@@ -882,20 +886,20 @@ func (e *Enum) WithParent(parent *Message) *Enum {
 // WithValues adds values to the enum, setting their Parent, ID, and populating UniqueNumberValues.
 func (e *Enum) WithValues(values ...*EnumValue) *Enum {
 	for _, v := range values {
-		v.Parent = e
-		if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
-			v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+		v.parent = e
+		if strings.HasPrefix(v.ID(), ".test.") || v.ID() == "" {
+			v.WithID(fmt.Sprintf("%s.%s", e.ID(), v.Name()))
 		}
 	}
-	e.Values = append(e.Values, values...)
+	e.values = append(e.values, values...)
 	seen := make(map[int32]bool)
-	for _, v := range e.UniqueNumberValues {
-		seen[v.Number] = true
+	for _, v := range e.UniqueNumberValues() {
+		seen[v.Number()] = true
 	}
 	for _, v := range values {
-		if !seen[v.Number] {
-			e.UniqueNumberValues = append(e.UniqueNumberValues, v)
-			seen[v.Number] = true
+		if !seen[v.Number()] {
+			e.uniqueNumberValues = append(e.uniqueNumberValues, v)
+			seen[v.Number()] = true
 		}
 	}
 	return e
@@ -903,34 +907,34 @@ func (e *Enum) WithValues(values ...*EnumValue) *Enum {
 
 // WithUniqueNumberValues overrides UniqueNumberValues on the enum.
 func (e *Enum) WithUniqueNumberValues(values ...*EnumValue) *Enum {
-	e.UniqueNumberValues = values
+	e.uniqueNumberValues = values
 	return e
 }
 
 // NewTestEnumValue creates an EnumValue with defaults for testing.
 func NewTestEnumValue(name string, number int32) *EnumValue {
-	return &EnumValue{
-		Name:   name,
-		Number: number,
-		ID:     fmt.Sprintf(".test.%s", name),
-	}
+	return NewEnumValueBuilder().
+		WithName(name).
+		WithNumber(number).
+		WithID(fmt.Sprintf(".test.%s", name)).
+		Build()
 }
 
 // WithID overrides the enum value's ID.
 func (ev *EnumValue) WithID(id string) *EnumValue {
-	ev.ID = id
+	ev.id = id
 	return ev
 }
 
 // WithDocumentation sets the documentation for the enum value.
 func (ev *EnumValue) WithDocumentation(doc string) *EnumValue {
-	ev.Documentation = doc
+	ev.documentation = doc
 	return ev
 }
 
 // WithDeprecated sets whether the enum value is deprecated.
 func (ev *EnumValue) WithDeprecated(deprecated bool) *EnumValue {
-	ev.Deprecated = deprecated
+	ev.deprecated = deprecated
 	return ev
 }
 
@@ -959,41 +963,43 @@ func ParseTemplateForTest(template string) []PathSegment {
 
 // NewTestMethodSignature creates a MethodSignature with parameter names.
 func NewTestMethodSignature(names ...string) *MethodSignature {
-	return &MethodSignature{Names: names}
+	return NewMethodSignatureBuilder().WithNames(names...).Build()
 }
 
 // WithFields appends the resolved fields to the signature.
 func (s *MethodSignature) WithFields(fields ...*Field) *MethodSignature {
-	s.Fields = append(s.Fields, fields...)
+	s.fields = append(s.fields, fields...)
 	return s
 }
 
 // NewTestResourceNamePattern creates a ResourceNamePattern with segments.
 func NewTestResourceNamePattern(segments ...ResourceNameSegment) *ResourceNamePattern {
-	return &ResourceNamePattern{Segments: segments}
+	return NewResourceNamePattern(segments...)
 }
 
 // NewTestRoutingInfo creates a RoutingInfo struct with variants.
 func NewTestRoutingInfo(name string, variants ...*RoutingInfoVariant) *RoutingInfo {
-	return &RoutingInfo{Name: name, Variants: variants}
+	return NewRoutingInfoBuilder().WithName(name).WithVariants(variants...).Build()
 }
 
 // NewTestRoutingInfoVariant creates a RoutingInfoVariant with a field path.
 func NewTestRoutingInfoVariant(fieldPath ...string) *RoutingInfoVariant {
-	return &RoutingInfoVariant{FieldPath: fieldPath}
+	return NewRoutingInfoVariantBuilder().WithFieldPath(fieldPath...).Build()
 }
 
 // NewTestOperationInfo creates an OperationInfo with response and metadata type IDs.
 func NewTestOperationInfo(responseTypeID, metadataTypeID string) *OperationInfo {
-	return &OperationInfo{
-		ResponseTypeID: responseTypeID,
-		MetadataTypeID: metadataTypeID,
-	}
+	return NewOperationInfoBuilder().
+		WithResponseTypeID(responseTypeID).
+		WithMetadataTypeID(metadataTypeID).
+		Build()
 }
 
 // NewTestDiscoveryLro creates a DiscoveryLro with polling path parameters.
 func NewTestDiscoveryLro(pollingParams ...string) *DiscoveryLro {
-	return &DiscoveryLro{PollingPathParameters: pollingParams}
+	return NewDiscoveryLroBuilder().
+		WithPollingPathParameters(pollingParams...).
+		Build()
 }
 
 // NewTestSampleInfo creates a SampleInfo initialized with a resource name field.

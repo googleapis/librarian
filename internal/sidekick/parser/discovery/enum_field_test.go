@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
@@ -72,16 +71,16 @@ func TestMakeEnumFields(t *testing.T) {
 				WithID(".package.Message.networkTier.STANDARD_OVERRIDES_FIXED_STANDARD").
 				WithDocumentation("(Output only) Temporary tier for FIXED_STANDARD when fixed standard tier is expired or not configured."),
 		)
-	gotEnum := model.Enum(wantEnum.ID)
+	gotEnum := model.Enum(wantEnum.ID())
 	if gotEnum == nil {
-		t.Fatalf("missing enum %s", wantEnum.ID)
+		t.Fatalf("missing enum %s", wantEnum.ID())
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
-	if gotEnum.Parent == nil {
+	if gotEnum.Parent() == nil {
 		t.Errorf("expected non-nil parent in enum: %v", gotEnum)
 	}
-	for _, value := range gotEnum.Values {
-		if value.Parent != gotEnum {
+	for _, value := range gotEnum.Values() {
+		if value.Parent() != gotEnum {
 			t.Errorf("mismatched parent in enumValue: %v", value)
 		}
 	}
@@ -98,7 +97,8 @@ func TestMakeEnumFields(t *testing.T) {
 	want.Fields[0].Parent = nil
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
-	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -144,16 +144,16 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 				WithID(".package.Message.networkTier.PREMIUM").
 				WithDocumentation("High quality, Google-grade network tier, support for all networking products."),
 		)
-	gotEnum := model.Enum(wantEnum.ID)
+	gotEnum := model.Enum(wantEnum.ID())
 	if gotEnum == nil {
-		t.Fatalf("missing enum %s", wantEnum.ID)
+		t.Fatalf("missing enum %s", wantEnum.ID())
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
-	if gotEnum.Parent == nil {
+	if gotEnum.Parent() == nil {
 		t.Errorf("expected non-nil parent in enum: %v", gotEnum)
 	}
-	for _, value := range gotEnum.Values {
-		if value.Parent != gotEnum {
+	for _, value := range gotEnum.Values() {
+		if value.Parent() != gotEnum {
 			t.Errorf("mismatched parent in enumValue: %v", value)
 		}
 	}
@@ -171,7 +171,8 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 	want.Fields[0].Parent = nil
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
-	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -233,16 +234,16 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 				WithID(".package.Message.networkTier.STANDARD_OVERRIDES_FIXED_STANDARD").
 				WithDocumentation("(Output only) Temporary tier for FIXED_STANDARD when fixed standard tier is expired or not configured."),
 		)
-	gotEnum := model.Enum(wantEnum.ID)
+	gotEnum := model.Enum(wantEnum.ID())
 	if gotEnum == nil {
-		t.Fatalf("missing enum %s", wantEnum.ID)
+		t.Fatalf("missing enum %s", wantEnum.ID())
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
-	if gotEnum.Parent == nil {
+	if gotEnum.Parent() == nil {
 		t.Errorf("expected non-nil parent in enum: %v", gotEnum)
 	}
-	for _, value := range gotEnum.Values {
-		if value.Parent != gotEnum {
+	for _, value := range gotEnum.Values() {
+		if value.Parent() != gotEnum {
 			t.Errorf("mismatched parent in enumValue: %v", value)
 		}
 	}
@@ -259,7 +260,8 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 	want.Fields[0].Parent = nil
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
-	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

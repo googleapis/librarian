@@ -288,7 +288,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
             .execute(
                 extensions,
                 path,
-                req.to_proto().map_err(Error::deser)?,
+                ToProto::<crate::{{ .InputType.Codec.PackageModuleName }}::{{ .InputType.Codec.ProstRelativeName }}>::to_proto(req).map_err(Error::deser)?,
                 options,
                 &info::X_GOOG_API_CLIENT_HEADER,
                 &x_goog_request_params,
@@ -332,8 +332,8 @@ pub(crate) fn lro_any_to_prost(
         {{- range .Codec.LROTypes }}
         "type.googleapis.com/{{ .Codec.SourceFQN }}" => value
             .to_msg::<{{ .Codec.QualifiedName }}>()
-            .map_err(ConvertError::other)?
-            .to_proto()
+            .map_err(ConvertError::other)
+            .and_then(ToProto::<crate::{{ .Codec.PackageModuleName }}::{{ .Codec.ProstRelativeName }}>::to_proto)
             .and_then(|prost_msg| {
                 prost_types::Any::from_msg(&prost_msg).map_err(ConvertError::other)
             }),
@@ -356,8 +356,8 @@ pub(crate) fn lro_any_from_prost(
         {{- range .Codec.LROTypes }}
         "type.googleapis.com/{{ .Codec.SourceFQN }}" => value
             .to_msg::<crate::{{ .Codec.PackageModuleName }}::{{ .Codec.ProstRelativeName }}>()
-            .map_err(ConvertError::other)?
-            .cnv()
+            .map_err(ConvertError::other)
+            .and_then(FromProto::<{{ .Codec.QualifiedName }}>::cnv)
             .and_then(|our_msg| wkt::Any::from_msg(&our_msg).map_err(ConvertError::other)),
         {{- end }}
         {{- end }}

@@ -112,7 +112,7 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
 	}
-	got := gotMethod.DiscoveryLro.Codec.(*discoveryLroAnnotations)
+	got := gotMethod.DiscoveryLro.Codec().(*discoveryLroAnnotations)
 	want := &discoveryLroAnnotations{
 		MethodName:          "delete",
 		ReturnType:          "()",
@@ -225,9 +225,9 @@ func annotateMethodModel(t *testing.T) *api.API {
 			WithLiteral("types").
 			WithVariableNamed("type").
 			Build()).
-		WithDiscoveryLro(&api.DiscoveryLro{
-			PollingPathParameters: []string{"project", "zone", "type"},
-		}).
+		WithDiscoveryLro(api.NewDiscoveryLroBuilder().
+			WithPollingPathParameters("project", "zone", "type").
+			Build()).
 		ReturnEmpty()
 
 	methodSelf := api.NewTestMethod("Self").
@@ -470,12 +470,10 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 func TestAnnotateSampleInfo(t *testing.T) {
 	field := api.NewTestField("name").
 		WithType(api.TypezString).
-		WithResourceNamePattern(&api.ResourceNamePattern{
-			Segments: []api.ResourceNameSegment{
-				{Literal: "projects"},
-				{Variable: "project"},
-			},
-		})
+		WithResourceNamePattern(api.NewTestResourceNamePattern(
+			api.NewResourceNameSegment("projects", ""),
+			api.NewResourceNameSegment("", "project"),
+		))
 	message := api.NewTestMessage("TestMessage").
 		WithPackage("test.v1").
 		WithFields(field)
@@ -600,7 +598,7 @@ func TestMethodUsesGrpc(t *testing.T) {
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()
 
-	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(&api.OperationInfo{ResponseTypeID: msg.ID, MetadataTypeID: msg.ID})
+	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(api.NewTestOperationInfo(msg.ID, msg.ID))
 
 	for _, test := range []struct {
 		name             string
