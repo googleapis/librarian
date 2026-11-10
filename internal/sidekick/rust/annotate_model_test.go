@@ -932,7 +932,7 @@ func TestExternalTypesAnnotations(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	nestedEnumAnn := nestedEnum.Codec.(*enumAnnotation)
+	nestedEnumAnn := nestedEnum.Codec().(*enumAnnotation)
 	if diff := cmp.Diff("crate::google::r#type::lat_lng::NestedEnum", nestedEnumAnn.ProstRelativeName); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -942,7 +942,7 @@ func TestExternalTypesAnnotations(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	enumAnn, ok := extEnum.Codec.(*enumAnnotation)
+	enumAnn, ok := extEnum.Codec().(*enumAnnotation)
 	if !ok {
 		t.Fatalf("expected enumAnnotation on extEnum")
 	}
@@ -975,7 +975,7 @@ func TestExternalTypesAnnotations(t *testing.T) {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
-		enumAnn2 := extEnum2.Codec.(*enumAnnotation)
+		enumAnn2 := extEnum2.Codec().(*enumAnnotation)
 		if diff := cmp.Diff("super::prost::google::r#type::DayOfWeek", enumAnn2.ProstRelativeName); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}

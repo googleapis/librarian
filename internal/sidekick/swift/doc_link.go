@@ -65,7 +65,7 @@ func (c *codec) tryDocLinkWithId(id string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return c.docLink(e.Package, name), nil
+		return c.docLink(e.Package(), name), nil
 	}
 	if me := c.Model.Method(id); me != nil {
 		return c.methodDocLink(me)
@@ -130,13 +130,13 @@ func (c *codec) tryEnumValueDocLink(id string) (string, error) {
 	if e == nil {
 		return "", nil
 	}
-	for _, v := range e.Values {
+	for _, v := range e.Values() {
 		if v.Name() == valueName {
 			p, err := c.enumTypeName(e)
 			if err != nil {
 				return "", err
 			}
-			return c.docLink(e.Package, fmt.Sprintf("%s/%s", p, enumValueCaseName(v))), nil
+			return c.docLink(e.Package(), fmt.Sprintf("%s/%s", p, enumValueCaseName(v))), nil
 		}
 	}
 	return "", nil

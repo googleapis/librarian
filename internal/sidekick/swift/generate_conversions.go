@@ -47,7 +47,7 @@ func GenerateConversions(ctx context.Context, model *api.API, outdir string, lib
 
 func (c *codec) generateEnumConversions(outdir string) error {
 	for _, e := range c.Model.Enums {
-		if e.Parent != nil {
+		if e.Parent() != nil {
 			continue
 		}
 		name := c.enumFileName(e)

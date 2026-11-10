@@ -23,6 +23,7 @@ import (
 func allowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
 		DiscoveryLro{},
+		Enum{},
 		EnumValue{},
 		MethodSignature{},
 		OperationInfo{},

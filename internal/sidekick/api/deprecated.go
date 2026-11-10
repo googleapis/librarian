@@ -57,10 +57,10 @@ func (message *Message) hasDeprecatedEntities() bool {
 }
 
 func (enum *Enum) hasDeprecatedEntities() bool {
-	if enum.Deprecated {
+	if enum.Deprecated() {
 		return true
 	}
-	for _, v := range enum.Values {
+	for _, v := range enum.Values() {
 		if v.Deprecated() {
 			return true
 		}

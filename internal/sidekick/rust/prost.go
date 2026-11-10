@@ -71,7 +71,7 @@ func (c *codec) prostFieldType(f *api.Field, model *api.API) (string, error) {
 		if e == nil {
 			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
 		}
-		return c.qualifyProstPath(e.Package, prostEnumRelativePath(e), model.PackageName), nil
+		return c.qualifyProstPath(e.Package(), prostEnumRelativePath(e), model.PackageName), nil
 	case api.TypezGroup, api.TypezMap:
 		return "", nil
 	default:

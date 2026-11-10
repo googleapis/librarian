@@ -60,7 +60,7 @@ func TestEnumNames(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := enumName(test.enum); got != test.want {
-				t.Errorf("enumName(%v) = %q, want %q", test.enum.Name, got, test.want)
+				t.Errorf("enumName(%v) = %q, want %q", test.enum.Name(), got, test.want)
 			}
 		})
 	}

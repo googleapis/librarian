@@ -160,15 +160,15 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 	}
 	wantEnum := api.NewTestEnum("code").
 		WithID("..AcceleratorTypeAggregatedList.warning.code")
-	got := model.Enum(wantEnum.ID)
+	got := model.Enum(wantEnum.ID())
 	if got == nil {
-		t.Fatalf("expected method %s in the API model", wantEnum.ID)
+		t.Fatalf("expected method %s in the API model", wantEnum.ID())
 	}
-	if len(got.Values) < 7 {
+	if len(got.Values()) < 7 {
 		t.Fatalf("expected at least 7 values in the enum value list, got=%v", got)
 	}
-	if !got.Values[6].Deprecated() {
-		t.Errorf("expected a deprecated enum value, got=%v", got.Values[6])
+	if !got.Values()[6].Deprecated() {
+		t.Errorf("expected a deprecated enum value, got=%v", got.Values()[6])
 	}
 }
 

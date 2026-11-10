@@ -345,8 +345,8 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 		if err != nil {
 			return err
 		}
-		if item.Package != c.Model.PackageName {
-			dep, err := c.addApiPackageDependency(item.Package)
+		if item.Package() != c.Model.PackageName {
+			dep, err := c.addApiPackageDependency(item.Package())
 			if err != nil {
 				return err
 			}
@@ -447,10 +447,10 @@ func (c *codec) addFeatureAnnotations(
 	for _, id := range deps.Enums {
 		enum := c.Model.Enum(id)
 		// Some messages are not annotated (e.g. external messages).
-		if enum == nil || enum.Codec == nil {
+		if enum == nil || enum.Codec() == nil {
 			continue
 		}
-		annotation, ok := enum.Codec.(*enumAnnotations)
+		annotation, ok := enum.Codec().(*enumAnnotations)
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}

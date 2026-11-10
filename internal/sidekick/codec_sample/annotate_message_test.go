@@ -63,8 +63,8 @@ func TestAnnotateMessage(t *testing.T) {
 				}
 			}
 			for _, e := range test.message.Enums {
-				if _, ok := e.Codec.(*enumAnnotations); !ok {
-					t.Errorf("expected nested enum codec *enumAnnotations, got %T", e.Codec)
+				if _, ok := e.Codec().(*enumAnnotations); !ok {
+					t.Errorf("expected nested enum codec *enumAnnotations, got %T", e.Codec())
 				}
 			}
 		})
