@@ -109,3 +109,52 @@ func TestField(t *testing.T) {
 		t.Errorf("unexpected f2: %+v", f2)
 	}
 }
+
+func TestFieldMarkSkipProtoConversionIfAllowed(t *testing.T) {
+	for _, test := range []struct {
+		name               string
+		field              *Field
+		fieldPath          string
+		allowGrpcAnyFields []string
+		want               bool
+	}{
+		{
+			name:               "nil field",
+			field:              nil,
+			fieldPath:          ".google.test.v1.Msg.details",
+			allowGrpcAnyFields: []string{".google.test.v1.Msg.details"},
+			want:               false,
+		},
+		{
+			name:               "match by field ID",
+			field:              NewFieldBuilder().WithID(".google.test.v1.Msg.details").Build(),
+			fieldPath:          ".google.test.v1.Other.details",
+			allowGrpcAnyFields: []string{"google.test.v1.Msg.details"},
+			want:               true,
+		},
+		{
+			name:               "match by fieldPath",
+			field:              NewFieldBuilder().WithID(".google.test.v1.Child.extra").Build(),
+			fieldPath:          ".google.test.v1.Parent.child.extra",
+			allowGrpcAnyFields: []string{".google.test.v1.Parent.child.extra"},
+			want:               true,
+		},
+		{
+			name:               "no match",
+			field:              NewFieldBuilder().WithID(".google.test.v1.Msg.details").Build(),
+			fieldPath:          ".google.test.v1.Msg.details",
+			allowGrpcAnyFields: []string{".google.test.v1.Msg.other"},
+			want:               false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.field.MarkSkipProtoConversionIfAllowed(test.fieldPath, test.allowGrpcAnyFields)
+			if got != test.want {
+				t.Errorf("MarkSkipProtoConversionIfAllowed() = %v, want %v", got, test.want)
+			}
+			if test.field != nil && test.field.SkipProtoConversion() != test.want {
+				t.Errorf("SkipProtoConversion() = %v, want %v", test.field.SkipProtoConversion(), test.want)
+			}
+		})
+	}
+}

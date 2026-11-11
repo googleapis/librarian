@@ -280,8 +280,11 @@ func (f *Field) IsResourceReference() bool {
 // MarkSkipProtoConversionIfAllowed marks f as skipping proto conversion if its
 // ID or fieldPath matches any entry in allowGrpcAnyFields, and returns true if
 // it matched.
-func MarkSkipProtoConversionIfAllowed(f *Field, fieldPath string, allowGrpcAnyFields []string) bool {
-	if matchesAllowedAnyField(f.id, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
+func (f *Field) MarkSkipProtoConversionIfAllowed(fieldPath string, allowGrpcAnyFields []string) bool {
+	if f == nil {
+		return false
+	}
+	if matchesAllowedAnyField(f.ID(), allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
 		f.skipProtoConversion = true
 		return true
 	}

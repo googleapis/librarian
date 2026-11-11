@@ -145,7 +145,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		}
 		fieldPath := parentPath + "." + f.Name()
 		if isAnyType(f.TypezID()) {
-			if api.MarkSkipProtoConversionIfAllowed(f, fieldPath, allowGrpcAnyFields) {
+			if f.MarkSkipProtoConversionIfAllowed(fieldPath, allowGrpcAnyFields) {
 				return
 			}
 			unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
