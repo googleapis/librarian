@@ -101,10 +101,10 @@ var wellKnownMessages = []*Message{
 		Package: "google.protobuf",
 		Fields: []*Field{
 			{
-				Name:     "paths",
-				JSONName: "paths",
-				Typez:    TypezString,
-				Repeated: true,
+				name:     "paths",
+				jsonName: "paths",
+				typez:    TypezString,
+				repeated: true,
 			},
 		},
 	},

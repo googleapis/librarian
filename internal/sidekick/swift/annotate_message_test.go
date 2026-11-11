@@ -215,7 +215,7 @@ func TestAnnotateMessage_ImportAttributes(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			for _, f := range test.message.Fields {
-				f.Parent = test.message
+				f.WithParent(test.message)
 			}
 			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
 			codec := newTestCodec(t, model, test.config)

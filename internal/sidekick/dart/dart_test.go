@@ -261,13 +261,13 @@ func TestFieldType(t *testing.T) {
 	got := annotate.fieldType(msgField)
 	want := "CreateSecretRequest"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", msgField.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", msgField.Name(), got, want)
 	}
 
 	got = annotate.fieldType(enumField)
 	want = "State"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", enumField.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", enumField.Name(), got, want)
 	}
 }
 
@@ -282,7 +282,7 @@ func TestFieldType_Maps(t *testing.T) {
 	got := annotate.fieldType(field)
 	want := "Map<String, int>"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", field.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", field.Name(), got, want)
 	}
 }
 
@@ -295,7 +295,7 @@ func TestFieldType_Bytes(t *testing.T) {
 	got := annotate.fieldType(field)
 	want := "Uint8List"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", field.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", field.Name(), got, want)
 	}
 }
 
@@ -365,13 +365,13 @@ func TestFieldType_Repeated(t *testing.T) {
 	got := annotate.fieldType(repeatedMsgField)
 	want := "List<CreateSecretRequest>"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", repeatedMsgField.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", repeatedMsgField.Name(), got, want)
 	}
 
 	got = annotate.fieldType(repeatedEnumField)
 	want = "List<State>"
 	if got != want {
-		t.Errorf("fieldType(%s) = %s, want %s", repeatedEnumField.Name, got, want)
+		t.Errorf("fieldType(%s) = %s, want %s", repeatedEnumField.Name(), got, want)
 	}
 }
 

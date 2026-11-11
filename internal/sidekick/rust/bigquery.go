@@ -60,11 +60,10 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 			// The synthetic field can be renamed independently of the GAPIC
 			// field, using a ".synthetic" prefix in the name overrides.
 			gapicFieldName := c.FieldName(f)
-			fClone := *f
-			fClone.ID = ".synthetic" + f.ID
-			syntheticFieldName := c.FieldName(&fClone)
+			fClone := api.NewFieldBuilderFrom(f).WithID(".synthetic" + f.ID()).Build()
+			syntheticFieldName := c.FieldName(fClone)
 
-			msg.fields = append(msg.fields, &fClone)
+			msg.fields = append(msg.fields, fClone)
 			if _, ok := msg.fieldGroups[syntheticFieldName]; !ok {
 				msg.fieldGroups[syntheticFieldName] = &fieldGroup{
 					gapicFieldName:     gapicFieldName,
@@ -72,15 +71,15 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 					fields:             make(map[string]*api.Field),
 				}
 			}
-			msg.fieldGroups[syntheticFieldName].fields[msgName] = &fClone
+			msg.fieldGroups[syntheticFieldName].fields[msgName] = fClone
 		}
 	}
 
 	slices.SortStableFunc(msg.fields, func(a, b *api.Field) int {
-		return cmp.Compare(a.Name, b.Name)
+		return cmp.Compare(a.Name(), b.Name())
 	})
 	msg.fields = slices.CompactFunc(msg.fields, func(a, b *api.Field) bool {
-		return a.Name == b.Name
+		return a.Name() == b.Name()
 	})
 
 	return msg, nil
@@ -96,8 +95,8 @@ func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, erro
 		SyntheticRequest: true,
 	}
 	for _, f := range m.fields {
-		clone := *f
-		msg.Fields = append(msg.Fields, &clone)
+		clone := api.NewFieldBuilderFrom(f).Build()
+		msg.Fields = append(msg.Fields, clone)
 	}
 	if err := m.c.annotateMessage(msg, m.model, true); err != nil {
 		return nil, err
@@ -105,9 +104,9 @@ func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, erro
 	// synthetic messages are not in the model, so we need to set their FQMessageName
 	// to point to crate::model_ext::{name}
 	for _, f := range msg.Fields {
-		fAnn, ok := f.Codec.(*fieldAnnotations)
+		fAnn, ok := f.Codec().(*fieldAnnotations)
 		if !ok {
-			return nil, fmt.Errorf("expected field annotation for %q", f.ID)
+			return nil, fmt.Errorf("expected field annotation for %q", f.ID())
 		}
 		fAnn.FQMessageName = fmt.Sprintf("crate::model_ext::%s", name)
 		fAnn.GenerateSetterSamples = false
@@ -127,7 +126,7 @@ func (m *unifiedMessage) fieldGroupList() []*fieldGroup {
 func newQueryBuilder(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	msg, err := newUnifiedMessage(c, model, []string{"QueryRequest", "JobConfigurationQuery", "JobConfiguration"}, func(f *api.Field) bool {
 		// skip fields that are output only or explicitly skipped
-		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID) || slices.Contains(f.Behavior, api.FieldBehaviorOutputOnly)
+		return slices.Contains(skippedFields, f.Name()) || slices.Contains(skippedFields, f.ID()) || slices.Contains(f.Behavior(), api.FieldBehaviorOutputOnly)
 	})
 	if err != nil {
 		return nil, err
@@ -143,13 +142,13 @@ func newQueryBuilder(c *codec, model *api.API, skippedFields []string) (*unified
 
 func newCompleteQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	return newUnifiedMessage(c, model, []string{"GetQueryResultsResponse", "QueryResponse"}, func(f *api.Field) bool {
-		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID)
+		return slices.Contains(skippedFields, f.Name()) || slices.Contains(skippedFields, f.ID())
 	})
 }
 
 func newQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	return newUnifiedMessage(c, model, []string{"Job", "QueryResponse"}, func(f *api.Field) bool {
-		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID)
+		return slices.Contains(skippedFields, f.Name()) || slices.Contains(skippedFields, f.ID())
 	})
 }
 
@@ -163,9 +162,9 @@ func createQueryBuilderMessage(m *unifiedMessage) (*api.Message, error) {
 		return nil, fmt.Errorf("expected message annotation for %q", msg.ID)
 	}
 	for _, f := range msgAnn.BasicFields {
-		fAnn, ok := f.Codec.(*fieldAnnotations)
+		fAnn, ok := f.Codec().(*fieldAnnotations)
 		if !ok {
-			return nil, fmt.Errorf("expected field annotation for %q", f.ID)
+			return nil, fmt.Errorf("expected field annotation for %q", f.ID())
 		}
 		fAnn.FieldName = fmt.Sprintf("request.%s", fAnn.FieldName)
 		fAnn.FQMessageName = "crate::builder::bigquery::QueryRequest"

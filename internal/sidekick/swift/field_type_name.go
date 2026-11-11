@@ -32,11 +32,11 @@ func (c *codec) fieldTypeName(field *api.Field) (*fieldTypeNames, error) {
 	if err != nil {
 		return nil, err
 	}
-	if field.Optional {
+	if field.Optional() {
 		names.Full = fmt.Sprintf("%s?", names.Base)
 		return names, nil
 	}
-	if field.Repeated {
+	if field.Repeated() {
 		names.Full = fmt.Sprintf("[%s]", names.Base)
 		return names, nil
 	}
@@ -45,11 +45,11 @@ func (c *codec) fieldTypeName(field *api.Field) (*fieldTypeNames, error) {
 }
 
 func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezMap:
 		return c.mapFieldTypeNames(field)
 	case api.TypezMessage:
-		m, err := lookupMessage(c.Model, field.TypezID)
+		m, err := lookupMessage(c.Model, field.TypezID())
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +59,7 @@ func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
 		}
 		return &fieldTypeNames{Base: base}, nil
 	case api.TypezEnum:
-		e, err := lookupEnum(c.Model, field.TypezID)
+		e, err := lookupEnum(c.Model, field.TypezID())
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +107,7 @@ func (c *codec) mapFieldTypeComponents(field *api.Field) (string, string, error)
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezDouble:
 		return "Swift.Double", nil
 	case api.TypezFloat:
@@ -139,7 +139,7 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 	case api.TypezSint64:
 		return "Swift.Int64", nil
 	default:
-		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez.String(), field.ID)
+		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez().String(), field.ID())
 	}
 }
 

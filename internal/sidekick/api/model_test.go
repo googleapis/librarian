@@ -25,6 +25,7 @@ func allowUnexported() cmp.Option {
 		DiscoveryLro{},
 		Enum{},
 		EnumValue{},
+		Field{},
 		MethodSignature{},
 		OperationInfo{},
 		PathBinding{},

@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -117,11 +117,11 @@ func TestDisco_ParsePagination(t *testing.T) {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
 	wantPagination := api.NewTestField("pageToken").
+		WithID("..zones.listRequest.pageToken").
 		WithType(api.TypezString).
 		WithTypezID("string").
 		WithOptional()
-	wantPagination.ID = "..zones.listRequest.pageToken"
-	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
+	if diff := cmp.Diff(wantPagination, got.Pagination, apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -141,11 +141,11 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
 	wantPagination := api.NewTestField("pageToken").
+		WithID("..machineTypes.aggregatedListRequest.pageToken").
 		WithType(api.TypezString).
 		WithTypezID("string").
 		WithOptional()
-	wantPagination.ID = "..machineTypes.aggregatedListRequest.pageToken"
-	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
+	if diff := cmp.Diff(wantPagination, got.Pagination, apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

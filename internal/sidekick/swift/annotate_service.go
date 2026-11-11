@@ -302,10 +302,10 @@ func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, metho
 	if itemsField == nil {
 		return fmt.Errorf("inconsistent pagination info for method: %s", method.ID)
 	}
-	if itemsField.Repeated {
+	if itemsField.Repeated() {
 		return c.addFieldDependencies(annotations, itemsField)
 	}
-	if itemsField.Typez == api.TypezMap {
+	if itemsField.Typez() == api.TypezMap {
 		mapType, err := lookupMap(c.Model, itemsField)
 		if err != nil {
 			return err
@@ -316,16 +316,16 @@ func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, metho
 }
 
 func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api.Field) error {
-	if field.Typez == api.TypezMap {
+	if field.Typez() == api.TypezMap {
 		mapType, err := lookupMap(c.Model, field)
 		if err != nil {
 			return err
 		}
 		return c.addFieldDependencies(annotations, mapType.Value)
 	}
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezMessage:
-		item, err := lookupMessage(c.Model, field.TypezID)
+		item, err := lookupMessage(c.Model, field.TypezID())
 		if err != nil {
 			return err
 		}
@@ -341,7 +341,7 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 		}
 		return nil
 	case api.TypezEnum:
-		item, err := lookupEnum(c.Model, field.TypezID)
+		item, err := lookupEnum(c.Model, field.TypezID())
 		if err != nil {
 			return err
 		}

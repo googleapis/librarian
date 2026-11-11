@@ -46,13 +46,13 @@ func TestProstFieldType_ExternalAndSamePackageWkt(t *testing.T) {
 		if _, err := annotateModel(model, codec); err != nil {
 			t.Fatal(err)
 		}
-		if diff := cmp.Diff("super::prost::google::r#type::DayOfWeek", enumField.Codec.(*fieldAnnotations).ProstType); diff != "" {
+		if diff := cmp.Diff("super::prost::google::r#type::DayOfWeek", enumField.Codec().(*fieldAnnotations).ProstType); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
-		if diff := cmp.Diff("super::prost::google::r#type::LatLng", msgField.Codec.(*fieldAnnotations).ProstType); diff != "" {
+		if diff := cmp.Diff("super::prost::google::r#type::LatLng", msgField.Codec().(*fieldAnnotations).ProstType); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
-		if diff := cmp.Diff("prost_types::Timestamp", tsField.Codec.(*fieldAnnotations).ProstType); diff != "" {
+		if diff := cmp.Diff("prost_types::Timestamp", tsField.Codec().(*fieldAnnotations).ProstType); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
@@ -79,13 +79,13 @@ func TestProstFieldType_ExternalAndSamePackageWkt(t *testing.T) {
 		if _, err := annotateModel(model, codec); err != nil {
 			t.Fatal(err)
 		}
-		if diff := cmp.Diff("field_options::JsType", nestedField.Codec.(*fieldAnnotations).ProstType); diff != "" {
+		if diff := cmp.Diff("field_options::JsType", nestedField.Codec().(*fieldAnnotations).ProstType); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
-		if diff := cmp.Diff("DescriptorProto", msgField.Codec.(*fieldAnnotations).ProstType); diff != "" {
+		if diff := cmp.Diff("DescriptorProto", msgField.Codec().(*fieldAnnotations).ProstType); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
-		if diff := cmp.Diff("FieldOptions", optField.Codec.(*fieldAnnotations).ProstType); diff != "" {
+		if diff := cmp.Diff("FieldOptions", optField.Codec().(*fieldAnnotations).ProstType); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})

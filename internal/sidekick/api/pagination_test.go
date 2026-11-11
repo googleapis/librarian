@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestPageSimple(t *testing.T) {
@@ -53,7 +52,8 @@ func TestPageSimple(t *testing.T) {
 		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
 	}
 	want := NewTestPaginationInfo(response.Fields[0], response.Fields[1])
-	if diff := cmp.Diff(want, response.Pagination, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(want, response.Pagination, allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -98,7 +98,8 @@ func TestPageWithOverride(t *testing.T) {
 		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
 	}
 	want := NewTestPaginationInfo(response.Fields[0], response.Fields[2])
-	if diff := cmp.Diff(want, response.Pagination, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(want, response.Pagination, allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -250,7 +251,8 @@ func TestPaginationRequestPageSizeSuccess(t *testing.T) {
 					WithTypezID(test.TypezID),
 			)
 		got := paginationRequestPageSize(response)
-		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
+		ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+		if diff := cmp.Diff(response.Fields[0], got, allowUnexported(), ignoreParent); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -361,7 +363,8 @@ func TestPaginationResponseItemMatching(t *testing.T) {
 			WithPackage("package").
 			WithFields(f)
 		got := paginationResponseItem(nil, "package.Service.List", response)
-		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
+		ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+		if diff := cmp.Diff(response.Fields[0], got, allowUnexported(), ignoreParent); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -389,7 +392,8 @@ func TestPaginationResponseItemMatchingMany(t *testing.T) {
 			WithPackage("package").
 			WithFields(f1, f2)
 		got := paginationResponseItem(nil, "package.Service.List", response)
-		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
+		ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+		if diff := cmp.Diff(response.Fields[0], got, allowUnexported(), ignoreParent); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -403,7 +407,8 @@ func TestPaginationResponseItemMatchingPreferRepeatedOverMap(t *testing.T) {
 			NewTestField("repeated").WithJSONName("repeated").WithType(TypezMessage).WithRepeated(),
 		)
 	got := paginationResponseItem(nil, "package.Service.List", response)
-	if diff := cmp.Diff(response.Fields[1], got); diff != "" {
+	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
+	if diff := cmp.Diff(response.Fields[1], got, allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

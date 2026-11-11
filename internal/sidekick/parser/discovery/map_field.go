@@ -43,16 +43,16 @@ func maybeMapOfObjectField(model *api.API, message *api.Message, input *property
 	}
 	valueTypezID := fmt.Sprintf(".%s.%s", model.PackageName, input.Schema.AdditionalProperties.Ref)
 	typezID := insertMapType(model, api.TypezMessage, valueTypezID)
-	field := &api.Field{
-		Name:          input.Name,
-		JSONName:      input.Name,
-		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
-		Documentation: input.Schema.Description,
-		Typez:         api.TypezMap,
-		TypezID:       typezID,
-		Deprecated:    input.Schema.Deprecated,
-		Map:           true,
-	}
+	field := api.NewFieldBuilder().
+		WithName(input.Name).
+		WithJSONName(input.Name).
+		WithID(fmt.Sprintf("%s.%s", message.ID, input.Name)).
+		WithDocumentation(input.Schema.Description).
+		WithTypez(api.TypezMap).
+		WithTypezID(typezID).
+		WithDeprecated(input.Schema.Deprecated).
+		WithMap(true).
+		Build()
 	return field
 }
 
@@ -65,16 +65,16 @@ func maybeMapOfEnumField(model *api.API, message *api.Message, input *property) 
 	}
 	valueTypezID := fmt.Sprintf("%s.%s", message.ID, input.Name)
 	typezID := insertMapType(model, api.TypezEnum, valueTypezID)
-	field := &api.Field{
-		Name:          input.Name,
-		JSONName:      input.Name,
-		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
-		Documentation: input.Schema.Description,
-		Typez:         api.TypezMap,
-		TypezID:       typezID,
-		Deprecated:    input.Schema.Deprecated,
-		Map:           true,
-	}
+	field := api.NewFieldBuilder().
+		WithName(input.Name).
+		WithJSONName(input.Name).
+		WithID(fmt.Sprintf("%s.%s", message.ID, input.Name)).
+		WithDocumentation(input.Schema.Description).
+		WithTypez(api.TypezMap).
+		WithTypezID(typezID).
+		WithDeprecated(input.Schema.Deprecated).
+		WithMap(true).
+		Build()
 	return field, nil
 }
 
@@ -84,16 +84,16 @@ func maybeMapOfPrimitiveField(model *api.API, message *api.Message, input *prope
 		return nil, err
 	}
 	typezID := insertMapType(model, valueTypez, valueTypezID)
-	field := &api.Field{
-		Name:          input.Name,
-		JSONName:      input.Name,
-		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
-		Documentation: input.Schema.Description,
-		Typez:         api.TypezMap,
-		TypezID:       typezID,
-		Deprecated:    input.Schema.Deprecated,
-		Map:           true,
-	}
+	field := api.NewFieldBuilder().
+		WithName(input.Name).
+		WithJSONName(input.Name).
+		WithID(fmt.Sprintf("%s.%s", message.ID, input.Name)).
+		WithDocumentation(input.Schema.Description).
+		WithTypez(api.TypezMap).
+		WithTypezID(typezID).
+		WithDeprecated(input.Schema.Deprecated).
+		WithMap(true).
+		Build()
 	return field, nil
 }
 
@@ -102,18 +102,18 @@ func insertMapType(model *api.API, valueTypez api.Typez, valueTypezID string) st
 	if model.Map(id) != nil {
 		return id
 	}
-	key := &api.Field{
-		Name:    "key",
-		ID:      fmt.Sprintf("%s.key", id),
-		Typez:   api.TypezString,
-		TypezID: "string",
-	}
-	value := &api.Field{
-		Name:    "value",
-		ID:      fmt.Sprintf("%s.value", id),
-		Typez:   valueTypez,
-		TypezID: valueTypezID,
-	}
+	key := api.NewFieldBuilder().
+		WithName("key").
+		WithID(fmt.Sprintf("%s.key", id)).
+		WithTypez(api.TypezString).
+		WithTypezID("string").
+		Build()
+	value := api.NewFieldBuilder().
+		WithName("value").
+		WithID(fmt.Sprintf("%s.value", id)).
+		WithTypez(valueTypez).
+		WithTypezID(valueTypezID).
+		Build()
 	mapEntity := &api.Map{
 		ID:    id,
 		Key:   key,
