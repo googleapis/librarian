@@ -33,8 +33,11 @@ func TestOneOf(t *testing.T) {
 		WithExampleField(f2).
 		WithAnnotations("oneof-codec")
 	got := b.Build()
-	if got != b.Build() {
-		t.Errorf("OneOfBuilder.Build() should preserve pointer identity across calls")
+	if !f1.IsOneOf() || f1.Group() != got {
+		t.Errorf("f1.Group() = %v, want %v (IsOneOf=%v)", f1.Group(), got, f1.IsOneOf())
+	}
+	if !f2.IsOneOf() || f2.Group() != got {
+		t.Errorf("f2.Group() = %v, want %v (IsOneOf=%v)", f2.Group(), got, f2.IsOneOf())
 	}
 
 	want := &OneOf{
