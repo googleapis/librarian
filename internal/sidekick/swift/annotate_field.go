@@ -292,7 +292,7 @@ func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		return m.Deprecated, nil
+		return m.Deprecated(), nil
 	case api.TypezEnum:
 		e, err := lookupEnum(c.Model, field.TypezID())
 		if err != nil {
@@ -317,7 +317,7 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return m.Package, nil
+		return m.Package(), nil
 	case api.TypezEnum:
 		e, err := lookupEnum(c.Model, field.TypezID())
 		if err != nil {

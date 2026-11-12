@@ -48,10 +48,11 @@ func TestMakeEnumFields(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err != nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 
 	wantEnum := api.NewTestEnum("networkTier").
 		WithPackage("package").
@@ -94,11 +95,10 @@ func TestMakeEnumFields(t *testing.T) {
 				WithTypezID(".package.Message.networkTier").
 				WithOptional(),
 		)
-	want.Fields[0].WithParent(nil)
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(wantEnums, message.Enums(), apitest.AllowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -126,10 +126,11 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err != nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 
 	wantEnum := api.NewTestEnum("networkTier").
 		WithPackage("package").
@@ -168,11 +169,10 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 				WithTypezID(".package.Message.networkTier").
 				WithOptional(),
 		)
-	want.Fields[0].WithParent(nil)
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(wantEnums, message.Enums(), apitest.AllowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -209,10 +209,11 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err != nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 
 	wantEnum := api.NewTestEnum("networkTier").
 		WithPackage("package").
@@ -257,11 +258,10 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 				WithTypezID(".package.Message.networkTier").
 				WithOptional(),
 		)
-	want.Fields[0].WithParent(nil)
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
-	if diff := cmp.Diff(wantEnums, message.Enums, apitest.AllowUnexported(), ignoreParent); diff != "" {
+	if diff := cmp.Diff(wantEnums, message.Enums(), apitest.AllowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -290,9 +290,9 @@ func TestMakeEnumFieldsDescriptionError(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err == nil {
-		t.Errorf("expected error in enum with mismatched description count, got=%v", message)
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err == nil {
+		t.Errorf("expected error in enum with mismatched description count, got=%v", mb.Build())
 	}
 }
 
@@ -323,8 +323,8 @@ func TestMakeEnumFieldsDeprecatedError(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err == nil {
-		t.Errorf("expected error in enum with mismatched deprecated values count, got=%v", message)
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err == nil {
+		t.Errorf("expected error in enum with mismatched deprecated values count, got=%v", mb.Build())
 	}
 }

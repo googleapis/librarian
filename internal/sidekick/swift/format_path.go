@@ -81,7 +81,7 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		case api.TypezMessage:
 			if !field.Optional() {
 				// Panics are the right way to deal with bugs in other parts of the code.
-				panic(fmt.Sprintf("invalid state: field %s in message %s has message type but is not optional", field.Name(), current.ID))
+				panic(fmt.Sprintf("invalid state: field %s in message %s has message type but is not optional", field.Name(), current.ID()))
 			}
 			current, err = lookupMessage(c.Model, field.TypezID())
 			if err != nil {
@@ -90,7 +90,7 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		case api.TypezString:
 			test = fmt.Sprintf("!%s.isEmpty", name)
 		case api.TypezBytes:
-			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez().String(), message.ID, strings.Join(fieldPath, "."))
+			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez().String(), message.ID(), strings.Join(fieldPath, "."))
 		default:
 			test = ""
 		}

@@ -256,7 +256,7 @@ func newModelWithSignatures(t *testing.T) *api.API {
 			api.NewTestMethodSignature("name", "normal_field"),
 		).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("lro").Build()).
-		WithOperationInfo(api.NewTestOperationInfo(lroResultType.ID, lroMetadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(lroResultType.ID(), lroMetadataType.ID()))
 
 	discoveryLroMethod := api.NewTestMethod("LroDiscoveryMethod").
 		WithInput(requestType).

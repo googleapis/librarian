@@ -732,7 +732,7 @@ func TestGenerateService_LRO(t *testing.T) {
 		WithOutput(operationType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("workflows").Build()).
-		WithOperationInfo(api.NewTestOperationInfo(workflowType.ID, metadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(workflowType.ID(), metadataType.ID()))
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationInputType).
@@ -842,7 +842,7 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		WithOutput(operationType).
 		WithVerb("DELETE").
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("workflows").Build()).
-		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID()))
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationInputType).

@@ -598,7 +598,7 @@ func TestMethodUsesGrpc(t *testing.T) {
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()
 
-	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(api.NewTestOperationInfo(msg.ID, msg.ID))
+	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(api.NewTestOperationInfo(msg.ID(), msg.ID()))
 
 	for _, test := range []struct {
 		name             string

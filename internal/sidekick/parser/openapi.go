@@ -104,14 +104,14 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 		if err != nil {
 			return nil, err
 		}
-		message := &api.Message{
-			Name:          name,
-			ID:            id,
-			Package:       packageName,
-			Deprecated:    msg.Schema().Deprecated != nil && *msg.Schema().Deprecated,
-			Documentation: msg.Schema().Description,
-			Fields:        fields,
-		}
+		message := api.NewMessageBuilder().
+			WithName(name).
+			WithID(id).
+			WithPackage(packageName).
+			WithDeprecated(msg.Schema().Deprecated != nil && *msg.Schema().Deprecated).
+			WithDocumentation(msg.Schema().Description).
+			WithFields(fields...).
+			Build()
 
 		result.Messages = append(result.Messages, message)
 		result.AddMessage(message)
@@ -171,13 +171,13 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 
 	// It is Okay to reuse the ID, sidekick uses different the namespaces
 	// for messages vs. services.
-	parent := &api.Message{
-		Name:               service.Name,
-		ID:                 service.ID,
-		Package:            service.Package,
-		Documentation:      fmt.Sprintf("Synthetic messages for the [%s][%s] service.", service.Name, service.ID[1:]),
-		ServicePlaceholder: true,
-	}
+	parentBuilder := api.NewMessageBuilder().
+		WithName(service.Name).
+		WithID(service.ID).
+		WithPackage(service.Package).
+		WithDocumentation(fmt.Sprintf("Synthetic messages for the [%s][%s] service.", service.Name, service.ID[1:])).
+		WithServicePlaceholder(true)
+	parent := parentBuilder.Build()
 	a.AddMessage(parent)
 	a.Messages = append(a.Messages, parent)
 
@@ -205,7 +205,7 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 			if op.Operation == nil {
 				continue
 			}
-			requestMessage, bodyFieldPath, err := makeRequestMessage(a, parent, op.Operation, packageName, pattern)
+			requestMessage, bodyFieldPath, err := makeRequestMessage(a, parentBuilder, op.Operation, packageName, pattern)
 			if err != nil {
 				return err
 			}
@@ -230,8 +230,8 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 				ID:            mID,
 				Deprecated:    op.Operation.Deprecated != nil && *op.Operation.Deprecated,
 				Documentation: op.Operation.Description,
-				InputTypeID:   requestMessage.ID,
-				OutputTypeID:  responseMessage.ID,
+				InputTypeID:   requestMessage.ID(),
+				OutputTypeID:  responseMessage.ID(),
 				PathInfo:      pathInfo,
 			}
 			a.AddMethod(m)
@@ -243,18 +243,18 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 
 // makeRequestMessage creates (if needed) the request message for `operation`. Returns the message
 // and the body field path (if any) for the request.
-func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation, packageName, template string) (*api.Message, string, error) {
+func makeRequestMessage(a *api.API, parentBuilder *api.MessageBuilder, operation *v3.Operation, packageName, template string) (*api.Message, string, error) {
+	parent := parentBuilder.Build()
 	messageName := fmt.Sprintf("%sRequest", operation.OperationId)
-	id := fmt.Sprintf("%s.%s", parent.ID, messageName)
-	methodID := fmt.Sprintf("%s.%s", parent.ID, operation.OperationId)
-	message := &api.Message{
-		Name:             messageName,
-		ID:               id,
-		Package:          packageName,
-		Documentation:    fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", operation.OperationId, methodID[1:]),
-		SyntheticRequest: true,
-		Parent:           parent,
-	}
+	id := fmt.Sprintf("%s.%s", parent.ID(), messageName)
+	methodID := fmt.Sprintf("%s.%s", parent.ID(), operation.OperationId)
+	mb := api.NewMessageBuilder().
+		WithName(messageName).
+		WithID(id).
+		WithPackage(packageName).
+		WithDocumentation(fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", operation.OperationId, methodID[1:])).
+		WithSyntheticRequest(true).
+		WithParent(parent)
 	fieldNames := map[string]bool{}
 	for _, p := range operation.Parameters {
 		schema, err := p.Schema.BuildSchema()
@@ -276,7 +276,7 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 		}
 		field := api.NewFieldBuilder().
 			WithName(p.Name).
-			WithID(fmt.Sprintf("%s.%s", message.ID, p.Name)).
+			WithID(fmt.Sprintf("%s.%s", id, p.Name)).
 			WithJSONName(p.Name). // OpenAPI fields are already camelCase
 			WithDocumentation(documentation).
 			WithDeprecated(p.Deprecated).
@@ -286,7 +286,7 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 			WithAutoPopulated(openapiIsAutoPopulated(typez, schema, p)).
 			WithBehavior(openapiParameterBehavior(p)...).
 			Build()
-		message.Fields = append(message.Fields, field)
+		mb.AddField(field)
 		fieldNames[p.Name] = true
 	}
 
@@ -307,17 +307,18 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 		bodyFieldPath = name
 		field := api.NewFieldBuilder().
 			WithName(name).
-			WithID(fmt.Sprintf("%s.%s", message.ID, name)).
+			WithID(fmt.Sprintf("%s.%s", id, name)).
 			WithJSONName(name).
 			WithDocumentation("The request body.").
 			WithTypez(api.TypezMessage).
 			WithTypezID(bid).
 			WithOptional(true).
 			Build()
-		message.Fields = append(message.Fields, field)
+		mb.AddField(field)
 	}
 	// Add the message to the symbol table and the parent.
-	parent.Messages = append(parent.Messages, message)
+	message := mb.Build()
+	parentBuilder.AddMessage(message)
 	a.AddMessage(message)
 
 	return message, bodyFieldPath, nil
