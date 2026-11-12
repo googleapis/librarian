@@ -419,19 +419,20 @@ type packagez struct {
 }
 
 func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool) {
-	hasServices := len(model.Services) > 0
+	services := model.Services()
+	hasServices := len(services) > 0
 	hasLROs := false
 	hasAutoPopulation := false
-	for _, s := range model.Services {
+	for _, s := range services {
 		// In practice, barely any services have auto-population. We are
 		// almost always performing the full loop. `break`ing early does
 		// not save us any computations.
 
-		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.IsLroPoller || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
+		for _, m := range s.Methods() {
+			if m.OperationInfo() != nil || m.IsLroPoller() || m.ID() == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
-			if len(m.AutoPopulated) != 0 {
+			if len(m.AutoPopulated()) != 0 {
 				hasAutoPopulation = true
 			}
 		}
@@ -558,11 +559,11 @@ func (c *codec) mapType(f *api.Field, model *api.API) (string, error) {
 	if mapType == nil || mapType.Key() == nil || mapType.Value() == nil {
 		return "", fmt.Errorf("missing map type for field %s (%s)", f.ID(), f.TypezID())
 	}
-	key, err := c.fieldType(mapType.Key(), model, true, model.PackageName)
+	key, err := c.fieldType(mapType.Key(), model, true, model.PackageName())
 	if err != nil {
 		return "", err
 	}
-	val, err := c.fieldType(mapType.Value(), model, true, model.PackageName)
+	val, err := c.fieldType(mapType.Value(), model, true, model.PackageName())
 	if err != nil {
 		return "", err
 	}
@@ -678,14 +679,14 @@ func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecifi
 	if m == nil {
 		return rustPkg(childPackageName)
 	}
-	if m.Parent == nil {
-		p, err := rustPkg(m.Package)
+	if m.Parent() == nil {
+		p, err := rustPkg(m.Package())
 		if err != nil {
 			return "", err
 		}
 		return p + "::" + c.MessageModuleName(m), nil
 	}
-	p, err := c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName)
+	p, err := c.messageScopeName(m.Parent(), m.Package(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
@@ -697,11 +698,11 @@ func (c *codec) enumScopeName(e *api.Enum, sourceSpecificationPackageName string
 }
 
 func (c *codec) fullyQualifiedMessageName(m *api.Message, sourceSpecificationPackageName string) (string, error) {
-	p, err := c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName)
+	p, err := c.messageScopeName(m.Parent(), m.Package(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return p + "::" + toPascal(m.Name), nil
+	return p + "::" + toPascal(m.Name()), nil
 }
 
 func enumName(e *api.Enum) string {
@@ -785,14 +786,14 @@ func (c *codec) fullyQualifiedEnumValueName(v *api.EnumValue, sourceSpecificatio
 }
 
 func bodyAccessor(m *api.Method) string {
-	if m.PathInfo.BodyFieldPath() == "" {
+	if m.PathInfo().BodyFieldPath() == "" {
 		return "None::<gaxi::http::NoBody>"
 	}
-	if m.PathInfo.BodyFieldPath() == "*" {
+	if m.PathInfo().BodyFieldPath() == "*" {
 		// use the whole request
 		return "Some(req)"
 	}
-	return "req." + toSnake(m.PathInfo.BodyFieldPath())
+	return "req." + toSnake(m.PathInfo().BodyFieldPath())
 }
 
 func httpPathFmt(t *api.PathTemplate) string {
@@ -956,8 +957,8 @@ func prostMessageModulePath(m *api.Message) string {
 		return ""
 	}
 	var segments []string
-	for curr := m; curr != nil; curr = curr.Parent {
-		segments = append(segments, toProstSnake(curr.Name))
+	for curr := m; curr != nil; curr = curr.Parent() {
+		segments = append(segments, toProstSnake(curr.Name()))
 	}
 	slices.Reverse(segments)
 	return strings.Join(segments, "::")
@@ -966,11 +967,11 @@ func prostMessageModulePath(m *api.Message) string {
 // prostMessageRelativePath returns the type name of the message relative to the package's prost module.
 // E.g., `VertexAiSearch` for top-level, or `parent::NestedType` for nested messages.
 func prostMessageRelativePath(m *api.Message) string {
-	name := toProstPascal(m.Name)
-	if m.Parent == nil {
+	name := toProstPascal(m.Name())
+	if m.Parent() == nil {
 		return name
 	}
-	return prostMessageModulePath(m.Parent) + "::" + name
+	return prostMessageModulePath(m.Parent()) + "::" + name
 }
 
 // prostEnumRelativePath returns the type name of the enum relative to the package's prost module.
@@ -1434,7 +1435,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 	if m == nil {
 		return "", nil
 	}
-	for _, f := range m.Fields {
+	for _, f := range m.Fields() {
 		if f.Name() == fieldName || c.FieldName(f) == fieldName {
 			if !f.IsOneOf() {
 				p, err := c.fullyQualifiedMessageName(m, scope)
@@ -1446,7 +1447,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 			return c.tryOneOfRustdocLink(f, m, scope)
 		}
 	}
-	for _, o := range m.OneOfs {
+	for _, o := range m.OneOfs() {
 		if o.Name() == fieldName {
 			p, err := c.fullyQualifiedMessageName(m, scope)
 			if err != nil {
@@ -1459,7 +1460,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 }
 
 func (c *codec) tryOneOfRustdocLink(field *api.Field, message *api.Message, scope string) (string, error) {
-	for _, o := range message.OneOfs {
+	for _, o := range message.OneOfs() {
 		for _, f := range o.Fields() {
 			if f.ID() == field.ID() {
 				p, err := c.fullyQualifiedMessageName(message, scope)
@@ -1498,32 +1499,32 @@ func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 	if !c.generateMethod(m) {
 		return ""
 	}
-	idx := strings.LastIndex(m.ID, ".")
+	idx := strings.LastIndex(m.ID(), ".")
 	if idx == -1 {
 		return ""
 	}
-	serviceId := m.ID[0:idx]
+	serviceId := m.ID()[0:idx]
 	s := model.Service(serviceId)
 	if s == nil {
 		return ""
 	}
-	if !slices.Contains(s.Methods, m) {
+	if !slices.Contains(s.Methods(), m) {
 		return ""
 	}
 	serviceLink := c.serviceRustdocLink(s, model)
 	if serviceLink == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s::%s", serviceLink, toSnake(m.Name))
+	return fmt.Sprintf("%s::%s", serviceLink, toSnake(m.Name()))
 }
 
 func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
-	mapped, ok := c.packageMapping[s.Package]
+	mapped, ok := c.packageMapping[s.Package()]
 	name := c.ServiceName(s)
 	if ok {
 		return fmt.Sprintf("%s::client::%s", mapped.name, toPascal(name))
 	}
-	if !slices.Contains(model.Services, s) {
+	if !slices.Contains(model.Services(), s) {
 		return ""
 	}
 	return fmt.Sprintf("crate::client::%s", toPascal(name))
@@ -1531,24 +1532,24 @@ func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
 
 func usePackage(source string, model *api.API, c *codec) {
 	mapped, ok := c.packageMapping[source]
-	if ok && source != model.PackageName {
+	if ok && source != model.PackageName() {
 		mapped.used = true
 	}
 }
 
 func findUsedPackagesMessage(message *api.Message, model *api.API, c *codec, visited map[string]bool) {
-	if _, ok := visited[message.ID]; ok {
+	if _, ok := visited[message.ID()]; ok {
 		return
 	}
-	visited[message.ID] = true
-	usePackage(message.Package, model, c)
-	for _, e := range message.Enums {
+	visited[message.ID()] = true
+	usePackage(message.Package(), model, c)
+	for _, e := range message.Enums() {
 		usePackage(e.Package(), model, c)
 	}
-	for _, m := range message.Messages {
+	for _, m := range message.Messages() {
 		findUsedPackagesMessage(m, model, c, visited)
 	}
-	for _, f := range message.Fields {
+	for _, f := range message.Fields() {
 		findUsedPackagesField(f, model, c)
 	}
 }
@@ -1571,7 +1572,7 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 	switch f.Typez() {
 	case api.TypezMessage:
 		if fm := model.Message(f.TypezID()); fm != nil {
-			usePackage(fm.Package, model, c)
+			usePackage(fm.Package(), model, c)
 		}
 	case api.TypezEnum:
 		if fe := model.Enum(f.TypezID()); fe != nil {
@@ -1581,26 +1582,26 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 }
 
 func findUsedPackages(model *api.API, c *codec) {
-	for _, message := range model.Messages {
+	for _, message := range model.Messages() {
 		findUsedPackagesMessage(message, model, c, map[string]bool{})
 	}
-	for _, enum := range model.Enums {
+	for _, enum := range model.Enums() {
 		usePackage(enum.Package(), model, c)
 	}
-	for _, s := range model.Services {
-		for _, method := range s.Methods {
-			if m := model.Message(method.InputTypeID); m != nil {
+	for _, s := range model.Services() {
+		for _, method := range s.Methods() {
+			if m := model.Message(method.InputTypeID()); m != nil {
 				findUsedPackagesMessage(m, model, c, map[string]bool{})
 			}
-			if m := model.Message(method.OutputTypeID); m != nil {
-				usePackage(m.Package, model, c)
+			if m := model.Message(method.OutputTypeID()); m != nil {
+				usePackage(m.Package(), model, c)
 			}
-			if method.OperationInfo != nil {
-				if m := model.Message(method.OperationInfo.MetadataTypeID()); m != nil {
-					usePackage(m.Package, model, c)
+			if method.OperationInfo() != nil {
+				if m := model.Message(method.OperationInfo().MetadataTypeID()); m != nil {
+					usePackage(m.Package(), model, c)
 				}
-				if m := model.Message(method.OperationInfo.ResponseTypeID()); m != nil {
-					usePackage(m.Package, model, c)
+				if m := model.Message(method.OperationInfo().ResponseTypeID()); m != nil {
+					usePackage(m.Package(), model, c)
 				}
 			}
 		}
@@ -1647,11 +1648,11 @@ func PackageName(api *api.API, packageNameOverride string) string {
 	if len(packageNameOverride) > 0 {
 		return packageNameOverride
 	}
-	name := strings.TrimPrefix(api.PackageName, "google.cloud.")
+	name := strings.TrimPrefix(api.PackageName(), "google.cloud.")
 	name = strings.TrimPrefix(name, "google.")
 	name = strings.ReplaceAll(name, ".", "-")
 	if name == "" {
-		name = api.Name
+		name = api.Name()
 	}
 	return "google-cloud-" + name
 }
@@ -1677,10 +1678,10 @@ func (c *codec) nameInExamplesFromQualifiedName(qualifiedName string, model *api
 
 // ServiceName returns the service name.
 func (c *codec) ServiceName(service *api.Service) string {
-	if override, ok := c.nameOverrides[service.ID]; ok {
+	if override, ok := c.nameOverrides[service.ID()]; ok {
 		return override
 	}
-	return service.Name
+	return service.Name()
 }
 
 // OneOfEnumName returns the oneof enum name.
@@ -1701,10 +1702,10 @@ func (c *codec) FieldName(field *api.Field) string {
 
 // MessageModuleName returns the module name for a message in model.rs, taking message_module_name_overrides into account.
 func (c *codec) MessageModuleName(m *api.Message) string {
-	if override, ok := c.messageModuleNameOverrides[m.ID]; ok {
+	if override, ok := c.messageModuleNameOverrides[m.ID()]; ok {
 		return override
 	}
-	return toSnake(m.Name)
+	return toSnake(m.Name())
 }
 
 func (c *codec) generateMethod(m *api.Method) bool {
@@ -1712,24 +1713,24 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	// RPCs for them.
 	// TODO(#499) - switch to explicitly excluding such functions. Easier to
 	//     find them and fix them that way.
-	if m.ClientSideStreaming || m.ServerSideStreaming {
-		if m.ClientSideStreaming && m.ServerSideStreaming {
+	if m.ClientSideStreaming() || m.ServerSideStreaming() {
+		if m.ClientSideStreaming() && m.ServerSideStreaming() {
 			return true
 		}
-		if !m.ClientSideStreaming && m.ServerSideStreaming {
+		if !m.ClientSideStreaming() && m.ServerSideStreaming() {
 			return true
 		}
-		if m.ClientSideStreaming && !m.ServerSideStreaming {
+		if m.ClientSideStreaming() && !m.ServerSideStreaming() {
 			return c.includeStreamingMethods || c.includeGrpcOnlyMethods
 		}
 	}
 	if c.includeGrpcOnlyMethods || c.defaultTransport == "grpc" {
 		return true
 	}
-	if m.PathInfo == nil {
+	if m.PathInfo() == nil {
 		return false
 	}
-	bindings := m.PathInfo.Bindings()
+	bindings := m.PathInfo().Bindings()
 	if len(bindings) == 0 {
 		return false
 	}
@@ -1741,11 +1742,11 @@ func (c *codec) templateSupportsGrpc() bool {
 }
 
 func (c *codec) hasBidiStreaming(model *api.API) bool {
-	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services(), (*api.Service).HasBidiStreaming)
 }
 
 func (c *codec) hasServerStreaming(model *api.API) bool {
-	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services(), (*api.Service).HasServerSideStreaming)
 }
 
 func (c *codec) hasStreaming(model *api.API) bool {
@@ -1757,7 +1758,7 @@ func (c *codec) hasGrpc(model *api.API) bool {
 		return false
 	}
 	if c.defaultTransport == "grpc" {
-		return len(model.Services) > 0
+		return len(model.Services()) > 0
 	}
 	return c.hasStreaming(model)
 }

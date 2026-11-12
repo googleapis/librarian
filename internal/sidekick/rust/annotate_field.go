@@ -110,11 +110,11 @@ func (a *fieldAnnotations) MessageNameInExamples() string {
 		return a.AliasInExamples
 	}
 	if a.MessageType != nil {
-		ma, _ := a.MessageType.Codec.(*messageAnnotation)
+		ma, _ := a.MessageType.Codec().(*messageAnnotation)
 		return ma.Name
 	}
 	if a.ValueField != nil && a.ValueField.MessageType() != nil {
-		ma, _ := a.ValueField.MessageType().Codec.(*messageAnnotation)
+		ma, _ := a.ValueField.MessageType().Codec().(*messageAnnotation)
 		return ma.Name
 	}
 	return ""
@@ -185,7 +185,7 @@ func (c *codec) messageFieldSerdeAs(field *api.Field) string {
 }
 
 func (c *codec) annotateField(field *api.Field, message *api.Message, model *api.API) (*fieldAnnotations, error) {
-	fqMessageName, err := c.fullyQualifiedMessageName(message, model.PackageName)
+	fqMessageName, err := c.fullyQualifiedMessageName(message, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
@@ -193,11 +193,11 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
-	fieldType, err := c.fieldType(field, model, false, model.PackageName)
+	fieldType, err := c.fieldType(field, model, false, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
-	primitiveFieldType, err := c.fieldType(field, model, true, model.PackageName)
+	primitiveFieldType, err := c.fieldType(field, model, true, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		}
 
 		if targetType != nil {
-			fieldFqName, err := c.fullyQualifiedMessageName(targetType, model.PackageName)
+			fieldFqName, err := c.fullyQualifiedMessageName(targetType, model.PackageName())
 			if err != nil {
 				return nil, err
 			}
@@ -356,7 +356,7 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 		if msg == nil {
 			return false
 		}
-		for _, f := range msg.Fields {
+		for _, f := range msg.Fields() {
 			if f.Typez() != api.TypezMessage || f.Repeated() || f.Map() {
 				continue
 			}
@@ -368,7 +368,7 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 	}
 
 	visited := make(map[string]bool)
-	return check(field.TypezID(), message.ID, visited)
+	return check(field.TypezID(), message.ID(), visited)
 }
 
 func unqualifiedRustName(qualifiedName string) string {

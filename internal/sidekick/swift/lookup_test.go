@@ -30,7 +30,7 @@ func TestLookupMessage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(msg, got); diff != "" {
+	if diff := cmp.Diff(msg, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

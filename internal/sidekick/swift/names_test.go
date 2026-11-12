@@ -265,8 +265,7 @@ func TestOneOfName(t *testing.T) {
 
 func TestMessageName(t *testing.T) {
 	wktField := api.NewTestMessage("Field").WithPackage(wellKnownProtobufPackage)
-	wktNested := api.NewTestMessage("Nested").WithPackage(wellKnownProtobufPackage)
-	wktNested.Parent = wktField
+	wktNested := api.NewTestMessage("Nested").WithPackage(wellKnownProtobufPackage).WithParent(wktField)
 
 	for _, test := range []struct {
 		name string
@@ -319,8 +318,7 @@ func TestMessageName(t *testing.T) {
 }
 
 func TestMessageSimpleName(t *testing.T) {
-	servicePlaceholder := api.NewTestMessage("Advice").WithPackage("google.cloud.compute.v1")
-	servicePlaceholder.ServicePlaceholder = true
+	servicePlaceholder := api.NewTestMessage("Advice").WithPackage("google.cloud.compute.v1").WithServicePlaceholder()
 
 	for _, test := range []struct {
 		name string

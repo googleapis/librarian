@@ -182,10 +182,10 @@ func (c *codec) isGrpc() bool {
 
 // ServiceName returns the service name, taking name_overrides into account.
 func (c *codec) ServiceName(service *api.Service) string {
-	if override, ok := c.NameOverrides[service.ID]; ok {
+	if override, ok := c.NameOverrides[service.ID()]; ok {
 		return override
 	}
-	return service.Name
+	return service.Name()
 }
 
 func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
@@ -353,7 +353,7 @@ func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 	if c.skipDependency(dep) {
 		return nil, nil
 	}
-	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {
+	if ann, ok := c.Model.Codec().(*modelAnnotations); ok {
 		ann.DependsOn[dep.Name] = dep
 	}
 	return dep, nil

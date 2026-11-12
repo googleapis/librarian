@@ -22,14 +22,18 @@ import (
 
 func allowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
+		API{},
 		DiscoveryLro{},
 		Enum{},
 		EnumValue{},
 		Field{},
 		Map{},
+		Message{},
+		Method{},
 		MethodSignature{},
 		OneOf{},
 		OperationInfo{},
+		PaginationInfo{},
 		PathBinding{},
 		PathInfo{},
 		PathSegment{},
@@ -44,7 +48,9 @@ func allowUnexported() cmp.Option {
 		RoutingInfoComboItem{},
 		RoutingInfoVariant{},
 		RoutingPathSpec{},
+		SampleInfo{},
 		SampleValue{},
+		Service{},
 		TargetResource{},
 	)
 }

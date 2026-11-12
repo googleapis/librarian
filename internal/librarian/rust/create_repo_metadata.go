@@ -42,7 +42,7 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, sources *so
 }
 
 func needsRepoMetadata(model *api.API, library *config.Library) bool {
-	if len(model.Services) == 0 {
+	if len(model.Services()) == 0 {
 		return false
 	}
 	if len(library.APIs) == 0 {

@@ -33,10 +33,5 @@ func ParseDisco(cfg *ModelConfig) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	result, err := discovery.NewAPI(serviceConfig, contents, cfg.Discovery)
-	if err != nil {
-		return nil, err
-	}
-	updateAutoPopulatedFields(serviceConfig, result)
-	return result, nil
+	return discovery.NewAPI(serviceConfig, contents, cfg.Discovery)
 }

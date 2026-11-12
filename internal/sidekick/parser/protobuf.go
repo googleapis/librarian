@@ -275,17 +275,17 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		mixinFileDesc       []*descriptorpb.FileDescriptorProto
 		enabledMixinMethods mixinMethods = make(map[string]bool)
 	)
-	result := &api.API{}
+	result := api.NewAPIBuilder()
 	if serviceConfig != nil {
-		result.Title = serviceConfig.Title
+		result.WithTitle(serviceConfig.Title)
 		if serviceConfig.Documentation != nil {
-			result.Description = serviceConfig.Documentation.Summary
+			result.WithDescription(serviceConfig.Documentation.Summary)
 		}
 		withLongrunning := requiresLongrunningMixin(req)
 		enabledMixinMethods, mixinFileDesc = loadMixins(serviceConfig, withLongrunning)
 		names := svcconfig.ExtractPackageName(serviceConfig)
 		if names != nil {
-			result.PackageName = names.PackageName
+			result.WithPackageName(names.PackageName)
 		}
 	}
 
@@ -298,6 +298,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		fileComments[f] = extractSourceComments(f)
 	}
 
+	var resourceDefs []*api.Resource
 	for _, f := range append(req.GetProtoFile(), mixinFileDesc...) {
 		fFQN := "." + f.GetPackage()
 		comments := fileComments[f]
@@ -316,56 +317,87 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		if err != nil {
 			return nil, err
 		}
-		result.ResourceDefinitions = append(result.ResourceDefinitions, resources...)
+		resourceDefs = append(resourceDefs, resources...)
 	}
 
 	// Consolidate resources.
 	// Message-level resources (in result.AllResources take precedence over
-	// file-level resources (already in result.ResourceDefinitions).
+	// file-level resources (already in resourceDefs).
 	seen := map[string]int{}
-	for i, r := range result.ResourceDefinitions {
+	for i, r := range resourceDefs {
 		seen[r.Type()] = i
 	}
 	for r := range result.AllResources() {
 		if i, found := seen[r.Type()]; found {
-			result.ResourceDefinitions[i] = r
+			resourceDefs[i] = r
 		} else {
-			seen[r.Type()] = len(result.ResourceDefinitions)
-			result.ResourceDefinitions = append(result.ResourceDefinitions, r)
+			seen[r.Type()] = len(resourceDefs)
+			resourceDefs = append(resourceDefs, r)
 		}
 	}
 
 	// Sort to ensure deterministic output.
-	slices.SortFunc(result.ResourceDefinitions, func(a, b *api.Resource) int {
+	slices.SortFunc(resourceDefs, func(a, b *api.Resource) int {
 		return strings.Compare(a.Type(), b.Type())
 	})
+	result.WithResourceDefinitions(resourceDefs...)
+
+	// Collect all mixin methods enabled for services in this API.
+	type mixinMethodSpec struct {
+		proto      *descriptorpb.MethodDescriptorProto
+		mixin      *api.Service
+		serviceID  string
+		apiVersion string
+	}
+	var mixinSpecs []mixinMethodSpec
+	for _, f := range mixinFileDesc {
+		fFQN := "." + f.GetPackage()
+		for _, mixinProto := range f.Service {
+			sFQN := fFQN + "." + mixinProto.GetName()
+			mixin := processService(result, mixinProto, sFQN, f.GetPackage(), "", nil)
+			apiVersion := parseAPIVersion(sFQN, mixinProto.GetOptions())
+			for _, m := range mixinProto.Method {
+				originalFQN := sFQN + "." + m.GetName()
+				if !enabledMixinMethods[originalFQN] {
+					continue
+				}
+				mixinSpecs = append(mixinSpecs, mixinMethodSpec{
+					proto:      m,
+					mixin:      mixin,
+					serviceID:  sFQN,
+					apiVersion: apiVersion,
+				})
+			}
+		}
+	}
 
 	// Then we need to add the messages, enums and services to the list of
 	// elements to be generated.
 	for _, f := range req.GetSourceFileDescriptors() {
 		var fileServices []*api.Service
 		fFQN := "." + f.GetPackage()
+		comments := fileComments[f]
 
-		if value, err := protobufUpdateFileOption(result.CsharpNamespace, f.GetOptions().GetCsharpNamespace()); err == nil {
-			result.CsharpNamespace = value
+		if value, err := protobufUpdateFileOption(result.CsharpNamespace(), f.GetOptions().GetCsharpNamespace()); err == nil {
+			result.WithCsharpNamespace(value)
 		} else {
 			return nil, err
 		}
-		if value, err := protobufUpdateFileOption(result.PhpNamespace, f.GetOptions().GetPhpNamespace()); err == nil {
-			result.PhpNamespace = value
+		if value, err := protobufUpdateFileOption(result.PhpNamespace(), f.GetOptions().GetPhpNamespace()); err == nil {
+			result.WithPhpNamespace(value)
 		} else {
 			return nil, err
 		}
 		// TODO(https://github.com/googleapis/librarian/issues/7091) - also use protobufUpdateFileOption() for Ruby
-		if result.RubyPackage == "" {
-			result.RubyPackage = f.GetOptions().GetRubyPackage()
+		if result.RubyPackage() == "" {
+			result.WithRubyPackage(f.GetOptions().GetRubyPackage())
 		}
 
 		// Messages
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
 			if msg := result.Message(mFQN); msg != nil {
-				result.Messages = append(result.Messages, msg)
+				result.AppendMessage(msg)
 			} else {
 				slog.Warn("missing message in symbol table", "message", mFQN)
 			}
@@ -375,99 +407,53 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		for _, e := range f.EnumType {
 			eFQN := fFQN + "." + e.GetName()
 			if e := result.Enum(eFQN); e != nil {
-				result.Enums = append(result.Enums, e)
+				result.AppendEnum(e)
 			} else {
 				slog.Warn("missing enum in symbol table", "message", eFQN)
 			}
 		}
 
 		// Services
-		for _, s := range f.Service {
+		for si, s := range f.Service {
 			sFQN := fFQN + "." + s.GetName()
-			service := processService(result, s, sFQN, f.GetPackage())
-			for _, m := range s.Method {
+			sPath := []int32{fileDescriptorService, int32(si)}
+			apiVersion := parseAPIVersion(sFQN, s.GetOptions())
+			var methods []*api.Method
+			for mi, m := range s.Method {
 				mFQN := sFQN + "." + m.GetName()
-				apiVersion := parseAPIVersion(sFQN, s.GetOptions())
-				method, err := processMethod(result, m, mFQN, f.GetPackage(), sFQN, apiVersion)
+				mDoc := lookupComment(comments, append(sPath, serviceDescriptorProtoMethod, int32(mi)))
+				method, err := processMethod(result, m, mFQN, f.GetPackage(), sFQN, apiVersion, mDoc, serviceConfig)
 				if err != nil {
 					return nil, err
 				}
-				service.Methods = append(service.Methods, method)
+				methods = append(methods, method)
 			}
+			for _, spec := range mixinSpecs {
+				mFQN := sFQN + "." + spec.proto.GetName()
+				if result.Method(mFQN) != nil {
+					// The method already exists. This happens when services
+					// require a mixin in the service config yaml *and* also
+					// define the mixin method in the code.
+					continue
+				}
+				originalFQN := spec.serviceID + "." + spec.proto.GetName()
+				method, err := processMixinMethod(result, spec.proto, mFQN, originalFQN, f.GetPackage(), spec.serviceID, spec.apiVersion, spec.mixin, serviceConfig)
+				if err != nil {
+					return nil, err
+				}
+				methods = append(methods, method)
+			}
+			service := processService(result, s, sFQN, f.GetPackage(), lookupComment(comments, sPath), methods)
 			fileServices = append(fileServices, service)
 		}
-
-		// Add docs
-		for _, loc := range f.GetSourceCodeInfo().GetLocation() {
-			p := loc.GetPath()
-			if loc.GetLeadingComments() == "" || len(p) == 0 {
-				continue
-			}
-
-			switch p[0] {
-			case fileDescriptorMessageType:
-				// Because of message nesting we need to call recursively and
-				// strip out parts of the path.
-				m := f.MessageType[p[1]]
-				addMessageDocumentation(result, m, p[2:], loc.GetLeadingComments(), fFQN+"."+m.GetName())
-			case fileDescriptorService:
-				sFQN := fFQN + "." + f.GetService()[p[1]].GetName()
-				addServiceDocumentation(result, p[2:], loc.GetLeadingComments(), sFQN)
-			case fileDescriptorName, fileDescriptorPackage, fileDescriptorDependency,
-				fileDescriptorEnumType, fileDescriptorExtension, fileDescriptorOptions,
-				fileDescriptorSourceCodeInfo, fileDescriptorPublicDependency,
-				fileDescriptorWeakDependency, fileDescriptorSyntax, fileDescriptorEdition:
-				// We ignore this type of documentation because it produces no
-				// output in the generated code, or is already extracted via
-				// extractSourceComments.
-			default:
-				slog.Warn("dropped unknown documentation type", "loc", p, "docs", loc)
-			}
-		}
-		result.Services = append(result.Services, fileServices...)
+		result.AppendService(fileServices...)
 	}
 
-	// Add the mixin methods to the existing services.
-	for _, service := range result.Services {
-		for _, f := range mixinFileDesc {
-			fFQN := "." + f.GetPackage()
-			for _, mixinProto := range f.Service {
-				sFQN := fFQN + "." + mixinProto.GetName()
-				mixin := processService(result, mixinProto, sFQN, f.GetPackage())
-				for _, m := range mixinProto.Method {
-					// We want to include the method in the existing service,
-					// and not on the mixin.
-					mFQN := service.ID + "." + m.GetName()
-					originalFQN := sFQN + "." + m.GetName()
-					if !enabledMixinMethods[originalFQN] {
-						continue
-					}
-					if result.Method(mFQN) != nil {
-						// The method already exists. This happens when services
-						// require a mixin in the service config yaml *and* also
-						// define the mixin method in the code.
-						continue
-					}
-					apiVersion := parseAPIVersion(sFQN, mixinProto.GetOptions())
-					method, err := processMethod(result, m, mFQN, service.Package, sFQN, apiVersion)
-					if err != nil {
-						return nil, err
-					}
-					if err := applyServiceConfigMethodOverrides(method, originalFQN, serviceConfig, result, mixin); err != nil {
-						return nil, err
-					}
-					service.Methods = append(service.Methods, method)
-				}
-			}
-		}
-	}
-
-	if result.Name == "" && serviceConfig != nil {
-		result.Name = strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")
+	if result.Name() == "" && serviceConfig != nil {
+		result.WithName(strings.TrimSuffix(serviceConfig.Name, ".googleapis.com"))
 	}
 	updatePackageName(result)
-	updateAutoPopulatedFields(serviceConfig, result)
-	return result, nil
+	return result.BuildSyntaxTree(), nil
 }
 
 // requiresLongrunningMixin finds out if any method returns a LRO. This is used
@@ -527,7 +513,7 @@ func protobufUpdateFileOption(current, got string) (string, error) {
 	return "", fmt.Errorf("mismatched file option value, want=%s got=%s", current, got)
 }
 
-func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, isOneOf bool, fb *api.FieldBuilder) {
+func normalizeTypes(model *api.APIBuilder, in *descriptorpb.FieldDescriptorProto, isOneOf bool, fb *api.FieldBuilder) {
 	typezID := in.GetTypeName()
 	repeated := in.Label != nil && *in.Label == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
 	fb.WithTypez(descriptorpbToTypez[in.GetType()]).
@@ -580,48 +566,70 @@ func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, isOne
 	}
 }
 
-func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN, packagez string) *api.Service {
-	service := &api.Service{
-		Name:        s.GetName(),
-		ID:          sFQN,
-		Package:     packagez,
-		DefaultHost: parseDefaultHost(s.GetOptions()),
-		Deprecated:  s.GetOptions().GetDeprecated(),
-	}
+func processService(model *api.APIBuilder, s *descriptorpb.ServiceDescriptorProto, sFQN, packagez, doc string, methods []*api.Method) *api.Service {
+	service := api.NewServiceBuilder().
+		WithName(s.GetName()).
+		WithID(sFQN).
+		WithPackage(packagez).
+		WithDocumentation(doc).
+		WithDefaultHost(parseDefaultHost(s.GetOptions())).
+		WithDeprecated(s.GetOptions().GetDeprecated()).
+		WithMethods(methods...).
+		Build()
 	model.AddService(service)
 	return service
 }
 
-func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion string) (*api.Method, error) {
-	pathInfo, err := parsePathInfo(m, model)
+func processMethod(model *api.APIBuilder, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion, doc string, serviceConfig *serviceconfig.Service) (*api.Method, error) {
+	pathInfo, err := parsePathInfo(m, model.BuildSyntaxTree())
 	if err != nil {
 		return nil, fmt.Errorf("unsupported http method for %q: %w", mFQN, err)
 	}
+	return buildProtobufMethod(model, m, mFQN, packagez, serviceID, apiVersion, doc, pathInfo, serviceConfig)
+}
+
+func processMixinMethod(model *api.APIBuilder, m *descriptorpb.MethodDescriptorProto, mFQN, originalFQN, packagez, serviceID, apiVersion string, mixin *api.Service, serviceConfig *serviceconfig.Service) (*api.Method, error) {
+	st := model.BuildSyntaxTree()
+	defaultPathInfo, err := parsePathInfo(m, st)
+	if err != nil {
+		return nil, fmt.Errorf("unsupported http method for %q: %w", mFQN, err)
+	}
+	pathInfo, doc, err := serviceConfigMethodOverrides(mFQN, originalFQN, m.GetInputType(), defaultPathInfo, serviceConfig, st, mixin)
+	if err != nil {
+		return nil, err
+	}
+	return buildProtobufMethod(model, m, mFQN, packagez, serviceID, apiVersion, doc, pathInfo, serviceConfig)
+}
+
+func buildProtobufMethod(model *api.APIBuilder, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion, doc string, pathInfo *api.PathInfo, serviceConfig *serviceconfig.Service) (*api.Method, error) {
 	routing, err := parseRoutingAnnotations(mFQN, m)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse routing annotations for %q: %w", mFQN, err)
 	}
+	inputTypeID := m.GetInputType()
 	outputTypeID := m.GetOutputType()
 	signatures, err := protobufMethodSignatures(m)
 	if err != nil {
 		return nil, err
 	}
-	method := &api.Method{
-		ID:                  mFQN,
-		PathInfo:            pathInfo,
-		Name:                m.GetName(),
-		Deprecated:          m.GetOptions().GetDeprecated(),
-		InputTypeID:         m.GetInputType(),
-		OutputTypeID:        outputTypeID,
-		ClientSideStreaming: m.GetClientStreaming(),
-		ServerSideStreaming: m.GetServerStreaming(),
-		OperationInfo:       parseOperationInfo(packagez, m),
-		Routing:             routing,
-		ReturnsEmpty:        outputTypeID == ".google.protobuf.Empty",
-		SourceServiceID:     serviceID,
-		APIVersion:          apiVersion,
-		Signatures:          signatures,
-	}
+	method := api.NewMethodBuilder().
+		WithID(mFQN).
+		WithPathInfo(pathInfo).
+		WithName(m.GetName()).
+		WithDocumentation(doc).
+		WithDeprecated(m.GetOptions().GetDeprecated()).
+		WithInputTypeID(inputTypeID).
+		WithOutputTypeID(outputTypeID).
+		WithClientSideStreaming(m.GetClientStreaming()).
+		WithServerSideStreaming(m.GetServerStreaming()).
+		WithOperationInfo(parseOperationInfo(packagez, m)).
+		WithRouting(routing).
+		WithReturnsEmpty(outputTypeID == ".google.protobuf.Empty").
+		WithSourceServiceID(serviceID).
+		WithAPIVersion(apiVersion).
+		WithSignatures(signatures).
+		WithAutoPopulated(findAutoPopulatedFields(serviceConfig, mFQN, model.Message(inputTypeID))).
+		Build()
 	model.AddMethod(method)
 	return method, nil
 }
@@ -631,18 +639,19 @@ func isProto2(f *descriptorpb.FileDescriptorProto) bool {
 	return f.GetSyntax() == "" || f.GetSyntax() == "proto2"
 }
 
-func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, proto2 bool, parent *api.Message, comments map[string]string, pathPrefix []int32) (*api.Message, error) {
-	message := &api.Message{
-		Name:       m.GetName(),
-		ID:         mFQN,
-		Parent:     parent,
-		Package:    packagez,
-		Deprecated: m.GetOptions().GetDeprecated(),
-	}
+func processMessage(model *api.APIBuilder, m *descriptorpb.DescriptorProto, mFQN, packagez string, proto2 bool, parent *api.Message, comments map[string]string, pathPrefix []int32) (*api.Message, error) {
+	mb := api.NewMessageBuilder().
+		WithName(m.GetName()).
+		WithID(mFQN).
+		WithParent(parent).
+		WithPackage(packagez).
+		WithDocumentation(lookupComment(comments, pathPrefix)).
+		WithDeprecated(m.GetOptions().GetDeprecated())
+	message := mb.Build()
 	model.AddMessage(message)
 
 	if opts := m.GetOptions(); opts != nil {
-		if err := processResourceAnnotation(opts, message, model); err != nil {
+		if err := processResourceAnnotation(opts, mb, model); err != nil {
 			return nil, err
 		}
 	}
@@ -659,13 +668,13 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 			if err != nil {
 				return nil, err
 			}
-			message.Messages = append(message.Messages, nmsg)
+			mb.AddMessage(nmsg)
 		}
 	}
 	for i, e := range m.GetEnumType() {
 		eFQN := mFQN + "." + e.GetName()
 		e := processEnum(model, e, eFQN, packagez, message, comments, append(pathPrefix, messageDescriptorEnum, int32(i)))
-		message.Enums = append(message.Enums, e)
+		mb.AddEnum(e)
 	}
 	oneOfBuilders := make([]*api.OneOfBuilder, len(m.OneofDecl))
 	for i, oneof := range m.OneofDecl {
@@ -675,12 +684,11 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 			WithDocumentation(lookupComment(comments, append(pathPrefix, messageDescriptorOneOf, int32(i))))
 	}
 	for i, mf := range m.Field {
-		doc := lookupComment(comments, append(pathPrefix, messageDescriptorField, int32(i)))
-		field, err := processField(model, mf, mFQN, proto2, doc)
+		field, err := processField(model, mf, mFQN, proto2, lookupComment(comments, append(pathPrefix, messageDescriptorField, int32(i))))
 		if err != nil {
 			return nil, err
 		}
-		message.Fields = append(message.Fields, field)
+		mb.AddField(field)
 		if field.IsOneOf() {
 			oneOfBuilders[*mf.OneofIndex].AddField(field)
 		}
@@ -690,14 +698,14 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	for _, ob := range oneOfBuilders {
 		oneof := ob.Build()
 		if len(oneof.Fields()) > 0 {
-			message.OneOfs = append(message.OneOfs, oneof)
+			mb.AddOneOf(oneof)
 		}
 	}
 
 	return message, nil
 }
 
-func processField(model *api.API, mf *descriptorpb.FieldDescriptorProto, mFQN string, proto2 bool, doc string) (*api.Field, error) {
+func processField(model *api.APIBuilder, mf *descriptorpb.FieldDescriptorProto, mFQN string, proto2 bool, doc string) (*api.Field, error) {
 	isProtoOptional := mf.Proto3Optional != nil && *mf.Proto3Optional
 	isOneOf := mf.OneofIndex != nil && !isProtoOptional
 	fieldID := mFQN + "." + mf.GetName()
@@ -722,7 +730,7 @@ func processField(model *api.API, mf *descriptorpb.FieldDescriptorProto, mFQN st
 	return fb.Build(), nil
 }
 
-func processMapEntry(model *api.API, nm *descriptorpb.DescriptorProto, nmFQN string) error {
+func processMapEntry(model *api.APIBuilder, nm *descriptorpb.DescriptorProto, nmFQN string) error {
 	var keyField, valueField *api.Field
 	for _, mf := range nm.Field {
 		field, err := processField(model, mf, nmFQN, false, "")
@@ -744,19 +752,20 @@ func processMapEntry(model *api.API, nm *descriptorpb.DescriptorProto, nmFQN str
 	return nil
 }
 
-func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message, model *api.API) error {
+func processResourceAnnotation(opts *descriptorpb.MessageOptions, mb *api.MessageBuilder, model *api.APIBuilder) error {
 	if !proto.HasExtension(opts, eResource) {
 		return nil
 	}
+	message := mb.Build()
 	ext := proto.GetExtension(opts, eResource)
 	res, ok := ext.(*resourceDescriptor)
 	if !ok {
-		return fmt.Errorf("in message %q: unexpected type for eResource extension: %T", message.ID, ext)
+		return fmt.Errorf("in message %q: unexpected type for eResource extension: %T", message.ID(), ext)
 	}
 
 	patterns, err := parseResourcePatterns(res.GetPattern())
 	if err != nil {
-		return fmt.Errorf("in message %q: %w", message.ID, err)
+		return fmt.Errorf("in message %q: %w", message.ID(), err)
 	}
 
 	resource := api.NewResourceBuilder().
@@ -766,7 +775,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		WithSingular(res.GetSingular()).
 		WithSelf(message).
 		Build()
-	message.Resource = resource
+	mb.WithResource(resource)
 	model.AddResource(resource)
 	return nil
 }
@@ -834,7 +843,7 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, fieldID stri
 	return nil
 }
 
-func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message, comments map[string]string, pathPrefix []int32) *api.Enum {
+func processEnum(model *api.APIBuilder, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message, comments map[string]string, pathPrefix []int32) *api.Enum {
 	var values []*api.EnumValue
 	for i, ev := range e.Value {
 		enumValue := api.NewEnumValueBuilder().
@@ -902,60 +911,6 @@ func commentPathKey(path []int32) string {
 		fmt.Fprintf(&b, "%d", v)
 	}
 	return b.String()
-}
-
-func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string) {
-	switch {
-	case len(p) == 0:
-		// This is a comment for a service
-		model.Service(sFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == serviceDescriptorProtoMethod && len(p) == 2:
-		// This is a comment for a method
-		model.Service(sFQN).Methods[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == serviceDescriptorProtoMethod:
-		// A comment for something within a method (options, arguments, etc).
-		// Ignored, as these comments do not refer to any artifact in the
-		// generated code.
-	case p[0] == serviceDescriptorProtoOption:
-		// This is a comment for a service option. Ignored, as these comments do
-		// not refer to any artifact in the generated code.
-	default:
-		slog.Warn("service dropped unknown documentation", "loc", p, "docs", doc)
-	}
-}
-
-func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p []int32, doc string, mFQN string) {
-	message := model.Message(mFQN)
-	if message == nil {
-		return
-	}
-	// Beware of refactoring the calls to `trimLeadingSpacesInDocumentation`.
-	// We should modify `doc` only once, upon assignment to `.Documentation`
-	switch {
-	case len(p) == 0:
-		// This is a comment for a top level message
-		message.Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == messageDescriptorNestedType:
-		nmsg := m.GetNestedType()[p[1]]
-		if nmsg.GetOptions().GetMapEntry() {
-			return
-		}
-		nmFQN := mFQN + "." + nmsg.GetName()
-		addMessageDocumentation(model, nmsg, p[2:], doc, nmFQN)
-	case p[0] == messageDescriptorOneOf:
-	case p[0] == messageDescriptorField:
-	case p[0] == messageDescriptorEnum:
-	case p[0] == messageDescriptorExtensionRange:
-	case p[0] == messageDescriptorOptions:
-	case p[0] == messageDescriptorExtension:
-	case p[0] == messageDescriptorReservedRange:
-	case p[0] == messageDescriptorReservedName:
-		// These comments are ignored, as they refer to Protobuf elements
-		// without corresponding public APIs in the generated code, or are
-		// already extracted via extractSourceComments.
-	default:
-		slog.Warn("message dropped documentation", "loc", p, "docs", doc)
-	}
 }
 
 func parseResourcePatterns(patterns []string) ([]api.ResourcePattern, error) {

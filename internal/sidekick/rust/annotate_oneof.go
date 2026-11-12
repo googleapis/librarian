@@ -69,14 +69,14 @@ func (a *oneOfAnnotation) SingleFeatureGate() bool {
 }
 
 func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) (*oneOfAnnotation, error) {
-	scope, err := c.messageScopeName(message, "", model.PackageName)
+	scope, err := c.messageScopeName(message, "", model.PackageName())
 	if err != nil {
 		return nil, err
 	}
 	enumName := c.OneOfEnumName(oneof)
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	structQualifiedName, err := c.fullyQualifiedMessageName(message, model.PackageName)
+	structQualifiedName, err := c.fullyQualifiedMessageName(message, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		EnumName:                   enumName,
 		QualifiedName:              qualifiedName,
 		RelativeName:               relativeEnumName,
-		ProstRelativeName:          c.prostTypeName(message.Package, prostMessageModulePath(message)+"::"+toProstPascal(enumName), model.PackageName),
+		ProstRelativeName:          c.prostTypeName(message.Package(), prostMessageModulePath(message)+"::"+toProstPascal(enumName), model.PackageName()),
 		StructQualifiedName:        structQualifiedName,
 		NameInExamples:             nameInExamples,
 		FieldType:                  fmt.Sprintf("%s::%s", scope, enumName),
@@ -105,7 +105,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	// and a child message have the same name.
 	// This is solving for unqualified name clashes that affect samples
 	// because we show usings for all types involved.
-	if ann.EnumName == message.Name {
+	if ann.EnumName == message.Name() {
 		ann.AliasInExamples = fmt.Sprintf("%sOneOf", ann.EnumName)
 	}
 	if ann.AliasInExamples == "" {

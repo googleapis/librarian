@@ -33,10 +33,8 @@ func TestProstFieldType_ExternalAndSamePackageWkt(t *testing.T) {
 		message := api.NewTestMessage("Event").
 			WithPackage("test.v1").
 			WithFields(enumField, msgField, tsField)
-		model := api.NewTestAPI([]*api.Message{message}, nil, nil)
-		model.AddEnum(extEnum)
-		model.AddMessage(extMsg)
-		model.AddMessage(wktTimestamp)
+		model := api.NewTestAPI([]*api.Message{message, extMsg, wktTimestamp}, []*api.Enum{extEnum}, nil).
+			WithPackageName("test.v1")
 		if err := api.CrossReference(model); err != nil {
 			t.Fatal(err)
 		}

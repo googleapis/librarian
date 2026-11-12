@@ -29,10 +29,10 @@ func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
 
 	method.WithBindings(b1, b2)
 
-	if method.PathInfo == nil {
+	if method.PathInfo() == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings(), apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo().Bindings(), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -43,7 +43,7 @@ func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 
 	method.WithBindings(b1)
 
-	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings(), apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo().Bindings(), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -52,11 +52,11 @@ func TestMethod_WithBodyFieldPath_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithBodyFieldPath("data")
 
-	if method.PathInfo == nil {
+	if method.PathInfo() == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if method.PathInfo.BodyFieldPath() != "data" {
-		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo.BodyFieldPath())
+	if method.PathInfo().BodyFieldPath() != "data" {
+		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo().BodyFieldPath())
 	}
 }
 
@@ -64,11 +64,11 @@ func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithVerb("PUT")
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if method.PathInfo.Bindings()[0].Verb() != "PUT" {
-		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo.Bindings()[0].Verb())
+	if method.PathInfo().Bindings()[0].Verb() != "PUT" {
+		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo().Bindings()[0].Verb())
 	}
 }
 
@@ -77,10 +77,10 @@ func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	method.WithPathTemplate(pt)
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if method.PathInfo.Bindings()[0].PathTemplate() != pt {
+	if method.PathInfo().Bindings()[0].PathTemplate() != pt {
 		t.Errorf("expected PathTemplate to match")
 	}
 }
@@ -89,19 +89,19 @@ func TestMethod_WithQueryParameters_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithQueryParameters("page_size")
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
 	want := map[string]bool{"page_size": true}
-	if diff := cmp.Diff(want, method.PathInfo.Bindings()[0].QueryParameters()); diff != "" {
+	if diff := cmp.Diff(want, method.PathInfo().Bindings()[0].QueryParameters()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestMethod_WithDocumentation(t *testing.T) {
 	method := api.NewTestMethod("Test").WithDocumentation("A test method.")
-	if method.Documentation != "A test method." {
-		t.Errorf("expected Documentation 'A test method.', got %q", method.Documentation)
+	if method.Documentation() != "A test method." {
+		t.Errorf("expected Documentation 'A test method.', got %q", method.Documentation())
 	}
 }
 
@@ -114,8 +114,8 @@ func TestField_WithJSONName(t *testing.T) {
 
 func TestMessage_WithDocumentation(t *testing.T) {
 	m := api.NewTestMessage("Test").WithDocumentation("A test message.")
-	if m.Documentation != "A test message." {
-		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation)
+	if m.Documentation() != "A test message." {
+		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation())
 	}
 }
 
@@ -138,21 +138,20 @@ func TestNewTestAPI_IndexesNestedMessages(t *testing.T) {
 	parent := api.NewTestMessage("Parent").WithMessages(child)
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
-	if got := model.Message(child.ID); got != child {
-		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	if got := model.Message(child.ID()); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID(), got, child)
 	}
-	if child.Parent != parent {
-		t.Errorf("child.Parent = %v, want %v", child.Parent, parent)
+	if child.Parent() != parent {
+		t.Errorf("child.Parent() = %v, want %v", child.Parent(), parent)
 	}
 }
 
 func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
 	val := api.NewTestEnumValue("VAL", 0)
 	nestedEnum := api.NewTestEnum("NestedEnum").WithValues(val)
-	parent := api.NewTestMessage("Parent")
 	// Bypassing WithEnums() deliberately leaves Parent and Value.Parent unwired,
 	// verifying that NewTestAPI properly initializes them during indexing.
-	parent.Enums = []*api.Enum{nestedEnum}
+	parent := api.NewMessageBuilderFrom(api.NewTestMessage("Parent")).AddEnum(nestedEnum).Build()
 
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
@@ -173,8 +172,8 @@ func TestNewTestAPI_DeduplicatesNestedEnums(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, nil)
 
-	if got := len(parent.Enums); got != 1 {
-		t.Errorf("len(parent.Enums) = %d, want 1", got)
+	if got := len(parent.Enums()); got != 1 {
+		t.Errorf("len(parent.Enums()) = %d, want 1", got)
 	}
 	if got := model.Enum(enum.ID()); got != enum {
 		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID(), got, enum)
@@ -187,11 +186,11 @@ func TestNewTestAPI_DeduplicatesNestedMessages(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent, child}, nil, nil)
 
-	if got := len(parent.Messages); got != 1 {
-		t.Errorf("len(parent.Messages) = %d, want 1", got)
+	if got := len(parent.Messages()); got != 1 {
+		t.Errorf("len(parent.Messages()) = %d, want 1", got)
 	}
-	if got := model.Message(child.ID); got != child {
-		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	if got := model.Message(child.ID()); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID(), got, child)
 	}
 }
 
@@ -200,23 +199,23 @@ func TestMessage_WithMessages_UpdatesOneOfIDs(t *testing.T) {
 	child := api.NewTestMessage("Child").WithOneOfs(oneof)
 	_ = api.NewTestMessage("Parent").WithMessages(child)
 
-	if got, want := child.OneOfs[0].ID(), ".test.Parent.Child.choice"; got != want {
-		t.Errorf("child.OneOfs[0].ID() = %q, want %q", got, want)
+	if got, want := child.OneOfs()[0].ID(), ".test.Parent.Child.choice"; got != want {
+		t.Errorf("child.OneOfs()[0].ID() = %q, want %q", got, want)
 	}
 }
 
 func TestService_WithDocumentation(t *testing.T) {
 	const doc = "Test service documentation."
 	s := api.NewTestService("TestService").WithDocumentation(doc)
-	if s.Documentation != doc {
-		t.Errorf("s.Documentation = %q, want %q", s.Documentation, doc)
+	if s.Documentation() != doc {
+		t.Errorf("s.Documentation() = %q, want %q", s.Documentation(), doc)
 	}
 }
 
 func TestMethod_ReturnEmpty(t *testing.T) {
 	m := api.NewTestMethod("Delete").ReturnEmpty()
-	if got := m.ReturnsEmpty; !got {
-		t.Errorf("m.ReturnsEmpty = %v, want true", got)
+	if got := m.ReturnsEmpty(); !got {
+		t.Errorf("m.ReturnsEmpty() = %v, want true", got)
 	}
 }
 
@@ -258,7 +257,7 @@ func TestNewTestMapWithFields(t *testing.T) {
 			WithJSONName("customVal").
 			WithID(".custom.package.MyMap.custom_val").
 			WithTypez(api.TypezMessage).
-			WithTypezID(valMsg.ID).
+			WithTypezID(valMsg.ID()).
 			WithMessageType(valMsg).
 			Build()).
 		Build()
@@ -346,17 +345,17 @@ func TestAPI_FluentSetters(t *testing.T) {
 		WithDescription("Custom Description").
 		WithQuickstartService(svc)
 
-	if got, want := model.Name, "custom-name"; got != want {
-		t.Errorf("model.Name = %q, want %q", got, want)
+	if got, want := model.Name(), "custom-name"; got != want {
+		t.Errorf("model.Name() = %q, want %q", got, want)
 	}
-	if got, want := model.Title, "Custom Title"; got != want {
-		t.Errorf("model.Title = %q, want %q", got, want)
+	if got, want := model.Title(), "Custom Title"; got != want {
+		t.Errorf("model.Title() = %q, want %q", got, want)
 	}
-	if got, want := model.Description, "Custom Description"; got != want {
-		t.Errorf("model.Description = %q, want %q", got, want)
+	if got, want := model.Description(), "Custom Description"; got != want {
+		t.Errorf("model.Description() = %q, want %q", got, want)
 	}
-	if got := model.QuickstartService; got != svc {
-		t.Errorf("model.QuickstartService = %v, want %v", got, svc)
+	if got := model.QuickstartService(); got != svc {
+		t.Errorf("model.QuickstartService() = %v, want %v", got, svc)
 	}
 }
 
@@ -364,11 +363,11 @@ func TestService_FluentSetters(t *testing.T) {
 	svc := api.NewTestService("TestService").
 		WithDefaultHost("test.googleapis.com").
 		WithID(".custom.TestService")
-	if got, want := svc.DefaultHost, "test.googleapis.com"; got != want {
-		t.Errorf("svc.DefaultHost = %q, want %q", got, want)
+	if got, want := svc.DefaultHost(), "test.googleapis.com"; got != want {
+		t.Errorf("svc.DefaultHost() = %q, want %q", got, want)
 	}
-	if got, want := svc.ID, ".custom.TestService"; got != want {
-		t.Errorf("svc.ID = %q, want %q", got, want)
+	if got, want := svc.ID(), ".custom.TestService"; got != want {
+		t.Errorf("svc.ID() = %q, want %q", got, want)
 	}
 }
 
@@ -382,20 +381,20 @@ func TestMethod_FluentSetters(t *testing.T) {
 		WithRouting(routing).
 		WithAutoPopulated(reqID)
 
-	if got, want := m.ID, ".custom.Service.Create"; got != want {
-		t.Errorf("m.ID = %q, want %q", got, want)
+	if got, want := m.ID(), ".custom.Service.Create"; got != want {
+		t.Errorf("m.ID() = %q, want %q", got, want)
 	}
-	if got, want := m.APIVersion, "v1_20260101"; got != want {
-		t.Errorf("m.APIVersion = %q, want %q", got, want)
+	if got, want := m.APIVersion(), "v1_20260101"; got != want {
+		t.Errorf("m.APIVersion() = %q, want %q", got, want)
 	}
-	if m.PathInfo != nil {
-		t.Errorf("m.PathInfo = %v, want nil", m.PathInfo)
+	if m.PathInfo() != nil {
+		t.Errorf("m.PathInfo() = %v, want nil", m.PathInfo())
 	}
-	if len(m.Routing) != 1 || m.Routing[0] != routing {
-		t.Errorf("m.Routing = %v, want [%v]", m.Routing, routing)
+	if len(m.Routing()) != 1 || m.Routing()[0] != routing {
+		t.Errorf("m.Routing() = %v, want [%v]", m.Routing(), routing)
 	}
-	if len(m.AutoPopulated) != 1 || m.AutoPopulated[0] != reqID {
-		t.Errorf("m.AutoPopulated = %v, want [%v]", m.AutoPopulated, reqID)
+	if len(m.AutoPopulated()) != 1 || m.AutoPopulated()[0] != reqID {
+		t.Errorf("m.AutoPopulated() = %v, want [%v]", m.AutoPopulated(), reqID)
 	}
 	if !reqID.AutoPopulated() {
 		t.Errorf("reqID.AutoPopulated() = false, want true")
@@ -433,34 +432,13 @@ func TestMethod_TypeIDSetters(t *testing.T) {
 		WithOutputTypeID(".test.Response").
 		WithSourceServiceID(".test.Service")
 
-	if m.InputTypeID != ".test.Request" {
-		t.Errorf("m.InputTypeID = %q, want %q", m.InputTypeID, ".test.Request")
+	if m.InputTypeID() != ".test.Request" {
+		t.Errorf("m.InputTypeID() = %q, want %q", m.InputTypeID(), ".test.Request")
 	}
-	if m.OutputTypeID != ".test.Response" {
-		t.Errorf("m.OutputTypeID = %q, want %q", m.OutputTypeID, ".test.Response")
+	if m.OutputTypeID() != ".test.Response" {
+		t.Errorf("m.OutputTypeID() = %q, want %q", m.OutputTypeID(), ".test.Response")
 	}
-	if m.SourceServiceID != ".test.Service" {
-		t.Errorf("m.SourceServiceID = %q, want %q", m.SourceServiceID, ".test.Service")
-	}
-}
-
-func TestSampleInfo_Builder(t *testing.T) {
-	f := api.NewTestField("name")
-	s := api.NewTestSampleInfo(f)
-	if s.ResourceNameField != f {
-		t.Errorf("s.ResourceNameField = %v, want %v", s.ResourceNameField, f)
-	}
-}
-
-func TestPaginationInfo_Builder(t *testing.T) {
-	token := api.NewTestField("next_page_token")
-	items := api.NewTestField("items")
-	p := api.NewTestPaginationInfo(token, items)
-
-	if p.NextPageToken != token {
-		t.Errorf("p.NextPageToken = %v, want %v", p.NextPageToken, token)
-	}
-	if p.PageableItem != items {
-		t.Errorf("p.PageableItem = %v, want %v", p.PageableItem, items)
+	if m.SourceServiceID() != ".test.Service" {
+		t.Errorf("m.SourceServiceID() = %q, want %q", m.SourceServiceID(), ".test.Service")
 	}
 }

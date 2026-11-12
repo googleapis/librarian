@@ -25,10 +25,10 @@ import (
 // NewTestAPI creates a new test API.
 func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	model := &API{
-		Name:           "Test",
-		Messages:       messages,
-		Enums:          enums,
-		Services:       services,
+		name:           "Test",
+		messages:       messages,
+		enums:          enums,
+		services:       services,
 		messageByID:    make(map[string]*Message),
 		methodByID:     make(map[string]*Method),
 		enumByID:       make(map[string]*Enum),
@@ -36,52 +36,53 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		resourceByType: make(map[string]*Resource),
 		mapByID:        make(map[string]*Map),
 	}
+	model.loadWellKnownTypes()
 
 	var indexMessage func(m *Message)
 	indexMessage = func(m *Message) {
-		model.messageByID[m.ID] = m
-		if m.Resource != nil {
-			model.resourceByType[m.Resource.typez] = m.Resource
+		model.messageByID[m.id] = m
+		if m.resource != nil {
+			model.resourceByType[m.resource.typez] = m.resource
 		}
-		for _, f := range m.Fields {
+		for _, f := range m.fields {
 			if f.MapType() != nil {
-				model.AddMap(f.MapType())
+				model.addMap(f.MapType())
 			}
 		}
-		for _, e := range m.Enums {
+		for _, e := range m.enums {
 			model.enumByID[e.ID()] = e
 			e.parent = m
 			for _, ev := range e.Values() {
 				ev.parent = e
 			}
 		}
-		for _, child := range m.Messages {
-			child.Parent = m
+		for _, child := range m.messages {
+			child.parent = m
 			indexMessage(child)
 		}
 	}
 	for _, m := range messages {
-		model.PackageName = m.Package
+		model.packageName = m.packagez
 		indexMessage(m)
 	}
 	for _, e := range enums {
-		model.PackageName = e.Package()
+		model.packageName = e.Package()
 		model.enumByID[e.ID()] = e
 	}
 	for _, s := range services {
-		model.PackageName = s.Package
-		model.serviceByID[s.ID] = s
-		for _, m := range s.Methods {
-			model.methodByID[m.ID] = m
+		model.packageName = s.packagez
+		model.serviceByID[s.id] = s
+		for _, m := range s.methods {
+			model.methodByID[m.id] = m
 		}
 	}
 	for _, m := range messages {
-		parentID := parentName(m.ID)
+		parentID := parentName(m.id)
 		parent := model.messageByID[parentID]
 		if parent != nil {
-			m.Parent = parent
-			if !slices.Contains(parent.Messages, m) {
-				parent.Messages = append(parent.Messages, m)
+			m.parent = parent
+			if !slices.Contains(parent.messages, m) {
+				parent.messages = append(parent.messages, m)
 			}
 		}
 	}
@@ -89,8 +90,8 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		parent := model.messageByID[parentName(e.ID())]
 		if parent != nil {
 			e.parent = parent
-			if !slices.Contains(parent.Enums, e) {
-				parent.Enums = append(parent.Enums, e)
+			if !slices.Contains(parent.enums, e) {
+				parent.enums = append(parent.enums, e)
 			}
 		}
 		for _, ev := range e.Values() {
@@ -98,62 +99,85 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 	}
 
-	model.LoadWellKnownTypes()
 	return model
 }
 
 // WithName changes the name of an API instance.
 func (a *API) WithName(name string) *API {
-	a.Name = name
+	a.name = name
 	return a
 }
 
 // WithTitle changes the title of an API instance.
 func (a *API) WithTitle(title string) *API {
-	a.Title = title
+	a.title = title
 	return a
 }
 
 // WithDescription changes the description of an API instance.
 func (a *API) WithDescription(description string) *API {
-	a.Description = description
+	a.description = description
+	return a
+}
+
+// WithRevision changes the revision of an API instance.
+func (a *API) WithRevision(revision string) *API {
+	a.revision = revision
 	return a
 }
 
 // WithQuickstartService sets the quickstart service on an API instance.
 func (a *API) WithQuickstartService(service *Service) *API {
-	a.QuickstartService = service
+	a.quickstartService = service
 	return a
 }
 
 // WithPackageName changes the package name of an API instance.
 func (a *API) WithPackageName(name string) *API {
-	a.PackageName = name
+	a.packageName = name
 	return a
 }
 
 // WithCsharpNamespace changes the CsharpNamespace of an API instance.
 func (a *API) WithCsharpNamespace(name string) *API {
-	a.CsharpNamespace = name
+	a.csharpNamespace = name
 	return a
 }
 
 // WithPhpNamespace changes the PhpNamespace of an API instance.
 func (a *API) WithPhpNamespace(name string) *API {
-	a.PhpNamespace = name
+	a.phpNamespace = name
 	return a
 }
 
 // WithRubyPackage changes the RubyNamespace of an API instance.
 func (a *API) WithRubyPackage(name string) *API {
-	a.RubyPackage = name
+	a.rubyPackage = name
+	return a
+}
+
+// WithResourceDefinitions sets the resource definitions on an API instance.
+func (a *API) WithResourceDefinitions(resources ...*Resource) *API {
+	a.resourceDefinitions = resources
+	return a
+}
+
+// WithExternalMessages sets the external messages on an API instance.
+func (a *API) WithExternalMessages(messages ...*Message) *API {
+	a.externalMessages = messages
+	return a
+}
+
+// WithExternalEnums sets the external enums on an API instance.
+func (a *API) WithExternalEnums(enums ...*Enum) *API {
+	a.externalEnums = enums
 	return a
 }
 
 // WithMaps adds maps to the API.
 func (a *API) WithMaps(maps ...*Map) *API {
 	for _, m := range maps {
-		a.AddMap(m)
+		a.addMap(m)
 	}
 	return a
 }
@@ -169,19 +193,19 @@ func parentName(id string) string {
 // NewTestMessage creates a message with defaults for testing.
 // Default package is "test".
 func NewTestMessage(name string) *Message {
-	return (&Message{Name: name}).WithPackage("test")
+	return NewMessageBuilder().WithName(name).Build().WithPackage("test")
 }
 
 // WithPackage sets the package for the message and updates its ID.
 func (m *Message) WithPackage(pkg string) *Message {
-	m.Package = pkg
-	m.ID = fmt.Sprintf(".%s.%s", pkg, m.Name)
+	m.packagez = pkg
+	m.id = fmt.Sprintf(".%s.%s", pkg, m.name)
 	return m
 }
 
 // WithID overrides the message's ID.
 func (m *Message) WithID(id string) *Message {
-	m.ID = id
+	m.id = id
 	return m
 }
 
@@ -191,10 +215,10 @@ func (m *Message) WithFields(fields ...*Field) *Message {
 		f.WithParent(m)
 		// If field ID is generic/default, re-scope it to the message.
 		if strings.HasPrefix(f.ID(), ".test.") || f.ID() == "" {
-			f.WithID(fmt.Sprintf("%s.%s", m.ID, f.Name()))
+			f.WithID(fmt.Sprintf("%s.%s", m.id, f.Name()))
 		}
 	}
-	m.Fields = append(m.Fields, fields...)
+	m.fields = append(m.fields, fields...)
 	return m
 }
 
@@ -203,37 +227,37 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	for _, o := range oneofs {
 		// If oneof ID is generic/default, re-scope it to the message.
 		if strings.HasPrefix(o.ID(), ".test.") || o.ID() == "" {
-			o.WithID(fmt.Sprintf("%s.%s", m.ID, o.Name()))
+			o.WithID(fmt.Sprintf("%s.%s", m.id, o.Name()))
 		}
-		m.OneOfs = append(m.OneOfs, o)
+		m.oneOfs = append(m.oneOfs, o)
 		m.WithFields(o.Fields()...)
 	}
 	return m
 }
 
 func (m *Message) withParentRecursive(parent *Message) {
-	m.Parent = parent
-	if m.Parent == nil {
+	m.parent = parent
+	if m.parent == nil {
 		return
 	}
-	m.Package = parent.Package
-	if strings.HasPrefix(m.ID, ".test.") || m.ID == "" {
-		m.ID = fmt.Sprintf("%s.%s", parent.ID, m.Name)
+	m.packagez = parent.packagez
+	if strings.HasPrefix(m.id, ".test.") || m.id == "" {
+		m.id = fmt.Sprintf("%s.%s", parent.id, m.name)
 	}
-	for _, f := range m.Fields {
+	for _, f := range m.fields {
 		if strings.HasPrefix(f.ID(), ".test.") || f.ID() == "" {
-			f.WithID(fmt.Sprintf("%s.%s", m.ID, f.Name()))
+			f.WithID(fmt.Sprintf("%s.%s", m.id, f.Name()))
 		}
 	}
-	for _, o := range m.OneOfs {
+	for _, o := range m.oneOfs {
 		if strings.HasPrefix(o.ID(), ".test.") || o.ID() == "" {
-			o.WithID(fmt.Sprintf("%s.%s", m.ID, o.Name()))
+			o.WithID(fmt.Sprintf("%s.%s", m.id, o.Name()))
 		}
 	}
-	for _, c := range m.Messages {
+	for _, c := range m.messages {
 		c.withParentRecursive(m)
 	}
-	for _, e := range m.Enums {
+	for _, e := range m.enums {
 		_ = e.WithParent(m)
 	}
 }
@@ -243,7 +267,7 @@ func (m *Message) WithMessages(messages ...*Message) *Message {
 	for _, child := range messages {
 		child.withParentRecursive(m)
 	}
-	m.Messages = append(m.Messages, messages...)
+	m.messages = append(m.messages, messages...)
 	return m
 }
 
@@ -252,28 +276,25 @@ func (m *Message) WithEnums(enums ...*Enum) *Message {
 	for _, e := range enums {
 		e.WithParent(m)
 	}
-	m.Enums = append(m.Enums, enums...)
+	m.enums = append(m.enums, enums...)
 	return m
 }
 
 // WithPagination items and page token fields for a pagination response.
 func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
-	if nextPageToken.Parent() != m {
+	if nextPageToken != nil && nextPageToken.Parent() != m {
 		m.WithFields(nextPageToken)
 	}
-	if items.Parent() != m {
+	if items != nil && items.Parent() != m {
 		m.WithFields(items)
 	}
-	m.Pagination = &PaginationInfo{
-		NextPageToken: nextPageToken,
-		PageableItem:  items,
-	}
+	m.pagination = NewPaginationInfo(nextPageToken, items)
 	return m
 }
 
 // WithResource sets the resource definition on the message.
 func (m *Message) WithResource(resource *Resource) *Message {
-	m.Resource = resource
+	m.resource = resource
 	if resource != nil {
 		resource.self = m
 	}
@@ -282,13 +303,37 @@ func (m *Message) WithResource(resource *Resource) *Message {
 
 // WithDeprecated sets whether the message is deprecated.
 func (m *Message) WithDeprecated(deprecated bool) *Message {
-	m.Deprecated = deprecated
+	m.deprecated = deprecated
 	return m
 }
 
 // WithDocumentation sets the documentation for the message.
 func (m *Message) WithDocumentation(doc string) *Message {
-	m.Documentation = doc
+	m.documentation = doc
+	return m
+}
+
+// WithParent sets the parent message directly without rewriting IDs.
+func (m *Message) WithParent(parent *Message) *Message {
+	m.parent = parent
+	return m
+}
+
+// WithSyntheticRequest marks the message as a synthetic request.
+func (m *Message) WithSyntheticRequest() *Message {
+	m.syntheticRequest = true
+	return m
+}
+
+// WithServicePlaceholder marks the message as a service placeholder.
+func (m *Message) WithServicePlaceholder() *Message {
+	m.servicePlaceholder = true
+	return m
+}
+
+// WithSkippedFields sets the skipped fields on the message.
+func (m *Message) WithSkippedFields(fields ...*Field) *Message {
+	m.skippedFields = fields
 	return m
 }
 
@@ -332,86 +377,102 @@ func (m *Map) WithID(id string) *Map {
 // NewTestService creates a service with defaults for testing.
 // Default package is "test".
 func NewTestService(name string) *Service {
-	return (&Service{Name: name}).WithPackage("test")
+	return NewServiceBuilder().WithName(name).Build().WithPackage("test")
 }
 
 // WithPackage sets the package for the service and updates its ID.
 func (s *Service) WithPackage(pkg string) *Service {
-	s.Package = pkg
-	s.ID = fmt.Sprintf(".%s.%s", pkg, s.Name)
+	s.packagez = pkg
+	s.id = fmt.Sprintf(".%s.%s", pkg, s.name)
+	return s
+}
+
+// WithName overrides the service's Name.
+func (s *Service) WithName(name string) *Service {
+	s.name = name
 	return s
 }
 
 // WithID overrides the service's ID.
 func (s *Service) WithID(id string) *Service {
-	s.ID = id
+	s.id = id
 	return s
 }
 
 // WithMethods adds methods to the service and updates their ID/Service.
 func (s *Service) WithMethods(methods ...*Method) *Service {
 	for _, m := range methods {
-		m.Service = s
+		m.service = s
 		// If method ID is generic/default, re-scope it to the service.
-		if strings.HasPrefix(m.ID, ".test.") || m.ID == "" {
-			m.ID = fmt.Sprintf("%s.%s", s.ID, m.Name)
+		if strings.HasPrefix(m.id, ".test.") || m.id == "" {
+			m.id = fmt.Sprintf("%s.%s", s.id, m.name)
 		}
 	}
-	s.Methods = append(s.Methods, methods...)
+	s.methods = append(s.methods, methods...)
 	return s
 }
 
 // WithDeprecated sets whether the service is deprecated.
 func (s *Service) WithDeprecated(deprecated bool) *Service {
-	s.Deprecated = deprecated
+	s.deprecated = deprecated
 	return s
 }
 
 // WithDocumentation sets the documentation for the service.
 func (s *Service) WithDocumentation(doc string) *Service {
-	s.Documentation = doc
+	s.documentation = doc
 	return s
 }
 
 // WithDefaultHost sets the default host for the service.
 func (s *Service) WithDefaultHost(host string) *Service {
-	s.DefaultHost = host
+	s.defaultHost = host
+	return s
+}
+
+// WithQuickstartMethod sets the quickstart method for the service.
+func (s *Service) WithQuickstartMethod(method *Method) *Service {
+	s.quickstartMethod = method
+	return s
+}
+
+// WithModel sets the API model for the service.
+func (s *Service) WithModel(model *API) *Service {
+	s.model = model
 	return s
 }
 
 // NewTestMethod creates a method with defaults for testing.
 // Default package is "test" (implies ID .test.Name).
 func NewTestMethod(name string) *Method {
-	return &Method{
-		Name: name,
-		ID:   fmt.Sprintf(".%s.%s", "test", name),
-		PathInfo: &PathInfo{
-			bindings: []*PathBinding{{}},
-		},
-	}
+	return NewMethodBuilder().
+		WithName(name).
+		WithID(fmt.Sprintf(".%s.%s", "test", name)).
+		WithPathInfo(NewPathInfoBuilder().WithBindings(NewPathBindingBuilder().Build()).Build()).
+		Build()
 }
 
 // WithID overrides the method's ID.
 func (m *Method) WithID(id string) *Method {
-	m.ID = id
+	m.id = id
 	return m
 }
 
 // WithAPIVersion sets the APIVersion for the method.
 func (m *Method) WithAPIVersion(version string) *Method {
-	m.APIVersion = version
+	m.apiVersion = version
 	return m
 }
 
 // WithPathInfo sets the PathInfo for the method.
 func (m *Method) WithPathInfo(pathInfo *PathInfo) *Method {
-	m.PathInfo = pathInfo
+	m.pathInfo = pathInfo
 	return m
 }
 
 // WithRouting adds routing info to the method.
 func (m *Method) WithRouting(routing ...*RoutingInfo) *Method {
-	m.Routing = append(m.Routing, routing...)
+	m.routing = append(m.routing, routing...)
 	return m
 }
 
@@ -420,24 +481,24 @@ func (m *Method) WithAutoPopulated(fields ...*Field) *Method {
 	for _, f := range fields {
 		f.WithAutoPopulated()
 	}
-	m.AutoPopulated = append(m.AutoPopulated, fields...)
+	m.autoPopulated = append(m.autoPopulated, fields...)
 	return m
 }
 
 // WithDocumentation sets the documentation for the method.
 func (m *Method) WithDocumentation(doc string) *Method {
-	m.Documentation = doc
+	m.documentation = doc
 	return m
 }
 
 func (m *Method) ensureFirstBinding() *PathBinding {
-	if m.PathInfo == nil {
-		m.PathInfo = &PathInfo{}
+	if m.pathInfo == nil {
+		m.pathInfo = &PathInfo{}
 	}
-	if len(m.PathInfo.bindings) == 0 {
-		m.PathInfo.bindings = append(m.PathInfo.bindings, &PathBinding{})
+	if len(m.pathInfo.bindings) == 0 {
+		m.pathInfo.bindings = append(m.pathInfo.bindings, &PathBinding{})
 	}
-	return m.PathInfo.bindings[0]
+	return m.pathInfo.bindings[0]
 }
 
 // WithVerb sets the HTTP verb for the first binding.
@@ -449,9 +510,9 @@ func (m *Method) WithVerb(verb string) *Method {
 // WithInput sets the input type message for the method.
 // It sets both InputType and InputTypeID.
 func (m *Method) WithInput(msg *Message) *Method {
-	m.InputType = msg
+	m.inputType = msg
 	if msg != nil {
-		m.InputTypeID = msg.ID
+		m.inputTypeID = msg.id
 	}
 	return m
 }
@@ -459,22 +520,22 @@ func (m *Method) WithInput(msg *Message) *Method {
 // WithOutput sets the output type message for the method.
 // It sets both OutputType and OutputTypeID.
 func (m *Method) WithOutput(msg *Message) *Method {
-	m.OutputType = msg
+	m.outputType = msg
 	if msg != nil {
-		m.OutputTypeID = msg.ID
+		m.outputTypeID = msg.id
 	}
 	return m
 }
 
 // WithInputTypeID sets the input type ID for the method.
 func (m *Method) WithInputTypeID(id string) *Method {
-	m.InputTypeID = id
+	m.inputTypeID = id
 	return m
 }
 
 // WithOutputTypeID sets the output type ID for the method.
 func (m *Method) WithOutputTypeID(id string) *Method {
-	m.OutputTypeID = id
+	m.outputTypeID = id
 	return m
 }
 
@@ -487,20 +548,20 @@ func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
 // WithBindings sets the HTTP bindings for the method.
 // It initializes PathInfo if it is nil.
 func (m *Method) WithBindings(bindings ...*PathBinding) *Method {
-	if m.PathInfo == nil {
-		m.PathInfo = &PathInfo{}
+	if m.pathInfo == nil {
+		m.pathInfo = &PathInfo{}
 	}
-	m.PathInfo.bindings = bindings
+	m.pathInfo.bindings = bindings
 	return m
 }
 
 // WithBodyFieldPath sets the body field path for the method.
 // It initializes PathInfo if it is nil.
 func (m *Method) WithBodyFieldPath(path string) *Method {
-	if m.PathInfo == nil {
-		m.PathInfo = &PathInfo{}
+	if m.pathInfo == nil {
+		m.pathInfo = &PathInfo{}
 	}
-	m.PathInfo.bodyFieldPath = path
+	m.pathInfo.bodyFieldPath = path
 	return m
 }
 
@@ -517,61 +578,61 @@ func (m *Method) WithQueryParameters(params ...string) *Method {
 
 // WithSourceMethod defines mixin methods.
 func (m *Method) WithSourceMethod(source *Method) *Method {
-	m.WithOutput(source.OutputType).WithInput(source.InputType)
-	m.SourceService = source.Service
-	if m.SourceService != nil {
-		m.SourceServiceID = m.SourceService.ID
+	m.WithOutput(source.outputType).WithInput(source.inputType)
+	m.sourceService = source.service
+	if m.sourceService != nil {
+		m.sourceServiceID = m.sourceService.id
 	}
-	m.PathInfo = source.PathInfo
+	m.pathInfo = source.pathInfo
 	return m
 }
 
 // WithSourceServiceID sets the source service ID for the method.
 func (m *Method) WithSourceServiceID(id string) *Method {
-	m.SourceServiceID = id
+	m.sourceServiceID = id
 	return m
 }
 
 // WithPagination sets the page token field for the request.
 func (m *Method) WithPagination(pageToken *Field) *Method {
-	m.IsList = true
-	m.Pagination = pageToken
+	m.isList = true
+	m.pagination = pageToken
 	return m
 }
 
 // WithOperationInfo sets the LRO information and flag.
 func (m *Method) WithOperationInfo(info *OperationInfo) *Method {
-	m.IsLRO = true
-	m.OperationInfo = info
+	m.isLRO = true
+	m.operationInfo = info
 	return m
 }
 
 // WithBidiStreaming sets the method as bidirectional streaming.
 func (m *Method) WithBidiStreaming() *Method {
-	m.ClientSideStreaming = true
-	m.ServerSideStreaming = true
+	m.clientSideStreaming = true
+	m.serverSideStreaming = true
 	return m
 }
 
 // WithServerSideStreaming sets the method as a server-side streaming
 // method. This method will not have client side streaming.
 func (m *Method) WithServerSideStreaming() *Method {
-	m.ClientSideStreaming = false
-	m.ServerSideStreaming = true
+	m.clientSideStreaming = false
+	m.serverSideStreaming = true
 	return m
 }
 
 // WithClientSideStreaming sets the method as a client-side streaming
 // method. This method will not have server-side streaming.
 func (m *Method) WithClientSideStreaming() *Method {
-	m.ClientSideStreaming = true
-	m.ServerSideStreaming = false
+	m.clientSideStreaming = true
+	m.serverSideStreaming = false
 	return m
 }
 
 // WithDiscoveryLro sets the discovery LRO information.
 func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
-	m.DiscoveryLro = info
+	m.discoveryLro = info
 	return m
 }
 
@@ -580,13 +641,13 @@ func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
 // A method signature typically maps to an overloads with a subset of
 // the request fields.
 func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
-	if m.InputType == nil {
-		panic(fmt.Sprintf("missing InputType for method: %s", m.Name))
+	if m.inputType == nil {
+		panic(fmt.Sprintf("missing InputType for method: %s", m.name))
 	}
 	for _, s := range signatures {
 		s.method = m
 		for _, name := range s.names {
-			for _, f := range m.InputType.Fields {
+			for _, f := range m.inputType.fields {
 				if name != f.Name() {
 					continue
 				}
@@ -594,26 +655,119 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 				break
 			}
 		}
-		m.Signatures = append(m.Signatures, s)
+		m.signatures = append(m.signatures, s)
 	}
+	return m
+}
+
+// WithRawSignatures sets the method signatures directly without resolving fields.
+func (m *Method) WithRawSignatures(signatures ...*MethodSignature) *Method {
+	if m.signatures == nil {
+		m.signatures = []*MethodSignature{}
+	}
+	m.signatures = append(m.signatures, signatures...)
 	return m
 }
 
 // WithDeprecated sets whether the method is deprecated.
 func (m *Method) WithDeprecated(deprecated bool) *Method {
-	m.Deprecated = deprecated
+	m.deprecated = deprecated
 	return m
 }
 
 // WithSampleInfo sets the sample info for the method.
 func (m *Method) WithSampleInfo(sampleInfo *SampleInfo) *Method {
-	m.SampleInfo = sampleInfo
+	m.sampleInfo = sampleInfo
+	return m
+}
+
+// WithService sets the service for the method.
+func (m *Method) WithService(service *Service) *Method {
+	m.service = service
+	return m
+}
+
+// WithModel sets the API model for the method.
+func (m *Method) WithModel(model *API) *Method {
+	m.model = model
+	return m
+}
+
+// WithIsLroPoller marks the method as an LRO poller.
+func (m *Method) WithIsLroPoller() *Method {
+	m.isLroPoller = true
+	return m
+}
+
+// WithIsSimple sets whether the method is simple.
+func (m *Method) WithIsSimple(isSimple bool) *Method {
+	m.isSimple = isSimple
+	return m
+}
+
+// WithIsLRO sets whether the method is an LRO.
+func (m *Method) WithIsLRO(isLRO bool) *Method {
+	m.isLRO = isLRO
+	return m
+}
+
+// WithIsList sets whether the method is a list method.
+func (m *Method) WithIsList(isList bool) *Method {
+	m.isList = isList
+	return m
+}
+
+// WithIsStreaming sets whether the method is streaming.
+func (m *Method) WithIsStreaming(isStreaming bool) *Method {
+	m.isStreaming = isStreaming
+	return m
+}
+
+// WithIsAIPStandard sets whether the method is an AIP standard method.
+func (m *Method) WithIsAIPStandard(isStandard bool) *Method {
+	m.isAIPStandard = isStandard
+	return m
+}
+
+// WithIsAIPStandardGet sets whether the method is an AIP standard get method.
+func (m *Method) WithIsAIPStandardGet(isGet bool) *Method {
+	m.isAIPStandardGet = isGet
+	return m
+}
+
+// WithIsAIPStandardDelete sets whether the method is an AIP standard delete method.
+func (m *Method) WithIsAIPStandardDelete(isDelete bool) *Method {
+	m.isAIPStandardDelete = isDelete
+	return m
+}
+
+// WithIsAIPStandardUndelete sets whether the method is an AIP standard undelete method.
+func (m *Method) WithIsAIPStandardUndelete(isUndelete bool) *Method {
+	m.isAIPStandardUndelete = isUndelete
+	return m
+}
+
+// WithIsAIPStandardCreate sets whether the method is an AIP standard create method.
+func (m *Method) WithIsAIPStandardCreate(isCreate bool) *Method {
+	m.isAIPStandardCreate = isCreate
+	return m
+}
+
+// WithIsAIPStandardUpdate sets whether the method is an AIP standard update method.
+func (m *Method) WithIsAIPStandardUpdate(isUpdate bool) *Method {
+	m.isAIPStandardUpdate = isUpdate
+	return m
+}
+
+// WithIsAIPStandardList sets whether the method is an AIP standard list method.
+func (m *Method) WithIsAIPStandardList(isList bool) *Method {
+	m.isAIPStandardList = isList
 	return m
 }
 
 // ReturnEmpty marks the method as returning an empty response.
 func (m *Method) ReturnEmpty() *Method {
-	m.ReturnsEmpty = true
+	m.returnsEmpty = true
 	return m
 }
 
@@ -740,7 +894,7 @@ func (f *Field) WithMessageType(msg *Message) *Field {
 	f.messageType = msg
 	f.typez = TypezMessage
 	if msg != nil {
-		f.typezID = msg.ID
+		f.typezID = msg.id
 	}
 	return f
 }
@@ -886,9 +1040,9 @@ func (e *Enum) WithDeprecated(deprecated bool) *Enum {
 func (e *Enum) WithParent(parent *Message) *Enum {
 	e.parent = parent
 	if parent != nil {
-		e.packagez = parent.Package
+		e.packagez = parent.packagez
 		if strings.HasPrefix(e.ID(), ".test.") || e.ID() == "" {
-			e.id = fmt.Sprintf("%s.%s", parent.ID, e.Name())
+			e.id = fmt.Sprintf("%s.%s", parent.id, e.Name())
 		}
 		for _, v := range e.Values() {
 			v.parent = e
@@ -1021,13 +1175,10 @@ func NewTestDiscoveryLro(pollingParams ...string) *DiscoveryLro {
 
 // NewTestSampleInfo creates a SampleInfo initialized with a resource name field.
 func NewTestSampleInfo(resourceNameField *Field) *SampleInfo {
-	return &SampleInfo{ResourceNameField: resourceNameField}
+	return NewSampleInfoBuilder().WithResourceNameField(resourceNameField).Build()
 }
 
 // NewTestPaginationInfo creates a PaginationInfo for pagination responses.
 func NewTestPaginationInfo(nextPageToken, pageableItem *Field) *PaginationInfo {
-	return &PaginationInfo{
-		NextPageToken: nextPageToken,
-		PageableItem:  pageableItem,
-	}
+	return NewPaginationInfo(nextPageToken, pageableItem)
 }

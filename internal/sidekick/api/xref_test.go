@@ -74,7 +74,7 @@ func TestCrossReferenceFields(t *testing.T) {
 	// that CrossReference resolves and sets MessageType and EnumType from TypezID.
 	fieldM := NewTestField("message_field").
 		WithType(TypezMessage).
-		WithTypezID(messageT.ID)
+		WithTypezID(messageT.ID())
 	enumT := NewTestEnum("EnumT")
 	fieldE := NewTestField("enum_field").
 		WithType(TypezEnum).
@@ -122,11 +122,11 @@ func TestCrossReferenceMethod(t *testing.T) {
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	if method.InputType != request {
-		t.Errorf("mismatched input type, got=%v, want=%v", method.InputType, request)
+	if method.InputType() != request {
+		t.Errorf("mismatched input type, got=%v, want=%v", method.InputType(), request)
 	}
-	if method.OutputType != response {
-		t.Errorf("mismatched output type, got=%v, want=%v", method.OutputType, response)
+	if method.OutputType() != response {
+		t.Errorf("mismatched output type, got=%v, want=%v", method.OutputType(), response)
 	}
 }
 
@@ -135,22 +135,22 @@ func TestCrossReferenceService(t *testing.T) {
 	mixin := NewTestService("Mixin").WithID(".external.Mixin")
 
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{service})
-	model.AddService(mixin)
+	model.addService(mixin)
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	if service.Model != model {
-		t.Errorf("mismatched model, got=%v, want=%v", service.Model, model)
+	if service.Model() != model {
+		t.Errorf("mismatched model, got=%v, want=%v", service.Model(), model)
 	}
-	if mixin.Model != model {
-		t.Errorf("mismatched model, got=%v, want=%v", mixin.Model, model)
+	if mixin.Model() != model {
+		t.Errorf("mismatched model, got=%v, want=%v", mixin.Model(), model)
 	}
 }
 
 func TestCrossReferenceMap(t *testing.T) {
 	valMsg := NewTestMessage("ValueMessage")
 	key := NewTestField("key").WithType(TypezString)
-	val := NewTestField("value").WithType(TypezMessage).WithTypezID(valMsg.ID)
+	val := NewTestField("value").WithType(TypezMessage).WithTypezID(valMsg.ID())
 	mapType := NewTestMapWithFields("MapEntry", key, val)
 	mapField := NewTestField("map_field").WithMapType(mapType)
 	msg := NewTestMessage("Container").WithFields(mapField)

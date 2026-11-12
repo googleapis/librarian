@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -35,10 +34,10 @@ func TestSorted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.IsSortedFunc(got.Messages, compareMessages) {
+	if !slices.IsSortedFunc(got.Messages(), compareMessages) {
 		t.Fatalf("unsorted messages after parsing")
 	}
-	if !slices.IsSortedFunc(got.Services, compareServices) {
+	if !slices.IsSortedFunc(got.Services(), compareServices) {
 		t.Fatalf("unsorted messages after parsing")
 	}
 }
@@ -51,9 +50,9 @@ func TestInfo(t *testing.T) {
 	want := api.NewTestAPI(nil, nil, nil).
 		WithName("compute").
 		WithTitle("Compute Engine API").
-		WithDescription("Creates and runs virtual machines on Google Cloud Platform. ")
-	want.Revision = "20250810"
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+		WithDescription("Creates and runs virtual machines on Google Cloud Platform. ").
+		WithRevision("20250810")
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreAPIFields("services", "messages", "enums", "serviceByID", "methodByID", "messageByID", "enumByID", "resourceByType", "mapByID")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -72,16 +71,16 @@ func TestServiceConfigOverridesInfo(t *testing.T) {
 		WithName(sc.Name).
 		WithTitle(sc.Title).
 		WithDescription(sc.Documentation.Summary).
-		WithPackageName("google.cloud.secretmanager.v1")
-	want.Revision = "20250810"
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+		WithPackageName("google.cloud.secretmanager.v1").
+		WithRevision("20250810")
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreAPIFields("services", "messages", "enums", "serviceByID", "methodByID", "messageByID", "enumByID", "resourceByType", "mapByID")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if len(sc.Apis) != 2 {
 		t.Fatalf("expected 2 APIs in service config")
 	}
-	if !strings.HasPrefix(sc.Apis[1].Name, got.PackageName) {
-		t.Errorf("mismatched package name want = %q, got = %q", sc.Apis[1].Name, got.PackageName)
+	if !strings.HasPrefix(sc.Apis[1].Name, got.PackageName()) {
+		t.Errorf("mismatched package name want = %q, got = %q", sc.Apis[1].Name, got.PackageName())
 	}
 }
 
@@ -146,7 +145,7 @@ func TestMessage(t *testing.T) {
 				WithTypezID("uint32").
 				WithOptional(),
 		)
-	for _, f := range want.Fields {
+	for _, f := range want.Fields() {
 		f.WithParent(nil)
 	}
 	apitest.CheckMessage(t, got, want)
@@ -162,11 +161,11 @@ func TestDeprecatedField(t *testing.T) {
 	if gotMessage == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
-	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name() == "port" })
+	idx := slices.IndexFunc(gotMessage.Fields(), func(f *api.Field) bool { return f.Name() == "port" })
 	if idx == -1 {
 		t.Fatalf("expected a `port` field in the message, got=%v", gotMessage)
 	}
-	gotField := gotMessage.Fields[idx]
+	gotField := gotMessage.Fields()[idx]
 	wantField := newDiscoveryTestMessage("BackendService").
 		WithFields(
 			api.NewTestField("port").
@@ -175,7 +174,7 @@ func TestDeprecatedField(t *testing.T) {
 				WithType(api.TypezInt32).
 				WithTypezID("int32").
 				WithOptional(),
-		).Fields[0]
+		).Fields()[0]
 	if diff := cmp.Diff(wantField, gotField, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -290,7 +290,7 @@ impl gaxi::prost::FromProto<crate::model::EnumMessage> for EnumMessage {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<"+message.Name+">", "\n        )\n    }\n}")
+			got := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<"+message.Name()+">", "\n        )\n    }\n}")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -416,8 +416,10 @@ func TestGenerateConvertAcronyms(t *testing.T) {
 
 	outDir := t.TempDir()
 	model := api.NewTestAPI([]*api.Message{vertexAISearchMsg, retrievalMsg}, []*api.Enum{ipVersionEnum}, []*api.Service{dnsService})
-	model.ExternalMessages = []*api.Message{extDNSConfigMsg}
-	model.AddMessage(extDNSConfigMsg)
+	model = api.NewAPIBuilderFrom(model).
+		WithExternalMessages(extDNSConfigMsg).
+		AddMessage(extDNSConfigMsg).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

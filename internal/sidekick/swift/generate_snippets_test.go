@@ -115,9 +115,10 @@ func TestGenerateSnippets(t *testing.T) {
 				WithOutput(thing).
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("one").Build())
 			testService := api.NewTestService("TestService").WithMethods(getThing)
-			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
-				WithPackageName("test")
-			model.AddResource(thingResource)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
+				WithPackageName("test")).
+				AddResource(thingResource).
+				BuildSyntaxTree()
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -198,9 +199,10 @@ func TestGenerateSnippets_Diagnose(t *testing.T) {
 			testService := api.NewTestService("TestService").
 				WithDeprecated(test.serviceDeprecated).
 				WithMethods(getThing)
-			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
-				WithPackageName("test")
-			model.AddResource(thingResource)
+			model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
+				WithPackageName("test")).
+				AddResource(thingResource).
+				BuildSyntaxTree()
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -253,16 +255,17 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 		WithOutput(thing).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build())
 	testService := api.NewTestService("TestService").WithMethods(updateThing)
-	model := api.NewTestAPI([]*api.Message{thing, updateThingRequest}, nil, []*api.Service{testService}).
-		WithPackageName("test")
-	model.AddResource(thingResource)
-	model.LoadWellKnownTypes()
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{thing, updateThingRequest}, nil, []*api.Service{testService}).
+		WithPackageName("test")).
+		AddResource(thingResource).
+		LoadWellKnownTypes().
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	updateThing.WithSampleInfo(&api.SampleInfo{
-		UpdateMaskField: updateMask,
-	})
+	updateThing.WithSampleInfo(api.NewSampleInfoBuilder().
+		WithUpdateMaskField(updateMask).
+		Build())
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
 	}
@@ -352,7 +355,7 @@ func TestGenerateSnippets_LRO(t *testing.T) {
 		WithInput(createThingRequest).
 		WithOutput(operationType).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
-		WithOperationInfo(api.NewTestOperationInfo(thing.ID, metadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(thing.ID(), metadataType.ID()))
 	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(createThing)
 	model := api.NewTestAPI([]*api.Message{thing, metadataType, createThingRequest, operationType}, nil, []*api.Service{testService}).
 		WithPackageName("test")
@@ -396,7 +399,7 @@ func TestGenerateSnippets_LRO_Empty(t *testing.T) {
 		WithInput(deleteThingRequest).
 		WithOutput(operationType).
 		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("things").Build()).
-		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID()))
 	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(deleteThing)
 	model := api.NewTestAPI([]*api.Message{metadataType, deleteThingRequest, operationType}, nil, []*api.Service{testService}).
 		WithPackageName("test")

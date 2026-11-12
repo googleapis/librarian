@@ -23,10 +23,10 @@ import (
 func TestField(t *testing.T) {
 	rr := NewResourceReferenceBuilder().WithType("test.googleapis.com/Book").Build()
 	rnp := NewResourceNamePattern(NewResourceNameSegment("projects", ""))
-	msg := NewTestMessage("Book")
+	msg := NewMessageBuilder().WithName("Book").Build()
 	en := NewEnumBuilder().WithName("State").Build()
 	mp := NewMapBuilder().WithID(".test.MapEntry").Build()
-	parent := NewTestMessage("Request")
+	parent := NewMessageBuilder().WithName("Request").Build()
 	group := NewOneOfBuilder().WithName("group").Build()
 
 	got := NewFieldBuilder().

@@ -43,13 +43,13 @@ func TestProtobuf_Info(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	if got.Name != "secretmanager" {
-		t.Errorf("want = %q; got = %q", "secretmanager", got.Name)
+	if got.Name() != "secretmanager" {
+		t.Errorf("want = %q; got = %q", "secretmanager", got.Name())
 	}
-	if got.Title != sc.Title {
-		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
+	if got.Title() != sc.Title {
+		t.Errorf("want = %q; got = %q", sc.Title, got.Title())
 	}
-	if diff := cmp.Diff(sc.Documentation.Summary, got.Description); diff != "" {
+	if diff := cmp.Diff(sc.Documentation.Summary, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -70,7 +70,7 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 		WithPackageName("test").
 		WithTitle("Secret Manager API").
 		WithDescription("")
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreAPIFields("services", "messages", "enums", "serviceByID", "methodByID", "messageByID", "enumByID", "resourceByType", "mapByID")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -317,8 +317,8 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 		)
 	apitest.CheckMessage(t, message, want)
 	// Only `LocalMessage` should be found in the messages list:
-	for _, msg := range test.Messages {
-		if msg.ID == ".test.ImportedMessage" {
+	for _, msg := range test.Messages() {
+		if msg.ID() == ".test.ImportedMessage" {
 			t.Errorf("imported messages should not be in message list %v", msg)
 		}
 	}
@@ -351,8 +351,8 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 	}
 	apitest.CheckEnum(t, *enum, *wantEnum)
 	// Only `LocalMessage` should be found in the messages list:
-	for _, msg := range test.Messages {
-		if msg.ID == ".test.ImportedMessage" {
+	for _, msg := range test.Messages() {
+		if msg.ID() == ".test.ImportedMessage" {
 			t.Errorf("imported messages should not be in message list %v", msg)
 		}
 	}
@@ -431,10 +431,10 @@ func TestProtobuf_Comments(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	createMethod.SourceServiceID = ".test.Service"
-	createMethod.InputTypeID = ".test.Request"
-	createMethod.OutputTypeID = ".test.Response"
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".test.Service").
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response")
 
 	wantService := api.NewTestService("Service").
 		WithPackage("test").
@@ -633,7 +633,7 @@ func TestProtobuf_MapFields(t *testing.T) {
 				WithMap(),
 		))
 
-	if diff := cmp.Diff([]*api.Message(nil), message.Messages); diff != "" {
+	if diff := cmp.Diff([]*api.Message(nil), message.Messages()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -693,11 +693,11 @@ func TestProtobuf_Service(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		WithBodyFieldPath("")
-	getFoo.SourceServiceID = ".test.TestService"
-	getFoo.InputTypeID = ".test.GetFooRequest"
-	getFoo.OutputTypeID = ".test.Foo"
-	getFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
+		WithBodyFieldPath("").
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.GetFooRequest").
+		WithOutputTypeID(".test.Foo").
+		WithRawSignatures(api.NewTestMethodSignature("name"))
 
 	createFoo := api.NewTestMethod("CreateFoo").
 		WithID(".test.TestService.CreateFoo").
@@ -714,11 +714,11 @@ func TestProtobuf_Service(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters("foo_id").
-		WithBodyFieldPath("foo")
-	createFoo.SourceServiceID = ".test.TestService"
-	createFoo.InputTypeID = ".test.CreateFooRequest"
-	createFoo.OutputTypeID = ".test.Foo"
-	createFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "foo_id", "foo")}
+		WithBodyFieldPath("foo").
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".test.Foo").
+		WithRawSignatures(api.NewTestMethodSignature("parent", "foo_id", "foo"))
 
 	deleteFoo := api.NewTestMethod("DeleteFoo").
 		WithID(".test.TestService.DeleteFoo").
@@ -736,19 +736,19 @@ func TestProtobuf_Service(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		ReturnEmpty()
-	deleteFoo.SourceServiceID = ".test.TestService"
-	deleteFoo.InputTypeID = ".test.DeleteFooRequest"
-	deleteFoo.OutputTypeID = ".google.protobuf.Empty"
+		ReturnEmpty().
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.DeleteFooRequest").
+		WithOutputTypeID(".google.protobuf.Empty")
 
 	uploadFoos := api.NewTestMethod("UploadFoos").
 		WithID(".test.TestService.UploadFoos").
 		WithDocumentation("A client-side streaming RPC.").
 		WithClientSideStreaming().
-		WithPathInfo(api.NewPathInfoBuilder().Build())
-	uploadFoos.SourceServiceID = ".test.TestService"
-	uploadFoos.InputTypeID = ".test.CreateFooRequest"
-	uploadFoos.OutputTypeID = ".test.Foo"
+		WithPathInfo(api.NewPathInfoBuilder().Build()).
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".test.Foo")
 
 	downloadFoos := api.NewTestMethod("DownloadFoos").
 		WithID(".test.TestService.DownloadFoos").
@@ -768,19 +768,19 @@ func TestProtobuf_Service(t *testing.T) {
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("").
-		WithServerSideStreaming()
-	downloadFoos.SourceServiceID = ".test.TestService"
-	downloadFoos.InputTypeID = ".test.GetFooRequest"
-	downloadFoos.OutputTypeID = ".test.Foo"
+		WithServerSideStreaming().
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.GetFooRequest").
+		WithOutputTypeID(".test.Foo")
 
 	chatLike := api.NewTestMethod("ChatLike").
 		WithID(".test.TestService.ChatLike").
 		WithDocumentation("A bidi streaming RPC.").
 		WithBidiStreaming().
-		WithPathInfo(api.NewPathInfoBuilder().Build())
-	chatLike.SourceServiceID = ".test.TestService"
-	chatLike.InputTypeID = ".test.Foo"
-	chatLike.OutputTypeID = ".test.Foo"
+		WithPathInfo(api.NewPathInfoBuilder().Build()).
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.Foo").
+		WithOutputTypeID(".test.Foo")
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -815,11 +815,11 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters("foo_id").
-		WithBodyFieldPath("bar")
-	createFoo.SourceServiceID = ".test.TestService"
-	createFoo.InputTypeID = ".test.CreateFooRequest"
-	createFoo.OutputTypeID = ".test.Foo"
-	createFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "foo_id", "bar")}
+		WithBodyFieldPath("bar").
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".test.Foo").
+		WithRawSignatures(api.NewTestMethodSignature("parent", "foo_id", "bar"))
 
 	addBar := api.NewTestMethod("AddBar").
 		WithID(".test.TestService.AddBar").
@@ -838,11 +838,11 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	addBar.SourceServiceID = ".test.TestService"
-	addBar.InputTypeID = ".test.AddBarRequest"
-	addBar.OutputTypeID = ".test.Bar"
-	addBar.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "payload")}
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.AddBarRequest").
+		WithOutputTypeID(".test.Bar").
+		WithRawSignatures(api.NewTestMethodSignature("parent", "payload"))
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -914,11 +914,11 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 				WithLiteral("foos").
 				Build(),
 		).
-		WithQueryParameters(queryParams...)
-	m.SourceServiceID = ".test.TestService"
-	m.InputTypeID = ".test." + inputType
-	m.OutputTypeID = ".test.ListFooResponse"
-	m.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent")}
+		WithQueryParameters(queryParams...).
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test." + inputType).
+		WithOutputTypeID(".test.ListFooResponse").
+		WithRawSignatures(api.NewTestMethodSignature("parent"))
 	if pageTokenReq != "" {
 		m.WithPagination(
 			api.NewTestField("page_token").
@@ -926,8 +926,7 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 				WithJSONName("pageToken").
 				WithType(api.TypezString).
 				WithBehavior(api.FieldBehaviorOptional),
-		)
-		m.IsList = false
+		).WithIsList(false)
 	}
 	return m
 }
@@ -943,11 +942,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", "", "page_size", "page_token")
-	missingNextPageToken.OutputTypeID = ".test.ListFooMissingNextPageTokenResponse"
+	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", "", "page_size", "page_token").
+		WithOutputTypeID(".test.ListFooMissingNextPageTokenResponse")
 
-	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", "", "page_size", "page_token")
-	missingRepeatedItem.OutputTypeID = ".test.ListFooMissingRepeatedItemResponse"
+	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", "", "page_size", "page_token").
+		WithOutputTypeID(".test.ListFooMissingRepeatedItemResponse")
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -1049,11 +1048,11 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithOperationInfo(api.NewOperationInfoBuilder().
 			WithMetadataTypeID(".google.protobuf.Empty").
 			WithResponseTypeID(".test.Foo").
-			Build())
-	createFoo.SourceServiceID = ".test.LroService"
-	createFoo.InputTypeID = ".test.CreateFooRequest"
-	createFoo.OutputTypeID = ".google.longrunning.Operation"
-	createFoo.IsLRO = false
+			Build()).
+		WithSourceServiceID(".test.LroService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".google.longrunning.Operation").
+		WithIsLRO(false)
 
 	createFooWithProgress := api.NewTestMethod("CreateFooWithProgress").
 		WithID(".test.LroService.CreateFooWithProgress").
@@ -1074,11 +1073,11 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithOperationInfo(api.NewOperationInfoBuilder().
 			WithMetadataTypeID(".test.CreateMetadata").
 			WithResponseTypeID(".test.Foo").
-			Build())
-	createFooWithProgress.SourceServiceID = ".test.LroService"
-	createFooWithProgress.InputTypeID = ".test.CreateFooRequest"
-	createFooWithProgress.OutputTypeID = ".google.longrunning.Operation"
-	createFooWithProgress.IsLRO = false
+			Build()).
+		WithSourceServiceID(".test.LroService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".google.longrunning.Operation").
+		WithIsLRO(false)
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithID(".test.LroService.GetOperation").
@@ -1094,11 +1093,11 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	getOperation.SourceServiceID = ".google.longrunning.Operations"
-	getOperation.InputTypeID = ".google.longrunning.GetOperationRequest"
-	getOperation.OutputTypeID = ".google.longrunning.Operation"
-	getOperation.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".google.longrunning.Operations").
+		WithInputTypeID(".google.longrunning.GetOperationRequest").
+		WithOutputTypeID(".google.longrunning.Operation").
+		WithRawSignatures(api.NewTestMethodSignature("name"))
 
 	wantService := api.NewTestService("LroService").
 		WithPackage("test").
@@ -1147,9 +1146,9 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	for _, service := range test.Services {
-		if service.ID == ".google.longrunning.Operations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+	for _, service := range test.Services() {
+		if service.ID() == ".google.longrunning.Operations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	message := test.Message(".test.CreateFooRequest")
@@ -1218,7 +1217,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	want := []*api.Field{requestID, requestIDOptional, requestIDWithFieldBehavior}
-	if diff := cmp.Diff(want, method.AutoPopulated, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
+	if diff := cmp.Diff(want, method.AutoPopulated(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -1245,10 +1244,10 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	rpcA := api.NewTestMethod("RpcA").
 		WithID(".test.ServiceB.RpcA").
 		WithDeprecated(true).
-		WithPathInfo(api.NewPathInfoBuilder().Build())
-	rpcA.InputTypeID = ".test.Request"
-	rpcA.OutputTypeID = ".test.Response"
-	rpcA.SourceServiceID = ".test.ServiceB"
+		WithPathInfo(api.NewPathInfoBuilder().Build()).
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response").
+		WithSourceServiceID(".test.ServiceB")
 
 	wantServiceB := api.NewTestService("ServiceB").
 		WithPackage("test").
@@ -1321,8 +1320,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 
 	t.Run("API.ResourceDefinitions", func(t *testing.T) {
 		// We expect 2 ResourceDefinitions: Shelf (file-level) and Book (message-level).
-		if len(test.ResourceDefinitions) != 2 {
-			t.Fatalf("Expected 2 ResourceDefinitions, got %d", len(test.ResourceDefinitions))
+		if len(test.ResourceDefinitions()) != 2 {
+			t.Fatalf("Expected 2 ResourceDefinitions, got %d", len(test.ResourceDefinitions()))
 		}
 
 		// Verify Shelf
@@ -1337,7 +1336,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			)
 		// Find Shelf in the slice
 		var foundShelf *api.Resource
-		for _, r := range test.ResourceDefinitions {
+		for _, r := range test.ResourceDefinitions() {
 			if r.Type() == "library.googleapis.com/Shelf" {
 				foundShelf = r
 				break
@@ -1371,7 +1370,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			WithSingular("book")
 		// Find Book in the slice
 		var foundBook *api.Resource
-		for _, r := range test.ResourceDefinitions {
+		for _, r := range test.ResourceDefinitions() {
 			if r.Type() == "library.googleapis.com/Book" {
 				foundBook = r
 				break
@@ -1399,8 +1398,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if bookResource.Type() != "library.googleapis.com/Book" {
 			t.Errorf("bookResource.Type() = %q; want %q", bookResource.Type(), "library.googleapis.com/Book")
 		}
-		if bookResource.Self().Name != "Book" {
-			t.Errorf("bookResource.Self().Name = %q; want %q", bookResource.Self().Name, "Book")
+		if bookResource.Self().Name() != "Book" {
+			t.Errorf("bookResource.Self().Name() = %q; want %q", bookResource.Self().Name(), "Book")
 		}
 	})
 
@@ -1429,7 +1428,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			s := p.Last().String()
 			return s == ".self" || s == ".codec"
 		}, cmp.Ignore())
-		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, apitest.AllowUnexported(), ignoreSelfCodec); diff != "" {
+		if diff := cmp.Diff(wantBookResource, bookMessage.Resource(), apitest.AllowUnexported(), ignoreSelfCodec); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1489,8 +1488,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if msg == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.NoResourceMessage")
 		}
-		if msg.Resource != nil {
-			t.Errorf("Expected NoResourceMessage to have nil Resource, got %v", msg.Resource)
+		if msg.Resource() != nil {
+			t.Errorf("Expected NoResourceMessage to have nil Resource, got %v", msg.Resource())
 		}
 	})
 
@@ -1501,7 +1500,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			t.Fatalf("Cannot find message %s in API State", ".test.NoReferenceMessage")
 		}
 
-		field := msg.Fields[0] // simple_field
+		field := msg.Fields()[0] // simple_field
 		if field.IsResourceReference() {
 			t.Errorf("Expected simple_field not to be ResourceReference, got %v", field.ResourceReference())
 		}
@@ -1519,10 +1518,10 @@ func TestProtobuf_ResourceCoverage(t *testing.T) {
 
 		// Verify only 1 resource exists and it is the message-level one ("book_message").
 		// This confirms that message-level resources overwrite file-level resources with the same type.
-		if len(test.ResourceDefinitions) != 1 {
-			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
+		if len(test.ResourceDefinitions()) != 1 {
+			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions()))
 		}
-		got := test.ResourceDefinitions[0]
+		got := test.ResourceDefinitions()[0]
 		if got.Singular() != "book_message" {
 			t.Errorf("Expected singular 'book_message', got %q", got.Singular())
 		}

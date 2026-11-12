@@ -30,8 +30,8 @@ func setupTestModel(serviceID string, pathTemplate *PathTemplate, fields []*Fiel
 		WithID(serviceID).
 		WithMethods(method)
 	model := NewTestAPI(nil, nil, []*Service{service}).WithName("test-api")
-	method.Model = model
-	service.Model = model
+	method.WithModel(model)
+	service.WithModel(model)
 	return model, binding
 }
 
@@ -478,16 +478,15 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
 			if test.resources != nil {
-				model.ResourceDefinitions = test.resources
+				model.WithResourceDefinitions(test.resources...)
 			}
 
 			// Add Get methods to populate vocabulary
 			for _, p := range test.getPaths {
 				m := NewTestMethod("GetSomething").
-					WithBindings(NewPathBindingBuilder().WithPathTemplate(p).Build())
-				m.IsAIPStandard = true
-				m.Service = model.Services[0]
-				model.Services[0].Methods = append(model.Services[0].Methods, m)
+					WithBindings(NewPathBindingBuilder().WithPathTemplate(p).Build()).
+					WithIsAIPStandard(true)
+				model.Services()[0].WithMethods(m)
 			}
 			IdentifyTargetResources(model, true)
 
@@ -545,8 +544,8 @@ func TestIdentifyTargetResources_PreservesExistingTargetResource(t *testing.T) {
 		WithID(".google.cloud.compute.v1.Instances").
 		WithMethods(method)
 	model := NewTestAPI(nil, nil, []*Service{service}).WithName("test-api")
-	method.Model = model
-	service.Model = model
+	method.WithModel(model)
+	service.WithModel(model)
 
 	if err := IdentifyTargetResources(model, true); err != nil {
 		t.Fatal(err)

@@ -37,17 +37,17 @@ func TestDisco_Parse(t *testing.T) {
 	wantTitle := "Secret Manager API"
 	wantDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
 	wantPackageName := "google.cloud.secretmanager.v1"
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	if got.Name() != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name())
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	if got.Title() != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title())
 	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+	if diff := cmp.Diff(wantDescription, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if got.PackageName != wantPackageName {
-		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName)
+	if got.PackageName() != wantPackageName {
+		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName())
 	}
 }
 
@@ -68,13 +68,13 @@ func TestDisco_FindSources(t *testing.T) {
 	wantName := "compute"
 	wantTitle := "Compute Engine API"
 	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	if got.Name() != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name())
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	if got.Title() != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title())
 	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+	if diff := cmp.Diff(wantDescription, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -91,13 +91,13 @@ func TestDisco_ParseNoServiceConfig(t *testing.T) {
 	wantName := "compute"
 	wantTitle := "Compute Engine API"
 	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	if got.Name() != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name())
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	if got.Title() != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title())
 	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+	if diff := cmp.Diff(wantDescription, got.Description()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -121,7 +121,7 @@ func TestDisco_ParsePagination(t *testing.T) {
 		WithType(api.TypezString).
 		WithTypezID("string").
 		WithOptional()
-	if diff := cmp.Diff(wantPagination, got.Pagination, apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
+	if diff := cmp.Diff(wantPagination, got.Pagination(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -145,7 +145,7 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 		WithType(api.TypezString).
 		WithTypezID("string").
 		WithOptional()
-	if diff := cmp.Diff(wantPagination, got.Pagination, apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
+	if diff := cmp.Diff(wantPagination, got.Pagination(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
