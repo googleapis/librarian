@@ -28,6 +28,7 @@ func allowUnexported() cmp.Option {
 		Field{},
 		Map{},
 		MethodSignature{},
+		OneOf{},
 		OperationInfo{},
 		PathBinding{},
 		PathInfo{},

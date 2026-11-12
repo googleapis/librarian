@@ -937,7 +937,7 @@ func TestExternalTypesAnnotations(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	oneofAnn := oneof.Codec.(*oneOfAnnotation)
+	oneofAnn := oneof.Codec().(*oneOfAnnotation)
 	if diff := cmp.Diff("crate::google::r#type::lat_lng::Kind", oneofAnn.ProstRelativeName); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

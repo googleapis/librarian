@@ -53,6 +53,7 @@ func AllowUnexported() cmp.Option {
 		api.Field{},
 		api.Map{},
 		api.MethodSignature{},
+		api.OneOf{},
 		api.OperationInfo{},
 		api.PathBinding{},
 		api.PathInfo{},

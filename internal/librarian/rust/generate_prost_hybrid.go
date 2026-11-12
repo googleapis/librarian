@@ -201,7 +201,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 				enqueueField(item.path, f)
 			}
 			for _, o := range msg.OneOfs {
-				for _, f := range o.Fields {
+				for _, f := range o.Fields() {
 					enqueueField(item.path, f)
 				}
 			}
