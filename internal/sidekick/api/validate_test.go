@@ -105,12 +105,12 @@ func TestValidateMap_Error(t *testing.T) {
 	}{
 		{
 			name:    "nil key",
-			mapType: &Map{ID: ".test.NilKey", Value: NewTestField("value").WithType(TypezString)},
+			mapType: NewMapBuilder().WithID(".test.NilKey").WithValue(NewTestField("value").WithType(TypezString)).Build(),
 			wantErr: `map ".test.NilKey" must have non-nil key and value fields`,
 		},
 		{
 			name:    "nil value",
-			mapType: &Map{ID: ".test.NilValue", Key: NewTestField("key").WithType(TypezString)},
+			mapType: NewMapBuilder().WithID(".test.NilValue").WithKey(NewTestField("key").WithType(TypezString)).Build(),
 			wantErr: `map ".test.NilValue" must have non-nil key and value fields`,
 		},
 		{

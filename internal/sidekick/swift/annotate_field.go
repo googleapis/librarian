@@ -214,16 +214,16 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		if err != nil {
 			return nil, err
 		}
-		if mapType.Key == nil || mapType.Value == nil {
+		if mapType.Key() == nil || mapType.Value() == nil {
 			return nil, fmt.Errorf("map field %q missing key or value", field.ID())
 		}
-		if _, err := c.annotateField(mapType.Key, model); err != nil {
+		if _, err := c.annotateField(mapType.Key(), model); err != nil {
 			return nil, err
 		}
-		if _, err := c.annotateField(mapType.Value, model); err != nil {
+		if _, err := c.annotateField(mapType.Value(), model); err != nil {
 			return nil, err
 		}
-		annotations.ValueField = mapType.Value
+		annotations.ValueField = mapType.Value()
 	}
 	if field.Optional() {
 		annotations.Decoding = DecodingOptional
@@ -265,7 +265,7 @@ func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		return c.fieldTypeDeprecated(mapType.Value)
+		return c.fieldTypeDeprecated(mapType.Value())
 	}
 	switch field.Typez() {
 	case api.TypezMessage:
@@ -290,7 +290,7 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return c.fieldPackage(mapType.Value)
+		return c.fieldPackage(mapType.Value())
 	}
 	switch field.Typez() {
 	case api.TypezMessage:

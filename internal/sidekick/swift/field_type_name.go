@@ -95,11 +95,11 @@ func (c *codec) mapFieldTypeComponents(field *api.Field) (string, string, error)
 	if err != nil {
 		return "", "", err
 	}
-	key, err := c.fieldTypeBase(mapType.Key)
+	key, err := c.fieldTypeBase(mapType.Key())
 	if err != nil {
 		return "", "", err
 	}
-	value, err := c.fieldTypeBase(mapType.Value)
+	value, err := c.fieldTypeBase(mapType.Value())
 	if err != nil {
 		return "", "", err
 	}

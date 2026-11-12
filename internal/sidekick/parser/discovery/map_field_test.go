@@ -74,9 +74,9 @@ func TestMapFields(t *testing.T) {
 	apitest.CheckMessage(t, message, wantMessage)
 
 	wantMap := newTestDiscoveryMap("$map<string, string>", api.TypezString, "string")
-	gotMap := model.Map(wantMap.ID)
+	gotMap := model.Map(wantMap.ID())
 	if gotMap == nil {
-		t.Fatalf("missing map %s", wantMap.ID)
+		t.Fatalf("missing map %s", wantMap.ID())
 	}
 	apitest.CheckMap(t, gotMap, wantMap)
 }
@@ -116,9 +116,9 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 	apitest.CheckMessage(t, message, wantMessage)
 
 	wantMap := newTestDiscoveryMap("$map<string, .package.SomeOtherMessage>", api.TypezMessage, ".package.SomeOtherMessage")
-	gotMap := model.Map(wantMap.ID)
+	gotMap := model.Map(wantMap.ID())
 	if gotMap == nil {
-		t.Fatalf("missing map %s", wantMap.ID)
+		t.Fatalf("missing map %s", wantMap.ID())
 	}
 	apitest.CheckMap(t, gotMap, wantMap)
 }
@@ -165,9 +165,9 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 	apitest.CheckMessage(t, message, wantMessage)
 
 	wantMap := newTestDiscoveryMap("$map<string, .package.Message.enumMapField>", api.TypezEnum, ".package.Message.enumMapField")
-	gotMap := model.Map(wantMap.ID)
+	gotMap := model.Map(wantMap.ID())
 	if gotMap == nil {
-		t.Fatalf("missing map %s", wantMap.ID)
+		t.Fatalf("missing map %s", wantMap.ID())
 	}
 	apitest.CheckMap(t, gotMap, wantMap)
 
@@ -257,7 +257,7 @@ func TestMapScalarTypes(t *testing.T) {
 			t.Errorf("missing map %s", message.Fields[0].TypezID())
 			continue
 		}
-		wantMap := newTestDiscoveryMap(mapEntity.ID, test.WantTypez, test.WantTypeID)
+		wantMap := newTestDiscoveryMap(mapEntity.ID(), test.WantTypez, test.WantTypeID)
 		apitest.CheckMap(t, mapEntity, wantMap)
 	}
 }
