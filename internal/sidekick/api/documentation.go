@@ -83,7 +83,7 @@ func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 }
 
 func patchFieldDocs(msg *Message, fieldName string, override *DocumentationOverride) error {
-	for _, field := range msg.fields {
+	for _, field := range msg.Fields() {
 		if field.Name() != fieldName {
 			continue
 		}
@@ -92,7 +92,7 @@ func patchFieldDocs(msg *Message, fieldName string, override *DocumentationOverr
 		}
 		return nil
 	}
-	return fmt.Errorf("cannot find field %s in message %s to apply comment override", fieldName, msg.id)
+	return fmt.Errorf("cannot find field %s in message %s to apply comment override", fieldName, msg.ID())
 }
 
 func patchEnumValueDocs(enu *Enum, name string, override *DocumentationOverride) error {

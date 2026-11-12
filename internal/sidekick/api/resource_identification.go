@@ -231,17 +231,18 @@ func findField(msg *Message, path []string) (*Field, error) {
 	var field *Field
 
 	for i, name := range path {
-		idx := slices.IndexFunc(current.fields, func(f *Field) bool {
+		fields := current.Fields()
+		idx := slices.IndexFunc(fields, func(f *Field) bool {
 			return f.Name() == name
 		})
 		if idx == -1 {
-			return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, current.name)
+			return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, current.Name())
 		}
-		field = current.fields[idx]
+		field = fields[idx]
 
 		if i < len(path)-1 {
 			if field.MessageType() == nil {
-				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.Name(), current.name)
+				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.Name(), current.Name())
 			}
 			current = field.MessageType()
 		}
