@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.53.0](https://github.com/googleapis/librarian/compare/v0.52.0...v0.53.0) (2026-11-12)
+
+
+### Features
+
+* **ruby:** batch rubocop formatting across generated libraries ([#7807](https://github.com/googleapis/librarian/issues/7807)) ([94d52a0](https://github.com/googleapis/librarian/commit/94d52a087798988704c8a640afcc363f97d723d9))
+
+
+### Bug Fixes
+
+* **sidekick/swift:** preserve null WKT presence ([#7919](https://github.com/googleapis/librarian/issues/7919)) ([d4f31e9](https://github.com/googleapis/librarian/commit/d4f31e98e7b8bf2629d463732cf210c171d98273))
+
 ## [0.52.0](https://github.com/googleapis/librarian/compare/v0.51.0...v0.52.0) (2026-11-07)
 
 
