@@ -204,10 +204,11 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if syntheticMsg.Name() != "MySyntheticMessage" {
 		t.Errorf("expected name 'MySyntheticMessage', got %q", syntheticMsg.Name())
 	}
-	if len(syntheticMsg.Fields()) != 40 {
-		t.Fatalf("expected 40 fields, got %d", len(syntheticMsg.Fields()))
+	fields := syntheticMsg.Fields()
+	if len(fields) != 40 {
+		t.Fatalf("expected 40 fields, got %d", len(fields))
 	}
-	for _, f := range syntheticMsg.Fields() {
+	for _, f := range fields {
 		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name())
 		if f.ID() != wantID {
 			t.Errorf("expected field ID %q, got %q", wantID, f.ID())
@@ -215,7 +216,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	}
 
 	// Verify that synthetic messages point to crate::model_ext
-	for _, f := range syntheticMsg.Fields() {
+	for _, f := range fields {
 		fAnn, ok := f.Codec().(*fieldAnnotations)
 		if !ok {
 			t.Fatalf("expected fieldAnnotations on the field %q", f.ID())

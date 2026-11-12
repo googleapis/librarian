@@ -95,7 +95,6 @@ func TestMakeEnumFields(t *testing.T) {
 				WithTypezID(".package.Message.networkTier").
 				WithOptional(),
 		)
-	want.Fields()[0].WithParent(nil)
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
@@ -170,7 +169,6 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 				WithTypezID(".package.Message.networkTier").
 				WithOptional(),
 		)
-	want.Fields()[0].WithParent(nil)
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
@@ -260,7 +258,6 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 				WithTypezID(".package.Message.networkTier").
 				WithOptional(),
 		)
-	want.Fields()[0].WithParent(nil)
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())

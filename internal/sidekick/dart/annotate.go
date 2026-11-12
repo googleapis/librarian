@@ -185,7 +185,7 @@ type messageAnnotation struct {
 
 // HasFields returns true if the message has fields.
 func (m *messageAnnotation) HasFields() bool {
-	return len(m.Parent.Fields()) > 0
+	return m.Parent.HasFields()
 }
 
 // HasCustomEncoding returns true if the message has custom encoding.

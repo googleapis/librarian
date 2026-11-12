@@ -307,7 +307,7 @@ func TestSkipAllOneOfFields(t *testing.T) {
 	SkipModelElements(model, ModelOverride{
 		SkippedIDs: []string{".test.Message.field1", ".test.Message.field2"},
 	})
-	if len(m.Fields()) != 0 {
+	if m.HasFields() {
 		t.Errorf("expected no fields, got %v", m.Fields())
 	}
 	if len(m.OneOfs()) != 0 {

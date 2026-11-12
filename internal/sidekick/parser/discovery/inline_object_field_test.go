@@ -64,8 +64,7 @@ func TestMaybeInlineObject(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID(".package.Message.inline"),
 		).Fields()[0]
-	wantField.WithParent(nil)
-	if diff := cmp.Diff(wantField, field, apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff(wantField, field, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -85,9 +84,6 @@ func TestMaybeInlineObject(t *testing.T) {
 				WithTypezID("uint64").
 				WithOptional(),
 		)
-	for _, f := range wantInlineMessage.Fields() {
-		f.WithParent(nil)
-	}
 	wantInlineMessage.WithParent(message)
 	gotInlineMessage := model.Message(wantInlineMessage.ID())
 	if gotInlineMessage == nil {
@@ -145,8 +141,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID(".package.Message.arrayWithObject"),
 		).Fields()[0]
-	wantField.WithParent(nil)
-	if diff := cmp.Diff(wantField, field, apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff(wantField, field, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -166,9 +161,6 @@ func TestArrayWithInlineObject(t *testing.T) {
 				WithTypezID("uint64").
 				WithOptional(),
 		)
-	for _, f := range wantInlineMessage.Fields() {
-		f.WithParent(nil)
-	}
 	wantInlineMessage.WithParent(message)
 	gotInlineMessage := model.Message(wantInlineMessage.ID())
 	if gotInlineMessage == nil {

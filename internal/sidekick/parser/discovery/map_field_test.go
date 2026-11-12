@@ -31,13 +31,9 @@ func newTestDiscoveryMap(id string, valueTypez api.Typez, valueTypezID string) *
 }
 
 func newTestDiscoveryMessage(fields ...*api.Field) *api.Message {
-	m := api.NewTestMessage("Message").
+	return api.NewTestMessage("Message").
 		WithPackage("package").
 		WithFields(fields...)
-	for _, f := range m.Fields() {
-		f.WithParent(nil)
-	}
-	return m
 }
 
 func TestMapFields(t *testing.T) {

@@ -88,15 +88,20 @@ func TestMessage(t *testing.T) {
 	if got.Parent() != parent || got.Pagination() != page || got.Resource() != res || got.Codec() != "msg-codec" {
 		t.Errorf("unexpected Message pointers: %+v", got)
 	}
-	if len(got.Fields()) != 2 || got.Fields()[0] != f1 || len(got.SkippedFields()) != 1 || got.SkippedFields()[0] != skipped || len(got.Enums()) != 1 || got.Enums()[0] != e1 || len(got.Messages()) != 1 || got.Messages()[0] != nested || len(got.OneOfs()) != 1 || got.OneOfs()[0] != oo {
+	fields := got.Fields()
+	skippedFields := got.SkippedFields()
+	enums := got.Enums()
+	messages := got.Messages()
+	oneOfs := got.OneOfs()
+	if len(fields) != 2 || fields[0] != f1 || len(skippedFields) != 1 || skippedFields[0] != skipped || len(enums) != 1 || enums[0] != e1 || len(messages) != 1 || messages[0] != nested || len(oneOfs) != 1 || oneOfs[0] != oo {
 		t.Errorf("Message slice inputs were not cloned")
 	}
 
-	got.Fields()[0] = nil
-	got.SkippedFields()[0] = nil
-	got.Enums()[0] = nil
-	got.Messages()[0] = nil
-	got.OneOfs()[0] = nil
+	fields[0] = nil
+	skippedFields[0] = nil
+	enums[0] = nil
+	messages[0] = nil
+	oneOfs[0] = nil
 	if got.Fields()[0] != f1 || got.SkippedFields()[0] != skipped || got.Enums()[0] != e1 || got.Messages()[0] != nested || got.OneOfs()[0] != oo {
 		t.Errorf("Message slice getters should return defensive copies")
 	}

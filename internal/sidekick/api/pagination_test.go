@@ -48,10 +48,12 @@ func TestPageSimple(t *testing.T) {
 		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
-	if method.Pagination != request.Fields()[1] {
-		t.Errorf("mismatch, want=%v, got=%v", request.Fields()[1], method.Pagination)
+	reqFields := request.Fields()
+	if method.Pagination != reqFields[1] {
+		t.Errorf("mismatch, want=%v, got=%v", reqFields[1], method.Pagination)
 	}
-	want := NewTestPaginationInfo(response.Fields()[0], response.Fields()[1])
+	respFields := response.Fields()
+	want := NewTestPaginationInfo(respFields[0], respFields[1])
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
 	if diff := cmp.Diff(want, response.Pagination(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -94,10 +96,12 @@ func TestPageWithOverride(t *testing.T) {
 		{ID: ".package.Service.List", ItemField: "items"},
 	}
 	UpdateMethodPagination(overrides, model)
-	if method.Pagination != request.Fields()[1] {
-		t.Errorf("mismatch, want=%v, got=%v", request.Fields()[1], method.Pagination)
+	reqFields := request.Fields()
+	if method.Pagination != reqFields[1] {
+		t.Errorf("mismatch, want=%v, got=%v", reqFields[1], method.Pagination)
 	}
-	want := NewTestPaginationInfo(response.Fields()[0], response.Fields()[2])
+	respFields := response.Fields()
+	want := NewTestPaginationInfo(respFields[0], respFields[2])
 	ignoreParent := cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore())
 	if diff := cmp.Diff(want, response.Pagination(), allowUnexported(), ignoreParent); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

@@ -349,15 +349,16 @@ func TestFilterModelToTypesAllowedAny(t *testing.T) {
 	if !msg.HasSkippedProtoConversionFields() {
 		t.Errorf("expected msg.HasSkippedProtoConversionFields() to be true")
 	}
-	if len(msg.Fields()) != 2 {
-		t.Errorf("expected msg.Fields() to retain all 2 fields, got: %v", msg.Fields())
+	fields := msg.Fields()
+	if len(fields) != 2 {
+		t.Errorf("expected msg.Fields() to retain all 2 fields, got: %v", fields)
 	}
-	detailsField := slices.IndexFunc(msg.Fields(), func(f *api.Field) bool { return f.Name() == "details" })
-	if detailsField == -1 || !msg.Fields()[detailsField].SkipProtoConversion() {
+	detailsField := slices.IndexFunc(fields, func(f *api.Field) bool { return f.Name() == "details" })
+	if detailsField == -1 || !fields[detailsField].SkipProtoConversion() {
 		t.Errorf("expected 'details' field to have SkipProtoConversion == true")
 	}
-	nameField := slices.IndexFunc(msg.Fields(), func(f *api.Field) bool { return f.Name() == "name" })
-	if nameField == -1 || msg.Fields()[nameField].SkipProtoConversion() {
+	nameField := slices.IndexFunc(fields, func(f *api.Field) bool { return f.Name() == "name" })
+	if nameField == -1 || fields[nameField].SkipProtoConversion() {
 		t.Errorf("expected 'name' field to have SkipProtoConversion == false")
 	}
 }

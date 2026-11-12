@@ -211,9 +211,6 @@ func TestMethodEmptyBody(t *testing.T) {
 				WithType(api.TypezString).
 				WithTypezID("string"),
 		)
-	for _, f := range want.Fields() {
-		f.WithParent(nil)
-	}
 	want.WithSyntheticRequest()
 	got := model.Message(want.ID())
 	if got == nil {
@@ -270,9 +267,6 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				WithTypezID("bool").
 				WithOptional(),
 		)
-	for _, f := range want.Fields() {
-		f.WithParent(nil)
-	}
 	want.WithSyntheticRequest()
 	gotListRequest := model.Message(want.ID())
 	if gotListRequest == nil {
@@ -309,9 +303,6 @@ func TestMethodWithBody(t *testing.T) {
 				WithTypezID("string").
 				WithOptional(),
 		)
-	for _, f := range wantInsertRequest.Fields() {
-		f.WithParent(nil)
-	}
 	wantInsertRequest.WithSyntheticRequest()
 	gotGetRequest := model.Message(wantInsertRequest.ID())
 	if gotGetRequest == nil {
