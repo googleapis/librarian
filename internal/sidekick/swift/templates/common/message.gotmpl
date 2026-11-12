@@ -123,9 +123,16 @@ public struct {{ .Codec.Name }}: Codable, Equatable, {{ .Codec.Model.WktPackage 
       {{ .Codec.PropertyName }} = $0
     }
     {{- range .Fields }}
+    {{- if .Codec.IsDecodingExplicitNull }}
+    if container.contains(.{{ .Codec.Name }}) {
+      let {{ .Codec.Name }} = try container.decode({{ .Codec.BaseFieldType }}.self, forKey: .{{ .Codec.Name }})
+      try {{ .Codec.OneOfChecker }}(.{{ .Codec.Name }}({{ .Codec.Name }}))
+    }
+    {{- else }}
     if let {{ .Codec.Name }} = try container.decodeIfPresent({{ .Codec.BaseFieldType }}.self, forKey: .{{ .Codec.Name }}) {
       try {{ .Codec.OneOfChecker }}(.{{ .Codec.Name }}({{ .Codec.Name }}))
     }
+    {{- end }}
     {{- end }}
     self.{{ .Codec.PropertyName }} = {{ .Codec.PropertyName }}
     {{- end }}

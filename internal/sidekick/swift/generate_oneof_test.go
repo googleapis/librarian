@@ -363,3 +363,65 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestGenerateOneOf_ExplicitNull(t *testing.T) {
+	outDir := t.TempDir()
+
+	oneof := api.NewTestOneOf("choice").
+		WithFields(
+			api.NewTestField("value_field").WithType(api.TypezMessage).WithTypezID(api.WktValueID),
+			api.NewTestField("null_field").WithType(api.TypezEnum).WithTypezID(api.WktNullValueID),
+			api.NewTestField("string_field").WithType(api.TypezString),
+		)
+
+	msg := api.NewTestMessage("OneOfExplicitNull").
+		WithPackage("google.cloud.test.v1").
+		WithOneOfs(oneof)
+
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "OneOfExplicitNull.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := extractBlock(t, string(content), "  public init(from decoder: any Decoder) throws {", "\n  }")
+	want := `  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+
+    var choice: ChoiceOneOf? = nil
+    let choiceCheckAndSet = {
+      if choice != nil {
+        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof 'choice'"))
+      }
+      choice = $0
+    }
+    if container.contains(.valueField) {
+      let valueField = try container.decode(GoogleWKT.WKTValue.self, forKey: .valueField)
+      try choiceCheckAndSet(.valueField(valueField))
+    }
+    if container.contains(.nullField) {
+      let nullField = try container.decode(GoogleWKT.WKTNullValue.self, forKey: .nullField)
+      try choiceCheckAndSet(.nullField(nullField))
+    }
+    if let stringField = try container.decodeIfPresent(Swift.String.self, forKey: .stringField) {
+      try choiceCheckAndSet(.stringField(stringField))
+    }
+    self.choice = choice
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
+      self._unknownFields.json[key.stringValue] = try container.decode(
+        GoogleWKT.WKTValue.self, forKey: key)
+    }
+  }`
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

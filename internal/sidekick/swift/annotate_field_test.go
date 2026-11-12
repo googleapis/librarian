@@ -361,3 +361,245 @@ func TestAnnotateField_Recursive(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateField_ExplicitNull(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		makeField func() (*api.Field, *api.Map)
+		isOneOf   bool
+		want      *fieldAnnotations
+	}{
+		{
+			name: "singular Value",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("value_field").
+					WithType(api.TypezMessage).
+					WithTypezID(api.WktValueID), nil
+			},
+			want: &fieldAnnotations{
+				FieldType:            "GoogleWKT.WKTValue",
+				BaseFieldType:        "GoogleWKT.WKTValue",
+				Decoding:             DecodingExplicitNull,
+				ProtoFieldName:       "valueField",
+				ProtoFieldNamePascal: "ValueField",
+				PrimitiveFieldType:   "GoogleWKT.WKTValue",
+			},
+		},
+		{
+			name: "optional Value",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("value_field").
+					WithType(api.TypezMessage).
+					WithTypezID(api.WktValueID).
+					WithOptional(), nil
+			},
+			want: &fieldAnnotations{
+				FieldType:            "GoogleWKT.WKTValue?",
+				BaseFieldType:        "GoogleWKT.WKTValue",
+				Decoding:             DecodingExplicitNull,
+				ProtoFieldName:       "valueField",
+				ProtoFieldNamePascal: "ValueField",
+				PrimitiveFieldType:   "GoogleWKT.WKTValue",
+			},
+		},
+		{
+			name: "oneof Value",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("value_field").
+					WithType(api.TypezMessage).
+					WithTypezID(api.WktValueID), nil
+			},
+			isOneOf: true,
+			want: &fieldAnnotations{
+				FieldType:            "GoogleWKT.WKTValue",
+				BaseFieldType:        "GoogleWKT.WKTValue",
+				OneOfChecker:         "choiceCheckAndSet",
+				Decoding:             DecodingExplicitNull,
+				ProtoFieldName:       "valueField",
+				ProtoFieldNamePascal: "ValueField",
+				PrimitiveFieldType:   "GoogleWKT.WKTValue",
+			},
+		},
+		{
+			name: "repeated Value",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("value_field").
+					WithType(api.TypezMessage).
+					WithTypezID(api.WktValueID).
+					WithRepeated(), nil
+			},
+			want: &fieldAnnotations{
+				FieldType:            "[GoogleWKT.WKTValue]",
+				BaseFieldType:        "GoogleWKT.WKTValue",
+				Decoding:             DecodingSimple,
+				ProtoFieldName:       "valueField",
+				ProtoFieldNamePascal: "ValueField",
+				PrimitiveFieldType:   "GoogleWKT.WKTValue",
+			},
+		},
+		{
+			name: "map Value",
+			makeField: func() (*api.Field, *api.Map) {
+				mapType := api.NewTestMapWithFields(
+					"$map<string, .google.protobuf.Value>",
+					api.NewTestField("key").WithType(api.TypezString),
+					api.NewTestField("value").WithType(api.TypezMessage).WithTypezID(api.WktValueID),
+				)
+				return api.NewTestField("value_field").WithMapType(mapType), mapType
+			},
+			want: &fieldAnnotations{
+				FieldType:            "[Swift.String: GoogleWKT.WKTValue]",
+				BaseFieldType:        "[Swift.String: GoogleWKT.WKTValue]",
+				KeyType:              "Swift.String",
+				ValueType:            "GoogleWKT.WKTValue",
+				Decoding:             DecodingSimple,
+				ProtoFieldName:       "valueField",
+				ProtoFieldNamePascal: "ValueField",
+			},
+		},
+		{
+			name: "singular NullValue",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("null_field").
+					WithType(api.TypezEnum).
+					WithTypezID(api.WktNullValueID), nil
+			},
+			want: &fieldAnnotations{
+				FieldType:            "GoogleWKT.WKTNullValue",
+				BaseFieldType:        "GoogleWKT.WKTNullValue",
+				Decoding:             DecodingExplicitNull,
+				ProtoFieldName:       "nullField",
+				ProtoFieldNamePascal: "NullField",
+				PrimitiveFieldType:   "GoogleWKT.WKTNullValue",
+			},
+		},
+		{
+			name: "optional NullValue",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("null_field").
+					WithType(api.TypezEnum).
+					WithTypezID(api.WktNullValueID).
+					WithOptional(), nil
+			},
+			want: &fieldAnnotations{
+				FieldType:            "GoogleWKT.WKTNullValue?",
+				BaseFieldType:        "GoogleWKT.WKTNullValue",
+				Decoding:             DecodingExplicitNull,
+				ProtoFieldName:       "nullField",
+				ProtoFieldNamePascal: "NullField",
+				PrimitiveFieldType:   "GoogleWKT.WKTNullValue",
+			},
+		},
+		{
+			name: "oneof NullValue",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("null_field").
+					WithType(api.TypezEnum).
+					WithTypezID(api.WktNullValueID), nil
+			},
+			isOneOf: true,
+			want: &fieldAnnotations{
+				FieldType:            "GoogleWKT.WKTNullValue",
+				BaseFieldType:        "GoogleWKT.WKTNullValue",
+				OneOfChecker:         "choiceCheckAndSet",
+				Decoding:             DecodingExplicitNull,
+				ProtoFieldName:       "nullField",
+				ProtoFieldNamePascal: "NullField",
+				PrimitiveFieldType:   "GoogleWKT.WKTNullValue",
+			},
+		},
+		{
+			name: "repeated NullValue",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("null_field").
+					WithType(api.TypezEnum).
+					WithTypezID(api.WktNullValueID).
+					WithRepeated(), nil
+			},
+			want: &fieldAnnotations{
+				FieldType:            "[GoogleWKT.WKTNullValue]",
+				BaseFieldType:        "GoogleWKT.WKTNullValue",
+				Decoding:             DecodingSimple,
+				ProtoFieldName:       "nullField",
+				ProtoFieldNamePascal: "NullField",
+				PrimitiveFieldType:   "GoogleWKT.WKTNullValue",
+			},
+		},
+		{
+			name: "map NullValue",
+			makeField: func() (*api.Field, *api.Map) {
+				mapType := api.NewTestMapWithFields(
+					"$map<string, .google.protobuf.NullValue>",
+					api.NewTestField("key").WithType(api.TypezString),
+					api.NewTestField("value").WithType(api.TypezEnum).WithTypezID(api.WktNullValueID),
+				)
+				return api.NewTestField("null_field").WithMapType(mapType), mapType
+			},
+			want: &fieldAnnotations{
+				FieldType:            "[Swift.String: GoogleWKT.WKTNullValue]",
+				BaseFieldType:        "[Swift.String: GoogleWKT.WKTNullValue]",
+				KeyType:              "Swift.String",
+				ValueType:            "GoogleWKT.WKTNullValue",
+				Decoding:             DecodingSimple,
+				ProtoFieldName:       "nullField",
+				ProtoFieldNamePascal: "NullField",
+			},
+		},
+		{
+			name: "optional Struct control",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("struct_field").
+					WithType(api.TypezMessage).
+					WithTypezID(api.WktStructID).
+					WithOptional(), nil
+			},
+			want: &fieldAnnotations{
+				FieldType:            "GoogleWKT.WKTStruct?",
+				BaseFieldType:        "GoogleWKT.WKTStruct",
+				Decoding:             DecodingOptional,
+				ProtoFieldName:       "structField",
+				ProtoFieldNamePascal: "StructField",
+				PrimitiveFieldType:   "GoogleWKT.WKTStruct",
+			},
+		},
+		{
+			name: "singular ListValue control",
+			makeField: func() (*api.Field, *api.Map) {
+				return api.NewTestField("list_field").
+					WithType(api.TypezMessage).
+					WithTypezID(api.WktListValueID), nil
+			},
+			want: &fieldAnnotations{
+				FieldType:            "GoogleWKT.WKTListValue",
+				BaseFieldType:        "GoogleWKT.WKTListValue",
+				Decoding:             DecodingSimple,
+				ProtoFieldName:       "listField",
+				ProtoFieldNamePascal: "ListField",
+				PrimitiveFieldType:   "GoogleWKT.WKTListValue",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			field, mapType := test.makeField()
+			msg := api.NewTestMessage("Message")
+			if test.isOneOf {
+				oneof := api.NewTestOneOf("choice").WithFields(field)
+				msg.WithOneOfs(oneof)
+			} else {
+				msg.WithFields(field)
+			}
+			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+			if mapType != nil {
+				model.WithMaps(mapType)
+			}
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.want, field.Codec(), cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "PackageName", "Model", "ValueField")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
