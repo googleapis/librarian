@@ -21,6 +21,11 @@ if let value = try container.decodeIfPresent({{ .Codec.FieldType }}.self, forKey
 {{- if .Codec.IsDecodingOptional }}
 self.{{ .Codec.Name }} = try container.decodeIfPresent({{ .Codec.BaseFieldType }}.self, forKey: .{{ .Codec.Name }})
 {{- end }}
+{{- if .Codec.IsDecodingExplicitNull }}
+if container.contains(.{{ .Codec.Name }}) {
+  self.{{ .Codec.Name }} = try container.decode({{ .Codec.BaseFieldType }}.self, forKey: .{{ .Codec.Name }})
+}
+{{- end }}
 {{- if .Codec.IsDecodingMapCustomKey }}
 if let stringKeyed = try container.decodeIfPresent([Swift.String : {{ .Codec.ValueType }}].self, forKey: .{{ .Codec.Name }}) {
   let tuples = try stringKeyed.lazy.map { (key, value) throws -> ({{ .Codec.KeyType }}, {{ .Codec.ValueType }}) in

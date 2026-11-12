@@ -118,6 +118,10 @@ const (
 	// `.decodeIfPresent()` call.
 	DecodingOptional
 
+	// DecodingExplicitNull means that the field is decoded using
+	// `.contains()` and `.decode()`, preserving explicit JSON `null` values.
+	DecodingExplicitNull
+
 	// DecodingMapCustomKey means that the field is a map, with non-string keys
 	// and requires mapping through a string-keyed temporary.
 	DecodingMapCustomKey
@@ -146,6 +150,11 @@ func (a *fieldAnnotations) IsDecodingSimple() bool {
 // IsDecodingOptional is used in templates to check for optional decoding.
 func (a *fieldAnnotations) IsDecodingOptional() bool {
 	return a.Decoding == DecodingOptional
+}
+
+// IsDecodingExplicitNull is used in templates to check for explicit-null decoding.
+func (a *fieldAnnotations) IsDecodingExplicitNull() bool {
+	return a.Decoding == DecodingExplicitNull
 }
 
 // IsDecodingMapCustomKey is used in templates to check for custom-key map decoding.
@@ -228,6 +237,9 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	if field.Optional() {
 		annotations.Decoding = DecodingOptional
 	}
+	if isExplicitNullField(field) {
+		annotations.Decoding = DecodingExplicitNull
+	}
 	if field.IsOneOf() && field.Group() != nil {
 		if oneofAnn, ok := field.Group().Codec.(*oneOfAnnotations); ok {
 			annotations.OneOfChecker = oneofAnn.Checker
@@ -255,6 +267,13 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	annotations.DiagnoseType = deprecatedType && !field.Deprecated()
 	field.SetAnnotations(annotations)
 	return annotations, nil
+}
+
+// isExplicitNullField reports whether a field preserves explicit JSON `null`
+// presence (`google.protobuf.Value` or `google.protobuf.NullValue` as a singular,
+// optional, or oneof field).
+func isExplicitNullField(field *api.Field) bool {
+	return field.Singular() && (field.TypezID() == api.WktValueID || field.TypezID() == api.WktNullValueID)
 }
 
 // fieldTypeDeprecated reports whether the message or enum naming this field's
