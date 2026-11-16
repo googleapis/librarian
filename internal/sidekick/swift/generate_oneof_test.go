@@ -190,7 +190,7 @@ func TestGenerateOneOf(t *testing.T) {
 
 
   /// A group of fields where only one is set.
-  public enum ChoiceOneOf: Codable, Equatable, Sendable {
+  public enum ChoiceOneOf: Equatable, Sendable {
     /// A string field that is part of the oneof.
     case stringField(Swift.String)
     /// A message field that is part of the oneof.
