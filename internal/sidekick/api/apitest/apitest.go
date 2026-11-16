@@ -90,6 +90,7 @@ func AllowUnexported() cmp.Option {
 		api.RoutingInfoComboItem{},
 		api.RoutingInfoVariant{},
 		api.RoutingPathSpec{},
+		api.SampleInfo{},
 		api.SampleValue{},
 		api.TargetResource{},
 	)

@@ -1046,7 +1046,7 @@ func NewTestDiscoveryLro(pollingParams ...string) *DiscoveryLro {
 
 // NewTestSampleInfo creates a SampleInfo initialized with a resource name field.
 func NewTestSampleInfo(resourceNameField *Field) *SampleInfo {
-	return &SampleInfo{ResourceNameField: resourceNameField}
+	return NewSampleInfoBuilder().WithResourceNameField(resourceNameField).Build()
 }
 
 // NewTestPaginationInfo creates a PaginationInfo for pagination responses.

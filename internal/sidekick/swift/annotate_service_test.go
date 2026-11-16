@@ -616,7 +616,7 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 
 			if test.updateMask {
 				maskField := api.NewTestField("update_mask")
-				method.WithSampleInfo(&api.SampleInfo{UpdateMaskField: maskField})
+				method.WithSampleInfo(api.NewSampleInfoBuilder().WithUpdateMaskField(maskField).Build())
 			}
 
 			codec := newTestCodec(t, model, nil)

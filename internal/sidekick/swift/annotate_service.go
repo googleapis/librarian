@@ -131,11 +131,11 @@ func (ann *serviceAnnotations) needsWktImport() bool {
 
 func (ann *serviceAnnotations) hasUpdateMask() bool {
 	for _, m := range ann.Methods {
-		if m.SampleInfo != nil && m.SampleInfo.UpdateMaskField != nil {
+		if m.SampleInfo != nil && m.SampleInfo.UpdateMaskField() != nil {
 			return true
 		}
 	}
-	if ann.QuickstartMethod != nil && ann.QuickstartMethod.SampleInfo != nil && ann.QuickstartMethod.SampleInfo.UpdateMaskField != nil {
+	if ann.QuickstartMethod != nil && ann.QuickstartMethod.SampleInfo != nil && ann.QuickstartMethod.SampleInfo.UpdateMaskField() != nil {
 		return true
 	}
 	return false

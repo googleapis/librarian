@@ -446,7 +446,7 @@ func TestMethod_TypeIDSetters(t *testing.T) {
 func TestSampleInfo_Builder(t *testing.T) {
 	f := api.NewTestField("name")
 	s := api.NewTestSampleInfo(f)
-	if s.ResourceNameField != f {
-		t.Errorf("s.ResourceNameField = %v, want %v", s.ResourceNameField, f)
+	if s.ResourceNameField() != f {
+		t.Errorf("s.ResourceNameField() = %v, want %v", s.ResourceNameField(), f)
 	}
 }
