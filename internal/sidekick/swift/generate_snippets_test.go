@@ -260,9 +260,9 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	updateThing.WithSampleInfo(&api.SampleInfo{
-		UpdateMaskField: updateMask,
-	})
+	updateThing.WithSampleInfo(api.NewSampleInfoBuilder().
+		WithUpdateMaskField(updateMask).
+		Build())
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
 	}
