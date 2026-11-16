@@ -46,7 +46,6 @@ func allowUnexported() cmp.Option {
 		RoutingInfoComboItem{},
 		RoutingInfoVariant{},
 		RoutingPathSpec{},
-		SampleInfo{},
 		SampleValue{},
 		TargetResource{},
 	)

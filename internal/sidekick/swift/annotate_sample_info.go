@@ -40,7 +40,7 @@ func (c *codec) annotateSampleInfo(method *api.Method) {
 		return
 	}
 	var ann *sampleInfoAnnotation
-	if field := si.ResourceNameField(); field != nil {
+	if field := si.ResourceNameField; field != nil {
 		fieldAnn := field.Codec().(*fieldAnnotations)
 		if field.ResourceNamePattern() != nil && len(field.ResourceNamePattern().Segments()) > 0 {
 			ann = c.resourceNameToSampleInfo(field.ResourceNamePattern(), fieldAnn)
@@ -58,7 +58,7 @@ func (c *codec) annotateSampleInfo(method *api.Method) {
 			FormatString: "\\(name)",
 		}
 	}
-	si.SetAnnotations(ann)
+	si.Codec = ann
 }
 
 func (c *codec) resourceNameToSampleInfo(pattern *api.ResourceNamePattern, fieldAnn *fieldAnnotations) *sampleInfoAnnotation {
