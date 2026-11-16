@@ -478,9 +478,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		WithPackage("test.v1").
 		WithFields(field)
 	method := api.NewTestMethod("TestMethod")
-	si := &api.SampleInfo{
-		ResourceNameField: field,
-	}
+	si := api.NewSampleInfoBuilder().
+		WithResourceNameField(field).
+		Build()
 
 	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	if err := api.CrossReference(model); err != nil {
@@ -493,7 +493,7 @@ func TestAnnotateSampleInfo(t *testing.T) {
 
 	codec.annotateSampleInfo(si, method)
 
-	got := si.Codec.(*sampleInfoAnnotation)
+	got := si.Codec().(*sampleInfoAnnotation)
 	want := &sampleInfoAnnotation{
 		StringParameters:   []string{"project_id"},
 		FormatResourceName: true,

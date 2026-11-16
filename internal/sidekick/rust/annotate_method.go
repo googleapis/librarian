@@ -641,7 +641,7 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 	var parameters []string
 	var formatResourceName bool
-	if rn := si.ResourceNameField; rn != nil {
+	if rn := si.ResourceNameField(); rn != nil {
 		fieldAnn := rn.Codec().(*fieldAnnotations)
 		if fieldAnn.FormattedResource != nil && len(fieldAnn.FormattedResource.FormatArgs) > 0 {
 			parameters = fieldAnn.FormattedResource.FormatArgs
@@ -659,7 +659,7 @@ func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 		StringParameters:   parameters,
 		FormatResourceName: formatResourceName,
 	}
-	si.Codec = ann
+	si.SetAnnotations(ann)
 }
 
 func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
