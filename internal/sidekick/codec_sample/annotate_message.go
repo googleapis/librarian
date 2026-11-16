@@ -22,25 +22,25 @@ type messageAnnotations struct {
 
 func (c *codec) annotateMessage(m *api.Message) error {
 	mAnn := &messageAnnotations{
-		Name: m.Name + "Sample",
+		Name: m.Name() + "Sample",
 	}
-	m.Codec = mAnn
-	for _, f := range m.Fields {
+	m.SetAnnotations(mAnn)
+	for _, f := range m.Fields() {
 		if err := c.annotateField(f, mAnn); err != nil {
 			return err
 		}
 	}
-	for _, o := range m.OneOfs {
+	for _, o := range m.OneOfs() {
 		if err := c.annotateOneOf(o, mAnn); err != nil {
 			return err
 		}
 	}
-	for _, child := range m.Messages {
+	for _, child := range m.Messages() {
 		if err := c.annotateMessage(child); err != nil {
 			return err
 		}
 	}
-	for _, e := range m.Enums {
+	for _, e := range m.Enums() {
 		if err := c.annotateEnum(e); err != nil {
 			return err
 		}

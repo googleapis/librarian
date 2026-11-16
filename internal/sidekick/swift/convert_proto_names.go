@@ -31,11 +31,11 @@ func (c *codec) protoMessageTypeName(m *api.Message) string {
 	var path []string
 	curr := m
 	for curr != nil {
-		path = append(path, pascalCase(curr.Name))
-		curr = curr.Parent
+		path = append(path, pascalCase(curr.Name()))
+		curr = curr.Parent()
 	}
 	slices.Reverse(path)
-	fullName := fmt.Sprintf("%s%s", ProtoPackagePrefix(m.Package), strings.Join(path, "."))
+	fullName := fmt.Sprintf("%s%s", ProtoPackagePrefix(m.Package()), strings.Join(path, "."))
 	if c.ModulePath != "" {
 		return fmt.Sprintf("%s.%s", c.ModulePath, fullName)
 	}
@@ -66,7 +66,7 @@ func (c *codec) messageFileName(m *api.Message) string {
 	curr := m
 	for curr != nil {
 		path = append(path, messageName(curr))
-		curr = curr.Parent
+		curr = curr.Parent()
 	}
 	slices.Reverse(path)
 	return strings.Join(path, "+")

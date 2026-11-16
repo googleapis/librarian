@@ -67,9 +67,8 @@ func TestOpenAPI_AllOf(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	want := sample.Automatic()
-	want.Package = ""
-	message := test.Message(want.ID)
+	want := api.NewMessageBuilderFrom(sample.Automatic()).WithPackage("").Build()
+	message := test.Message(want.ID())
 	if message == nil {
 		t.Errorf("missing message in MessageByID index")
 		return
@@ -452,18 +451,18 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				WithTypezID("int32").
 				WithOptional(),
 			pageToken,
-		)
-	want.SyntheticRequest = true
-	listLocationsRequest := test.Message(want.ID)
+		).
+		WithSyntheticRequest()
+	listLocationsRequest := test.Message(want.ID())
 	if listLocationsRequest == nil {
-		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID())
 		return
 	}
 	apitest.CheckMessage(t, listLocationsRequest, want)
 
 	// This message has a weirdly named field that gets tricky to serialize.
 	sp := sample.SecretPayload()
-	got := test.Message(sp.ID)
+	got := test.Message(sp.ID())
 	if got == nil {
 		t.Errorf("missing message (SecretPayload) in MessageByID index")
 		return
@@ -513,8 +512,8 @@ func TestOpenAPI_ServicePlaceholder(t *testing.T) {
 	want := api.NewTestMessage("Service").
 		WithPackage("").
 		WithID("..Service").
-		WithDocumentation("Synthetic messages for the [Service][.Service] service.")
-	want.ServicePlaceholder = true
+		WithDocumentation("Synthetic messages for the [Service][.Service] service.").
+		WithServicePlaceholder()
 	got := test.Message("..Service")
 	if got == nil {
 		t.Errorf("missing service placeholder message in MessageById index")
@@ -583,11 +582,11 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 	want := api.NewTestMessage("Service").
 		WithPackage("").
 		WithID("..Service").
-		WithDocumentation("Synthetic messages for the [Service][.Service] service.")
-	want.ServicePlaceholder = true
-	got := test.Message(want.ID)
+		WithDocumentation("Synthetic messages for the [Service][.Service] service.").
+		WithServicePlaceholder()
+	got := test.Message(want.ID())
 	if got == nil {
-		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID())
 		return
 	}
 	apitest.CheckMessage(t, got, want)
@@ -618,11 +617,11 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID("..SetIamPolicyRequest").
 				WithOptional(),
-		)
-	want.SyntheticRequest = true
-	got = test.Message(want.ID)
+		).
+		WithSyntheticRequest()
+	got = test.Message(want.ID())
 	if got == nil {
-		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID())
 		return
 	}
 	apitest.CheckMessage(t, got, want)
@@ -647,11 +646,11 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID("..SetIamPolicyRequest").
 				WithOptional(),
-		)
-	want.SyntheticRequest = true
-	got = test.Message(want.ID)
+		).
+		WithSyntheticRequest()
+	got = test.Message(want.ID())
 	if got == nil {
-		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID())
 		return
 	}
 	apitest.CheckMessage(t, got, want)
@@ -812,11 +811,11 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				WithTypezID("string").
 				WithOptional().
 				WithAutoPopulated(),
-		)
-	wantMessage.SyntheticRequest = true
-	message := test.Message(wantMessage.ID)
+		).
+		WithSyntheticRequest()
+	message := test.Message(wantMessage.ID())
 	if message == nil {
-		t.Fatalf("Cannot find message %s in API State", wantMessage.ID)
+		t.Fatalf("Cannot find message %s in API State", wantMessage.ID())
 	}
 	apitest.CheckMessage(t, message, wantMessage)
 

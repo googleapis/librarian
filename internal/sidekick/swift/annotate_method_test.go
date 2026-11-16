@@ -316,10 +316,10 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if inputMessage.Codec == nil {
+	if inputMessage.Codec() == nil {
 		t.Error("expected input message to be annotated")
 	}
-	if outputMessage.Codec == nil {
+	if outputMessage.Codec() == nil {
 		t.Error("expected output message to be annotated")
 	}
 }
@@ -379,7 +379,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	}
 
 	// Verify request message annotations
-	gotRequest := inputType.Codec.(*messageAnnotations)
+	gotRequest := inputType.Codec().(*messageAnnotations)
 	wantRequest := &messageAnnotations{
 		Name:              "ListRequest",
 		TypeURL:           "type.googleapis.com/test.ListRequest",
@@ -395,7 +395,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	}
 
 	// Verify response message annotations
-	gotResponse := outputType.Codec.(*messageAnnotations)
+	gotResponse := outputType.Codec().(*messageAnnotations)
 	wantResponse := &messageAnnotations{
 		Name:                "ListResponse",
 		TypeURL:             "type.googleapis.com/test.ListResponse",
@@ -426,7 +426,7 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 		WithOutput(outputType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
-		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID(), lroMetadataType.ID()))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -472,7 +472,7 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		WithOutput(outputType).
 		WithVerb("POST").
 		WithPathTemplate(api.NewPathTemplateBuilder().Build()).
-		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", lroMetadataType.ID))
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", lroMetadataType.ID()))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -822,7 +822,7 @@ func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
 				WithOutput(outputType).
 				WithVerb("POST").
 				WithPathTemplate(api.NewPathTemplateBuilder().Build()).
-				WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
+				WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID(), lroMetadataType.ID()))
 			service := api.NewTestService("TestService").WithMethods(method)
 
 			model := api.NewTestAPI(

@@ -80,11 +80,12 @@ func TestMakeMessageFields(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	err := makeMessageFields(model, message, input)
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	err := makeMessageFields(model, mb, input)
 	if err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 	want := api.NewTestMessage("Message").
 		WithPackage("package").
 		WithFields(
@@ -114,9 +115,9 @@ func TestMakeMessageFields(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID(".package.AnotherMessage").
 				WithRepeated(),
-		).Fields
+		).Fields()
 	less := func(a, b *api.Field) bool { return a.Name() < b.Name() }
-	if diff := cmp.Diff(want, message.Fields, apitest.AllowUnexported(), cmpopts.SortSlices(less), apitest.IgnoreFieldNames("parent")); diff != "" {
+	if diff := cmp.Diff(want, message.Fields(), apitest.AllowUnexported(), cmpopts.SortSlices(less), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -136,9 +137,9 @@ func TestMakeMessageFieldsError(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err == nil {
-		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", message, input)
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err == nil {
+		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", mb.Build(), input)
 	}
 }
 
@@ -156,8 +157,8 @@ func TestMakeArrayFieldError(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if got, err := makeArrayField(model, message, input); err == nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if got, err := makeArrayField(model, mb, input); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
 }
@@ -173,8 +174,8 @@ func TestMakeScalarFieldError(t *testing.T) {
 			Format:      "--unused--",
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if got, err := makeScalarField(model, message, input.Name, input.Schema); err == nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if got, err := makeScalarField(model, mb, input.Name, input.Schema); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
 }

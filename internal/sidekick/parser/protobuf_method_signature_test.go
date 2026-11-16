@@ -43,8 +43,9 @@ func TestProtobuf_Signatures(t *testing.T) {
 	if gotMessage == nil {
 		t.Fatalf("Cannot find message %s in API State", id)
 	}
+	fields := gotMessage.Fields()
 	var names []string
-	for _, f := range gotMessage.Fields {
+	for _, f := range fields {
 		names = append(names, f.Name())
 	}
 	if diff := cmp.Diff([]string{"parent", "foo_id", "flags"}, names); diff != "" {
@@ -58,11 +59,11 @@ func TestProtobuf_Signatures(t *testing.T) {
 	}
 	wantSignatures := []*api.MethodSignature{
 		api.NewTestMethodSignature("parent", "foo_id", "flags").
-			WithFields(gotMessage.Fields...),
+			WithFields(fields...),
 		api.NewTestMethodSignature("foo_id", "parent").
-			WithFields(gotMessage.Fields[1], gotMessage.Fields[0]),
+			WithFields(fields[1], fields[0]),
 		api.NewTestMethodSignature("parent", "flags").
-			WithFields(gotMessage.Fields[0], gotMessage.Fields[2]),
+			WithFields(fields[0], fields[2]),
 	}
 
 	// Ignore the MethodSignature.method and Field.Parent back-pointers to avoid recursive cycle testing.

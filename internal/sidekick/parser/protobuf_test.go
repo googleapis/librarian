@@ -318,7 +318,7 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 	apitest.CheckMessage(t, message, want)
 	// Only `LocalMessage` should be found in the messages list:
 	for _, msg := range test.Messages {
-		if msg.ID == ".test.ImportedMessage" {
+		if msg.ID() == ".test.ImportedMessage" {
 			t.Errorf("imported messages should not be in message list %v", msg)
 		}
 	}
@@ -352,7 +352,7 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 	apitest.CheckEnum(t, *enum, *wantEnum)
 	// Only `LocalMessage` should be found in the messages list:
 	for _, msg := range test.Messages {
-		if msg.ID == ".test.ImportedMessage" {
+		if msg.ID() == ".test.ImportedMessage" {
 			t.Errorf("imported messages should not be in message list %v", msg)
 		}
 	}
@@ -633,7 +633,7 @@ func TestProtobuf_MapFields(t *testing.T) {
 				WithMap(),
 		))
 
-	if diff := cmp.Diff([]*api.Message(nil), message.Messages); diff != "" {
+	if diff := cmp.Diff([]*api.Message(nil), message.Messages()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -1399,8 +1399,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if bookResource.Type() != "library.googleapis.com/Book" {
 			t.Errorf("bookResource.Type() = %q; want %q", bookResource.Type(), "library.googleapis.com/Book")
 		}
-		if bookResource.Self().Name != "Book" {
-			t.Errorf("bookResource.Self().Name = %q; want %q", bookResource.Self().Name, "Book")
+		if bookResource.Self().Name() != "Book" {
+			t.Errorf("bookResource.Self().Name() = %q; want %q", bookResource.Self().Name(), "Book")
 		}
 	})
 
@@ -1429,7 +1429,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			s := p.Last().String()
 			return s == ".self" || s == ".codec"
 		}, cmp.Ignore())
-		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, apitest.AllowUnexported(), ignoreSelfCodec); diff != "" {
+		if diff := cmp.Diff(wantBookResource, bookMessage.Resource(), apitest.AllowUnexported(), ignoreSelfCodec); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -1489,8 +1489,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		if msg == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.NoResourceMessage")
 		}
-		if msg.Resource != nil {
-			t.Errorf("Expected NoResourceMessage to have nil Resource, got %v", msg.Resource)
+		if msg.Resource() != nil {
+			t.Errorf("Expected NoResourceMessage to have nil Resource, got %v", msg.Resource())
 		}
 	})
 
@@ -1501,7 +1501,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			t.Fatalf("Cannot find message %s in API State", ".test.NoReferenceMessage")
 		}
 
-		field := msg.Fields[0] // simple_field
+		field := msg.Fields()[0] // simple_field
 		if field.IsResourceReference() {
 			t.Errorf("Expected simple_field not to be ResourceReference, got %v", field.ResourceReference())
 		}

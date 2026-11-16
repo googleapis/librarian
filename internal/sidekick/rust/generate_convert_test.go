@@ -290,7 +290,7 @@ impl gaxi::prost::FromProto<crate::model::EnumMessage> for EnumMessage {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<"+message.Name+">", "\n        )\n    }\n}")
+			got := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<"+message.Name()+">", "\n        )\n    }\n}")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

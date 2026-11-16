@@ -106,7 +106,7 @@ func TestMapValueAnnotations(t *testing.T) {
 	} {
 		testName := fmt.Sprintf("%s_%v", test.spec, test.typez)
 		if test.valueMsg != nil {
-			testName = fmt.Sprintf("%s_message_%s", test.spec, test.valueMsg.ID)
+			testName = fmt.Sprintf("%s_message_%s", test.spec, test.valueMsg.ID())
 		}
 		t.Run(testName, func(t *testing.T) {
 			valueField := api.NewTestField("value")

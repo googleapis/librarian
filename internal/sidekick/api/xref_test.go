@@ -74,7 +74,7 @@ func TestCrossReferenceFields(t *testing.T) {
 	// that CrossReference resolves and sets MessageType and EnumType from TypezID.
 	fieldM := NewTestField("message_field").
 		WithType(TypezMessage).
-		WithTypezID(messageT.ID)
+		WithTypezID(messageT.ID())
 	enumT := NewTestEnum("EnumT")
 	fieldE := NewTestField("enum_field").
 		WithType(TypezEnum).
@@ -150,7 +150,7 @@ func TestCrossReferenceService(t *testing.T) {
 func TestCrossReferenceMap(t *testing.T) {
 	valMsg := NewTestMessage("ValueMessage")
 	key := NewTestField("key").WithType(TypezString)
-	val := NewTestField("value").WithType(TypezMessage).WithTypezID(valMsg.ID)
+	val := NewTestField("value").WithType(TypezMessage).WithTypezID(valMsg.ID())
 	mapType := NewTestMapWithFields("MapEntry", key, val)
 	mapField := NewTestField("map_field").WithMapType(mapType)
 	msg := NewTestMessage("Container").WithFields(mapField)

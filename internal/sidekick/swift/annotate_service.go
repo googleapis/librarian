@@ -234,8 +234,8 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 
 	for _, method := range methods {
 		if method.InputType != nil {
-			if method.InputType.Package != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(method.InputType.Package)
+			if method.InputType.Package() != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(method.InputType.Package())
 				if err != nil {
 					return nil, err
 				}
@@ -246,20 +246,20 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 			}
 		}
 		if method.OutputType != nil {
-			if method.OutputType.Package != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(method.OutputType.Package)
+			if method.OutputType.Package() != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(method.OutputType.Package())
 				if err != nil {
 					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
-					if !method.ReturnsEmpty && method.OutputType.ID != ".google.protobuf.Empty" {
+					if !method.ReturnsEmpty && method.OutputType.ID() != ".google.protobuf.Empty" {
 						annotations.PublicDependsOn[dep.Name] = dep
 					}
 				}
 			}
 		}
-		if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
+		if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination() != nil {
 			if err := c.addPaginationDependencies(annotations, method); err != nil {
 				return nil, err
 			}
@@ -298,7 +298,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 }
 
 func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, method *api.Method) error {
-	itemsField := method.OutputType.Pagination.PageableItem
+	itemsField := method.OutputType.Pagination().PageableItem()
 	if itemsField == nil {
 		return fmt.Errorf("inconsistent pagination info for method: %s", method.ID)
 	}
@@ -329,8 +329,8 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 		if err != nil {
 			return err
 		}
-		if item.Package != c.Model.PackageName {
-			dep, err := c.addApiPackageDependency(item.Package)
+		if item.Package() != c.Model.PackageName {
+			dep, err := c.addApiPackageDependency(item.Package())
 			if err != nil {
 				return err
 			}
@@ -388,14 +388,14 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 	if err != nil {
 		return err
 	}
-	if respMsg.Package != c.Model.PackageName {
-		dep, err := c.addApiPackageDependency(respMsg.Package)
+	if respMsg.Package() != c.Model.PackageName {
+		dep, err := c.addApiPackageDependency(respMsg.Package())
 		if err != nil {
 			return err
 		}
 		if dep != nil {
 			annotations.DependsOn[dep.Name] = dep
-			if respMsg.ID != ".google.protobuf.Empty" {
+			if respMsg.ID() != ".google.protobuf.Empty" {
 				annotations.PublicDependsOn[dep.Name] = dep
 			}
 		}
@@ -404,8 +404,8 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 	if err != nil {
 		return err
 	}
-	if metaMsg.Package != c.Model.PackageName {
-		dep, err := c.addApiPackageDependency(metaMsg.Package)
+	if metaMsg.Package() != c.Model.PackageName {
+		dep, err := c.addApiPackageDependency(metaMsg.Package())
 		if err != nil {
 			return err
 		}
@@ -460,14 +460,14 @@ func (c *codec) addFeatureAnnotations(
 	for _, id := range deps.Messages {
 		msg := c.Model.Message(id)
 		// Some messages are not annotated (e.g. external messages).
-		if msg == nil || msg.Codec == nil {
+		if msg == nil || msg.Codec() == nil {
 			continue
 		}
-		annotation, ok := msg.Codec.(*messageAnnotations)
+		annotation, ok := msg.Codec().(*messageAnnotations)
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}
-		if !msg.ServicePlaceholder {
+		if !msg.ServicePlaceholder() {
 			// Messages that are placeholders for services just get the same
 			// gating traits as the service.
 			annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)

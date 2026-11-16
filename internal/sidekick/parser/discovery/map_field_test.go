@@ -31,13 +31,9 @@ func newTestDiscoveryMap(id string, valueTypez api.Typez, valueTypezID string) *
 }
 
 func newTestDiscoveryMessage(fields ...*api.Field) *api.Message {
-	m := api.NewTestMessage("Message").
+	return api.NewTestMessage("Message").
 		WithPackage("package").
 		WithFields(fields...)
-	for _, f := range m.Fields {
-		f.WithParent(nil)
-	}
-	return m
 }
 
 func TestMapFields(t *testing.T) {
@@ -58,10 +54,11 @@ func TestMapFields(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err != nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 
 	wantMessage := newTestDiscoveryMessage(
 		api.NewTestField("labels").
@@ -100,10 +97,11 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err != nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 
 	wantMessage := newTestDiscoveryMessage(
 		api.NewTestField("objectMapField").
@@ -149,10 +147,11 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err != nil {
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err != nil {
 		t.Fatal(err)
 	}
+	message := mb.Build()
 
 	wantMessage := newTestDiscoveryMessage(
 		api.NewTestField("enumMapField").
@@ -233,11 +232,12 @@ func TestMapScalarTypes(t *testing.T) {
 				},
 			},
 		}
-		message := api.NewTestMessage("Message").WithPackage("package")
-		if err := makeMessageFields(model, message, input); err != nil {
+		mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+		if err := makeMessageFields(model, mb, input); err != nil {
 			t.Error(err)
 			continue
 		}
+		message := mb.Build()
 		wantFields := []*api.Field{
 			api.NewTestMessage("Message").
 				WithPackage("package").
@@ -246,15 +246,15 @@ func TestMapScalarTypes(t *testing.T) {
 						WithDocumentation("The description for mapField.").
 						WithType(api.TypezMap).
 						WithMap(),
-				).Fields[0],
+				).Fields()[0],
 		}
-		if diff := cmp.Diff(wantFields, message.Fields, apitest.AllowUnexported(), apitest.IgnoreFieldNames("typezID", "parent")); diff != "" {
+		if diff := cmp.Diff(wantFields, message.Fields(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("typezID", "parent")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 			continue
 		}
-		mapEntity := model.Map(message.Fields[0].TypezID())
+		mapEntity := model.Map(message.Fields()[0].TypezID())
 		if mapEntity == nil {
-			t.Errorf("missing map %s", message.Fields[0].TypezID())
+			t.Errorf("missing map %s", message.Fields()[0].TypezID())
 			continue
 		}
 		wantMap := newTestDiscoveryMap(mapEntity.ID(), test.WantTypez, test.WantTypeID)
@@ -280,9 +280,9 @@ func TestMapFieldEnumError(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err == nil {
-		t.Errorf("expected error in map with invalid enum, got=%v", message)
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err == nil {
+		t.Errorf("expected error in map with invalid enum, got=%v", mb.Build())
 	}
 }
 
@@ -304,8 +304,8 @@ func TestMapFieldScalarError(t *testing.T) {
 			},
 		},
 	}
-	message := api.NewTestMessage("Message").WithPackage("package")
-	if err := makeMessageFields(model, message, input); err == nil {
-		t.Errorf("expected error in map with invalid value format, got=%v", message)
+	mb := api.NewMessageBuilderFrom(api.NewTestMessage("Message").WithPackage("package"))
+	if err := makeMessageFields(model, mb, input); err == nil {
+		t.Errorf("expected error in map with invalid value format, got=%v", mb.Build())
 	}
 }

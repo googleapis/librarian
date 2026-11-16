@@ -26,7 +26,7 @@ func updatePackageName(model *api.API) {
 	if len(model.Services) > 0 {
 		model.PackageName = model.Services[0].Package
 	} else if len(model.Messages) > 0 {
-		model.PackageName = model.Messages[0].Package
+		model.PackageName = model.Messages[0].Package()
 	} else if len(model.Enums) > 0 {
 		model.PackageName = model.Enums[0].Package()
 	}

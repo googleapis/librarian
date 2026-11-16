@@ -46,8 +46,9 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 
 	var params []*api.Field
 	duplicate := map[string]bool{}
+	fields := msg.Fields()
 	for _, name := range pathNames {
-		for _, field := range msg.Fields {
+		for _, field := range fields {
 			if field.Name() == name && !duplicate[name] {
 				params = append(params, field)
 				duplicate[name] = true
@@ -62,7 +63,7 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 func QueryParams(m *api.Method, b *api.PathBinding) []*api.Field {
 	var queryParams []*api.Field
 	qp := b.QueryParameters()
-	for _, field := range m.InputType.Fields {
+	for _, field := range m.InputType.Fields() {
 		if !qp[field.Name()] {
 			continue
 		}
@@ -93,5 +94,5 @@ func MapSlice[T, R any](s []T, f func(T) R) []R {
 
 // HasNestedTypes returns true if the message has nested types.
 func HasNestedTypes(m *api.Message) bool {
-	return len(m.Enums) > 0 || len(m.OneOfs) > 0 || len(m.Messages) > 0
+	return len(m.Enums()) > 0 || len(m.OneOfs()) > 0 || len(m.Messages()) > 0
 }

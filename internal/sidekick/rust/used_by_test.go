@@ -378,8 +378,8 @@ func TestFindUsedPackages(t *testing.T) {
 		WithInput(createResourceReq).
 		WithOutput(operation).
 		WithOperationInfo(api.NewOperationInfoBuilder().
-			WithMetadataTypeID(operationMetadata.ID).
-			WithResponseTypeID(resource.ID).
+			WithMetadataTypeID(operationMetadata.ID()).
+			WithResponseTypeID(resource.ID()).
 			Build())
 	service := api.NewTestService("LroService").
 		WithPackage("test").

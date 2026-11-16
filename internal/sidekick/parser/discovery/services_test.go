@@ -121,11 +121,11 @@ func TestServiceMessages(t *testing.T) {
 	want := newDiscoveryTestMessage("zones").
 		WithID("..zones").
 		WithDocumentation("Synthetic messages for the [zones][.zones] service").
-		WithMessages(getMessage, listMessage)
-	want.ServicePlaceholder = true
-	got := model.Message(want.ID)
+		WithMessages(getMessage, listMessage).
+		WithServicePlaceholder()
+	got := model.Message(want.ID())
 	if got == nil {
-		t.Fatalf("expected service %s in the API model", want.ID)
+		t.Fatalf("expected service %s in the API model", want.ID())
 	}
 	apitest.CheckMessage(t, got, want)
 }

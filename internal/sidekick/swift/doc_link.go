@@ -58,7 +58,7 @@ func (c *codec) tryDocLinkWithId(id string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return c.docLink(m.Package, name), nil
+		return c.docLink(m.Package(), name), nil
 	}
 	if e := c.Model.Enum(id); e != nil {
 		name, err := c.enumTypeName(e)
@@ -93,7 +93,7 @@ func (c *codec) tryFieldDocLink(id string) (string, error) {
 	if m == nil {
 		return "", nil
 	}
-	for _, f := range m.Fields {
+	for _, f := range m.Fields() {
 		if f.Name() == fieldName {
 			messageName, err := c.messageTypeName(m)
 			if err != nil {
@@ -101,19 +101,19 @@ func (c *codec) tryFieldDocLink(id string) (string, error) {
 			}
 			swiftName := camelCase(f.Name())
 			if f.Group() == nil {
-				return c.docLink(m.Package, fmt.Sprintf("%s/%s", messageName, swiftName)), nil
+				return c.docLink(m.Package(), fmt.Sprintf("%s/%s", messageName, swiftName)), nil
 			}
 			groupName := OneOfName(f.Group().Name())
-			return c.docLink(m.Package, fmt.Sprintf("%s/%s/%s(_:)", messageName, groupName, swiftName)), nil
+			return c.docLink(m.Package(), fmt.Sprintf("%s/%s/%s(_:)", messageName, groupName, swiftName)), nil
 		}
 	}
-	for _, o := range m.OneOfs {
+	for _, o := range m.OneOfs() {
 		if o.Name() == fieldName {
 			p, err := c.messageTypeName(m)
 			if err != nil {
 				return "", err
 			}
-			return c.docLink(m.Package, fmt.Sprintf("%s/%s", p, OneOfName(o.Name()))), nil
+			return c.docLink(m.Package(), fmt.Sprintf("%s/%s", p, OneOfName(o.Name()))), nil
 		}
 	}
 	return "", nil

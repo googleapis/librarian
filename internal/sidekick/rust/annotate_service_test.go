@@ -226,8 +226,8 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		WithInput(createReq).
 		WithOutput(operation).
 		WithOperationInfo(api.NewOperationInfoBuilder().
-			WithMetadataTypeID(metadata.ID).
-			WithResponseTypeID(resource.ID).
+			WithMetadataTypeID(metadata.ID()).
+			WithResponseTypeID(resource.ID()).
 			Build()).
 		WithBindings()
 
@@ -235,7 +235,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		WithInput(deleteReq).
 		WithOutput(operation).
 		WithOperationInfo(api.NewOperationInfoBuilder().
-			WithMetadataTypeID(metadata.ID).
+			WithMetadataTypeID(metadata.ID()).
 			WithResponseTypeID(api.WktEmptyID).
 			Build()).
 		WithBindings()
@@ -270,7 +270,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 	if !wantService.HasLROs() {
 		t.Errorf("HasLRO should be true. The service has several LROs.")
 	}
-	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
+	if diff := cmp.Diff(wantService, service.Codec, apitest.AllowUnexported(), cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

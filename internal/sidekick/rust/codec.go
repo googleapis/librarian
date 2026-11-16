@@ -678,14 +678,14 @@ func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecifi
 	if m == nil {
 		return rustPkg(childPackageName)
 	}
-	if m.Parent == nil {
-		p, err := rustPkg(m.Package)
+	if m.Parent() == nil {
+		p, err := rustPkg(m.Package())
 		if err != nil {
 			return "", err
 		}
 		return p + "::" + c.MessageModuleName(m), nil
 	}
-	p, err := c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName)
+	p, err := c.messageScopeName(m.Parent(), m.Package(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
@@ -697,11 +697,11 @@ func (c *codec) enumScopeName(e *api.Enum, sourceSpecificationPackageName string
 }
 
 func (c *codec) fullyQualifiedMessageName(m *api.Message, sourceSpecificationPackageName string) (string, error) {
-	p, err := c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName)
+	p, err := c.messageScopeName(m.Parent(), m.Package(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return p + "::" + toPascal(m.Name), nil
+	return p + "::" + toPascal(m.Name()), nil
 }
 
 func enumName(e *api.Enum) string {
@@ -956,8 +956,8 @@ func prostMessageModulePath(m *api.Message) string {
 		return ""
 	}
 	var segments []string
-	for curr := m; curr != nil; curr = curr.Parent {
-		segments = append(segments, toProstSnake(curr.Name))
+	for curr := m; curr != nil; curr = curr.Parent() {
+		segments = append(segments, toProstSnake(curr.Name()))
 	}
 	slices.Reverse(segments)
 	return strings.Join(segments, "::")
@@ -966,11 +966,11 @@ func prostMessageModulePath(m *api.Message) string {
 // prostMessageRelativePath returns the type name of the message relative to the package's prost module.
 // E.g., `VertexAiSearch` for top-level, or `parent::NestedType` for nested messages.
 func prostMessageRelativePath(m *api.Message) string {
-	name := toProstPascal(m.Name)
-	if m.Parent == nil {
+	name := toProstPascal(m.Name())
+	if m.Parent() == nil {
 		return name
 	}
-	return prostMessageModulePath(m.Parent) + "::" + name
+	return prostMessageModulePath(m.Parent()) + "::" + name
 }
 
 // prostEnumRelativePath returns the type name of the enum relative to the package's prost module.
@@ -1434,7 +1434,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 	if m == nil {
 		return "", nil
 	}
-	for _, f := range m.Fields {
+	for _, f := range m.Fields() {
 		if f.Name() == fieldName || c.FieldName(f) == fieldName {
 			if !f.IsOneOf() {
 				p, err := c.fullyQualifiedMessageName(m, scope)
@@ -1446,7 +1446,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 			return c.tryOneOfRustdocLink(f, m, scope)
 		}
 	}
-	for _, o := range m.OneOfs {
+	for _, o := range m.OneOfs() {
 		if o.Name() == fieldName {
 			p, err := c.fullyQualifiedMessageName(m, scope)
 			if err != nil {
@@ -1459,7 +1459,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 }
 
 func (c *codec) tryOneOfRustdocLink(field *api.Field, message *api.Message, scope string) (string, error) {
-	for _, o := range message.OneOfs {
+	for _, o := range message.OneOfs() {
 		for _, f := range o.Fields() {
 			if f.ID() == field.ID() {
 				p, err := c.fullyQualifiedMessageName(message, scope)
@@ -1537,18 +1537,18 @@ func usePackage(source string, model *api.API, c *codec) {
 }
 
 func findUsedPackagesMessage(message *api.Message, model *api.API, c *codec, visited map[string]bool) {
-	if _, ok := visited[message.ID]; ok {
+	if _, ok := visited[message.ID()]; ok {
 		return
 	}
-	visited[message.ID] = true
-	usePackage(message.Package, model, c)
-	for _, e := range message.Enums {
+	visited[message.ID()] = true
+	usePackage(message.Package(), model, c)
+	for _, e := range message.Enums() {
 		usePackage(e.Package(), model, c)
 	}
-	for _, m := range message.Messages {
+	for _, m := range message.Messages() {
 		findUsedPackagesMessage(m, model, c, visited)
 	}
-	for _, f := range message.Fields {
+	for _, f := range message.Fields() {
 		findUsedPackagesField(f, model, c)
 	}
 }
@@ -1571,7 +1571,7 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 	switch f.Typez() {
 	case api.TypezMessage:
 		if fm := model.Message(f.TypezID()); fm != nil {
-			usePackage(fm.Package, model, c)
+			usePackage(fm.Package(), model, c)
 		}
 	case api.TypezEnum:
 		if fe := model.Enum(f.TypezID()); fe != nil {
@@ -1593,14 +1593,14 @@ func findUsedPackages(model *api.API, c *codec) {
 				findUsedPackagesMessage(m, model, c, map[string]bool{})
 			}
 			if m := model.Message(method.OutputTypeID); m != nil {
-				usePackage(m.Package, model, c)
+				usePackage(m.Package(), model, c)
 			}
 			if method.OperationInfo != nil {
 				if m := model.Message(method.OperationInfo.MetadataTypeID()); m != nil {
-					usePackage(m.Package, model, c)
+					usePackage(m.Package(), model, c)
 				}
 				if m := model.Message(method.OperationInfo.ResponseTypeID()); m != nil {
-					usePackage(m.Package, model, c)
+					usePackage(m.Package(), model, c)
 				}
 			}
 		}
@@ -1701,10 +1701,10 @@ func (c *codec) FieldName(field *api.Field) string {
 
 // MessageModuleName returns the module name for a message in model.rs, taking message_module_name_overrides into account.
 func (c *codec) MessageModuleName(m *api.Message) string {
-	if override, ok := c.messageModuleNameOverrides[m.ID]; ok {
+	if override, ok := c.messageModuleNameOverrides[m.ID()]; ok {
 		return override
 	}
-	return toSnake(m.Name)
+	return toSnake(m.Name())
 }
 
 func (c *codec) generateMethod(m *api.Method) bool {
