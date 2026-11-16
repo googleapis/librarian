@@ -69,16 +69,8 @@ func parseRoutingInfo(methodID string, routing *routingParameter) (*api.RoutingI
 }
 
 func parseRoutingPathTemplate(fieldName, pathTemplate string) (*api.RoutingInfo, error) {
-	if fieldName == "" && pathTemplate == "" {
-		// AIP-4222: empty routing infos mean something special.
-		info := api.NewRoutingInfoBuilder().
-			WithName(fieldName).
-			WithVariant(api.NewRoutingInfoVariantBuilder().
-				WithFieldPath([]string{}...).
-				WithMatchingSegments([]string{}...).
-				Build()).
-			Build()
-		return info, nil
+	if fieldName == "" {
+		return nil, fmt.Errorf("routing parameter field name cannot be empty, pathTemplate=%q", pathTemplate)
 	}
 	fieldPath := strings.Split(fieldName, ".")
 	if pathTemplate == "" {

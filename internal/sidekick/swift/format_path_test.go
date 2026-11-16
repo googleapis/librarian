@@ -494,18 +494,9 @@ func TestRoutingParams(t *testing.T) {
 			},
 		},
 		{
-			name: "empty routing annotation disables routing",
-			routingInfos: []*api.RoutingInfo{
-				api.NewRoutingInfoBuilder().
-					WithName("").
-					WithVariants(
-						api.NewRoutingInfoVariantBuilder().
-							WithFieldPath([]string{}...).
-							Build(),
-					).
-					Build(),
-			},
-			want: nil,
+			name:         "empty routing annotation disables routing",
+			routingInfos: []*api.RoutingInfo{},
+			want:         nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
