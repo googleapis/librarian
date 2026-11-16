@@ -290,7 +290,7 @@ func TestExamples(t *testing.T) {
 			if got == nil {
 				t.Fatalf("Cannot find method %s in API State", test.methodID)
 			}
-			if diff := cmp.Diff(test.want, got.Routing, apitest.AllowUnexported()); diff != "" {
+			if diff := cmp.Diff(test.want, got.Routing(), apitest.AllowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -327,11 +327,12 @@ func TestExplicitEmptyRouting(t *testing.T) {
 			if got.HasRouting() != test.wantHasRouting {
 				t.Errorf("HasRouting() = %v, want %v", got.HasRouting(), test.wantHasRouting)
 			}
-			if (got.Routing == nil) != test.wantNilSlice {
-				t.Errorf("(Routing == nil) = %v, want %v (Routing=%v)", got.Routing == nil, test.wantNilSlice, got.Routing)
+			routing := got.Routing()
+			if (routing == nil) != test.wantNilSlice {
+				t.Errorf("(Routing == nil) = %v, want %v (Routing=%v)", routing == nil, test.wantNilSlice, routing)
 			}
-			if len(got.Routing) != 0 {
-				t.Errorf("len(Routing) = %d, want 0", len(got.Routing))
+			if len(routing) != 0 {
+				t.Errorf("len(Routing) = %d, want 0", len(routing))
 			}
 		})
 	}

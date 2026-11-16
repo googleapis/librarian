@@ -345,6 +345,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 	for _, f := range req.GetSourceFileDescriptors() {
 		var fileServices []*api.Service
 		fFQN := "." + f.GetPackage()
+		comments := fileComments[f]
 
 		if value, err := protobufUpdateFileOption(result.CsharpNamespace, f.GetOptions().GetCsharpNamespace()); err == nil {
 			result.CsharpNamespace = value
@@ -382,13 +383,15 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		}
 
 		// Services
-		for _, s := range f.Service {
+		for si, s := range f.Service {
 			sFQN := fFQN + "." + s.GetName()
+			sPath := []int32{fileDescriptorService, int32(si)}
 			service := processService(result, s, sFQN, f.GetPackage())
-			for _, m := range s.Method {
+			for mi, m := range s.Method {
 				mFQN := sFQN + "." + m.GetName()
 				apiVersion := parseAPIVersion(sFQN, s.GetOptions())
-				method, err := processMethod(result, m, mFQN, f.GetPackage(), sFQN, apiVersion)
+				mDoc := lookupComment(comments, append(sPath, serviceDescriptorProtoMethod, int32(mi)))
+				method, err := processMethod(result, m, mFQN, f.GetPackage(), sFQN, apiVersion, mDoc, serviceConfig)
 				if err != nil {
 					return nil, err
 				}
@@ -444,11 +447,8 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 						continue
 					}
 					apiVersion := parseAPIVersion(sFQN, mixinProto.GetOptions())
-					method, err := processMethod(result, m, mFQN, service.Package, sFQN, apiVersion)
+					method, err := processMixinMethod(result, m, mFQN, originalFQN, service.Package, sFQN, apiVersion, mixin, serviceConfig)
 					if err != nil {
-						return nil, err
-					}
-					if err := applyServiceConfigMethodOverrides(method, originalFQN, serviceConfig, result, mixin); err != nil {
 						return nil, err
 					}
 					service.Methods = append(service.Methods, method)
@@ -461,7 +461,6 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		result.Name = strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")
 	}
 	updatePackageName(result)
-	updateAutoPopulatedFields(serviceConfig, result)
 	return result, nil
 }
 
@@ -587,36 +586,55 @@ func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN
 	return service
 }
 
-func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion string) (*api.Method, error) {
+func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion, doc string, serviceConfig *serviceconfig.Service) (*api.Method, error) {
 	pathInfo, err := parsePathInfo(m, model)
 	if err != nil {
 		return nil, fmt.Errorf("unsupported http method for %q: %w", mFQN, err)
 	}
+	return buildProtobufMethod(model, m, mFQN, packagez, serviceID, apiVersion, doc, pathInfo, serviceConfig)
+}
+
+func processMixinMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, originalFQN, packagez, serviceID, apiVersion string, mixin *api.Service, serviceConfig *serviceconfig.Service) (*api.Method, error) {
+	defaultPathInfo, err := parsePathInfo(m, model)
+	if err != nil {
+		return nil, fmt.Errorf("unsupported http method for %q: %w", mFQN, err)
+	}
+	pathInfo, doc, err := serviceConfigMethodOverrides(mFQN, originalFQN, m.GetInputType(), defaultPathInfo, serviceConfig, model, mixin)
+	if err != nil {
+		return nil, err
+	}
+	return buildProtobufMethod(model, m, mFQN, packagez, serviceID, apiVersion, doc, pathInfo, serviceConfig)
+}
+
+func buildProtobufMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion, doc string, pathInfo *api.PathInfo, serviceConfig *serviceconfig.Service) (*api.Method, error) {
 	routing, err := parseRoutingAnnotations(mFQN, m)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse routing annotations for %q: %w", mFQN, err)
 	}
+	inputTypeID := m.GetInputType()
 	outputTypeID := m.GetOutputType()
 	signatures, err := protobufMethodSignatures(m)
 	if err != nil {
 		return nil, err
 	}
-	method := &api.Method{
-		ID:                  mFQN,
-		PathInfo:            pathInfo,
-		Name:                m.GetName(),
-		Deprecated:          m.GetOptions().GetDeprecated(),
-		InputTypeID:         m.GetInputType(),
-		OutputTypeID:        outputTypeID,
-		ClientSideStreaming: m.GetClientStreaming(),
-		ServerSideStreaming: m.GetServerStreaming(),
-		OperationInfo:       parseOperationInfo(packagez, m),
-		Routing:             routing,
-		ReturnsEmpty:        outputTypeID == ".google.protobuf.Empty",
-		SourceServiceID:     serviceID,
-		APIVersion:          apiVersion,
-		Signatures:          signatures,
-	}
+	method := api.NewMethodBuilder().
+		WithID(mFQN).
+		WithPathInfo(pathInfo).
+		WithName(m.GetName()).
+		WithDocumentation(doc).
+		WithDeprecated(m.GetOptions().GetDeprecated()).
+		WithInputTypeID(inputTypeID).
+		WithOutputTypeID(outputTypeID).
+		WithClientSideStreaming(m.GetClientStreaming()).
+		WithServerSideStreaming(m.GetServerStreaming()).
+		WithOperationInfo(parseOperationInfo(packagez, m)).
+		WithRouting(routing).
+		WithReturnsEmpty(outputTypeID == ".google.protobuf.Empty").
+		WithSourceServiceID(serviceID).
+		WithAPIVersion(apiVersion).
+		WithSignatures(signatures).
+		WithAutoPopulated(findAutoPopulatedFields(serviceConfig, mFQN, model.Message(inputTypeID))).
+		Build()
 	model.AddMethod(method)
 	return method, nil
 }
@@ -906,13 +924,9 @@ func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string)
 	case len(p) == 0:
 		// This is a comment for a service
 		model.Service(sFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == serviceDescriptorProtoMethod && len(p) == 2:
-		// This is a comment for a method
-		model.Service(sFQN).Methods[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == serviceDescriptorProtoMethod:
-		// A comment for something within a method (options, arguments, etc).
-		// Ignored, as these comments do not refer to any artifact in the
-		// generated code.
+		// Method comments are already extracted via extractSourceComments;
+		// comments within a method (options, arguments, etc) are ignored.
 	case p[0] == serviceDescriptorProtoOption:
 		// This is a comment for a service option. Ignored, as these comments do
 		// not refer to any artifact in the generated code.
