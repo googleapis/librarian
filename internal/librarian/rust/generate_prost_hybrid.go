@@ -331,19 +331,7 @@ func cloneServices(services []*api.Service) []*api.Service {
 		if s.Methods != nil {
 			svcCopy.Methods = make([]*api.Method, len(s.Methods))
 			for j, m := range s.Methods {
-				mCopy := *m
-				mCopy.Codec = nil
-				mCopy.Service = &svcCopy
-				mCopy.PathInfo = m.PathInfo.Clone()
-				mCopy.OperationInfo = m.OperationInfo.CloneForMethod(&mCopy)
-				mCopy.DiscoveryLro = m.DiscoveryLro.Clone()
-				if m.Routing != nil {
-					mCopy.Routing = make([]*api.RoutingInfo, len(m.Routing))
-					for k, r := range m.Routing {
-						mCopy.Routing[k] = r.Clone()
-					}
-				}
-				svcCopy.Methods[j] = &mCopy
+				svcCopy.Methods[j] = m.CloneForService(&svcCopy)
 			}
 		}
 		cloned[i] = &svcCopy

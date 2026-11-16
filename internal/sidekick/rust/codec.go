@@ -428,10 +428,10 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool
 		// not save us any computations.
 
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.IsLroPoller || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
+			if m.OperationInfo() != nil || m.IsLroPoller() || m.ID() == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
-			if len(m.AutoPopulated) != 0 {
+			if len(m.AutoPopulated()) != 0 {
 				hasAutoPopulation = true
 			}
 		}
@@ -785,14 +785,14 @@ func (c *codec) fullyQualifiedEnumValueName(v *api.EnumValue, sourceSpecificatio
 }
 
 func bodyAccessor(m *api.Method) string {
-	if m.PathInfo.BodyFieldPath() == "" {
+	if m.PathInfo().BodyFieldPath() == "" {
 		return "None::<gaxi::http::NoBody>"
 	}
-	if m.PathInfo.BodyFieldPath() == "*" {
+	if m.PathInfo().BodyFieldPath() == "*" {
 		// use the whole request
 		return "Some(req)"
 	}
-	return "req." + toSnake(m.PathInfo.BodyFieldPath())
+	return "req." + toSnake(m.PathInfo().BodyFieldPath())
 }
 
 func httpPathFmt(t *api.PathTemplate) string {
@@ -1498,11 +1498,11 @@ func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 	if !c.generateMethod(m) {
 		return ""
 	}
-	idx := strings.LastIndex(m.ID, ".")
+	idx := strings.LastIndex(m.ID(), ".")
 	if idx == -1 {
 		return ""
 	}
-	serviceId := m.ID[0:idx]
+	serviceId := m.ID()[0:idx]
 	s := model.Service(serviceId)
 	if s == nil {
 		return ""
@@ -1514,7 +1514,7 @@ func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 	if serviceLink == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s::%s", serviceLink, toSnake(m.Name))
+	return fmt.Sprintf("%s::%s", serviceLink, toSnake(m.Name()))
 }
 
 func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
@@ -1589,17 +1589,17 @@ func findUsedPackages(model *api.API, c *codec) {
 	}
 	for _, s := range model.Services {
 		for _, method := range s.Methods {
-			if m := model.Message(method.InputTypeID); m != nil {
+			if m := model.Message(method.InputTypeID()); m != nil {
 				findUsedPackagesMessage(m, model, c, map[string]bool{})
 			}
-			if m := model.Message(method.OutputTypeID); m != nil {
+			if m := model.Message(method.OutputTypeID()); m != nil {
 				usePackage(m.Package(), model, c)
 			}
-			if method.OperationInfo != nil {
-				if m := model.Message(method.OperationInfo.MetadataTypeID()); m != nil {
+			if method.OperationInfo() != nil {
+				if m := model.Message(method.OperationInfo().MetadataTypeID()); m != nil {
 					usePackage(m.Package(), model, c)
 				}
-				if m := model.Message(method.OperationInfo.ResponseTypeID()); m != nil {
+				if m := model.Message(method.OperationInfo().ResponseTypeID()); m != nil {
 					usePackage(m.Package(), model, c)
 				}
 			}
@@ -1712,24 +1712,24 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	// RPCs for them.
 	// TODO(#499) - switch to explicitly excluding such functions. Easier to
 	//     find them and fix them that way.
-	if m.ClientSideStreaming || m.ServerSideStreaming {
-		if m.ClientSideStreaming && m.ServerSideStreaming {
+	if m.ClientSideStreaming() || m.ServerSideStreaming() {
+		if m.ClientSideStreaming() && m.ServerSideStreaming() {
 			return true
 		}
-		if !m.ClientSideStreaming && m.ServerSideStreaming {
+		if !m.ClientSideStreaming() && m.ServerSideStreaming() {
 			return true
 		}
-		if m.ClientSideStreaming && !m.ServerSideStreaming {
+		if m.ClientSideStreaming() && !m.ServerSideStreaming() {
 			return c.includeStreamingMethods || c.includeGrpcOnlyMethods
 		}
 	}
 	if c.includeGrpcOnlyMethods || c.defaultTransport == "grpc" {
 		return true
 	}
-	if m.PathInfo == nil {
+	if m.PathInfo() == nil {
 		return false
 	}
-	bindings := m.PathInfo.Bindings()
+	bindings := m.PathInfo().Bindings()
 	if len(bindings) == 0 {
 		return false
 	}

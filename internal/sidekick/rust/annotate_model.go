@@ -177,12 +177,12 @@ func GrpcRootTypeIDs(model *api.API) []string {
 	var rootTypeIDs []string
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
-			if ann, ok := m.Codec.(*methodAnnotation); ok && ann.IsGrpc {
-				if m.InputTypeID != "" {
-					rootTypeIDs = append(rootTypeIDs, m.InputTypeID)
+			if ann, ok := m.Codec().(*methodAnnotation); ok && ann.IsGrpc {
+				if m.InputTypeID() != "" {
+					rootTypeIDs = append(rootTypeIDs, m.InputTypeID())
 				}
-				if m.OutputTypeID != "" {
-					rootTypeIDs = append(rootTypeIDs, m.OutputTypeID)
+				if m.OutputTypeID() != "" {
+					rootTypeIDs = append(rootTypeIDs, m.OutputTypeID())
 				}
 			}
 		}
@@ -248,26 +248,26 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 			if !codec.generateMethod(m) {
 				continue
 			}
-			if m.OperationInfo != nil || m.DiscoveryLro != nil || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
+			if m.OperationInfo() != nil || m.DiscoveryLro() != nil || m.ID() == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
-			if m.DiscoveryLro != nil {
+			if m.DiscoveryLro() != nil {
 				hasDiscoveryLROs = true
 			}
 			if _, err := codec.annotateMethod(m); err != nil {
 				return nil, err
 			}
-			if m := m.InputType; m != nil {
+			if m := m.InputType(); m != nil {
 				if err := codec.annotateMessage(m, model, true); err != nil {
 					return nil, err
 				}
 			}
-			if m := m.OutputType; m != nil {
+			if m := m.OutputType(); m != nil {
 				if err := codec.annotateMessage(m, model, true); err != nil {
 					return nil, err
 				}
 			}
-			if si := m.SampleInfo; si != nil {
+			if si := m.SampleInfo(); si != nil {
 				codec.annotateSampleInfo(si, m)
 			}
 		}
