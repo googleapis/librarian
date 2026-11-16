@@ -295,6 +295,46 @@ func TestExamples(t *testing.T) {
 	}
 }
 
+func TestExplicitEmptyRouting(t *testing.T) {
+	requireProtoc(t)
+	model, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "routing_info.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobuf %v", err)
+	}
+	for _, test := range []struct {
+		methodID       string
+		wantHasRouting bool
+		wantNilSlice   bool
+	}{
+		{
+			methodID:       ".test.TestService.ExplicitEmptyRouting",
+			wantHasRouting: true,
+			wantNilSlice:   false,
+		},
+		{
+			methodID:       ".test.TestService.ImplicitHttpOnly",
+			wantHasRouting: false,
+			wantNilSlice:   true,
+		},
+	} {
+		t.Run(test.methodID, func(t *testing.T) {
+			got := model.Method(test.methodID)
+			if got == nil {
+				t.Fatalf("Cannot find method %s in API State", test.methodID)
+			}
+			if got.HasRouting() != test.wantHasRouting {
+				t.Errorf("HasRouting() = %v, want %v", got.HasRouting(), test.wantHasRouting)
+			}
+			if (got.Routing == nil) != test.wantNilSlice {
+				t.Errorf("(Routing == nil) = %v, want %v (Routing=%v)", got.Routing == nil, test.wantNilSlice, got.Routing)
+			}
+			if len(got.Routing) != 0 {
+				t.Errorf("len(Routing) = %d, want 0", len(got.Routing))
+			}
+		})
+	}
+}
+
 func TestParsePathTemplateSuccess(t *testing.T) {
 	for _, test := range []struct {
 		fieldPath string

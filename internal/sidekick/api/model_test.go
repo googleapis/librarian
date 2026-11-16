@@ -346,3 +346,33 @@ func TestService_HasServerSideStreaming(t *testing.T) {
 		})
 	}
 }
+
+func TestMethodHasRouting(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		method *Method
+		want   bool
+	}{
+		{
+			name:   "absent routing",
+			method: NewTestMethod("absent"),
+			want:   false,
+		},
+		{
+			name:   "explicit empty routing",
+			method: NewTestMethod("empty").WithRouting(),
+			want:   true,
+		},
+		{
+			name:   "non-empty routing",
+			method: NewTestMethod("present").WithRouting(NewTestRoutingInfo("k", NewTestRoutingInfoVariant("k"))),
+			want:   true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := test.method.HasRouting(); got != test.want {
+				t.Errorf("HasRouting() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
