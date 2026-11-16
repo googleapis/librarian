@@ -21,21 +21,24 @@ import (
 )
 
 func TestSampleInfo(t *testing.T) {
-	f := NewFieldBuilder().WithName("f").Build()
+	rnField := NewFieldBuilder().WithName("rn").Build()
+	msgField := NewFieldBuilder().WithName("msg").Build()
+	idField := NewFieldBuilder().WithName("id").Build()
+	maskField := NewFieldBuilder().WithName("mask").Build()
 	gotSI := NewSampleInfoBuilder().
-		WithResourceNameField(f).
-		WithMessageField(f).
-		WithResourceIDField(f).
-		WithUpdateMaskField(f).
+		WithResourceNameField(rnField).
+		WithMessageField(msgField).
+		WithResourceIDField(idField).
+		WithUpdateMaskField(maskField).
 		WithIsRequestResourceName(true).
 		WithIsMessageResourceName(true).
 		Build()
 	gotSI.SetAnnotations("si-codec")
 	wantSI := &SampleInfo{
-		resourceNameField:     f,
-		messageField:          f,
-		resourceIDField:       f,
-		updateMaskField:       f,
+		resourceNameField:     rnField,
+		messageField:          msgField,
+		resourceIDField:       idField,
+		updateMaskField:       maskField,
 		isRequestResourceName: true,
 		isMessageResourceName: true,
 		codec:                 "si-codec",
@@ -43,7 +46,13 @@ func TestSampleInfo(t *testing.T) {
 	if diff := cmp.Diff(wantSI, gotSI, allowUnexported()); diff != "" {
 		t.Errorf("SampleInfo mismatch (-want +got):\n%s", diff)
 	}
-	if gotSI.ResourceNameField() != f || gotSI.MessageField() != f || gotSI.ResourceIDField() != f || gotSI.UpdateMaskField() != f || !gotSI.IsRequestResourceName() || !gotSI.IsMessageResourceName() || gotSI.Codec() != "si-codec" {
+	if gotSI.ResourceNameField() != wantSI.resourceNameField ||
+		gotSI.MessageField() != wantSI.messageField ||
+		gotSI.ResourceIDField() != wantSI.resourceIDField ||
+		gotSI.UpdateMaskField() != wantSI.updateMaskField ||
+		gotSI.IsRequestResourceName() != wantSI.isRequestResourceName ||
+		gotSI.IsMessageResourceName() != wantSI.isMessageResourceName ||
+		gotSI.Codec() != wantSI.codec {
 		t.Errorf("unexpected SampleInfo getters: %+v", gotSI)
 	}
 }
