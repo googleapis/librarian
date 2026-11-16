@@ -224,12 +224,12 @@ func (ann *methodAnnotations) PlainRPC() bool {
 }
 
 func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) error {
-	if method.InputType != nil {
-		if err := c.annotateMessage(method.InputType, modelAnn); err != nil {
+	if method.InputType() != nil {
+		if err := c.annotateMessage(method.InputType(), modelAnn); err != nil {
 			return err
 		}
 	}
-	for _, sig := range method.Signatures {
+	for _, sig := range method.Signatures() {
 		for _, field := range sig.Fields() {
 			if field.Codec() == nil {
 				if _, err := c.annotateField(field, modelAnn); err != nil {
@@ -239,17 +239,17 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		}
 	}
 	var returnType string
-	if method.OutputType != nil {
-		if err := c.annotateMessage(method.OutputType, modelAnn); err != nil {
+	if method.OutputType() != nil {
+		if err := c.annotateMessage(method.OutputType(), modelAnn); err != nil {
 			return err
 		}
 		var err error
-		returnType, err = c.fullyQualifiedMessageTypeName(method.OutputType)
+		returnType, err = c.fullyQualifiedMessageTypeName(method.OutputType())
 		if err != nil {
 			return err
 		}
 	}
-	docLines, err := c.formatDocumentation(method.Documentation, method.Scopes())
+	docLines, err := c.formatDocumentation(method.Documentation(), method.Scopes())
 	if err != nil {
 		return err
 	}
@@ -262,18 +262,18 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	var bodyField string
 	var isHTTPBodyRequest bool
 	var queryParams []*api.Field
-	isHTTPBodyResponse := method.OutputType != nil && method.OutputType.ID() == ".google.api.HttpBody"
+	isHTTPBodyResponse := method.OutputType() != nil && method.OutputType().ID() == ".google.api.HttpBody"
 
 	var bindings []*api.PathBinding
-	if method.PathInfo != nil {
-		bindings = method.PathInfo.Bindings()
+	if method.PathInfo() != nil {
+		bindings = method.PathInfo().Bindings()
 	}
 
 	// Extract routing parameters for gRPC per AIP-4222:
 	// - Prefer explicit google.api.routing annotations if present.
 	// - Fall back to extracting path parameters from the google.api.http path template.
 	if method.HasRouting() {
-		routingParams = c.routingParamsFromRouting(method.Routing)
+		routingParams = c.routingParamsFromRouting(method.Routing())
 	} else if len(bindings) > 0 {
 		routingParams = c.routingParamsFromPathTemplate(bindings[0].PathTemplate())
 	}
@@ -286,24 +286,24 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	//   extraction without crashing, leaving those fields as their default zero values.
 	var pathBindings []*pathBindingAnnotations
 	if len(bindings) > 0 {
-		hasBody = method.PathInfo.BodyFieldPath() != ""
-		isBodyWildcard = method.PathInfo.BodyFieldPath() == "*"
+		hasBody = method.PathInfo().BodyFieldPath() != ""
+		isBodyWildcard = method.PathInfo().BodyFieldPath() == "*"
 		if hasBody && !isBodyWildcard {
-			bodyField = camelCase(method.PathInfo.BodyFieldPath())
+			bodyField = camelCase(method.PathInfo().BodyFieldPath())
 			// Wrapper requests (or body: "*" rules resolved by the protobuf parser)
 			// point BodyFieldPath at a top-level google.api.HttpBody field.
-			if method.InputType != nil {
-				isHTTPBodyRequest = slices.ContainsFunc(method.InputType.Fields(), func(f *api.Field) bool {
-					return f.Name() == method.PathInfo.BodyFieldPath() && f.Typez() == api.TypezMessage && f.TypezID() == ".google.api.HttpBody"
+			if method.InputType() != nil {
+				isHTTPBodyRequest = slices.ContainsFunc(method.InputType().Fields(), func(f *api.Field) bool {
+					return f.Name() == method.PathInfo().BodyFieldPath() && f.Typez() == api.TypezMessage && f.TypezID() == ".google.api.HttpBody"
 				})
 			}
-		} else if isBodyWildcard && method.InputType != nil && method.InputType.ID() == ".google.api.HttpBody" {
+		} else if isBodyWildcard && method.InputType() != nil && method.InputType().ID() == ".google.api.HttpBody" {
 			// When the request message itself is google.api.HttpBody, BodyFieldPath
 			// remains "*".
 			isHTTPBodyRequest = true
 		}
 		for _, binding := range bindings {
-			pVars, err := c.pathVariables(method.InputType, binding.PathTemplate())
+			pVars, err := c.pathVariables(method.InputType(), binding.PathTemplate())
 			if err != nil {
 				return err
 			}
@@ -340,8 +340,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	diagnoseSignatureTypes := false
 
 	var pagination *paginationAnnotations
-	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination() != nil {
-		itemField := method.OutputType.Pagination().PageableItem()
+	if method.Pagination() != nil && method.OutputType() != nil && method.OutputType().Pagination() != nil {
+		itemField := method.OutputType().Pagination().PageableItem()
 		itemFieldCodec, ok := itemField.Codec().(*fieldAnnotations)
 		if !ok {
 			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name())
@@ -357,8 +357,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		diagnoseSignatureTypes = diagnoseSignatureTypes || itemTypeDeprecated
 	}
 	var lro *lroAnnotations
-	if method.IsLRO && method.OperationInfo != nil {
-		respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID())
+	if method.IsLRO() && method.OperationInfo() != nil {
+		respMsg, err := lookupMessage(c.Model, method.OperationInfo().ResponseTypeID())
 		if err != nil {
 			return err
 		}
@@ -369,7 +369,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		if err != nil {
 			return err
 		}
-		metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID())
+		metaMsg, err := lookupMessage(c.Model, method.OperationInfo().MetadataTypeID())
 		if err != nil {
 			return err
 		}
@@ -395,11 +395,11 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	}
 
 	var discoveryLRO *discoveryLroAnnotations
-	if method.DiscoveryLro != nil {
+	if method.DiscoveryLro() != nil {
 		discoveryLRO = &discoveryLroAnnotations{
 			ReturnType: returnType,
 		}
-		for _, p := range method.DiscoveryLro.PollingPathParameters() {
+		for _, p := range method.DiscoveryLro().PollingPathParameters() {
 			discoveryLRO.PollingPathParameters = append(discoveryLRO.PollingPathParameters, camelCase(p))
 		}
 	}
@@ -410,8 +410,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	}
 	diagnoseFields = diagnoseFields || diagnoseTypes
 	deprecatedScope := inDeprecatedScope(method)
-	method.Codec = &methodAnnotations{
-		Name:                   camelCase(method.Name),
+	method.SetAnnotations(&methodAnnotations{
+		Name:                   camelCase(method.Name()),
 		DocLines:               docLines,
 		PathExpression:         pathExpressionStr,
 		PathVariables:          pathVariables,
@@ -438,8 +438,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		DiagnoseStubTypes:      diagnoseTypes,
 		DiagnoseStubFields:     diagnoseFields,
 		DiagnoseSnippet:        diagnoseFields || deprecatedScope,
-	}
-	if method.SampleInfo != nil {
+	})
+	if method.SampleInfo() != nil {
 		c.annotateSampleInfo(method)
 	}
 	return nil
@@ -453,8 +453,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 // input nor the output type; `annotateMethod` folds them in separately, where
 // they have already been resolved.
 func diagnoseMethodTypes(method *api.Method) bool {
-	return (method.InputType != nil && method.InputType.Deprecated()) ||
-		(method.OutputType != nil && method.OutputType.Deprecated())
+	return (method.InputType() != nil && method.InputType().Deprecated()) ||
+		(method.OutputType() != nil && method.OutputType().Deprecated())
 }
 
 // diagnoseRequestFields reports whether any field of the request message is
@@ -473,10 +473,10 @@ func diagnoseMethodTypes(method *api.Method) bool {
 // correctness requirement: `diagnoseMethodTypes` already covers that case, and
 // the caller ORs the two together.
 func (c *codec) diagnoseRequestFields(method *api.Method) (bool, error) {
-	if method.InputType == nil || method.InputType.Deprecated() {
+	if method.InputType() == nil || method.InputType().Deprecated() {
 		return false, nil
 	}
-	for _, field := range method.InputType.Fields() {
+	for _, field := range method.InputType().Fields() {
 		if field.Deprecated() {
 			return true, nil
 		}
@@ -499,7 +499,7 @@ func (c *codec) diagnoseRequestFields(method *api.Method) (bool, error) {
 // governs is preceded by `{{- if .Deprecated }} @available(*, deprecated) {{- end }}`
 // in the templates.
 func inDeprecatedScope(method *api.Method) bool {
-	return method.Deprecated || (method.Service != nil && method.Service.Deprecated)
+	return method.Deprecated() || (method.Service() != nil && method.Service().Deprecated)
 }
 
 func (a *methodAnnotations) Idempotent() bool {
