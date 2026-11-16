@@ -152,7 +152,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 				WithPollingPathParameters(pathParams...).
 				Build()
 			if svcMixin != nil && mixin != svcMixin {
-				return fmt.Errorf("mismatched LRO mixin, want=%v, got=%v", svcMixin, mixin)
+				return fmt.Errorf("mismatched LRO mixin, want=%s, got=%s", svcMixin.ID, mixin.ID)
 			}
 			svcMixin = mixin
 		}
@@ -200,8 +200,8 @@ func findDiscoveryLroPoller(method *Method, model *API, discoveryConfig *Discove
 			if !strings.HasPrefix(path, candidate.Prefix) {
 				continue
 			}
-			if method := model.Method(candidate.MethodID); method != nil {
-				return method, candidate.PathParameters()
+			if poller := model.Method(candidate.MethodID); poller != nil {
+				return poller, candidate.PathParameters()
 			}
 		}
 	}
