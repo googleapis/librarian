@@ -22,12 +22,14 @@ import (
 
 func allowUnexported() cmp.Option {
 	return cmp.AllowUnexported(
+		API{},
 		DiscoveryLro{},
 		Enum{},
 		EnumValue{},
 		Field{},
 		Map{},
 		Message{},
+		Method{},
 		MethodSignature{},
 		OneOf{},
 		OperationInfo{},
