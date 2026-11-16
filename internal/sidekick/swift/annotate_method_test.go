@@ -1094,3 +1094,54 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMethod_ExplicitEmptyRoutingSuppressesHTTPFallback(t *testing.T) {
+	inputType := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("table_name").WithType(api.TypezString),
+		)
+	outputType := api.NewTestMessage("Response").WithPackage("test.v1")
+
+	explicitEmpty := api.NewTestMethod("ExplicitEmpty").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("table_name").Build()).
+		WithRouting()
+
+	implicitOnly := api.NewTestMethod("ImplicitOnly").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("table_name").Build())
+
+	service := api.NewTestService("TestService").
+		WithPackage("test.v1").
+		WithMethods(explicitEmpty, implicitOnly)
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName("test.v1")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	gotExplicit := explicitEmpty.Codec.(*methodAnnotations)
+	if gotExplicit.HasRoutingParams() {
+		t.Errorf("ExplicitEmpty HasRoutingParams() = true, want false; got %v", gotExplicit.RoutingParams)
+	}
+	if len(gotExplicit.RoutingParams) != 0 {
+		t.Errorf("ExplicitEmpty RoutingParams = %v, want empty", gotExplicit.RoutingParams)
+	}
+
+	gotImplicit := implicitOnly.Codec.(*methodAnnotations)
+	if !gotImplicit.HasRoutingParams() {
+		t.Errorf("ImplicitOnly HasRoutingParams() = false, want true")
+	}
+	if len(gotImplicit.RoutingParams) != 1 || gotImplicit.RoutingParams[0].RoutingKey != "table_name" {
+		t.Errorf("ImplicitOnly RoutingParams = %v, want table_name", gotImplicit.RoutingParams)
+	}
+}

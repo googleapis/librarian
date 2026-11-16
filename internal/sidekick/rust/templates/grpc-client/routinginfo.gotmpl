@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */}}
+{{- if .Routing }}
 let x_goog_request_params = {
     use gaxi::routing_parameter::Segment;
     gaxi::routing_parameter::format(&[
@@ -57,4 +58,7 @@ if x_goog_request_params.is_empty() {
     {{- end }}
     return Err(google_cloud_gax::error::Error::binding(BindingError { paths }))
 }
+{{- end }}
+{{- else }}
+let x_goog_request_params = String::new();
 {{- end }}

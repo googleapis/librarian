@@ -216,9 +216,10 @@ func (i *RoutingInfoComboItem) Variant() *RoutingInfoVariant {
 	return i.variant
 }
 
-// HasRouting returns true if the method has routing information.
+// HasRouting returns true if the method has routing information, including an
+// explicit empty annotation (`option (google.api.routing) = {}`).
 func (m *Method) HasRouting() bool {
-	return len(m.Routing) != 0
+	return m.Routing != nil
 }
 
 // HasAutoPopulatedFields returns true if the method has auto-populated fields.

@@ -51,7 +51,7 @@ func parseRoutingAnnotations(methodID string, m *descriptorpb.MethodDescriptorPr
 	if len(errs) != 0 {
 		return nil, errors.Join(errs...)
 	}
-	var info []*api.RoutingInfo
+	info := []*api.RoutingInfo{}
 	for _, k := range slices.Sorted(maps.Keys(collect)) {
 		info = append(info, collect[k].WithVariants(collectVariants[k]...).Build())
 	}

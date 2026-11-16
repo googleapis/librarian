@@ -409,8 +409,12 @@ func (m *Method) WithPathInfo(pathInfo *PathInfo) *Method {
 	return m
 }
 
-// WithRouting adds routing info to the method.
+// WithRouting adds routing info to the method. Calling WithRouting() with no
+// arguments sets a non-nil empty slice to model `option (google.api.routing) = {}`.
 func (m *Method) WithRouting(routing ...*RoutingInfo) *Method {
+	if m.Routing == nil {
+		m.Routing = []*RoutingInfo{}
+	}
 	m.Routing = append(m.Routing, routing...)
 	return m
 }
