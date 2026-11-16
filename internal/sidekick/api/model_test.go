@@ -138,6 +138,42 @@ func TestRoutingCombosFull(t *testing.T) {
 	}
 }
 
+func TestRoutingCombosNoSliceAliasing(t *testing.T) {
+	va := NewTestRoutingInfoVariant("va")
+	vb := NewTestRoutingInfoVariant("vb")
+	vc := NewTestRoutingInfoVariant("vc")
+	vd1 := NewTestRoutingInfoVariant("vd1")
+	vd2 := NewTestRoutingInfoVariant("vd2")
+
+	// Three single-variant parameters grow the intermediate slice to len=3,
+	// where standard slice growth leaves spare capacity (cap=4) before the
+	// two-variant fourth parameter is appended.
+	method := NewTestMethod("test").WithRouting(
+		NewTestRoutingInfo("a", va),
+		NewTestRoutingInfo("b", vb),
+		NewTestRoutingInfo("c", vc),
+		NewTestRoutingInfo("d", vd1, vd2),
+	)
+
+	want := []*RoutingInfoCombo{
+		NewRoutingInfoCombo(
+			NewRoutingInfoComboItem("a", va),
+			NewRoutingInfoComboItem("b", vb),
+			NewRoutingInfoComboItem("c", vc),
+			NewRoutingInfoComboItem("d", vd1),
+		),
+		NewRoutingInfoCombo(
+			NewRoutingInfoComboItem("a", va),
+			NewRoutingInfoComboItem("b", vb),
+			NewRoutingInfoComboItem("c", vc),
+			NewRoutingInfoComboItem("d", vd2),
+		),
+	}
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestRoutingInfoVariantFieldName(t *testing.T) {
 	variant := NewRoutingInfoVariantBuilder().
 		WithFieldPath("request", "b", "c").
