@@ -336,21 +336,8 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		if err := g.Wait(); err != nil {
 			return err
 		}
-		// Formatting can also happen in parallel, but must be after generation.
-		// During generation files are removed, and formatting reads the
-		// `Cargo.toml` file from dependencies.
-		f, fctx := errgroup.WithContext(ctx)
-		f.SetLimit(runtime.GOMAXPROCS(0))
-		for _, library := range libraries {
-			f.Go(func() error {
-				if err := rust.Format(fctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		if err := f.Wait(); err != nil {
-			return err
+		if err := rust.Format(ctx, libraries...); err != nil {
+			return fmt.Errorf("format rust libraries (%s): %w", cfg.Language, err)
 		}
 		if err := writeDocIndex(cfg, src.Googleapis); err != nil {
 			return err
