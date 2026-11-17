@@ -411,3 +411,24 @@ func TestModelAnnotations_DescriptionLinks(t *testing.T) {
 		})
 	}
 }
+
+func TestModelAnnotations_ModuleSkipsDocLines(t *testing.T) {
+	pkg := "google.cloud.workflows.v1"
+	replay := api.NewTestMessage("Replay").WithPackage(pkg)
+	model := api.NewTestAPI([]*api.Message{replay}, nil, nil).
+		WithPackageName(pkg).
+		WithDescription("Viewing a [Replay][google.cloud.workflows.v1.Replay].")
+	codec := newTestCodec(t, model, nil)
+	codec.Module = true
+	codec.LibraryName = ""
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	ann := model.Codec.(*modelAnnotations)
+	if ann.HasDocLines() {
+		t.Errorf("expected HasDocLines() to be false for modules, got %v", ann.DocLines)
+	}
+	if ann.HasReadmeDocLines() {
+		t.Errorf("expected HasReadmeDocLines() to be false for modules, got %v", ann.ReadmeDocLines)
+	}
+}

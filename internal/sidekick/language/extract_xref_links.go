@@ -40,11 +40,7 @@ func ExtractCrossReferenceLinks(doc ast.Node, source []byte) []string {
 			return ast.WalkContinue, nil
 		}
 		switch node.Kind() {
-		case ast.KindParagraph:
-			text := node.Lines().Value(source)
-			extractProtoLinks(text, protobufLinks)
-			return ast.WalkContinue, nil
-		case ast.KindTextBlock:
+		case ast.KindParagraph, ast.KindTextBlock, ast.KindHeading:
 			text := node.Lines().Value(source)
 			extractProtoLinks(text, protobufLinks)
 			return ast.WalkContinue, nil
@@ -76,6 +72,12 @@ func extractProtoLinks(p []byte, links map[string]bool) {
 			links[string(m[1])] = true
 		}
 	}
+}
+
+// ValidProtoName reports whether s is a syntactically valid dot-separated
+// Protobuf identifier without leading or trailing dots.
+func ValidProtoName(s string) bool {
+	return validProtoName([]byte(s))
 }
 
 func validProtoName(b []byte) bool {

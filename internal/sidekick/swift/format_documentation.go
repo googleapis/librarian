@@ -26,7 +26,6 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // formatDocumentation converts a documentation string from the source (typically Protobuf
@@ -178,10 +177,22 @@ func stripUnresolvedProtoCrossRefs(s string, ctx parser.Context, resolvedLinks m
 			i = end
 			continue
 		case '[':
-			if display, end, ok := matchUnresolvedProtoCrossRef(s[i:], ctx, resolvedLinks); ok {
-				out.WriteString(display)
-				i += end
+			if i > 0 && isASCIIAlphaNum(s[i-1]) {
+				out.WriteByte(s[i])
+				i++
 				continue
+			}
+			if display, ref, end, ok := matchBracketLink(s[i:]); ok {
+				if _, defined := ctx.Reference(util.ToLinkReference([]byte(ref))); defined || resolvedLinks[ref] {
+					out.WriteString(s[i : i+end])
+					i += end
+					continue
+				}
+				if language.ValidProtoName(ref) {
+					out.WriteString(display)
+					i += end
+					continue
+				}
 			}
 		}
 		out.WriteByte(s[i])
@@ -213,31 +224,42 @@ func skipCodeSpan(s string, start int) int {
 }
 
 func matchUnresolvedProtoCrossRef(s string, ctx parser.Context, resolvedLinks map[string]bool) (string, int, bool) {
+	display, ref, end, ok := matchBracketLink(s)
+	if !ok {
+		return "", 0, false
+	}
+	if _, defined := ctx.Reference(util.ToLinkReference([]byte(ref))); defined {
+		return "", 0, false
+	}
+	if resolvedLinks[ref] || !language.ValidProtoName(ref) {
+		return "", 0, false
+	}
+	return display, end, true
+}
+
+func matchBracketLink(s string) (string, string, int, bool) {
 	displayEnd, targetStart, ok := scanBalancedBracket(s, 0, true)
 	if !ok || displayEnd <= 1 {
-		return "", 0, false
+		return "", "", 0, false
 	}
 	display := s[1:displayEnd]
 
 	targetEnd, targetCloseEnd, ok := scanBalancedBracket(s, targetStart, false)
 	if !ok {
-		return "", 0, false
+		return "", "", 0, false
 	}
 	if targetCloseEnd < len(s) && s[targetCloseEnd] == '(' {
-		return "", 0, false
+		return "", "", 0, false
 	}
 	ref := s[targetStart+1 : targetEnd]
 	if ref == "" {
 		ref = display
 	}
-	if _, defined := ctx.Reference(util.ToLinkReference([]byte(ref))); defined {
-		return "", 0, false
-	}
-	norm := strings.Join(strings.Fields(ref), " ")
-	if resolvedLinks[norm] || !isProtoCrossRef(norm) {
-		return "", 0, false
-	}
-	return display, targetCloseEnd, true
+	return display, ref, targetCloseEnd, true
+}
+
+func isASCIIAlphaNum(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
 }
 
 func scanBalancedBracket(s string, start int, allowCodeSpans bool) (int, int, bool) {
@@ -264,8 +286,4 @@ func scanBalancedBracket(s string, start int, allowCodeSpans bool) (int, int, bo
 		i++
 	}
 	return 0, 0, false
-}
-
-func isProtoCrossRef(s string) bool {
-	return protoreflect.FullName(strings.TrimPrefix(s, ".")).IsValid()
 }

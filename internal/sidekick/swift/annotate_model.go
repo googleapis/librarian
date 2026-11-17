@@ -231,20 +231,22 @@ func (c *codec) annotateModel() error {
 	if err := c.annotateLROAnyConverter(annotations, generatedMethods); err != nil {
 		return err
 	}
-	var modelScopes []string
-	if c.Model.PackageName != "" {
-		modelScopes = []string{c.Model.PackageName}
+	if !c.Module {
+		var modelScopes []string
+		if c.Model.PackageName != "" {
+			modelScopes = []string{c.Model.PackageName}
+		}
+		docLines, err := c.formatDocumentation(c.Model.Description, modelScopes)
+		if err != nil {
+			return err
+		}
+		readmeDocLines, err := c.formatReadmeDocumentation(c.Model.Description, modelScopes)
+		if err != nil {
+			return err
+		}
+		annotations.DocLines = docLines
+		annotations.ReadmeDocLines = readmeDocLines
 	}
-	docLines, err := c.formatDocumentation(c.Model.Description, modelScopes)
-	if err != nil {
-		return err
-	}
-	readmeDocLines, err := c.formatReadmeDocumentation(c.Model.Description, modelScopes)
-	if err != nil {
-		return err
-	}
-	annotations.DocLines = docLines
-	annotations.ReadmeDocLines = readmeDocLines
 	if !c.PerServiceTraits {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At
 		// the time, only a handful of packages exceeded this number of services.

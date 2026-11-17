@@ -215,6 +215,34 @@ func TestFormatReadmeDocumentation(t *testing.T) {
 			input: "Prefix [Foo][bar](https://example.com).",
 			want:  []string{"Prefix [Foo][bar](https://example.com)."},
 		},
+		{
+			name:  "heading with resolved cross-reference",
+			input: "# [Replay][google.cloud.policysimulator.v1.Replay]",
+			want: []string{
+				"# [Replay][google.cloud.policysimulator.v1.Replay]",
+				"",
+				"[google.cloud.policysimulator.v1.Replay]: https://swiftpackageindex.com/googleapis/swift-google-cloud-policysimulator-v1/0.7.0/documentation/googlecloudpolicysimulatorv1/replay",
+			},
+		},
+		{
+			name:  "whitespace padded target untouched",
+			input: "Viewing a [Replay][ google.cloud.policysimulator.v1.Replay ].",
+			want:  []string{"Viewing a [Replay][ google.cloud.policysimulator.v1.Replay ]."},
+		},
+		{
+			name:  "defined reference link followed by brackets untouched",
+			input: "[foo][bar][pkg.Unknown]\n\n[bar]: https://example.com",
+			want: []string{
+				"[foo][bar][pkg.Unknown]",
+				"",
+				"[bar]: https://example.com",
+			},
+		},
+		{
+			name:  "array indexing and leading dot or underscore untouched",
+			input: "matrix[i][j] and [.pkg.Type][] and [Foo][_bar]",
+			want:  []string{"matrix[i][j] and [.pkg.Type][] and [Foo][_bar]"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := c.formatReadmeDocumentation(test.input, []string{pkg})
@@ -298,6 +326,21 @@ func TestMatchUnresolvedProtoCrossRef(t *testing.T) {
 		{
 			name:   "non proto implied target identifier",
 			input:  "[a-b-c][]",
+			wantOk: false,
+		},
+		{
+			name:   "leading dot target",
+			input:  "[Foo][.pkg.Type]",
+			wantOk: false,
+		},
+		{
+			name:   "leading underscore target",
+			input:  "[Foo][_bar]",
+			wantOk: false,
+		},
+		{
+			name:   "whitespace padded target",
+			input:  "[Foo][ pkg.Type ]",
 			wantOk: false,
 		},
 		{
