@@ -26,6 +26,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // formatDocumentation converts a documentation string from the source (typically Protobuf
@@ -277,30 +278,5 @@ func matchUnresolvedProtoCrossRef(s string, ctx parser.Context, resolvedLinks ma
 }
 
 func isProtoCrossRef(s string) bool {
-	s = strings.TrimPrefix(s, ".")
-	if s == "" {
-		return false
-	}
-	for part := range strings.SplitSeq(s, ".") {
-		if !isProtoIdent(part) {
-			return false
-		}
-	}
-	return true
-}
-
-func isProtoIdent(s string) bool {
-	if s == "" || !isASCIILetter(s[0]) {
-		return false
-	}
-	for i := 1; i < len(s); i++ {
-		if !isASCIILetter(s[i]) && (s[i] < '0' || s[i] > '9') && s[i] != '_' {
-			return false
-		}
-	}
-	return true
-}
-
-func isASCIILetter(b byte) bool {
-	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
+	return protoreflect.FullName(strings.TrimPrefix(s, ".")).IsValid()
 }
