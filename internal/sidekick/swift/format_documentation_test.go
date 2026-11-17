@@ -20,6 +20,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
 )
 
 func TestFormatDocumentation(t *testing.T) {
@@ -220,6 +223,133 @@ func TestFormatReadmeDocumentation(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMatchUnresolvedProtoCrossRef(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		input         string
+		docWithRef    string
+		resolvedLinks map[string]bool
+		wantDisplay   string
+		wantEnd       int
+		wantOk        bool
+	}{
+		{
+			name:        "unresolved explicit target",
+			input:       "[Replay][google.cloud.policysimulator.v1.Replay] trailing",
+			wantDisplay: "Replay",
+			wantEnd:     len("[Replay][google.cloud.policysimulator.v1.Replay]"),
+			wantOk:      true,
+		},
+		{
+			name:        "unresolved implied target",
+			input:       "[Replay][] trailing",
+			wantDisplay: "Replay",
+			wantEnd:     len("[Replay][]"),
+			wantOk:      true,
+		},
+		{
+			name:        "display with code span",
+			input:       "[`Replay`][google.cloud.policysimulator.v1.Replay]",
+			wantDisplay: "`Replay`",
+			wantEnd:     len("[`Replay`][google.cloud.policysimulator.v1.Replay]"),
+			wantOk:      true,
+		},
+		{
+			name:        "escaped bracket inside display",
+			input:       `[Foo\]Bar][pkg.Target]`,
+			wantDisplay: `Foo\]Bar`,
+			wantEnd:     len(`[Foo\]Bar][pkg.Target]`),
+			wantOk:      true,
+		},
+		{
+			name:        "escaped bracket inside target",
+			input:       `[Foo][pkg.Bar\]Baz]`,
+			wantDisplay: "Foo",
+			wantEnd:     len(`[Foo][pkg.Bar\]Baz]`),
+			wantOk:      false,
+		},
+		{
+			name:          "already resolved link",
+			input:         "[Replay][google.cloud.policysimulator.v1.Replay]",
+			resolvedLinks: map[string]bool{"google.cloud.policysimulator.v1.Replay": true},
+			wantOk:        false,
+		},
+		{
+			name:       "already defined markdown reference link",
+			input:      "[Google][g]",
+			docWithRef: "[Google][g]\n\n[g]: https://google.com",
+			wantOk:     false,
+		},
+		{
+			name:   "followed by inline link url",
+			input:  "[Foo][bar](https://example.com)",
+			wantOk: false,
+		},
+		{
+			name:   "non proto target identifier",
+			input:  "[Foo][a-b-c]",
+			wantOk: false,
+		},
+		{
+			name:   "non proto implied target identifier",
+			input:  "[a-b-c][]",
+			wantOk: false,
+		},
+		{
+			name:   "nested opening bracket in display",
+			input:  "[[nested]][target]",
+			wantOk: false,
+		},
+		{
+			name:   "nested opening bracket in target",
+			input:  "[foo][[bar]]",
+			wantOk: false,
+		},
+		{
+			name:   "unclosed display bracket",
+			input:  "[foo",
+			wantOk: false,
+		},
+		{
+			name:   "empty display bracket",
+			input:  "[][target]",
+			wantOk: false,
+		},
+		{
+			name:   "missing second bracket",
+			input:  "[foo] not a link",
+			wantOk: false,
+		},
+		{
+			name:   "unclosed target bracket",
+			input:  "[foo][bar",
+			wantOk: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := parser.NewContext()
+			if test.docWithRef != "" {
+				md := goldmark.New()
+				docBytes := []byte(test.docWithRef)
+				_ = md.Parser().Parse(text.NewReader(docBytes), parser.WithContext(ctx))
+			}
+			gotDisplay, gotEnd, gotOk := matchUnresolvedProtoCrossRef(test.input, ctx, test.resolvedLinks)
+			if gotOk != test.wantOk {
+				t.Fatalf("ok mismatch: got %v, want %v", gotOk, test.wantOk)
+			}
+			if !test.wantOk {
+				return
+			}
+			if gotDisplay != test.wantDisplay {
+				t.Errorf("display mismatch: got %q, want %q", gotDisplay, test.wantDisplay)
+			}
+			if gotEnd != test.wantEnd {
+				t.Errorf("end mismatch: got %d, want %d", gotEnd, test.wantEnd)
 			}
 		})
 	}
