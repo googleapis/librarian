@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -105,6 +106,12 @@ func TestFormatDocumentationWithLinks(t *testing.T) {
 }
 
 func TestFormatReadmeDocumentation(t *testing.T) {
+	pkg := "google.cloud.policysimulator.v1"
+	replay := api.NewTestMessage("Replay").WithPackage(pkg)
+	timestamp := api.NewTestMessage("Timestamp").WithPackage(wellKnownProtobufPackage)
+	model := api.NewTestAPI([]*api.Message{replay, timestamp}, nil, nil).WithPackageName(pkg)
+	c := newTestCodec(t, model, &config.Library{Version: "0.7.0"})
+
 	for _, test := range []struct {
 		name  string
 		input string
@@ -125,24 +132,45 @@ func TestFormatReadmeDocumentation(t *testing.T) {
 			},
 		},
 		{
-			name:  "explicit cross-reference",
+			name:  "resolved explicit cross-reference",
 			input: "Viewing a [Replay][google.cloud.policysimulator.v1.Replay].",
-			want:  []string{"Viewing a Replay."},
+			want: []string{
+				"Viewing a [Replay][google.cloud.policysimulator.v1.Replay].",
+				"",
+				"[google.cloud.policysimulator.v1.Replay]: https://swiftpackageindex.com/googleapis/swift-google-cloud-policysimulator-v1/0.7.0/documentation/googlecloudpolicysimulatorv1/replay",
+			},
 		},
 		{
-			name:  "implied cross-reference",
+			name:  "resolved implied cross-reference",
 			input: "Viewing a [Replay][].",
-			want:  []string{"Viewing a Replay."},
+			want: []string{
+				"Viewing a [Replay][].",
+				"",
+				"[Replay]: https://swiftpackageindex.com/googleapis/swift-google-cloud-policysimulator-v1/0.7.0/documentation/googlecloudpolicysimulatorv1/replay",
+			},
 		},
 		{
-			name:  "multiple links in one paragraph",
-			input: "Uses [Foo][] and [Replay][google.cloud.policysimulator.v1.Replay].",
-			want:  []string{"Uses Foo and Replay."},
+			name:  "mixed resolved and unresolved links",
+			input: "Uses [Unknown][] and [Replay][google.cloud.policysimulator.v1.Replay].",
+			want: []string{
+				"Uses Unknown and [Replay][google.cloud.policysimulator.v1.Replay].",
+				"",
+				"[google.cloud.policysimulator.v1.Replay]: https://swiftpackageindex.com/googleapis/swift-google-cloud-policysimulator-v1/0.7.0/documentation/googlecloudpolicysimulatorv1/replay",
+			},
 		},
 		{
-			name:  "inline code inside display text",
-			input: "Viewing a [`Replay`][google.cloud.policysimulator.v1.Replay].",
-			want:  []string{"Viewing a `Replay`."},
+			name:  "external package cross-reference",
+			input: "Uses [Timestamp][google.protobuf.Timestamp].",
+			want: []string{
+				"Uses [Timestamp][google.protobuf.Timestamp].",
+				"",
+				"[google.protobuf.Timestamp]: https://www.google.com/search?q=Swift+google.protobuf+GoogleWKT.WKTTimestamp",
+			},
+		},
+		{
+			name:  "inline code inside unresolved display text",
+			input: "Viewing a [`Unknown`][google.cloud.policysimulator.v1.Unknown].",
+			want:  []string{"Viewing a `Unknown`."},
 		},
 		{
 			name:  "inline code span untouched",
@@ -151,12 +179,12 @@ func TestFormatReadmeDocumentation(t *testing.T) {
 		},
 		{
 			name:  "fenced code block untouched",
-			input: "Example:\n\n```md\n[Replay][google.cloud.policysimulator.v1.Replay]\n```",
+			input: "Example:\n\n```md\n[Unknown][google.cloud.policysimulator.v1.Unknown]\n```",
 			want: []string{
 				"Example:",
 				"",
 				"```md",
-				"[Replay][google.cloud.policysimulator.v1.Replay]",
+				"[Unknown][google.cloud.policysimulator.v1.Unknown]",
 				"```",
 			},
 		},
@@ -186,7 +214,10 @@ func TestFormatReadmeDocumentation(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := formatReadmeDocumentation(test.input)
+			got, err := c.formatReadmeDocumentation(test.input, []string{pkg})
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

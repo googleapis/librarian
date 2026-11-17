@@ -39,33 +39,49 @@ func (c *codec) formatDocumentation(doc string, scopes []string) ([]string, erro
 	}
 	results := strings.Split(doc, "\n")
 
+	docBytes := []byte(doc)
 	md := goldmark.New(
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 		),
 	)
-	docBytes := []byte(doc)
 	node := md.Parser().Parse(text.NewReader(docBytes))
-	links := language.ExtractCrossReferenceLinks(node, docBytes)
+	definitions, _, err := c.resolveLinkDefinitions(node, docBytes, scopes, nil)
+	if err != nil {
+		return nil, err
+	}
+	return appendLinkDefinitions(results, definitions), nil
+}
 
+func (c *codec) resolveLinkDefinitions(node ast.Node, docBytes []byte, scopes []string, rewrite func(string) string) ([]string, map[string]bool, error) {
+	links := language.ExtractCrossReferenceLinks(node, docBytes)
 	var definitions []string
+	resolvedLinks := make(map[string]bool, len(links))
 	for _, link := range links {
 		resolved, err := c.linkDefinition(link, scopes)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		if resolved != "" {
-			definitions = append(definitions, fmt.Sprintf("[%s]: %s", link, resolved))
+		if resolved == "" {
+			continue
 		}
+		resolvedLinks[link] = true
+		if rewrite != nil {
+			resolved = rewrite(resolved)
+		}
+		definitions = append(definitions, fmt.Sprintf("[%s]: %s", link, resolved))
 	}
-	if len(definitions) != 0 {
-		if len(results) > 0 && results[len(results)-1] != "" {
-			results = append(results, "") // Add a blank line before link definitions, if any
-		}
-		results = append(results, definitions...)
-	}
+	return definitions, resolvedLinks, nil
+}
 
-	return results, nil
+func appendLinkDefinitions(lines, definitions []string) []string {
+	if len(definitions) == 0 {
+		return lines
+	}
+	if len(lines) > 0 && lines[len(lines)-1] != "" {
+		lines = append(lines, "") // Add a blank line before link definitions, if any
+	}
+	return append(lines, definitions...)
 }
 
 type textRange struct {
@@ -76,17 +92,22 @@ type textRange struct {
 // formatReadmeDocumentation converts a documentation string into a sequence of
 // lines suitable for GitHub-flavored Markdown README files.
 //
-// Proto cross-reference links without Markdown link definitions are replaced
-// in place with their display text because GitHub Markdown cannot resolve DocC
-// `<doc:...>` targets.
-func formatReadmeDocumentation(doc string) []string {
+// Resolved proto cross-reference links receive Swift Package Index DocC URL
+// definitions, while unresolved proto cross-reference links without Markdown
+// link definitions are replaced in place with their display text.
+func (c *codec) formatReadmeDocumentation(doc string, scopes []string) ([]string, error) {
 	if doc == "" {
-		return nil
+		return nil, nil
 	}
 	docBytes := []byte(doc)
 	md := goldmark.New()
 	ctx := parser.NewContext()
 	root := md.Parser().Parse(text.NewReader(docBytes), parser.WithContext(ctx))
+
+	definitions, resolvedLinks, err := c.resolveLinkDefinitions(root, docBytes, scopes, c.swiftPackageIndexDocURL)
+	if err != nil {
+		return nil, err
+	}
 
 	var ranges []textRange
 	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -106,7 +127,7 @@ func formatReadmeDocumentation(doc string) []string {
 		return ast.WalkContinue, nil
 	})
 	if len(ranges) == 0 {
-		return strings.Split(doc, "\n")
+		return appendLinkDefinitions(strings.Split(doc, "\n"), definitions), nil
 	}
 	slices.SortFunc(ranges, func(a, b textRange) int {
 		return cmp.Compare(a.start, b.start)
@@ -119,14 +140,28 @@ func formatReadmeDocumentation(doc string) []string {
 			continue
 		}
 		out.Write(docBytes[cursor:r.start])
-		out.WriteString(stripProtoCrossRefs(string(docBytes[r.start:r.stop]), ctx))
+		out.WriteString(stripUnresolvedProtoCrossRefs(string(docBytes[r.start:r.stop]), ctx, resolvedLinks))
 		cursor = r.stop
 	}
 	out.Write(docBytes[cursor:])
-	return strings.Split(out.String(), "\n")
+	return appendLinkDefinitions(strings.Split(out.String(), "\n"), definitions), nil
 }
 
-func stripProtoCrossRefs(s string, ctx parser.Context) string {
+func (c *codec) swiftPackageIndexDocURL(target string) string {
+	if !strings.HasPrefix(target, "<doc:") || !strings.HasSuffix(target, ">") {
+		return target
+	}
+	path := strings.TrimSuffix(strings.TrimPrefix(target, "<doc:"), ">")
+	return fmt.Sprintf(
+		"https://swiftpackageindex.com/googleapis/%s/%s/documentation/%s/%s",
+		c.PackageRepoName,
+		c.PackageVersion,
+		strings.ToLower(c.LibraryName),
+		strings.ToLower(path),
+	)
+}
+
+func stripUnresolvedProtoCrossRefs(s string, ctx parser.Context, resolvedLinks map[string]bool) string {
 	var out strings.Builder
 	for i := 0; i < len(s); {
 		switch s[i] {
@@ -142,7 +177,7 @@ func stripProtoCrossRefs(s string, ctx parser.Context) string {
 			i = end
 			continue
 		case '[':
-			if display, end, ok := matchProtoCrossRef(s[i:], ctx); ok {
+			if display, end, ok := matchUnresolvedProtoCrossRef(s[i:], ctx, resolvedLinks); ok {
 				out.WriteString(display)
 				i += end
 				continue
@@ -176,7 +211,7 @@ func skipCodeSpan(s string, start int) int {
 	return start + tickLen
 }
 
-func matchProtoCrossRef(s string, ctx parser.Context) (string, int, bool) {
+func matchUnresolvedProtoCrossRef(s string, ctx parser.Context, resolvedLinks map[string]bool) (string, int, bool) {
 	pos := 1
 	displayEnd := -1
 	for pos < len(s) {
@@ -235,7 +270,7 @@ func matchProtoCrossRef(s string, ctx parser.Context) (string, int, bool) {
 		return "", 0, false
 	}
 	norm := strings.Join(strings.Fields(ref), " ")
-	if !isProtoCrossRef(norm) {
+	if resolvedLinks[norm] || !isProtoCrossRef(norm) {
 		return "", 0, false
 	}
 	return display, targetEnd + 1, true

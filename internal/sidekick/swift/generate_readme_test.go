@@ -440,11 +440,12 @@ func TestGenerateReadme_WithCrossReferenceLinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	readme := string(readmeBytes)
-	want := "Accepts Request and returns Response.\nSee [documentation](https://cloud.google.com) and `array[a][b]`."
+	want := `Accepts [Request][] and returns [Response][google.cloud.example.v1.Response].
+See [documentation](https://cloud.google.com) and ` + "`array[a][b]`." + `
+
+[Request]: https://swiftpackageindex.com/googleapis/swift-google-cloud-example-v1/1.0.0/documentation/googlecloudexamplev1/request
+[google.cloud.example.v1.Response]: https://swiftpackageindex.com/googleapis/swift-google-cloud-example-v1/1.0.0/documentation/googlecloudexamplev1/response`
 	if !strings.Contains(readme, want) {
 		t.Errorf("expected README.md to contain %q, got:\n%s", want, readme)
-	}
-	if strings.Contains(readme, "[google.cloud.example.v1.Response]") {
-		t.Errorf("expected README.md to not contain unresolved cross-reference target, got:\n%s", readme)
 	}
 }

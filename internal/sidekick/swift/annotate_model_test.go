@@ -360,7 +360,11 @@ func TestModelAnnotations_DescriptionLinks(t *testing.T) {
 				"",
 				"[google.cloud.workflows.v1.Replay]: <doc:Replay>",
 			},
-			wantReadmeLines: []string{"Viewing a Replay."},
+			wantReadmeLines: []string{
+				"Viewing a [Replay][google.cloud.workflows.v1.Replay].",
+				"",
+				"[google.cloud.workflows.v1.Replay]: https://swiftpackageindex.com/googleapis/swift-google-cloud-workflows-v1/0.0.0/documentation/googlecloudworkflowsv1/replay",
+			},
 		},
 		{
 			name:    "external package",
@@ -372,7 +376,11 @@ func TestModelAnnotations_DescriptionLinks(t *testing.T) {
 				"",
 				"[google.protobuf.Timestamp]: https://www.google.com/search?q=Swift+google.protobuf+GoogleWKT.WKTTimestamp",
 			},
-			wantReadmeLines: []string{"Uses Timestamp."},
+			wantReadmeLines: []string{
+				"Uses [Timestamp][google.protobuf.Timestamp].",
+				"",
+				"[google.protobuf.Timestamp]: https://www.google.com/search?q=Swift+google.protobuf+GoogleWKT.WKTTimestamp",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

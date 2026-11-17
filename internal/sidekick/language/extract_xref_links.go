@@ -61,8 +61,8 @@ func ExtractCrossReferenceLinks(doc ast.Node, source []byte) []string {
 }
 
 var (
-	explicitLink = regexp.MustCompile(`\]\[([^.][^]]*)\]`)
-	impliedLink  = regexp.MustCompile(`\[([^.][^]]*)\]\[\]`)
+	explicitLink = regexp.MustCompile(`\]\[([^].][^]]*)\]`)
+	impliedLink  = regexp.MustCompile(`\[([^].][^]]*)\]\[\]`)
 )
 
 func extractProtoLinks(p []byte, links map[string]bool) {

@@ -64,8 +64,8 @@ type modelAnnotations struct {
 	DocLines []string
 
 	// ReadmeDocLines holds the package description formatted for GitHub
-	// Markdown (`README.md`), with unresolved proto cross-reference links
-	// stripped to their display text.
+	// Markdown (`README.md`), resolving proto cross-reference links to Swift
+	// Package Index URLs and stripping unresolved links to their display text.
 	ReadmeDocLines []string
 }
 
@@ -239,8 +239,12 @@ func (c *codec) annotateModel() error {
 	if err != nil {
 		return err
 	}
+	readmeDocLines, err := c.formatReadmeDocumentation(c.Model.Description, modelScopes)
+	if err != nil {
+		return err
+	}
 	annotations.DocLines = docLines
-	annotations.ReadmeDocLines = formatReadmeDocumentation(c.Model.Description)
+	annotations.ReadmeDocLines = readmeDocLines
 	if !c.PerServiceTraits {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At
 		// the time, only a handful of packages exceeded this number of services.
