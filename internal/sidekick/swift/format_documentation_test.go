@@ -68,18 +68,128 @@ func TestFormatDocumentationWithLinks(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{someMessage}, nil, nil)
 	c := newTestCodec(t, model, nil)
 
-	input := `Refer to [SomeMessage][] for details.`
-	want := []string{
-		"Refer to [SomeMessage][] for details.",
-		"",
-		"[SomeMessage]: <doc:SomeMessage>",
+	for _, test := range []struct {
+		name  string
+		input string
+		want  []string
+	}{
+		{
+			name:  "no trailing newline",
+			input: `Refer to [SomeMessage][] for details.`,
+			want: []string{
+				"Refer to [SomeMessage][] for details.",
+				"",
+				"[SomeMessage]: <doc:SomeMessage>",
+			},
+		},
+		{
+			name:  "trailing newline",
+			input: "Refer to [SomeMessage][] for details.\n",
+			want: []string{
+				"Refer to [SomeMessage][] for details.",
+				"",
+				"[SomeMessage]: <doc:SomeMessage>",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := c.formatDocumentation(test.input, []string{"test.v1"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
+}
 
-	got, err := c.formatDocumentation(input, []string{"test.v1"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+func TestFormatReadmeDocumentation(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  []string
+	}{
+		{
+			name:  "empty",
+			input: "",
+			want:  nil,
+		},
+		{
+			name:  "plain multi-paragraph with special characters",
+			input: "Manages user's & group's data.\n\nSecond paragraph.",
+			want: []string{
+				"Manages user's & group's data.",
+				"",
+				"Second paragraph.",
+			},
+		},
+		{
+			name:  "explicit cross-reference",
+			input: "Viewing a [Replay][google.cloud.policysimulator.v1.Replay].",
+			want:  []string{"Viewing a Replay."},
+		},
+		{
+			name:  "implied cross-reference",
+			input: "Viewing a [Replay][].",
+			want:  []string{"Viewing a Replay."},
+		},
+		{
+			name:  "multiple links in one paragraph",
+			input: "Uses [Foo][] and [Replay][google.cloud.policysimulator.v1.Replay].",
+			want:  []string{"Uses Foo and Replay."},
+		},
+		{
+			name:  "inline code inside display text",
+			input: "Viewing a [`Replay`][google.cloud.policysimulator.v1.Replay].",
+			want:  []string{"Viewing a `Replay`."},
+		},
+		{
+			name:  "inline code span untouched",
+			input: "Use `matrix[a][b]` or `[Foo][Bar]` literally.",
+			want:  []string{"Use `matrix[a][b]` or `[Foo][Bar]` literally."},
+		},
+		{
+			name:  "fenced code block untouched",
+			input: "Example:\n\n```md\n[Replay][google.cloud.policysimulator.v1.Replay]\n```",
+			want: []string{
+				"Example:",
+				"",
+				"```md",
+				"[Replay][google.cloud.policysimulator.v1.Replay]",
+				"```",
+			},
+		},
+		{
+			name:  "inline url link untouched",
+			input: "Read the [Cloud Monitoring documentation](https://cloud.google.com/monitoring/docs).",
+			want:  []string{"Read the [Cloud Monitoring documentation](https://cloud.google.com/monitoring/docs)."},
+		},
+		{
+			name:  "defined reference link untouched",
+			input: "See [Google][g].\n\n[g]: https://google.com",
+			want: []string{
+				"See [Google][g].",
+				"",
+				"[g]: https://google.com",
+			},
+		},
+		{
+			name:  "non-proto brackets untouched",
+			input: "Matches pattern [A-Za-z][a-z].",
+			want:  []string{"Matches pattern [A-Za-z][a-z]."},
+		},
+		{
+			name:  "brackets before inline link untouched",
+			input: "Prefix [Foo][bar](https://example.com).",
+			want:  []string{"Prefix [Foo][bar](https://example.com)."},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatReadmeDocumentation(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

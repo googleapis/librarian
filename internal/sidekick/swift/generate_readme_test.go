@@ -404,3 +404,47 @@ func TestGenerateReadme_QuickstartServiceOverride(t *testing.T) {
 		t.Errorf("expected Index.md Quickstart section to snippet Service2Quickstart, got:\n%s", docc)
 	}
 }
+
+func TestGenerateReadme_WithCrossReferenceLinks(t *testing.T) {
+	outDir := t.TempDir()
+	pkg := "google.cloud.example.v1"
+	inputType := api.NewTestMessage("Request").
+		WithPackage(pkg).
+		WithFields(api.NewTestField("name").WithType(api.TypezString))
+	outputType := api.NewTestMessage("Response").
+		WithPackage(pkg).
+		WithFields(api.NewTestField("value").WithType(api.TypezString))
+	method := api.NewTestMethod("Get").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	service := api.NewTestService("ExampleService").
+		WithPackage(pkg).
+		WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName(pkg).
+		WithTitle("Example API").
+		WithDescription("Accepts [Request][] and returns [Response][google.cloud.example.v1.Response].\nSee [documentation](https://cloud.google.com) and `array[a][b]`.")
+
+	library := &config.Library{
+		Name:    "google-cloud-example-v1",
+		Version: "1.0.0",
+		Swift:   swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	readmeBytes, err := os.ReadFile(filepath.Join(outDir, "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	readme := string(readmeBytes)
+	want := "Accepts Request and returns Response.\nSee [documentation](https://cloud.google.com) and `array[a][b]`."
+	if !strings.Contains(readme, want) {
+		t.Errorf("expected README.md to contain %q, got:\n%s", want, readme)
+	}
+	if strings.Contains(readme, "[google.cloud.example.v1.Response]") {
+		t.Errorf("expected README.md to not contain unresolved cross-reference target, got:\n%s", readme)
+	}
+}

@@ -339,3 +339,67 @@ func TestQuickstartServiceOverride(t *testing.T) {
 		}
 	})
 }
+
+func TestModelAnnotations_DescriptionLinks(t *testing.T) {
+	pkg := "google.cloud.workflows.v1"
+	for _, test := range []struct {
+		name            string
+		msgName         string
+		msgPkg          string
+		desc            string
+		wantDocLines    []string
+		wantReadmeLines []string
+	}{
+		{
+			name:    "same package",
+			msgName: "Replay",
+			msgPkg:  pkg,
+			desc:    "Viewing a [Replay][google.cloud.workflows.v1.Replay].",
+			wantDocLines: []string{
+				"Viewing a [Replay][google.cloud.workflows.v1.Replay].",
+				"",
+				"[google.cloud.workflows.v1.Replay]: <doc:Replay>",
+			},
+			wantReadmeLines: []string{"Viewing a Replay."},
+		},
+		{
+			name:    "external package",
+			msgName: "Timestamp",
+			msgPkg:  wellKnownProtobufPackage,
+			desc:    "Uses [Timestamp][google.protobuf.Timestamp].",
+			wantDocLines: []string{
+				"Uses [Timestamp][google.protobuf.Timestamp].",
+				"",
+				"[google.protobuf.Timestamp]: https://www.google.com/search?q=Swift+google.protobuf+GoogleWKT.WKTTimestamp",
+			},
+			wantReadmeLines: []string{"Uses Timestamp."},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			msg := api.NewTestMessage(test.msgName).WithPackage(test.msgPkg)
+			model := api.NewTestAPI([]*api.Message{msg}, nil, nil).
+				WithPackageName(pkg).
+				WithDescription(test.desc)
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			ann, ok := model.Codec.(*modelAnnotations)
+			if !ok {
+				t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+			}
+			if !ann.HasDocLines() {
+				t.Error("expected HasDocLines() to be true")
+			}
+			if !ann.HasReadmeDocLines() {
+				t.Error("expected HasReadmeDocLines() to be true")
+			}
+			if diff := cmp.Diff(test.wantDocLines, ann.DocLines); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantReadmeLines, ann.ReadmeDocLines); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
