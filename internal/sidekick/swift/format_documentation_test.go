@@ -354,3 +354,90 @@ func TestMatchUnresolvedProtoCrossRef(t *testing.T) {
 		})
 	}
 }
+
+func TestScanBalancedBracket(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		input          string
+		start          int
+		allowCodeSpans bool
+		wantContentEnd int
+		wantCloseEnd   int
+		wantOk         bool
+	}{
+		{
+			name:   "start not at bracket",
+			input:  "abc[def]",
+			start:  0,
+			wantOk: false,
+		},
+		{
+			name:   "start out of bounds",
+			input:  "abc",
+			start:  5,
+			wantOk: false,
+		},
+		{
+			name:           "simple bracket",
+			input:          "[abc]def",
+			start:          0,
+			wantContentEnd: 4,
+			wantCloseEnd:   5,
+			wantOk:         true,
+		},
+		{
+			name:           "with escaped bracket",
+			input:          `[a\]b]c`,
+			start:          0,
+			wantContentEnd: 5,
+			wantCloseEnd:   6,
+			wantOk:         true,
+		},
+		{
+			name:           "with code span allowed",
+			input:          "[`a]b`]c",
+			start:          0,
+			allowCodeSpans: true,
+			wantContentEnd: 6,
+			wantCloseEnd:   7,
+			wantOk:         true,
+		},
+		{
+			name:           "with code span not allowed closes at inner bracket",
+			input:          "[`a]b`]c",
+			start:          0,
+			allowCodeSpans: false,
+			wantContentEnd: 3,
+			wantCloseEnd:   4,
+			wantOk:         true,
+		},
+		{
+			name:   "unclosed bracket",
+			input:  "[abc",
+			start:  0,
+			wantOk: false,
+		},
+		{
+			name:   "nested opening bracket rejected",
+			input:  "[[abc]]",
+			start:  0,
+			wantOk: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotContentEnd, gotCloseEnd, gotOk := scanBalancedBracket(test.input, test.start, test.allowCodeSpans)
+			if gotOk != test.wantOk {
+				t.Fatalf("ok mismatch: got %v, want %v", gotOk, test.wantOk)
+			}
+			if !test.wantOk {
+				return
+			}
+			if gotContentEnd != test.wantContentEnd {
+				t.Errorf("contentEnd mismatch: got %d, want %d", gotContentEnd, test.wantContentEnd)
+			}
+			if gotCloseEnd != test.wantCloseEnd {
+				t.Errorf("closeEnd mismatch: got %d, want %d", gotCloseEnd, test.wantCloseEnd)
+			}
+		})
+	}
+}

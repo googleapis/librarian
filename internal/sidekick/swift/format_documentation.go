@@ -213,54 +213,17 @@ func skipCodeSpan(s string, start int) int {
 }
 
 func matchUnresolvedProtoCrossRef(s string, ctx parser.Context, resolvedLinks map[string]bool) (string, int, bool) {
-	pos := 1
-	displayEnd := -1
-	for pos < len(s) {
-		switch s[pos] {
-		case '\\':
-			if pos+1 < len(s) {
-				pos += 2
-				continue
-			}
-		case '`':
-			pos = skipCodeSpan(s, pos)
-			continue
-		case '[':
-			return "", 0, false
-		case ']':
-			displayEnd = pos
-		}
-		if displayEnd != -1 {
-			break
-		}
-		pos++
-	}
-	if displayEnd <= 1 {
+	displayEnd, targetStart, ok := scanBalancedBracket(s, 0, true)
+	if !ok || displayEnd <= 1 {
 		return "", 0, false
 	}
 	display := s[1:displayEnd]
-	targetStart := displayEnd + 1
-	if targetStart >= len(s) || s[targetStart] != '[' {
+
+	targetEnd, targetCloseEnd, ok := scanBalancedBracket(s, targetStart, false)
+	if !ok {
 		return "", 0, false
 	}
-	targetEnd := -1
-	for i := targetStart + 1; i < len(s); i++ {
-		if s[i] == '\\' && i+1 < len(s) {
-			i++
-			continue
-		}
-		if s[i] == '[' {
-			return "", 0, false
-		}
-		if s[i] == ']' {
-			targetEnd = i
-			break
-		}
-	}
-	if targetEnd == -1 {
-		return "", 0, false
-	}
-	if targetEnd+1 < len(s) && s[targetEnd+1] == '(' {
+	if targetCloseEnd < len(s) && s[targetCloseEnd] == '(' {
 		return "", 0, false
 	}
 	ref := s[targetStart+1 : targetEnd]
@@ -274,7 +237,33 @@ func matchUnresolvedProtoCrossRef(s string, ctx parser.Context, resolvedLinks ma
 	if resolvedLinks[norm] || !isProtoCrossRef(norm) {
 		return "", 0, false
 	}
-	return display, targetEnd + 1, true
+	return display, targetCloseEnd, true
+}
+
+func scanBalancedBracket(s string, start int, allowCodeSpans bool) (int, int, bool) {
+	if start >= len(s) || s[start] != '[' {
+		return 0, 0, false
+	}
+	for i := start + 1; i < len(s); {
+		switch s[i] {
+		case '\\':
+			if i+1 < len(s) {
+				i += 2
+				continue
+			}
+		case '`':
+			if allowCodeSpans {
+				i = skipCodeSpan(s, i)
+				continue
+			}
+		case '[':
+			return 0, 0, false
+		case ']':
+			return i, i + 1, true
+		}
+		i++
+	}
+	return 0, 0, false
 }
 
 func isProtoCrossRef(s string) bool {
