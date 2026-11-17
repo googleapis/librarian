@@ -235,22 +235,66 @@ func (m *Method) IsBidiStreaming() bool {
 // SampleInfo contains sample generation information for a single method,
 // usually if it is an AIP conforming method.
 type SampleInfo struct {
-	// ResourceNameField is the field containing the resource name or parent resource name.
-	ResourceNameField *Field
-	// ResourceIDField is the field containing the resource ID, usually present in Create methods.
-	ResourceIDField *Field
-	// MessageField is the field containing the message body to be created or updated.
-	MessageField *Field
-	// UpdateMaskField is the field containing the update mask, present in Update methods.
-	UpdateMaskField *Field
-	// IsRequestResourceName is true if the main resource name associated to this sample,
+	// resourceNameField is the field containing the resource name or parent resource name.
+	resourceNameField *Field
+	// resourceIDField is the field containing the resource ID, usually present in Create methods.
+	resourceIDField *Field
+	// messageField is the field containing the message body to be created or updated.
+	messageField *Field
+	// updateMaskField is the field containing the update mask, present in Update methods.
+	updateMaskField *Field
+	// isRequestResourceName is true if the main resource name associated to this sample,
 	// i.e. the name of the resource manipulated by the RPC, is a field of the request
 	// object itself, e.g. for Delete or Get operations.
-	IsRequestResourceName bool
-	// IsMessageResourceName is true if the main resource name associated to this sample,
+	isRequestResourceName bool
+	// isMessageResourceName is true if the main resource name associated to this sample,
 	// i.e. the name of the resource manipulated by the RPC, is a field of the message body of
 	// the request object, e.g. for Update operations.
-	IsMessageResourceName bool
-	// Codec is a placeholder to put language specific annotations.
-	Codec any
+	isMessageResourceName bool
+	// codec is a placeholder to put language specific annotations.
+	codec any
+}
+
+// ResourceNameField returns the field containing the resource name or parent resource name.
+func (s *SampleInfo) ResourceNameField() *Field {
+	return s.resourceNameField
+}
+
+// ResourceIDField returns the field containing the resource ID, usually present in Create methods.
+func (s *SampleInfo) ResourceIDField() *Field {
+	return s.resourceIDField
+}
+
+// MessageField returns the field containing the message body to be created or updated.
+func (s *SampleInfo) MessageField() *Field {
+	return s.messageField
+}
+
+// UpdateMaskField returns the field containing the update mask, present in Update methods.
+func (s *SampleInfo) UpdateMaskField() *Field {
+	return s.updateMaskField
+}
+
+// IsRequestResourceName returns true if the main resource name is a field of the request object itself.
+func (s *SampleInfo) IsRequestResourceName() bool {
+	return s.isRequestResourceName
+}
+
+// IsMessageResourceName returns true if the main resource name is a field of the message body of the request object.
+func (s *SampleInfo) IsMessageResourceName() bool {
+	return s.isMessageResourceName
+}
+
+// Codec returns the language-specific annotations.
+func (s *SampleInfo) Codec() any {
+	return s.codec
+}
+
+// SetAnnotations sets the language-specific codec annotations on the sample info.
+//
+// Note: the Rust codec sets the attribute multiple times.
+// TODO(https://github.com/googleapis/librarian/issues/7911): clean up the
+// callers and change this to panic if called more than once.
+func (s *SampleInfo) SetAnnotations(codec any) {
+	s.codec = codec
 }

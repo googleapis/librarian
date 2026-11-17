@@ -493,10 +493,10 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	return &SampleInfo{
-		ResourceNameField:     resourceField,
-		IsRequestResourceName: true,
-	}
+	return NewSampleInfoBuilder().
+		WithResourceNameField(resourceField).
+		WithIsRequestResourceName(true).
+		Build()
 }
 
 func aipStandardDeleteInfo(m *Method) *SampleInfo {
@@ -518,10 +518,10 @@ func aipStandardDeleteInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	return &SampleInfo{
-		ResourceNameField:     resourceField,
-		IsRequestResourceName: true,
-	}
+	return NewSampleInfoBuilder().
+		WithResourceNameField(resourceField).
+		WithIsRequestResourceName(true).
+		Build()
 }
 
 func aipStandardUndeleteInfo(m *Method) *SampleInfo {
@@ -543,10 +543,10 @@ func aipStandardUndeleteInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	return &SampleInfo{
-		ResourceNameField:     resourceField,
-		IsRequestResourceName: true,
-	}
+	return NewSampleInfoBuilder().
+		WithResourceNameField(resourceField).
+		WithIsRequestResourceName(true).
+		Build()
 }
 
 func aipStandardCreateInfo(m *Method) *SampleInfo {
@@ -588,15 +588,12 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 
 	resourceIDField := findResourceIDField(m.InputType, maybeSingular)
 
-	info := &SampleInfo{
-		ResourceNameField:     parentField,
-		IsRequestResourceName: true,
-		MessageField:          resourceField,
-	}
-	if resourceIDField != nil {
-		info.ResourceIDField = resourceIDField
-	}
-	return info
+	return NewSampleInfoBuilder().
+		WithResourceNameField(parentField).
+		WithIsRequestResourceName(true).
+		WithMessageField(resourceField).
+		WithResourceIDField(resourceIDField).
+		Build()
 }
 
 func aipStandardUpdateInfo(m *Method) *SampleInfo {
@@ -646,12 +643,12 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 		}
 	}
 
-	return &SampleInfo{
-		ResourceNameField:     resourceNameField,
-		IsMessageResourceName: true,
-		MessageField:          resourceField,
-		UpdateMaskField:       updateMaskField,
-	}
+	return NewSampleInfoBuilder().
+		WithResourceNameField(resourceNameField).
+		WithIsMessageResourceName(true).
+		WithMessageField(resourceField).
+		WithUpdateMaskField(updateMaskField).
+		Build()
 }
 
 func aipStandardListInfo(m *Method) *SampleInfo {
@@ -684,10 +681,10 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	return &SampleInfo{
-		ResourceNameField:     parentField,
-		IsRequestResourceName: true,
-	}
+	return NewSampleInfoBuilder().
+		WithResourceNameField(parentField).
+		WithIsRequestResourceName(true).
+		Build()
 }
 
 func findBestResourceFieldByType(message *Message, model *API, targetType string) *Field {
