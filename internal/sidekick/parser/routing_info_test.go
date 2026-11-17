@@ -21,6 +21,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func TestExamples(t *testing.T) {
@@ -335,6 +337,38 @@ func TestExplicitEmptyRouting(t *testing.T) {
 	}
 }
 
+func TestEmptyRoutingParamEntryError(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		param *routingParameter
+	}{
+		{
+			name:  "empty field and empty path_template",
+			param: &routingParameter{},
+		},
+		{
+			name: "empty field with non-empty path_template",
+			param: &routingParameter{
+				PathTemplate: "{id=*}",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			opts := &descriptorpb.MethodOptions{}
+			proto.SetExtension(opts, eRouting, &routingRule{
+				RoutingParameters: []*routingParameter{test.param},
+			})
+			m := &descriptorpb.MethodDescriptorProto{
+				Name:    new("BadEmptyEntry"),
+				Options: opts,
+			}
+			if got, gotErr := parseRoutingAnnotations(".test.TestService.BadEmptyEntry", m); gotErr == nil {
+				t.Errorf("parseRoutingAnnotations() = %v, want error", got)
+			}
+		})
+	}
+}
+
 func TestParsePathTemplateSuccess(t *testing.T) {
 	for _, test := range []struct {
 		fieldPath string
@@ -350,23 +384,6 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 					api.NewRoutingInfoVariantBuilder().
 						WithFieldPath("default").
 						WithMatchingSegments("**").
-						Build(),
-				).
-				Build(),
-		},
-		{
-			// AIP-4222: An empty google.api.routing annotation is acceptable.
-			// It means that no routing headers should be generated for the RPC,
-			// when they otherwise would be e.g. implicitly from the
-			// google.api.http annotation.
-			"",
-			"",
-			api.NewRoutingInfoBuilder().
-				WithName("").
-				WithVariants(
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath([]string{}...).
-						WithMatchingSegments([]string{}...).
 						Build(),
 				).
 				Build(),
