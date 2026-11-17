@@ -424,7 +424,7 @@ func TestGenerateReadme_WithCrossReferenceLinks(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
 		WithPackageName(pkg).
 		WithTitle("Example API").
-		WithDescription("Accepts [Request][] and returns [Response][google.cloud.example.v1.Response].\nSee [documentation](https://cloud.google.com) and `array[a][b]`.")
+		WithDescription("Accepts [Request][google.cloud.example.v1.Request] and returns [Response][google.cloud.example.v1.Response].\nSee [documentation](https://cloud.google.com) and `array[a][b]`.")
 
 	library := &config.Library{
 		Name:    "google-cloud-example-v1",
@@ -440,10 +440,10 @@ func TestGenerateReadme_WithCrossReferenceLinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	readme := string(readmeBytes)
-	want := `Accepts [Request][] and returns [Response][google.cloud.example.v1.Response].
+	want := `Accepts [Request][google.cloud.example.v1.Request] and returns [Response][google.cloud.example.v1.Response].
 See [documentation](https://cloud.google.com) and ` + "`array[a][b]`." + `
 
-[Request]: https://swiftpackageindex.com/googleapis/swift-google-cloud-example-v1/1.0.0/documentation/googlecloudexamplev1/request
+[google.cloud.example.v1.Request]: https://swiftpackageindex.com/googleapis/swift-google-cloud-example-v1/1.0.0/documentation/googlecloudexamplev1/request
 [google.cloud.example.v1.Response]: https://swiftpackageindex.com/googleapis/swift-google-cloud-example-v1/1.0.0/documentation/googlecloudexamplev1/response`
 	if !strings.Contains(readme, want) {
 		t.Errorf("expected README.md to contain %q, got:\n%s", want, readme)

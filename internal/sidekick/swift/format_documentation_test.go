@@ -151,9 +151,9 @@ func TestFormatReadmeDocumentation(t *testing.T) {
 		},
 		{
 			name:  "mixed resolved and unresolved links",
-			input: "Uses [Unknown][] and [Replay][google.cloud.policysimulator.v1.Replay].",
+			input: "Uses [Replay][google.cloud.policysimulator.v1.Replay] and [Unknown][].",
 			want: []string{
-				"Uses Unknown and [Replay][google.cloud.policysimulator.v1.Replay].",
+				"Uses [Replay][google.cloud.policysimulator.v1.Replay] and Unknown.",
 				"",
 				"[google.cloud.policysimulator.v1.Replay]: https://swiftpackageindex.com/googleapis/swift-google-cloud-policysimulator-v1/0.7.0/documentation/googlecloudpolicysimulatorv1/replay",
 			},

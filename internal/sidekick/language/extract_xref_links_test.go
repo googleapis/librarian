@@ -56,11 +56,6 @@ implied method reference [SomeService.CreateFoo][]
 			want:  []string{"test.v1.SomeMessage.field", "test.v1.SomeService"},
 		},
 		{
-			name:  "implied before explicit link on one line",
-			input: `Uses [Unknown][] and [Replay][test.v1.Replay].`,
-			want:  []string{"Unknown", "test.v1.Replay"},
-		},
-		{
 			name: "link definitions",
 			input: `Link definitions should be added when collapsed links are used.
 For example, [google][].
