@@ -136,9 +136,9 @@ func TestGenerateService_DiscoveryLRODocComments(t *testing.T) {
   ///
   /// ## See Also
   ///
-  /// - ` + "``insertPollingUntilDone(request:)``" + `
   /// - ` + "``insert(request:)``" + `
   /// - ` + "``insert(request:options:)``" + `
+  /// - ` + "``insertPollingUntilDone(request:)``" + `
   public func insertPollingUntilDone`
 	gotMethod := extractBlock(t, contentStr, "  /// Creates an instance resource.\n  ///\n  /// - Note: Unlike standard gRPC long-running operations where polling returns the resulting", "public func insertPollingUntilDone")
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {

@@ -479,9 +479,9 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 			"lroMethodPollingUntilDone(request:options:)",
 		},
 		PollingSeeAlsoLinks: []string{
-			"lroMethodPollingUntilDone(request:)",
 			"lroMethod(request:)",
 			"lroMethod(request:options:)",
+			"lroMethodPollingUntilDone(request:)",
 		},
 		StorageControlSeeAlsoLinks: []string{
 			"lroMethod(request:)",
@@ -489,9 +489,9 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 			"lroMethodPollingUntilDone(request:options:)",
 		},
 		StorageControlPollingSeeAlsoLinks: []string{
-			"lroMethodPollingUntilDone(request:)",
 			"lroMethod(request:)",
 			"lroMethod(request:options:)",
+			"lroMethodPollingUntilDone(request:)",
 		},
 		PathExpression: "/",
 		HTTPMethod:     "POST",
@@ -546,9 +546,9 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 			"lroMethodPollingUntilDone(request:options:)",
 		},
 		PollingSeeAlsoLinks: []string{
-			"lroMethodPollingUntilDone(request:)",
 			"lroMethod(request:)",
 			"lroMethod(request:options:)",
+			"lroMethodPollingUntilDone(request:)",
 		},
 		StorageControlSeeAlsoLinks: []string{
 			"lroMethod(request:)",
@@ -556,9 +556,9 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 			"lroMethodPollingUntilDone(request:options:)",
 		},
 		StorageControlPollingSeeAlsoLinks: []string{
-			"lroMethodPollingUntilDone(request:)",
 			"lroMethod(request:)",
 			"lroMethod(request:options:)",
+			"lroMethodPollingUntilDone(request:)",
 		},
 		PathExpression: "/",
 		HTTPMethod:     "POST",
@@ -1300,22 +1300,22 @@ func TestAnnotateMethod_SeeAlsoLinks(t *testing.T) {
 		{
 			name:        "plain with keyword method and field",
 			method:      plainMethod,
-			wantSeeAlso: []string{"get(request:)", "get(name:type:)"},
+			wantSeeAlso: []string{"get(name:type:)", "get(request:)"},
 			wantStorage: []string{"get(request:)"},
 		},
 		{
 			name:        "pagination with signature",
 			method:      paginatedMethod,
-			wantSeeAlso: []string{"listThings(request:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)", "listThingsByItems(name:)"},
+			wantSeeAlso: []string{"listThings(request:)", "listThingsByItems(name:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)"},
 			wantStorage: []string{"listThings(request:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)"},
 		},
 		{
 			name:            "lro with signature",
 			method:          lroMethod,
-			wantSeeAlso:     []string{"createThing(request:)", "createThingPollingUntilDone(request:)", "createThingPollingUntilDone(request:options:)", "createThingPollingUntilDone(name:)"},
-			wantPolling:     []string{"createThingPollingUntilDone(request:)", "createThingPollingUntilDone(name:)", "createThing(request:)", "createThing(request:options:)"},
+			wantSeeAlso:     []string{"createThing(request:)", "createThingPollingUntilDone(name:)", "createThingPollingUntilDone(request:)", "createThingPollingUntilDone(request:options:)"},
+			wantPolling:     []string{"createThing(request:)", "createThing(request:options:)", "createThingPollingUntilDone(name:)", "createThingPollingUntilDone(request:)"},
 			wantStorage:     []string{"createThing(request:)", "createThingPollingUntilDone(request:)", "createThingPollingUntilDone(request:options:)"},
-			wantStoragePoll: []string{"createThingPollingUntilDone(request:)", "createThing(request:)", "createThing(request:options:)"},
+			wantStoragePoll: []string{"createThing(request:)", "createThing(request:options:)", "createThingPollingUntilDone(request:)"},
 		},
 		{
 			name:   "lro poller omitted",

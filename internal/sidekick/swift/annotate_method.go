@@ -522,9 +522,9 @@ func (a *methodAnnotations) Idempotent() bool {
 	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT" || a.HasAutoPopulatedFields
 }
 
-// methodOverloadDocLinks returns the DocC symbol names for the convenience
-// overloads of `method` (for its `(request:options:)` method and, if applicable,
-// its `*PollingUntilDone(request:options:)` method).
+// methodOverloadDocLinks returns the sorted DocC symbol names for the
+// convenience overloads of `method` (for its `(request:options:)` method and,
+// if applicable, its `*PollingUntilDone(request:options:)` method).
 func methodOverloadDocLinks(
 	method *api.Method,
 	unescapedName string,
@@ -536,43 +536,51 @@ func methodOverloadDocLinks(
 	if method.IsLroPoller {
 		return nil, nil
 	}
-	requestLinks = []string{fmt.Sprintf("%s(request:)", unescapedName)}
+	selfRequest := fmt.Sprintf("%s(request:options:)", unescapedName)
+	allVariants := []string{
+		fmt.Sprintf("%s(request:)", unescapedName),
+		selfRequest,
+	}
 	isLRO := lro != nil || discoveryLRO != nil
 	if !isLRO && pagination == nil && includeSignatures {
 		for _, sig := range method.Signatures {
-			requestLinks = append(requestLinks, signatureDocLink(unescapedName, sig))
+			allVariants = append(allVariants, signatureDocLink(unescapedName, sig))
 		}
 	}
 	if pagination != nil {
 		itemsName := unescapedName + "ByItems"
-		requestLinks = append(requestLinks,
+		allVariants = append(allVariants,
 			fmt.Sprintf("%s(request:)", itemsName),
 			fmt.Sprintf("%s(request:options:)", itemsName),
 		)
 		if includeSignatures {
 			for _, sig := range method.Signatures {
-				requestLinks = append(requestLinks, signatureDocLink(itemsName, sig))
+				allVariants = append(allVariants, signatureDocLink(itemsName, sig))
 			}
 		}
 	}
+	var selfPolling string
 	if isLRO {
 		pollingName := unescapedName + "PollingUntilDone"
-		requestLinks = append(requestLinks,
+		selfPolling = fmt.Sprintf("%s(request:options:)", pollingName)
+		allVariants = append(allVariants,
 			fmt.Sprintf("%s(request:)", pollingName),
-			fmt.Sprintf("%s(request:options:)", pollingName),
+			selfPolling,
 		)
-		pollingLinks = []string{fmt.Sprintf("%s(request:)", pollingName)}
 		if includeSignatures {
 			for _, sig := range method.Signatures {
-				sigLink := signatureDocLink(pollingName, sig)
-				requestLinks = append(requestLinks, sigLink)
-				pollingLinks = append(pollingLinks, sigLink)
+				allVariants = append(allVariants, signatureDocLink(pollingName, sig))
 			}
 		}
-		pollingLinks = append(pollingLinks,
-			fmt.Sprintf("%s(request:)", unescapedName),
-			fmt.Sprintf("%s(request:options:)", unescapedName),
-		)
+	}
+	slices.Sort(allVariants)
+	for _, link := range allVariants {
+		if link != selfRequest {
+			requestLinks = append(requestLinks, link)
+		}
+		if isLRO && link != selfPolling {
+			pollingLinks = append(pollingLinks, link)
+		}
 	}
 	return requestLinks, pollingLinks
 }
