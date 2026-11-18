@@ -436,19 +436,6 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 		},
 		{
 			"default",
-			"{**}",
-			api.NewRoutingInfoBuilder().
-				WithName("default").
-				WithVariants(
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("default").
-						WithMatchingSegments("**").
-						Build(),
-				).
-				Build(),
-		},
-		{
-			"default",
 			"{routing=**}",
 			api.NewRoutingInfoBuilder().
 				WithName("routing").
@@ -503,21 +490,6 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 				Build(),
 		},
 		{
-			"default",
-			"p/*/q/*/{routing=a/*/b/**}/s/*/u/*/v/*",
-			api.NewRoutingInfoBuilder().
-				WithName("routing").
-				WithVariants(
-					api.NewRoutingInfoVariantBuilder().
-						WithFieldPath("default").
-						WithMatchingSegments("a", "*", "b", "**").
-						WithPrefixSegments("p", "*", "q", "*").
-						WithSuffixSegments("s", "*", "u", "*", "v", "*").
-						Build(),
-				).
-				Build(),
-		},
-		{
 			"field.sub_field.child",
 			"p/*/q/*/{routing=a/*/b/*}/s/*/u/*/v/**",
 			api.NewRoutingInfoBuilder().
@@ -528,6 +500,75 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 						WithMatchingSegments("a", "*", "b", "*").
 						WithPrefixSegments("p", "*", "q", "*").
 						WithSuffixSegments("s", "*", "u", "*", "v", "**").
+						Build(),
+				).
+				Build(),
+		},
+		{
+			"parent",
+			"projects/{parent}/",
+			api.NewRoutingInfoBuilder().
+				WithName("parent").
+				WithVariants(
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("parent").
+						WithPrefixSegments("projects").
+						WithMatchingSegments("*").
+						Build(),
+				).
+				Build(),
+		},
+		{
+			"default",
+			"{routing=projects/*}/",
+			api.NewRoutingInfoBuilder().
+				WithName("routing").
+				WithVariants(
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithMatchingSegments("projects", "*").
+						Build(),
+				).
+				Build(),
+		},
+		{
+			"default",
+			"projects/*/{routing=instances/*}/tables/*/",
+			api.NewRoutingInfoBuilder().
+				WithName("routing").
+				WithVariants(
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithPrefixSegments("projects", "*").
+						WithMatchingSegments("instances", "*").
+						WithSuffixSegments("tables", "*").
+						Build(),
+				).
+				Build(),
+		},
+		{
+			"sub.parent",
+			"{sub.parent=projects/*}",
+			api.NewRoutingInfoBuilder().
+				WithName("sub.parent").
+				WithVariants(
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("sub", "parent").
+						WithMatchingSegments("projects", "*").
+						Build(),
+				).
+				Build(),
+		},
+		{
+			"default",
+			"v1.0/my-col_1~2/{routing_id=*}",
+			api.NewRoutingInfoBuilder().
+				WithName("routing_id").
+				WithVariants(
+					api.NewRoutingInfoVariantBuilder().
+						WithFieldPath("default").
+						WithPrefixSegments("v1.0", "my-col_1~2").
+						WithMatchingSegments("*").
 						Build(),
 				).
 				Build(),
@@ -564,6 +605,47 @@ func TestParsePathTemplateFailures(t *testing.T) {
 		"projects/*/{a/**/b/*}",
 		"projects/*/{a}/**/b",
 		"projects/*/{a}/*/b/**/c",
+		"p/*/q/*/{routing=a/*/b/**}/s/*/u/*/v/*",
+		"{routing=**}/s/*",
+		"{routing=a/**}/b",
+		// Delimiter, slash, and brace boundary errors.
+		"/",
+		"//",
+		"projects/*/",
+		"projects/{id=*}//",
+		"{id=*}/a//",
+		"{id=*}/a//b",
+		"projects//{id=*}",
+		"a//b/{id=*}",
+		"projects{id=*}",
+		"/{id=*}",
+		"/projects/{id=*}",
+		"{id=a/}",
+		"{id/}",
+		"{id=/a}",
+		"{/id=*}",
+		"{a/=*}",
+		"{id=}",
+		"{}",
+		"{a=*}/{b=*}",
+		"projects/{a}/instances/{b}",
+		// Invalid variable names and unnamed wildcards.
+		"{**}",
+		"{*}",
+		"projects/*/{a/b}",
+		"{.a=*}",
+		"{a.=*}",
+		"{a..b=*}",
+		"{.a}",
+		"{a..b}",
+		// Invalid literals and embedded wildcards.
+		"projects/{id=foo*bar}",
+		"foo*bar/{id=*}",
+		"{id=*foo}",
+		"{id=***}",
+		"{id=*}/foo*bar",
+		`{id=foo"bar}`,
+		"{id=foo:bar}",
 	}
 
 	for _, path := range tests {
@@ -576,6 +658,17 @@ func TestParsePathTemplateFailures(t *testing.T) {
 	}
 }
 
+func TestParsePathTemplateInvalidFieldFailures(t *testing.T) {
+	for _, field := range []string{"", ".", "a..b", ".a", "a.", "bad*field", "a/b", "a b"} {
+		t.Run(field, func(t *testing.T) {
+			got, err := parseRoutingPathTemplate(field, "{id=*}")
+			if err == nil {
+				t.Errorf("expected error for field=%q, got=%v", field, got)
+			}
+		})
+	}
+}
+
 func TestParseVariableSuccess(t *testing.T) {
 	for _, test := range []struct {
 		path        string
@@ -583,14 +676,15 @@ func TestParseVariableSuccess(t *testing.T) {
 		wantSpec    api.RoutingPathSpec
 		wantTrailer string
 	}{
-		{"**", "default", api.NewRoutingPathSpec("**"), ""},
 		{"routing=**", "routing", api.NewRoutingPathSpec("**"), ""},
 		{"routing=a/*/b/**", "routing", api.NewRoutingPathSpec("a", "*", "b", "**"), ""},
 		{"routing=a/*/b/**}", "routing", api.NewRoutingPathSpec("a", "*", "b", "**"), "}"},
 		{"routing=a/*/b/**}/c/*", "routing", api.NewRoutingPathSpec("a", "*", "b", "**"), "}/c/*"},
+		{"parent", "parent", api.NewRoutingPathSpec("*"), ""},
+		{"parent}", "parent", api.NewRoutingPathSpec("*"), "}"},
 	} {
 		t.Run(test.path, func(t *testing.T) {
-			gotName, gotSpec, width, err := parseRoutingVariable("default", test.path)
+			gotName, gotSpec, width, err := parseRoutingVariable(test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -608,11 +702,11 @@ func TestParseVariableSuccess(t *testing.T) {
 }
 
 func TestParseRoutingVariableError(t *testing.T) {
-	tests := []string{"=**", "a/b=**"}
+	tests := []string{"", "=**", "a/b=**", "**", "*", "a/b", "id=", ".a=*", "a.=*", "a..b=*", "bad*name=*"}
 
 	for _, path := range tests {
 		t.Run(path, func(t *testing.T) {
-			gotName, gotSpec, _, err := parseRoutingVariable("default", path)
+			gotName, gotSpec, _, err := parseRoutingVariable(path)
 			if err == nil {
 				t.Errorf("expected error for %q, gotName=%s, gotSpec=%v", path, gotName, gotSpec)
 			}
