@@ -56,6 +56,11 @@ implied method reference [SomeService.CreateFoo][]
 			want:  []string{"test.v1.SomeMessage.field", "test.v1.SomeService"},
 		},
 		{
+			name:  "links in headings",
+			input: `# [SomeMessage][test.v1.SomeMessage]`,
+			want:  []string{"test.v1.SomeMessage"},
+		},
+		{
 			name: "link definitions",
 			input: `Link definitions should be added when collapsed links are used.
 For example, [google][].

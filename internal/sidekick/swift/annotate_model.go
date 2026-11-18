@@ -58,6 +58,15 @@ type modelAnnotations struct {
 	// LROAnyConverterName is the name of the generated converter for
 	// `LROAnyTypes` (e.g. "StorageControlLROAnyConverter").
 	LROAnyConverterName string
+
+	// DocLines holds the package description formatted for DocC (`Index.md`),
+	// including resolved cross-reference link definitions.
+	DocLines []string
+
+	// ReadmeDocLines holds the package description formatted for GitHub
+	// Markdown (`README.md`), resolving proto cross-reference links to Swift
+	// Package Index URLs and stripping unresolved links to their display text.
+	ReadmeDocLines []string
 }
 
 // traitDefinition provides information about each package trait.
@@ -120,6 +129,16 @@ func (ann *modelAnnotations) HasDefaultTraits() bool {
 // payload types are generated in it.
 func (ann *modelAnnotations) HasLROAnyTypes() bool {
 	return len(ann.LROAnyTypes) != 0
+}
+
+// HasDocLines returns true if the package description has formatted DocC lines.
+func (ann *modelAnnotations) HasDocLines() bool {
+	return len(ann.DocLines) > 0
+}
+
+// HasReadmeDocLines returns true if the package description has formatted README lines.
+func (ann *modelAnnotations) HasReadmeDocLines() bool {
+	return len(ann.ReadmeDocLines) > 0
 }
 
 // PackageImports returns the list of dependencies for the package as a whole.
@@ -211,6 +230,22 @@ func (c *codec) annotateModel() error {
 	}
 	if err := c.annotateLROAnyConverter(annotations, generatedMethods); err != nil {
 		return err
+	}
+	if !c.Module {
+		var modelScopes []string
+		if c.Model.PackageName != "" {
+			modelScopes = []string{c.Model.PackageName}
+		}
+		docLines, err := c.formatDocumentation(c.Model.Description, modelScopes)
+		if err != nil {
+			return err
+		}
+		readmeDocLines, err := c.formatReadmeDocumentation(c.Model.Description, modelScopes)
+		if err != nil {
+			return err
+		}
+		annotations.DocLines = docLines
+		annotations.ReadmeDocLines = readmeDocLines
 	}
 	if !c.PerServiceTraits {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At

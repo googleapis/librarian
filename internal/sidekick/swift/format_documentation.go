@@ -15,13 +15,17 @@
 package swift
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/language"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 )
 
 // formatDocumentation converts a documentation string from the source (typically Protobuf
@@ -35,29 +39,251 @@ func (c *codec) formatDocumentation(doc string, scopes []string) ([]string, erro
 	}
 	results := strings.Split(doc, "\n")
 
+	docBytes := []byte(doc)
 	md := goldmark.New(
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 		),
 	)
-	docBytes := []byte(doc)
 	node := md.Parser().Parse(text.NewReader(docBytes))
-	links := language.ExtractCrossReferenceLinks(node, docBytes)
+	definitions, _, err := c.resolveLinkDefinitions(node, docBytes, scopes, nil)
+	if err != nil {
+		return nil, err
+	}
+	return appendLinkDefinitions(results, definitions), nil
+}
 
+func (c *codec) resolveLinkDefinitions(node ast.Node, docBytes []byte, scopes []string, rewrite func(string) string) ([]string, map[string]bool, error) {
+	links := language.ExtractCrossReferenceLinks(node, docBytes)
 	var definitions []string
+	resolvedLinks := make(map[string]bool, len(links))
 	for _, link := range links {
 		resolved, err := c.linkDefinition(link, scopes)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		if resolved != "" {
-			definitions = append(definitions, fmt.Sprintf("[%s]: %s", link, resolved))
+		if resolved == "" {
+			continue
 		}
+		resolvedLinks[link] = true
+		if rewrite != nil {
+			resolved = rewrite(resolved)
+		}
+		definitions = append(definitions, fmt.Sprintf("[%s]: %s", link, resolved))
 	}
-	if len(definitions) != 0 {
-		results = append(results, "") // Add a blank line before link definitions, if any
-		results = append(results, definitions...)
+	return definitions, resolvedLinks, nil
+}
+
+func appendLinkDefinitions(lines, definitions []string) []string {
+	if len(definitions) == 0 {
+		return lines
+	}
+	if len(lines) > 0 && lines[len(lines)-1] != "" {
+		lines = append(lines, "") // Add a blank line before link definitions, if any
+	}
+	return append(lines, definitions...)
+}
+
+type textRange struct {
+	start int
+	stop  int
+}
+
+// formatReadmeDocumentation converts a documentation string into a sequence of
+// lines suitable for GitHub-flavored Markdown README files.
+//
+// Resolved proto cross-reference links receive Swift Package Index DocC URL
+// definitions, while unresolved proto cross-reference links without Markdown
+// link definitions are replaced in place with their display text.
+func (c *codec) formatReadmeDocumentation(doc string, scopes []string) ([]string, error) {
+	if doc == "" {
+		return nil, nil
+	}
+	docBytes := []byte(doc)
+	md := goldmark.New()
+	ctx := parser.NewContext()
+	root := md.Parser().Parse(text.NewReader(docBytes), parser.WithContext(ctx))
+
+	definitions, resolvedLinks, err := c.resolveLinkDefinitions(root, docBytes, scopes, c.swiftPackageIndexDocURL)
+	if err != nil {
+		return nil, err
 	}
 
-	return results, nil
+	var ranges []textRange
+	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		switch node.Kind() {
+		case ast.KindParagraph, ast.KindTextBlock, ast.KindHeading:
+			lines := node.Lines()
+			if lines.Len() > 0 {
+				ranges = append(ranges, textRange{
+					start: lines.At(0).Start,
+					stop:  lines.At(lines.Len() - 1).Stop,
+				})
+			}
+		}
+		return ast.WalkContinue, nil
+	})
+	if len(ranges) == 0 {
+		return appendLinkDefinitions(strings.Split(doc, "\n"), definitions), nil
+	}
+	slices.SortFunc(ranges, func(a, b textRange) int {
+		return cmp.Compare(a.start, b.start)
+	})
+
+	var out strings.Builder
+	cursor := 0
+	for _, r := range ranges {
+		if r.start < cursor {
+			continue
+		}
+		out.Write(docBytes[cursor:r.start])
+		out.WriteString(stripUnresolvedProtoCrossRefs(string(docBytes[r.start:r.stop]), ctx, resolvedLinks))
+		cursor = r.stop
+	}
+	out.Write(docBytes[cursor:])
+	return appendLinkDefinitions(strings.Split(out.String(), "\n"), definitions), nil
+}
+
+func (c *codec) swiftPackageIndexDocURL(target string) string {
+	if !strings.HasPrefix(target, "<doc:") || !strings.HasSuffix(target, ">") {
+		return target
+	}
+	path := strings.TrimSuffix(strings.TrimPrefix(target, "<doc:"), ">")
+	return fmt.Sprintf(
+		"https://swiftpackageindex.com/googleapis/%s/%s/documentation/%s/%s",
+		c.PackageRepoName,
+		c.PackageVersion,
+		strings.ToLower(c.LibraryName),
+		strings.ToLower(path),
+	)
+}
+
+func stripUnresolvedProtoCrossRefs(s string, ctx parser.Context, resolvedLinks map[string]bool) string {
+	var out strings.Builder
+	for i := 0; i < len(s); {
+		switch s[i] {
+		case '\\':
+			if i+1 < len(s) {
+				out.WriteString(s[i : i+2])
+				i += 2
+				continue
+			}
+		case '`':
+			end := skipCodeSpan(s, i)
+			out.WriteString(s[i:end])
+			i = end
+			continue
+		case '[':
+			if i > 0 && isASCIIAlphaNum(s[i-1]) {
+				out.WriteByte(s[i])
+				i++
+				continue
+			}
+			if display, ref, end, ok := matchBracketLink(s[i:]); ok {
+				if _, defined := ctx.Reference(util.ToLinkReference([]byte(ref))); defined || resolvedLinks[ref] {
+					out.WriteString(s[i : i+end])
+					i += end
+					continue
+				}
+				if language.ValidProtoName(ref) {
+					out.WriteString(display)
+					i += end
+					continue
+				}
+			}
+		}
+		out.WriteByte(s[i])
+		i++
+	}
+	return out.String()
+}
+
+func skipCodeSpan(s string, start int) int {
+	tickLen := 0
+	for start+tickLen < len(s) && s[start+tickLen] == '`' {
+		tickLen++
+	}
+	for i := start + tickLen; i < len(s); {
+		if s[i] != '`' {
+			i++
+			continue
+		}
+		closeLen := 0
+		for i+closeLen < len(s) && s[i+closeLen] == '`' {
+			closeLen++
+		}
+		if closeLen == tickLen {
+			return i + closeLen
+		}
+		i += closeLen
+	}
+	return start + tickLen
+}
+
+func matchUnresolvedProtoCrossRef(s string, ctx parser.Context, resolvedLinks map[string]bool) (string, int, bool) {
+	display, ref, end, ok := matchBracketLink(s)
+	if !ok {
+		return "", 0, false
+	}
+	if _, defined := ctx.Reference(util.ToLinkReference([]byte(ref))); defined {
+		return "", 0, false
+	}
+	if resolvedLinks[ref] || !language.ValidProtoName(ref) {
+		return "", 0, false
+	}
+	return display, end, true
+}
+
+func matchBracketLink(s string) (string, string, int, bool) {
+	displayEnd, targetStart, ok := scanBalancedBracket(s, 0, true)
+	if !ok || displayEnd <= 1 {
+		return "", "", 0, false
+	}
+	display := s[1:displayEnd]
+
+	targetEnd, targetCloseEnd, ok := scanBalancedBracket(s, targetStart, false)
+	if !ok {
+		return "", "", 0, false
+	}
+	if targetCloseEnd < len(s) && s[targetCloseEnd] == '(' {
+		return "", "", 0, false
+	}
+	ref := s[targetStart+1 : targetEnd]
+	if ref == "" {
+		ref = display
+	}
+	return display, ref, targetCloseEnd, true
+}
+
+func isASCIIAlphaNum(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
+}
+
+func scanBalancedBracket(s string, start int, allowCodeSpans bool) (int, int, bool) {
+	if start >= len(s) || s[start] != '[' {
+		return 0, 0, false
+	}
+	for i := start + 1; i < len(s); {
+		switch s[i] {
+		case '\\':
+			if i+1 < len(s) {
+				i += 2
+				continue
+			}
+		case '`':
+			if allowCodeSpans {
+				i = skipCodeSpan(s, i)
+				continue
+			}
+		case '[':
+			return 0, 0, false
+		case ']':
+			return i, i + 1, true
+		}
+		i++
+	}
+	return 0, 0, false
 }

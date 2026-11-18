@@ -339,3 +339,96 @@ func TestQuickstartServiceOverride(t *testing.T) {
 		}
 	})
 }
+
+func TestModelAnnotations_DescriptionLinks(t *testing.T) {
+	pkg := "google.cloud.workflows.v1"
+	for _, test := range []struct {
+		name            string
+		msgName         string
+		msgPkg          string
+		desc            string
+		wantDocLines    []string
+		wantReadmeLines []string
+	}{
+		{
+			name:    "same package",
+			msgName: "Replay",
+			msgPkg:  pkg,
+			desc:    "Viewing a [Replay][google.cloud.workflows.v1.Replay].",
+			wantDocLines: []string{
+				"Viewing a [Replay][google.cloud.workflows.v1.Replay].",
+				"",
+				"[google.cloud.workflows.v1.Replay]: <doc:Replay>",
+			},
+			wantReadmeLines: []string{
+				"Viewing a [Replay][google.cloud.workflows.v1.Replay].",
+				"",
+				"[google.cloud.workflows.v1.Replay]: https://swiftpackageindex.com/googleapis/swift-google-cloud-workflows-v1/0.0.0/documentation/googlecloudworkflowsv1/replay",
+			},
+		},
+		{
+			name:    "external package",
+			msgName: "Timestamp",
+			msgPkg:  wellKnownProtobufPackage,
+			desc:    "Uses [Timestamp][google.protobuf.Timestamp].",
+			wantDocLines: []string{
+				"Uses [Timestamp][google.protobuf.Timestamp].",
+				"",
+				"[google.protobuf.Timestamp]: https://www.google.com/search?q=Swift+google.protobuf+GoogleWKT.WKTTimestamp",
+			},
+			wantReadmeLines: []string{
+				"Uses [Timestamp][google.protobuf.Timestamp].",
+				"",
+				"[google.protobuf.Timestamp]: https://www.google.com/search?q=Swift+google.protobuf+GoogleWKT.WKTTimestamp",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			msg := api.NewTestMessage(test.msgName).WithPackage(test.msgPkg)
+			model := api.NewTestAPI([]*api.Message{msg}, nil, nil).
+				WithPackageName(pkg).
+				WithDescription(test.desc)
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			ann, ok := model.Codec.(*modelAnnotations)
+			if !ok {
+				t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+			}
+			if !ann.HasDocLines() {
+				t.Error("expected HasDocLines() to be true")
+			}
+			if !ann.HasReadmeDocLines() {
+				t.Error("expected HasReadmeDocLines() to be true")
+			}
+			if diff := cmp.Diff(test.wantDocLines, ann.DocLines); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantReadmeLines, ann.ReadmeDocLines); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestModelAnnotations_ModuleSkipsDocLines(t *testing.T) {
+	pkg := "google.cloud.workflows.v1"
+	replay := api.NewTestMessage("Replay").WithPackage(pkg)
+	model := api.NewTestAPI([]*api.Message{replay}, nil, nil).
+		WithPackageName(pkg).
+		WithDescription("Viewing a [Replay][google.cloud.workflows.v1.Replay].")
+	codec := newTestCodec(t, model, nil)
+	codec.Module = true
+	codec.LibraryName = ""
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	ann := model.Codec.(*modelAnnotations)
+	if ann.HasDocLines() {
+		t.Errorf("expected HasDocLines() to be false for modules, got %v", ann.DocLines)
+	}
+	if ann.HasReadmeDocLines() {
+		t.Errorf("expected HasReadmeDocLines() to be false for modules, got %v", ann.ReadmeDocLines)
+	}
+}
