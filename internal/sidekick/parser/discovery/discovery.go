@@ -95,7 +95,9 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConf
 	// output on each run.
 	slices.SortStableFunc(result.Services, compareServices)
 
-	lroAnnotations(result, discoveryConfig)
+	if err := api.AddDiscoveryLroAnnotations(result, discoveryConfig); err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }
