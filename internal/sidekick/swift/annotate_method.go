@@ -34,14 +34,14 @@ type methodAnnotations struct {
 	StorageControlSeeAlsoLinks        []string
 	StorageControlPollingSeeAlsoLinks []string
 	PathVariables                     []*pathVariable
-	PathBindings        []*pathBindingAnnotations
-	HasMultipleBindings bool
-	RoutingParams       []*routingParam
-	PathExpression      string
-	HTTPMethod          string
-	HasBody             bool
-	IsBodyWildcard      bool
-	BodyField           string
+	PathBindings                      []*pathBindingAnnotations
+	HasMultipleBindings               bool
+	RoutingParams                     []*routingParam
+	PathExpression                    string
+	HTTPMethod                        string
+	HasBody                           bool
+	IsBodyWildcard                    bool
+	BodyField                         string
 	// IsHTTPBodyRequest reports whether the HTTP request body is a
 	// google.api.HttpBody message, which transcodes as raw bytes and Content-Type
 	// rather than JSON.
@@ -430,30 +430,30 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		StorageControlSeeAlsoLinks:        storageSeeAlsoLinks,
 		StorageControlPollingSeeAlsoLinks: storagePollingSeeAlsoLinks,
 		PathExpression:                    pathExpressionStr,
-		PathVariables:          pathVariables,
-		PathBindings:           pathBindings,
-		HasMultipleBindings:    len(pathBindings) > 1,
-		RoutingParams:          routingParams,
-		HTTPMethod:             httpMethod,
-		HasBody:                hasBody,
-		IsBodyWildcard:         isBodyWildcard,
-		BodyField:              bodyField,
-		IsHTTPBodyRequest:      isHTTPBodyRequest,
-		IsHTTPBodyResponse:     isHTTPBodyResponse,
-		QueryParams:            queryParams,
-		Pagination:             pagination,
-		LRO:                    lro,
-		ReturnType:             returnType,
-		DiscoveryLRO:           discoveryLRO,
-		HasAutoPopulatedFields: method.HasAutoPopulatedFields(),
-		HasIdempotencyHook:     c.IdempotencyHook != "",
-		IdempotencyHook:        c.IdempotencyHook,
-		ResponseEncoding:       c.ResponseEncoding,
-		DiagnoseTypes:          diagnoseTypes && !deprecatedScope,
-		DiagnoseFields:         diagnoseFields && !deprecatedScope,
-		DiagnoseStubTypes:      diagnoseTypes,
-		DiagnoseStubFields:     diagnoseFields,
-		DiagnoseSnippet:        diagnoseFields || deprecatedScope,
+		PathVariables:                     pathVariables,
+		PathBindings:                      pathBindings,
+		HasMultipleBindings:               len(pathBindings) > 1,
+		RoutingParams:                     routingParams,
+		HTTPMethod:                        httpMethod,
+		HasBody:                           hasBody,
+		IsBodyWildcard:                    isBodyWildcard,
+		BodyField:                         bodyField,
+		IsHTTPBodyRequest:                 isHTTPBodyRequest,
+		IsHTTPBodyResponse:                isHTTPBodyResponse,
+		QueryParams:                       queryParams,
+		Pagination:                        pagination,
+		LRO:                               lro,
+		ReturnType:                        returnType,
+		DiscoveryLRO:                      discoveryLRO,
+		HasAutoPopulatedFields:            method.HasAutoPopulatedFields(),
+		HasIdempotencyHook:                c.IdempotencyHook != "",
+		IdempotencyHook:                   c.IdempotencyHook,
+		ResponseEncoding:                  c.ResponseEncoding,
+		DiagnoseTypes:                     diagnoseTypes && !deprecatedScope,
+		DiagnoseFields:                    diagnoseFields && !deprecatedScope,
+		DiagnoseStubTypes:                 diagnoseTypes,
+		DiagnoseStubFields:                diagnoseFields,
+		DiagnoseSnippet:                   diagnoseFields || deprecatedScope,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)

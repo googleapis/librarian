@@ -1298,16 +1298,16 @@ func TestAnnotateMethod_SeeAlsoLinks(t *testing.T) {
 		wantStoragePoll []string
 	}{
 		{
-			name:            "plain with keyword method and field",
-			method:          plainMethod,
-			wantSeeAlso:     []string{"get(request:)", "get(name:type:)"},
-			wantStorage:     []string{"get(request:)"},
+			name:        "plain with keyword method and field",
+			method:      plainMethod,
+			wantSeeAlso: []string{"get(request:)", "get(name:type:)"},
+			wantStorage: []string{"get(request:)"},
 		},
 		{
-			name:            "pagination with signature",
-			method:          paginatedMethod,
-			wantSeeAlso:     []string{"listThings(request:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)", "listThingsByItems(name:)"},
-			wantStorage:     []string{"listThings(request:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)"},
+			name:        "pagination with signature",
+			method:      paginatedMethod,
+			wantSeeAlso: []string{"listThings(request:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)", "listThingsByItems(name:)"},
+			wantStorage: []string{"listThings(request:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)"},
 		},
 		{
 			name:            "lro with signature",
