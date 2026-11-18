@@ -25,8 +25,15 @@ import (
 
 type methodAnnotations struct {
 	Name                string
+	UnescapedName       string
 	DocLines            []string
-	PathVariables       []*pathVariable
+	SeeAlsoLinks        []string
+	PollingSeeAlsoLinks []string
+	// StorageControlSeeAlsoLinks and StorageControlPollingSeeAlsoLinks omit
+	// method_signature overloads, which StorageControlProtocol does not emit.
+	StorageControlSeeAlsoLinks        []string
+	StorageControlPollingSeeAlsoLinks []string
+	PathVariables                     []*pathVariable
 	PathBindings        []*pathBindingAnnotations
 	HasMultipleBindings bool
 	RoutingParams       []*routingParam
@@ -410,10 +417,19 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	}
 	diagnoseFields = diagnoseFields || diagnoseTypes
 	deprecatedScope := inDeprecatedScope(method)
+	name := camelCase(method.Name)
+	unescapedName := strings.ReplaceAll(name, "`", "")
+	seeAlsoLinks, pollingSeeAlsoLinks := methodOverloadDocLinks(method, unescapedName, pagination, lro, discoveryLRO, true)
+	storageSeeAlsoLinks, storagePollingSeeAlsoLinks := methodOverloadDocLinks(method, unescapedName, pagination, lro, discoveryLRO, false)
 	method.Codec = &methodAnnotations{
-		Name:                   camelCase(method.Name),
-		DocLines:               docLines,
-		PathExpression:         pathExpressionStr,
+		Name:                              name,
+		UnescapedName:                     unescapedName,
+		DocLines:                          docLines,
+		SeeAlsoLinks:                      seeAlsoLinks,
+		PollingSeeAlsoLinks:               pollingSeeAlsoLinks,
+		StorageControlSeeAlsoLinks:        storageSeeAlsoLinks,
+		StorageControlPollingSeeAlsoLinks: storagePollingSeeAlsoLinks,
+		PathExpression:                    pathExpressionStr,
 		PathVariables:          pathVariables,
 		PathBindings:           pathBindings,
 		HasMultipleBindings:    len(pathBindings) > 1,
@@ -504,4 +520,72 @@ func inDeprecatedScope(method *api.Method) bool {
 
 func (a *methodAnnotations) Idempotent() bool {
 	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT" || a.HasAutoPopulatedFields
+}
+
+// methodOverloadDocLinks returns the DocC symbol names for the convenience
+// overloads of `method` (for its `(request:options:)` method and, if applicable,
+// its `*PollingUntilDone(request:options:)` method).
+func methodOverloadDocLinks(
+	method *api.Method,
+	unescapedName string,
+	pagination *paginationAnnotations,
+	lro *lroAnnotations,
+	discoveryLRO *discoveryLroAnnotations,
+	includeSignatures bool,
+) (requestLinks []string, pollingLinks []string) {
+	if method.IsLroPoller {
+		return nil, nil
+	}
+	requestLinks = []string{fmt.Sprintf("%s(request:)", unescapedName)}
+	isLRO := lro != nil || discoveryLRO != nil
+	if !isLRO && pagination == nil && includeSignatures {
+		for _, sig := range method.Signatures {
+			requestLinks = append(requestLinks, signatureDocLink(unescapedName, sig))
+		}
+	}
+	if pagination != nil {
+		itemsName := unescapedName + "ByItems"
+		requestLinks = append(requestLinks,
+			fmt.Sprintf("%s(request:)", itemsName),
+			fmt.Sprintf("%s(request:options:)", itemsName),
+		)
+		if includeSignatures {
+			for _, sig := range method.Signatures {
+				requestLinks = append(requestLinks, signatureDocLink(itemsName, sig))
+			}
+		}
+	}
+	if isLRO {
+		pollingName := unescapedName + "PollingUntilDone"
+		requestLinks = append(requestLinks,
+			fmt.Sprintf("%s(request:)", pollingName),
+			fmt.Sprintf("%s(request:options:)", pollingName),
+		)
+		pollingLinks = []string{fmt.Sprintf("%s(request:)", pollingName)}
+		if includeSignatures {
+			for _, sig := range method.Signatures {
+				sigLink := signatureDocLink(pollingName, sig)
+				requestLinks = append(requestLinks, sigLink)
+				pollingLinks = append(pollingLinks, sigLink)
+			}
+		}
+		pollingLinks = append(pollingLinks,
+			fmt.Sprintf("%s(request:)", unescapedName),
+			fmt.Sprintf("%s(request:options:)", unescapedName),
+		)
+	}
+	return requestLinks, pollingLinks
+}
+
+func signatureDocLink(methodName string, sig *api.MethodSignature) string {
+	var params strings.Builder
+	for _, f := range sig.Fields() {
+		fieldCodec, ok := f.Codec().(*fieldAnnotations)
+		if !ok {
+			continue
+		}
+		params.WriteString(strings.ReplaceAll(fieldCodec.Name, "`", ""))
+		params.WriteByte(':')
+	}
+	return fmt.Sprintf("%s(%s)", methodName, params.String())
 }

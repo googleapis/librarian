@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -40,13 +41,16 @@ func TestAnnotateMethod(t *testing.T) {
 			},
 			wantFunc: func(*api.Field) *methodAnnotations {
 				return &methodAnnotations{
-					Name:             "getOperation",
-					PathExpression:   "/v1/operations",
-					DocLines:         []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
-					HTTPMethod:       "GET",
-					HasBody:          false,
-					ReturnType:       "Test.Response",
-					ResponseEncoding: "json;enum-encoding=int",
+					Name:                       "getOperation",
+					UnescapedName:              "getOperation",
+					SeeAlsoLinks:               []string{"getOperation(request:)"},
+					StorageControlSeeAlsoLinks: []string{"getOperation(request:)"},
+					PathExpression:             "/v1/operations",
+					DocLines:                   []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
+					HTTPMethod:                 "GET",
+					HasBody:                    false,
+					ReturnType:                 "Test.Response",
+					ResponseEncoding:           "json;enum-encoding=int",
 				}
 			},
 		},
@@ -60,14 +64,17 @@ func TestAnnotateMethod(t *testing.T) {
 			},
 			wantFunc: func(*api.Field) *methodAnnotations {
 				return &methodAnnotations{
-					Name:             "createKey",
-					PathExpression:   "/v1/keys",
-					HTTPMethod:       "POST",
-					HasBody:          true,
-					IsBodyWildcard:   false,
-					BodyField:        "key",
-					ReturnType:       "Test.Response",
-					ResponseEncoding: "json;enum-encoding=int",
+					Name:                       "createKey",
+					UnescapedName:              "createKey",
+					SeeAlsoLinks:               []string{"createKey(request:)"},
+					StorageControlSeeAlsoLinks: []string{"createKey(request:)"},
+					PathExpression:             "/v1/keys",
+					HTTPMethod:                 "POST",
+					HasBody:                    true,
+					IsBodyWildcard:             false,
+					BodyField:                  "key",
+					ReturnType:                 "Test.Response",
+					ResponseEncoding:           "json;enum-encoding=int",
 				}
 			},
 		},
@@ -81,13 +88,16 @@ func TestAnnotateMethod(t *testing.T) {
 			},
 			wantFunc: func(*api.Field) *methodAnnotations {
 				return &methodAnnotations{
-					Name:             "uploadData",
-					PathExpression:   "/v1/data",
-					HTTPMethod:       "POST",
-					HasBody:          true,
-					IsBodyWildcard:   true,
-					ReturnType:       "Test.Response",
-					ResponseEncoding: "json;enum-encoding=int",
+					Name:                       "uploadData",
+					UnescapedName:              "uploadData",
+					SeeAlsoLinks:               []string{"uploadData(request:)"},
+					StorageControlSeeAlsoLinks: []string{"uploadData(request:)"},
+					PathExpression:             "/v1/data",
+					HTTPMethod:                 "POST",
+					HasBody:                    true,
+					IsBodyWildcard:             true,
+					ReturnType:                 "Test.Response",
+					ResponseEncoding:           "json;enum-encoding=int",
 				}
 			},
 		},
@@ -102,14 +112,17 @@ func TestAnnotateMethod(t *testing.T) {
 			},
 			wantFunc: func(keyField *api.Field) *methodAnnotations {
 				return &methodAnnotations{
-					Name:             "listThings",
-					PathExpression:   "/v1/things",
-					DocLines:         []string{"Lists things."},
-					HTTPMethod:       "GET",
-					HasBody:          false,
-					QueryParams:      []*api.Field{keyField},
-					ReturnType:       "Test.Response",
-					ResponseEncoding: "json;enum-encoding=int",
+					Name:                       "listThings",
+					UnescapedName:              "listThings",
+					SeeAlsoLinks:               []string{"listThings(request:)"},
+					StorageControlSeeAlsoLinks: []string{"listThings(request:)"},
+					PathExpression:             "/v1/things",
+					DocLines:                   []string{"Lists things."},
+					HTTPMethod:                 "GET",
+					HasBody:                    false,
+					QueryParams:                []*api.Field{keyField},
+					ReturnType:                 "Test.Response",
+					ResponseEncoding:           "json;enum-encoding=int",
 				}
 			},
 		},
@@ -270,13 +283,17 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			unescaped := strings.ReplaceAll(test.wantName, "`", "")
 			want := &methodAnnotations{
-				Name:             test.wantName,
-				DocLines:         []string{"Test documentation."},
-				PathExpression:   "/",
-				HTTPMethod:       "GET",
-				ReturnType:       "Test.Response",
-				ResponseEncoding: "json;enum-encoding=int",
+				Name:                       test.wantName,
+				UnescapedName:              unescaped,
+				SeeAlsoLinks:               []string{unescaped + "(request:)"},
+				StorageControlSeeAlsoLinks: []string{unescaped + "(request:)"},
+				DocLines:                   []string{"Test documentation."},
+				PathExpression:             "/",
+				HTTPMethod:                 "GET",
+				ReturnType:                 "Test.Response",
+				ResponseEncoding:           "json;enum-encoding=int",
 			}
 
 			if diff := cmp.Diff(want, method.Codec, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
@@ -362,7 +379,18 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	// Verify method annotations
 	gotMethod := method.Codec.(*methodAnnotations)
 	wantMethod := &methodAnnotations{
-		Name:           "listItems",
+		Name:          "listItems",
+		UnescapedName: "listItems",
+		SeeAlsoLinks: []string{
+			"listItems(request:)",
+			"listItemsByItems(request:)",
+			"listItemsByItems(request:options:)",
+		},
+		StorageControlSeeAlsoLinks: []string{
+			"listItems(request:)",
+			"listItemsByItems(request:)",
+			"listItemsByItems(request:options:)",
+		},
 		PathExpression: "/",
 		HTTPMethod:     "GET",
 		Pagination: &paginationAnnotations{
@@ -443,7 +471,28 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 
 	gotMethod := method.Codec.(*methodAnnotations)
 	wantMethod := &methodAnnotations{
-		Name:           "lroMethod",
+		Name:          "lroMethod",
+		UnescapedName: "lroMethod",
+		SeeAlsoLinks: []string{
+			"lroMethod(request:)",
+			"lroMethodPollingUntilDone(request:)",
+			"lroMethodPollingUntilDone(request:options:)",
+		},
+		PollingSeeAlsoLinks: []string{
+			"lroMethodPollingUntilDone(request:)",
+			"lroMethod(request:)",
+			"lroMethod(request:options:)",
+		},
+		StorageControlSeeAlsoLinks: []string{
+			"lroMethod(request:)",
+			"lroMethodPollingUntilDone(request:)",
+			"lroMethodPollingUntilDone(request:options:)",
+		},
+		StorageControlPollingSeeAlsoLinks: []string{
+			"lroMethodPollingUntilDone(request:)",
+			"lroMethod(request:)",
+			"lroMethod(request:options:)",
+		},
 		PathExpression: "/",
 		HTTPMethod:     "POST",
 		LRO: &lroAnnotations{
@@ -489,7 +538,28 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 
 	gotMethod := method.Codec.(*methodAnnotations)
 	wantMethod := &methodAnnotations{
-		Name:           "lroMethod",
+		Name:          "lroMethod",
+		UnescapedName: "lroMethod",
+		SeeAlsoLinks: []string{
+			"lroMethod(request:)",
+			"lroMethodPollingUntilDone(request:)",
+			"lroMethodPollingUntilDone(request:options:)",
+		},
+		PollingSeeAlsoLinks: []string{
+			"lroMethodPollingUntilDone(request:)",
+			"lroMethod(request:)",
+			"lroMethod(request:options:)",
+		},
+		StorageControlSeeAlsoLinks: []string{
+			"lroMethod(request:)",
+			"lroMethodPollingUntilDone(request:)",
+			"lroMethodPollingUntilDone(request:options:)",
+		},
+		StorageControlPollingSeeAlsoLinks: []string{
+			"lroMethodPollingUntilDone(request:)",
+			"lroMethod(request:)",
+			"lroMethod(request:options:)",
+		},
 		PathExpression: "/",
 		HTTPMethod:     "POST",
 		LRO: &lroAnnotations{
@@ -1001,15 +1071,18 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 			output:        httpBodyMsg,
 			bodyFieldPath: "http_body",
 			want: &methodAnnotations{
-				Name:               "testMethod",
-				PathExpression:     "/v1/test",
-				HTTPMethod:         "POST",
-				HasBody:            true,
-				BodyField:          "httpBody",
-				IsHTTPBodyRequest:  true,
-				IsHTTPBodyResponse: true,
-				ReturnType:         "GoogleApi.HttpBody",
-				ResponseEncoding:   "json;enum-encoding=int",
+				Name:                       "testMethod",
+				UnescapedName:              "testMethod",
+				SeeAlsoLinks:               []string{"testMethod(request:)"},
+				StorageControlSeeAlsoLinks: []string{"testMethod(request:)"},
+				PathExpression:             "/v1/test",
+				HTTPMethod:                 "POST",
+				HasBody:                    true,
+				BodyField:                  "httpBody",
+				IsHTTPBodyRequest:          true,
+				IsHTTPBodyResponse:         true,
+				ReturnType:                 "GoogleApi.HttpBody",
+				ResponseEncoding:           "json;enum-encoding=int",
 			},
 		},
 		{
@@ -1018,15 +1091,18 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 			output:        regularMsg,
 			bodyFieldPath: "*",
 			want: &methodAnnotations{
-				Name:               "testMethod",
-				PathExpression:     "/v1/test",
-				HTTPMethod:         "POST",
-				HasBody:            true,
-				IsBodyWildcard:     true,
-				IsHTTPBodyRequest:  true,
-				IsHTTPBodyResponse: false,
-				ReturnType:         "Test.RegularMessage",
-				ResponseEncoding:   "json;enum-encoding=int",
+				Name:                       "testMethod",
+				UnescapedName:              "testMethod",
+				SeeAlsoLinks:               []string{"testMethod(request:)"},
+				StorageControlSeeAlsoLinks: []string{"testMethod(request:)"},
+				PathExpression:             "/v1/test",
+				HTTPMethod:                 "POST",
+				HasBody:                    true,
+				IsBodyWildcard:             true,
+				IsHTTPBodyRequest:          true,
+				IsHTTPBodyResponse:         false,
+				ReturnType:                 "Test.RegularMessage",
+				ResponseEncoding:           "json;enum-encoding=int",
 			},
 		},
 		{
@@ -1035,14 +1111,17 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 			output:        httpBodyMsg,
 			bodyFieldPath: "",
 			want: &methodAnnotations{
-				Name:               "testMethod",
-				PathExpression:     "/v1/test",
-				HTTPMethod:         "POST",
-				HasBody:            false,
-				IsHTTPBodyRequest:  false,
-				IsHTTPBodyResponse: true,
-				ReturnType:         "GoogleApi.HttpBody",
-				ResponseEncoding:   "json;enum-encoding=int",
+				Name:                       "testMethod",
+				UnescapedName:              "testMethod",
+				SeeAlsoLinks:               []string{"testMethod(request:)"},
+				StorageControlSeeAlsoLinks: []string{"testMethod(request:)"},
+				PathExpression:             "/v1/test",
+				HTTPMethod:                 "POST",
+				HasBody:                    false,
+				IsHTTPBodyRequest:          false,
+				IsHTTPBodyResponse:         true,
+				ReturnType:                 "GoogleApi.HttpBody",
+				ResponseEncoding:           "json;enum-encoding=int",
 			},
 		},
 		{
@@ -1051,15 +1130,18 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 			output:        regularMsg,
 			bodyFieldPath: "*",
 			want: &methodAnnotations{
-				Name:               "testMethod",
-				PathExpression:     "/v1/test",
-				HTTPMethod:         "POST",
-				HasBody:            true,
-				IsBodyWildcard:     true,
-				IsHTTPBodyRequest:  false,
-				IsHTTPBodyResponse: false,
-				ReturnType:         "Test.RegularMessage",
-				ResponseEncoding:   "json;enum-encoding=int",
+				Name:                       "testMethod",
+				UnescapedName:              "testMethod",
+				SeeAlsoLinks:               []string{"testMethod(request:)"},
+				StorageControlSeeAlsoLinks: []string{"testMethod(request:)"},
+				PathExpression:             "/v1/test",
+				HTTPMethod:                 "POST",
+				HasBody:                    true,
+				IsBodyWildcard:             true,
+				IsHTTPBodyRequest:          false,
+				IsHTTPBodyResponse:         false,
+				ReturnType:                 "Test.RegularMessage",
+				ResponseEncoding:           "json;enum-encoding=int",
 			},
 		},
 	} {
@@ -1143,5 +1225,117 @@ func TestAnnotateMethod_ExplicitEmptyRoutingSuppressesHTTPFallback(t *testing.T)
 	}
 	if len(gotImplicit.RoutingParams) != 1 || gotImplicit.RoutingParams[0].RoutingKey != "table_name" {
 		t.Errorf("ImplicitOnly RoutingParams = %v, want table_name", gotImplicit.RoutingParams)
+	}
+}
+
+func TestAnnotateMethod_SeeAlsoLinks(t *testing.T) {
+	nameField := api.NewTestField("name").WithType(api.TypezString)
+	typeField := api.NewTestField("type").WithType(api.TypezString)
+	pageTokenField := api.NewTestField("page_token").WithType(api.TypezString)
+	inputType := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithFields(nameField, typeField, pageTokenField)
+	responseType := api.NewTestMessage("Response").WithPackage("test")
+	itemType := api.NewTestMessage("Item")
+	itemsField := api.NewTestField("items").WithMessageType(itemType).WithRepeated()
+	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
+	paginatedResponse := api.NewTestMessage("ListResponse").
+		WithFields(itemsField, nextPageTokenField).
+		WithPagination(nextPageTokenField, itemsField)
+	operationType := api.NewTestMessage("Operation").WithPackage("test")
+	lroResponse := api.NewTestMessage("LroResponse").WithPackage("test")
+	lroMetadata := api.NewTestMessage("LroMetadata").WithPackage("test")
+
+	plainMethod := api.NewTestMethod("Get").
+		WithInput(inputType).
+		WithOutput(responseType).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build()).
+		WithSignatures(api.NewTestMethodSignature("name", "type"))
+
+	paginatedMethod := api.NewTestMethod("ListThings").
+		WithInput(inputType).
+		WithOutput(paginatedResponse).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build()).
+		WithPagination(pageTokenField).
+		WithSignatures(api.NewTestMethodSignature("name"))
+
+	lroMethod := api.NewTestMethod("CreateThing").
+		WithInput(inputType).
+		WithOutput(operationType).
+		WithVerb("POST").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build()).
+		WithOperationInfo(api.NewTestOperationInfo(lroResponse.ID(), lroMetadata.ID())).
+		WithSignatures(api.NewTestMethodSignature("name"))
+
+	pollerMethod := api.NewTestMethod("GetOperation").
+		WithInput(inputType).
+		WithOutput(operationType).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build())
+	pollerMethod.IsLroPoller = true
+
+	service := api.NewTestService("TestService").
+		WithPackage("test").
+		WithMethods(plainMethod, paginatedMethod, lroMethod, pollerMethod)
+	model := api.NewTestAPI(
+		[]*api.Message{inputType, responseType, itemType, paginatedResponse, operationType, lroResponse, lroMetadata},
+		nil,
+		[]*api.Service{service},
+	).WithPackageName("test")
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name            string
+		method          *api.Method
+		wantSeeAlso     []string
+		wantPolling     []string
+		wantStorage     []string
+		wantStoragePoll []string
+	}{
+		{
+			name:            "plain with keyword method and field",
+			method:          plainMethod,
+			wantSeeAlso:     []string{"get(request:)", "get(name:type:)"},
+			wantStorage:     []string{"get(request:)"},
+		},
+		{
+			name:            "pagination with signature",
+			method:          paginatedMethod,
+			wantSeeAlso:     []string{"listThings(request:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)", "listThingsByItems(name:)"},
+			wantStorage:     []string{"listThings(request:)", "listThingsByItems(request:)", "listThingsByItems(request:options:)"},
+		},
+		{
+			name:            "lro with signature",
+			method:          lroMethod,
+			wantSeeAlso:     []string{"createThing(request:)", "createThingPollingUntilDone(request:)", "createThingPollingUntilDone(request:options:)", "createThingPollingUntilDone(name:)"},
+			wantPolling:     []string{"createThingPollingUntilDone(request:)", "createThingPollingUntilDone(name:)", "createThing(request:)", "createThing(request:options:)"},
+			wantStorage:     []string{"createThing(request:)", "createThingPollingUntilDone(request:)", "createThingPollingUntilDone(request:options:)"},
+			wantStoragePoll: []string{"createThingPollingUntilDone(request:)", "createThing(request:)", "createThing(request:options:)"},
+		},
+		{
+			name:   "lro poller omitted",
+			method: pollerMethod,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.method.Codec.(*methodAnnotations)
+			if diff := cmp.Diff(test.wantSeeAlso, got.SeeAlsoLinks); diff != "" {
+				t.Errorf("SeeAlsoLinks mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantPolling, got.PollingSeeAlsoLinks); diff != "" {
+				t.Errorf("PollingSeeAlsoLinks mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantStorage, got.StorageControlSeeAlsoLinks); diff != "" {
+				t.Errorf("StorageControlSeeAlsoLinks mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantStoragePoll, got.StorageControlPollingSeeAlsoLinks); diff != "" {
+				t.Errorf("StorageControlPollingSeeAlsoLinks mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

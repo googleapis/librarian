@@ -34,13 +34,13 @@ func TestGenerateService_Deprecated(t *testing.T) {
 		{
 			name:         "deprecated",
 			deprecated:   true,
-			wantClient:   "/// @Snippet(path: \"DeprecatedServiceQuickstart\")\n@available(*, deprecated)\npublic final class DeprecatedServiceClient: ",
+			wantClient:   "/// @Snippet(path: \"DeprecatedServiceQuickstart\")\n///\n/// ## See Also\n///\n/// - ``Clients/DeprecatedServiceProtocol``\n@available(*, deprecated)\npublic final class DeprecatedServiceClient: ",
 			wantProtocol: "/// and pass a mock implementation in your tests.\n  @available(*, deprecated)\n  public protocol DeprecatedServiceProtocol: ",
 		},
 		{
 			name:         "not-deprecated",
 			deprecated:   false,
-			wantClient:   "/// @Snippet(path: \"DeprecatedServiceQuickstart\")\npublic final class DeprecatedServiceClient: ",
+			wantClient:   "/// @Snippet(path: \"DeprecatedServiceQuickstart\")\n///\n/// ## See Also\n///\n/// - ``Clients/DeprecatedServiceProtocol``\npublic final class DeprecatedServiceClient: ",
 			wantProtocol: "/// and pass a mock implementation in your tests.\n  public protocol DeprecatedServiceProtocol: ",
 		},
 	} {
