@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */}}
+{{- if .HasRouting }}
 {{- if .Routing }}
 let x_goog_request_params = {
     use gaxi::routing_parameter::Segment;
@@ -61,4 +62,45 @@ if x_goog_request_params.is_empty() {
 {{- end }}
 {{- else }}
 let x_goog_request_params = String::new();
+{{- end }}
+{{- else }}
+{{- with .PathInfo }}
+{{- if .Codec.UniqueParameters }}
+{{- if .Codec.HasNonStringParameters }}
+let x_goog_request_params = {
+    {{- range .Codec.UniqueParameters }}
+    {{- if not .IsString }}
+    let {{ .VariableName }} = {{ .FieldAccessor }}.map(|v| v.to_string());
+    {{- end }}
+    {{- end }}
+    gaxi::routing_parameter::format(&[
+        {{- range .Codec.UniqueParameters }}
+        {{- if .IsString }}
+        {{ .FieldAccessor }}
+            .filter(|v| !v.is_empty())
+            .map(|v| ("{{ .FieldName }}", v)),
+        {{- else }}
+        {{ .VariableName }}
+            .as_deref()
+            .filter(|v| !v.is_empty())
+            .map(|v| ("{{ .FieldName }}", v)),
+        {{- end }}
+        {{- end }}
+    ])
+};
+{{- else }}
+let x_goog_request_params = gaxi::routing_parameter::format(&[
+    {{- range .Codec.UniqueParameters }}
+    {{ .FieldAccessor }}
+        .filter(|v| !v.is_empty())
+        .map(|v| ("{{ .FieldName }}", v)),
+    {{- end }}
+]);
+{{- end }}
+{{- else }}
+let x_goog_request_params = String::new();
+{{- end }}
+{{- else }}
+let x_goog_request_params = String::new();
+{{- end }}
 {{- end }}

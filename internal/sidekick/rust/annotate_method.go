@@ -119,6 +119,13 @@ type pathInfoAnnotation struct {
 	IsIdempotent string
 }
 
+// HasNonStringParameters returns true if any unique parameter is not a string field.
+func (p *pathInfoAnnotation) HasNonStringParameters() bool {
+	return slices.ContainsFunc(p.UniqueParameters, func(s *bindingSubstitution) bool {
+		return !s.IsString
+	})
+}
+
 type operationInfo struct {
 	MetadataType     string
 	ResponseType     string
@@ -198,6 +205,9 @@ type bindingSubstitution struct {
 	//
 	// e.g. ["projects", "*"]
 	Template []string
+
+	// Whether the terminal field in FieldName is a protobuf string field.
+	IsString bool
 }
 
 // TemplateAsArray returns Rust code that yields an array of path segments.
@@ -433,40 +443,82 @@ func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api
 	return makeAccessors(variant.FieldPath(), m)
 }
 
-func makeAccessors(fields []string, m *api.Method) ([]string, error) {
-	findField := func(name string, message *api.Message) *api.Field {
-		for _, f := range message.Fields() {
-			if f.Name() == name {
-				return f
-			}
-		}
+type resolvedField struct {
+	parent *api.Message
+	field  *api.Field
+}
+
+func findMessageField(name string, message *api.Message) *api.Field {
+	if message == nil {
 		return nil
 	}
-	var accessors []string
-	message := m.InputType()
-	for _, name := range fields {
-		field := findField(name, message)
-		rustFieldName := toSnake(name)
-		if field == nil {
-			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID())
+	for _, f := range message.Fields() {
+		if f.Name() == name {
+			return f
 		}
-		if field.IsOneOf() {
+	}
+	return nil
+}
+
+func resolveFieldPath(fields []string, m *api.Method) ([]resolvedField, error) {
+	if m == nil || m.InputType() == nil {
+		return nil, fmt.Errorf("missing input message for method")
+	}
+	if len(fields) == 0 {
+		return nil, fmt.Errorf("empty routing/path field for request message %s", m.InputType().ID())
+	}
+	resolved := make([]resolvedField, 0, len(fields))
+	message := m.InputType()
+	for i, name := range fields {
+		field := findMessageField(name, message)
+		if field == nil {
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", toSnake(name), message.ID())
+		}
+		resolved = append(resolved, resolvedField{parent: message, field: field})
+		if i < len(fields)-1 {
+			if field.Typez() != api.TypezMessage {
+				return nil, fmt.Errorf("invalid intermediate routing/path field (%q) for request message %s", toSnake(name), message.ID())
+			}
+			var fieldMessage *api.Message
+			if m.Model() != nil {
+				fieldMessage = m.Model().Message(field.TypezID())
+			}
+			if fieldMessage == nil {
+				fieldMessage = field.MessageType()
+			}
+			if fieldMessage == nil {
+				return nil, fmt.Errorf("missing message definition for routing/path field (%q) on request message %s", toSnake(name), message.ID())
+			}
+			message = fieldMessage
+		}
+	}
+	return resolved, nil
+}
+
+func formatAccessors(resolved []resolvedField) []string {
+	var accessors []string
+	for _, rf := range resolved {
+		rustFieldName := toSnake(rf.field.Name())
+		if rf.field.IsOneOf() {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s())", rustFieldName))
-		} else if field.Optional() {
+		} else if rf.field.Optional() {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", rustFieldName))
 		} else {
 			accessors = append(accessors, fmt.Sprintf(".map(|m| &m.%s)", rustFieldName))
 		}
-		if field.Typez() == api.TypezString {
+		if rf.field.Typez() == api.TypezString {
 			accessors = append(accessors, ".map(|s| s.as_str())")
 		}
-		if field.Typez() == api.TypezMessage {
-			if fieldMessage := m.Model().Message(field.TypezID()); fieldMessage != nil {
-				message = fieldMessage
-			}
-		}
 	}
-	return accessors, nil
+	return accessors
+}
+
+func makeAccessors(fields []string, m *api.Method) ([]string, error) {
+	resolved, err := resolveFieldPath(fields, m)
+	if err != nil {
+		return nil, err
+	}
+	return formatAccessors(resolved), nil
 }
 
 func annotateSegments(segments []string) []string {
@@ -510,13 +562,13 @@ func annotateSegments(segments []string) []string {
 
 func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubstitution, error) {
 	fieldPath := v.FieldPath()
-	accessors, err := makeAccessors(fieldPath, m)
+	resolved, err := resolveFieldPath(fieldPath, m)
 	if err != nil {
 		return nil, err
 	}
 	var fieldAccessor strings.Builder
 	fieldAccessor.WriteString("Some(&req)")
-	for _, a := range accessors {
+	for _, a := range formatAccessors(resolved) {
 		fieldAccessor.WriteString(a)
 	}
 	var rustNames []string
@@ -526,7 +578,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 	var pathExtraction *PathExtraction
 	fullBody := m.PathInfo() != nil && m.PathInfo().BodyFieldPath() == "*"
 	if fullBody {
-		clears, err := makeClearAccessors(fieldPath, m)
+		clears, err := formatClearAccessors(resolved)
 		if err != nil {
 			return nil, err
 		}
@@ -542,43 +594,24 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		FieldName:      strings.Join(rustNames, "."),
 		PathExtraction: pathExtraction,
 		Template:       v.Segments(),
+		IsString:       resolved[len(resolved)-1].field.Typez() == api.TypezString,
 	}
 	return binding, nil
 }
 
-func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
-	findField := func(name string, message *api.Message) *api.Field {
-		for _, f := range message.Fields() {
-			if f.Name() == name {
-				return f
-			}
-		}
-		return nil
-	}
+func formatClearAccessors(resolved []resolvedField) ([]string, error) {
 	var clears []string
-	message := m.InputType()
-	for _, name := range fields {
-		field := findField(name, message)
-		rustFieldName := toSnake(name)
-		if field == nil {
-			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID())
+	for _, rf := range resolved {
+		rustFieldName := toSnake(rf.field.Name())
+		if rf.field.IsOneOf() {
+			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, rf.parent.ID())
 		}
-		if field.IsOneOf() {
-			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, message.ID())
-		}
-		if field.Typez() != api.TypezMessage {
+		if rf.field.Typez() != api.TypezMessage {
 			clears = append(clears, fmt.Sprintf(".map(|m| std::mem::take(&mut m.%s))", rustFieldName))
+		} else if rf.field.Optional() {
+			clears = append(clears, fmt.Sprintf(".and_then(|m| m.%s.as_mut())", rustFieldName))
 		} else {
-			if field.Optional() {
-				clears = append(clears, fmt.Sprintf(".and_then(|m| m.%s.as_mut())", rustFieldName))
-			} else {
-				clears = append(clears, fmt.Sprintf(".map(|m| &mut m.%s)", rustFieldName))
-			}
-		}
-		if field.Typez() == api.TypezMessage {
-			if fieldMessage := m.Model().Message(field.TypezID()); fieldMessage != nil {
-				message = fieldMessage
-			}
+			clears = append(clears, fmt.Sprintf(".map(|m| &mut m.%s)", rustFieldName))
 		}
 	}
 	return clears, nil

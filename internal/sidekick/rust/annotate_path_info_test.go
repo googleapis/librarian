@@ -178,6 +178,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.name))"},
 				FieldName:      "name",
 				Template:       []string{"projects", "*", "locations", "*"},
+				IsString:       true,
 			},
 		},
 	}
@@ -203,12 +204,14 @@ func TestPathBindingAnnotations(t *testing.T) {
 				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.project))"},
 				FieldName:      "project",
 				Template:       []string{"*"},
+				IsString:       true,
 			},
 			{
 				FieldAccessor:  "Some(&req).map(|m| &m.location).map(|s| s.as_str())",
 				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.location))"},
 				FieldName:      "location",
 				Template:       []string{"*"},
+				IsString:       true,
 			},
 			{
 				FieldAccessor:  "Some(&req).map(|m| &m.id)",
@@ -239,12 +242,14 @@ func TestPathBindingAnnotations(t *testing.T) {
 				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.project))"},
 				FieldName:      "child.project",
 				Template:       []string{"*"},
+				IsString:       true,
 			},
 			{
 				FieldAccessor:  "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.location).map(|s| s.as_str())",
 				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.location))"},
 				FieldName:      "child.location",
 				Template:       []string{"*"},
+				IsString:       true,
 			},
 			{
 				FieldAccessor:  "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.id)",
@@ -282,6 +287,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 				FieldAccessor: "Some(&req).and_then(|m| m.oneof_field()).map(|s| s.as_str())",
 				FieldName:     "oneof_field",
 				Template:      []string{"*"},
+				IsString:      true,
 			},
 		},
 	}
@@ -306,21 +312,21 @@ func TestPathBindingAnnotations(t *testing.T) {
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
-	if diff := cmp.Diff(wantB0, b0.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB0, b0.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(wantB1, b1.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB1, b1.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(wantB2, b2.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	if diff := cmp.Diff(wantB3, b3.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB2, b2.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if diff := cmp.Diff(wantB4, b4.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB3, b3.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	if diff := cmp.Diff(wantB4, b4.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -398,6 +404,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 					FieldName:      test.WantFieldName,
 					PathExtraction: &PathExtraction{FieldTake: test.WantClear},
 					Template:       []string{"*"},
+					IsString:       true,
 				},
 			},
 		}
@@ -414,7 +421,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		api.CrossReference(model)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 		annotateModel(model, codec)
-		if diff := cmp.Diff(wantBinding, binding.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+		if diff := cmp.Diff(wantBinding, binding.Codec(), apitest.AllowUnexported(), cmpopts.IgnoreUnexported(pathBindingAnnotation{})); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
@@ -423,10 +430,40 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 
 func TestPathBindingAnnotationsErrors(t *testing.T) {
 	field := api.NewTestField("field").WithType(api.TypezString)
-	request := api.NewTestMessage("Request").WithFields(field)
+	nestedNoModel := api.NewTestMessage("Nested").WithFields(
+		api.NewTestField("name").WithType(api.TypezString),
+	)
+	unresolvedChild := api.NewTestField("unresolved").WithType(api.TypezMessage)
+	nestedField := api.NewTestField("nested").WithMessageType(nestedNoModel)
+	request := api.NewTestMessage("Request").WithFields(field, nestedField, unresolvedChild)
 	method := api.NewTestMethod("Create").WithInput(request)
-	if got, err := makeAccessors([]string{"not-a-field-name"}, method); err == nil {
-		t.Errorf("expected an error in makeAccessors() for an invalid field name, got=%v", got)
+
+	for _, test := range []struct {
+		name   string
+		fields []string
+		method *api.Method
+	}{
+		{name: "nil method", fields: []string{"field"}, method: nil},
+		{name: "nil input", fields: []string{"field"}, method: api.NewTestMethod("Empty")},
+		{name: "empty path", fields: nil, method: method},
+		{name: "missing field", fields: []string{"not-a-field-name"}, method: method},
+		{name: "non-message intermediate", fields: []string{"field", "sub"}, method: method},
+		{name: "missing intermediate message definition", fields: []string{"unresolved", "sub"}, method: method},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got, err := makeAccessors(test.fields, test.method); err == nil {
+				t.Errorf("expected an error in makeAccessors() for %s, got=%v", test.name, got)
+			}
+		})
+	}
+
+	got, err := makeAccessors([]string{"nested", "name"}, method)
+	if err != nil {
+		t.Fatalf("unexpected error with nil Model and MessageType fallback: %v", err)
+	}
+	want := []string{".map(|m| &m.nested)", ".map(|m| &m.name)", ".map(|s| s.as_str())"}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -542,5 +579,187 @@ func TestBindingSubstitutionTemplates(t *testing.T) {
 
 	if want != got {
 		t.Errorf("TemplateAsArray() failed. want=`%s`, got=`%s`", want, got)
+	}
+}
+
+func TestBindingSubstitutionIsString(t *testing.T) {
+	kindEnum := api.NewTestEnum("Kind").
+		WithPackage("test.v1").
+		WithValues(api.NewTestEnumValue("KIND_UNSPECIFIED", 0))
+	child := api.NewTestMessage("Child").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("count").WithType(api.TypezUint64),
+		)
+	oneofStrField := api.NewTestField("oneofStr").WithType(api.TypezString)
+	oneofStr := api.NewTestOneOf("strChoice").WithFields(oneofStrField)
+	oneofNumField := api.NewTestField("oneofNum").WithType(api.TypezInt32)
+	oneofNum := api.NewTestOneOf("numChoice").WithFields(oneofNumField)
+
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("child").WithMessageType(child).WithOptional(),
+			api.NewTestField("optCount").WithType(api.TypezUint64).WithOptional(),
+			api.NewTestField("kind").WithEnumType(kindEnum),
+			oneofStrField,
+			oneofNumField,
+		).
+		WithOneOfs(oneofStr, oneofNum)
+	response := api.NewTestMessage("Response").WithPackage("test.v1")
+
+	emptyMethod := api.NewTestMethod("Empty").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().
+			WithLiteral("v1").
+			WithLiteral("items").
+			Build())
+
+	stringOnlyMethod := api.NewTestMethod("StringOnly").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().
+			WithLiteral("v1").
+			WithVariableNamed("parent").
+			WithLiteral("children").
+			WithVariableNamed("child", "name").
+			WithLiteral("choices").
+			WithVariableNamed("oneofStr").
+			Build())
+
+	mixedMethod := api.NewTestMethod("Mixed").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().
+			WithLiteral("v1").
+			WithVariableNamed("parent").
+			WithLiteral("children").
+			WithVariableNamed("child", "name").
+			WithLiteral("childCounts").
+			WithVariableNamed("child", "count").
+			WithLiteral("optCounts").
+			WithVariableNamed("optCount").
+			WithLiteral("kinds").
+			WithVariableNamed("kind").
+			WithLiteral("oneofStrs").
+			WithVariableNamed("oneofStr").
+			WithLiteral("oneofNums").
+			WithVariableNamed("oneofNum").
+			Build())
+
+	service := api.NewTestService("TestService").
+		WithPackage("test.v1").
+		WithMethods(emptyMethod, stringOnlyMethod, mixedMethod)
+
+	model := api.NewTestAPI(
+		[]*api.Message{request, child, response},
+		[]*api.Enum{kindEnum},
+		[]*api.Service{service},
+	).WithPackageName("test.v1")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{
+		"include-grpc-only-methods": "true",
+	})
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
+
+	emptyAnn := emptyMethod.PathInfo().Codec().(*pathInfoAnnotation)
+	if emptyAnn.HasNonStringParameters() {
+		t.Errorf("Empty HasNonStringParameters() = true, want false")
+	}
+
+	stringAnn := stringOnlyMethod.PathInfo().Codec().(*pathInfoAnnotation)
+	if stringAnn.HasNonStringParameters() {
+		t.Errorf("StringOnly HasNonStringParameters() = true, want false")
+	}
+	wantStringAnn := &pathInfoAnnotation{
+		UniqueParameters: []*bindingSubstitution{
+			{
+				FieldAccessor: "Some(&req).map(|m| &m.parent).map(|s| s.as_str())",
+				FieldName:     "parent",
+				Template:      []string{"*"},
+				IsString:      true,
+			},
+			{
+				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.name).map(|s| s.as_str())",
+				FieldName:     "child.name",
+				Template:      []string{"*"},
+				IsString:      true,
+			},
+			{
+				FieldAccessor: "Some(&req).and_then(|m| m.oneof_str()).map(|s| s.as_str())",
+				FieldName:     "oneof_str",
+				Template:      []string{"*"},
+				IsString:      true,
+			},
+		},
+		IsIdempotent: "true",
+	}
+	if diff := cmp.Diff(wantStringAnn, stringAnn); diff != "" {
+		t.Errorf("StringOnly mismatch (-want +got):\n%s", diff)
+	}
+
+	mixedAnn := mixedMethod.PathInfo().Codec().(*pathInfoAnnotation)
+	if !mixedAnn.HasNonStringParameters() {
+		t.Errorf("Mixed HasNonStringParameters() = false, want true")
+	}
+	wantMixedAnn := &pathInfoAnnotation{
+		UniqueParameters: []*bindingSubstitution{
+			{
+				FieldAccessor: "Some(&req).map(|m| &m.parent).map(|s| s.as_str())",
+				FieldName:     "parent",
+				Template:      []string{"*"},
+				IsString:      true,
+			},
+			{
+				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.name).map(|s| s.as_str())",
+				FieldName:     "child.name",
+				Template:      []string{"*"},
+				IsString:      true,
+			},
+			{
+				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.count)",
+				FieldName:     "child.count",
+				Template:      []string{"*"},
+				IsString:      false,
+			},
+			{
+				FieldAccessor: "Some(&req).and_then(|m| m.opt_count.as_ref())",
+				FieldName:     "opt_count",
+				Template:      []string{"*"},
+				IsString:      false,
+			},
+			{
+				FieldAccessor: "Some(&req).map(|m| &m.kind)",
+				FieldName:     "kind",
+				Template:      []string{"*"},
+				IsString:      false,
+			},
+			{
+				FieldAccessor: "Some(&req).and_then(|m| m.oneof_str()).map(|s| s.as_str())",
+				FieldName:     "oneof_str",
+				Template:      []string{"*"},
+				IsString:      true,
+			},
+			{
+				FieldAccessor: "Some(&req).and_then(|m| m.oneof_num())",
+				FieldName:     "oneof_num",
+				Template:      []string{"*"},
+				IsString:      false,
+			},
+		},
+		IsIdempotent: "true",
+	}
+	if diff := cmp.Diff(wantMixedAnn, mixedAnn); diff != "" {
+		t.Errorf("Mixed mismatch (-want +got):\n%s", diff)
 	}
 }

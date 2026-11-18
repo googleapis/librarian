@@ -246,12 +246,7 @@ func TestGenerateServerStreaming(t *testing.T) {
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
     ) -> Result<google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>> {
-        let x_goog_request_params = [
-            None::<String>; 0
-        ]
-        .into_iter()
-        .flatten()
-        .fold(String::new(), |b, p| b + "&" + &p);
+        let x_goog_request_params = String::new();
 
         let extensions = {
             let mut e = gaxi::grpc::tonic::Extensions::new();
