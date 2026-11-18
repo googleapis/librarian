@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -28,6 +29,7 @@ import (
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 	"github.com/googleapis/librarian/internal/sources"
+	"golang.org/x/sync/errgroup"
 )
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
@@ -111,21 +113,41 @@ func UpdateWorkspace(ctx context.Context) error {
 	return command.Run(ctx, command.Cargo, "update", "--workspace")
 }
 
-// Format formats a generated Rust library.
+// Format formats generated Rust libraries.
 //
-// Note the use of `--frozen` to avoid contention on the crate and build locks.
-// This can be called in parallel. Keep in mind that `cargo fmt -p foo` reads
-// the `Cargo.toml` of the `foo` package. Running `generate` and `format`
-// concurrently will not work as `generate` may delete files from one of the
-// dependencies.
-func Format(ctx context.Context, library *config.Library) error {
-	if err := command.Run(ctx, "taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
-		return err
+// All `Cargo.toml` files are formatted with `taplo` first, before invoking
+// `cargo fmt`. This prevents race conditions where `cargo metadata` (invoked by
+// `cargo fmt -p <lib>`) reads a `Cargo.toml` file from another crate that is in
+// the middle of being modified by `taplo fmt`.
+//
+// Rust code formatting with `cargo --frozen fmt -p <lib>` is run in parallel.
+func Format(ctx context.Context, libraries ...*config.Library) error {
+	if len(libraries) == 0 {
+		return nil
 	}
-	if err := command.Run(ctx, command.Cargo, "--frozen", "fmt", "-p", library.Name); err != nil {
-		return err
+	var tomlPaths []string
+	for _, lib := range libraries {
+		tomlPaths = append(tomlPaths, filepath.Join(lib.Output, "Cargo.toml"))
 	}
-	return nil
+	const batchSize = 100
+	for i := 0; i < len(tomlPaths); i += batchSize {
+		end := min(i+batchSize, len(tomlPaths))
+		args := append([]string{"fmt"}, tomlPaths[i:end]...)
+		if err := command.Run(ctx, "taplo", args...); err != nil {
+			return err
+		}
+	}
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(runtime.GOMAXPROCS(0))
+	for _, library := range libraries {
+		g.Go(func() error {
+			if err := command.Run(gctx, command.Cargo, "--frozen", "fmt", "-p", library.Name); err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+	return g.Wait()
 }
 
 func generateVeneer(ctx context.Context, pc *config.Protoc, library *config.Library, sources *sources.Sources) error {
