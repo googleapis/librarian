@@ -97,6 +97,13 @@
   title: Google Apps Script Types
   transports:
     python: grpc
+- path: google/apps/script/type/meet
+  documentation_uri: https://developers.google.com/apps-script/
+  skip_rest_numeric_enums:
+    - python
+  title: Google Apps Script Types
+  transports:
+    python: grpc
 - path: google/apps/script/type/sheets
   documentation_uri: https://developers.google.com/apps-script/
   skip_rest_numeric_enums:
