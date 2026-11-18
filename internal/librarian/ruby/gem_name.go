@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"path"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -28,7 +27,6 @@ import (
 )
 
 var (
-	errAPIAlreadyExists           = errors.New("api already exists in library")
 	errMissingRubyPackage         = errors.New("missing option ruby_package")
 	errInvalidRubyPackage         = errors.New("invalid option ruby_package")
 	errRubyPackageVersionMismatch = errors.New("ruby_package version mismatch")
@@ -39,67 +37,81 @@ var (
 	camelBoundaryRe   = regexp.MustCompile(`([a-z0-9])([A-Z])`)
 )
 
-// DeriveGemNames returns the Ruby gem name or names that must be reserved for
-// adding apiPath under googleapisDir, given the existing Ruby configuration cfg.
-//
-// For a net-new service it returns the wrapper gem name followed by the
-// versioned gem name. For a new version of a service already configured in cfg
-// it returns only the versioned gem name, reusing the existing base gem name.
-func DeriveGemNames(cfg *config.Config, googleapisDir, apiPath string) ([]string, error) {
-	if cfg == nil {
-		cfg = &config.Config{}
-	}
-	if existingLib := findLibraryWithAPI(cfg, apiPath); existingLib != "" {
-		return nil, fmt.Errorf("%w: %s (in library %s)", errAPIAlreadyExists, apiPath, existingLib)
-	}
+// DefaultGemNames returns the wrapper and versioned gem names for a net-new
+// service at apiPath, derived from option ruby_package in its protos under
+// googleapisDir. For example, Google::Cloud::SecretManager::V1 gives
+// google-cloud-secret_manager and google-cloud-secret_manager-v1.
+func DefaultGemNames(googleapisDir, apiPath string) (wrapper, versioned string, err error) {
 	version := serviceconfig.ExtractVersion(apiPath)
 	segments, err := inspectRubyPackage(googleapisDir, apiPath, version)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
-	if baseGem, ok := findExistingBaseGemName(cfg, path.Dir(apiPath)); ok {
-		return []string{baseGem + "-" + version}, nil
-	}
-	return gemNamesFromSegments(segments), nil
+	wrapper, versioned = gemNamesFromSegments(segments)
+	return wrapper, versioned, nil
 }
 
-func findLibraryWithAPI(cfg *config.Config, apiPath string) string {
-	for _, lib := range cfg.Libraries {
-		if slices.ContainsFunc(lib.APIs, func(api *config.API) bool { return api.Path == apiPath }) {
-			return lib.Name
+// FindExistingServiceLibrary returns the library for another version of the
+// service at apiPath, or nil if libraries has none. A versioned library is
+// preferred over a wrapper, so a sub-service of a multi-wrapper library
+// resolves to its own gem name rather than the broader wrapper name.
+func FindExistingServiceLibrary(libraries []*config.Library, apiPath string) *config.Library {
+	unversioned := path.Dir(apiPath)
+	for _, lib := range libraries {
+		if isWrapperLibrary(lib) {
+			continue
+		}
+		for _, api := range lib.APIs {
+			if path.Dir(api.Path) == unversioned && versionedBase(lib, api) != "" {
+				return lib
+			}
+		}
+	}
+	for _, lib := range libraries {
+		if !isWrapperLibrary(lib) {
+			continue
+		}
+		for _, api := range lib.APIs {
+			if path.Dir(api.Path) == unversioned {
+				return lib
+			}
+		}
+	}
+	return nil
+}
+
+// VersionedGemName returns the versioned gem name for apiPath as a new version
+// of serviceLib's service, reusing serviceLib's base gem name. It returns "" if
+// serviceLib does not contain another version of that service.
+func VersionedGemName(serviceLib *config.Library, apiPath string) string {
+	unversioned := path.Dir(apiPath)
+	version := serviceconfig.ExtractVersion(apiPath)
+	for _, api := range serviceLib.APIs {
+		if path.Dir(api.Path) != unversioned {
+			continue
+		}
+		if isWrapperLibrary(serviceLib) {
+			return apiGemName(serviceLib, api) + "-" + version
+		}
+		if base := versionedBase(serviceLib, api); base != "" {
+			return base + "-" + version
 		}
 	}
 	return ""
 }
 
-func findExistingBaseGemName(cfg *config.Config, unversionedPath string) (string, bool) {
-	// Prefer a non-wrapper versioned library so multi-wrapper APIs resolve their
-	// individual sub-gem base name cleanly even if the wrapper name is broader.
-	for _, lib := range cfg.Libraries {
-		if isWrapperLibrary(lib) {
-			continue
-		}
-		for _, api := range lib.APIs {
-			if path.Dir(api.Path) != unversionedPath {
-				continue
-			}
-			ver := serviceconfig.ExtractVersion(api.Path)
-			if base, ok := strings.CutSuffix(lib.Name, "-"+ver); ver != "" && ok && base != "" {
-				return base, true
-			}
-		}
+// versionedBase returns lib's name without the "-<version>" suffix of api, or
+// "" if the name does not end with that suffix.
+func versionedBase(lib *config.Library, api *config.API) string {
+	ver := serviceconfig.ExtractVersion(api.Path)
+	if ver == "" {
+		return ""
 	}
-	for _, lib := range cfg.Libraries {
-		if !isWrapperLibrary(lib) {
-			continue
-		}
-		for _, api := range lib.APIs {
-			if path.Dir(api.Path) == unversionedPath {
-				return apiGemName(lib, api), true
-			}
-		}
+	base, ok := strings.CutSuffix(lib.Name, "-"+ver)
+	if !ok {
+		return ""
 	}
-	return "", false
+	return base
 }
 
 // inspectRubyPackage reads the ruby_package option from the first proto file
@@ -138,14 +150,14 @@ func validateRubyPackage(rubyPkg, version string) ([]string, error) {
 	return segments, nil
 }
 
-func gemNamesFromSegments(segments []string) []string {
+func gemNamesFromSegments(segments []string) (wrapper, versioned string) {
 	underscored := make([]string, len(segments))
 	for i, seg := range segments {
 		underscored[i] = underscoreSegment(seg)
 	}
 	n := len(underscored)
-	wrapper := strings.Join(underscored[:n-1], "-")
-	return []string{wrapper, wrapper + "-" + underscored[n-1]}
+	wrapper = strings.Join(underscored[:n-1], "-")
+	return wrapper, wrapper + "-" + underscored[n-1]
 }
 
 func underscoreSegment(s string) string {
