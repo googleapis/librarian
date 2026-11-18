@@ -24,13 +24,13 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestDefaultGemNames(t *testing.T) {
+func TestDefaultLibraryName(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		files         map[string]string
-		apiPath       string
-		wantWrapper   string
-		wantVersioned string
+		name      string
+		libraries []*config.Library
+		files     map[string]string
+		apiPath   string
+		want      string
 	}{
 		{
 			name: "net-new API with camelCase segment",
@@ -39,9 +39,8 @@ func TestDefaultGemNames(t *testing.T) {
 option ruby_package = "Google::Cloud::WorkloadIdentity::V1";
 `,
 			},
-			apiPath:       "google/cloud/workloadidentity/v1",
-			wantWrapper:   "google-cloud-workload_identity",
-			wantVersioned: "google-cloud-workload_identity-v1",
+			apiPath: "google/cloud/workloadidentity/v1",
+			want:    "google-cloud-workload_identity-v1",
 		},
 		{
 			name: "commented-out ruby_package line is ignored",
@@ -51,9 +50,8 @@ option ruby_package = "Google::Cloud::WorkloadIdentity::V1";
 option ruby_package = "Google::Cloud::AlloyDB::V1beta";
 `,
 			},
-			apiPath:       "google/cloud/alloydb/v1beta",
-			wantWrapper:   "google-cloud-alloy_db",
-			wantVersioned: "google-cloud-alloy_db-v1beta",
+			apiPath: "google/cloud/alloydb/v1beta",
+			want:    "google-cloud-alloy_db-v1beta",
 		},
 		{
 			name: "acronyms and deeply nested namespaces",
@@ -62,9 +60,8 @@ option ruby_package = "Google::Cloud::AlloyDB::V1beta";
 option ruby_package = "Google::Cloud::GDCHardwareManagement::V1alpha";
 `,
 			},
-			apiPath:       "google/cloud/gdchardwaremanagement/v1alpha",
-			wantWrapper:   "google-cloud-gdc_hardware_management",
-			wantVersioned: "google-cloud-gdc_hardware_management-v1alpha",
+			apiPath: "google/cloud/gdchardwaremanagement/v1alpha",
+			want:    "google-cloud-gdc_hardware_management-v1alpha",
 		},
 		{
 			name: "subdirectories with distinct sub-namespaces do not conflict with top-level protos",
@@ -76,9 +73,8 @@ option ruby_package = "Google::Cloud::GkeHub::V1";
 option ruby_package = "Google::Cloud::GkeHub::ConfigManagement::V1";
 `,
 			},
-			apiPath:       "google/cloud/gkehub/v1",
-			wantWrapper:   "google-cloud-gke_hub",
-			wantVersioned: "google-cloud-gke_hub-v1",
+			apiPath: "google/cloud/gkehub/v1",
+			want:    "google-cloud-gke_hub-v1",
 		},
 		{
 			name: "two-segment ruby_package",
@@ -87,41 +83,82 @@ option ruby_package = "Google::Cloud::GkeHub::ConfigManagement::V1";
 option ruby_package = "Grafeas::V1";
 `,
 			},
-			apiPath:       "grafeas/v1",
-			wantWrapper:   "grafeas",
-			wantVersioned: "grafeas-v1",
+			apiPath: "grafeas/v1",
+			want:    "grafeas-v1",
 		},
 		{
-			name: "nested child service",
+			name:      "new version of existing service reuses versioned library base name",
+			libraries: []*config.Library{workloadIdentityWrapper, workloadIdentityV1},
+			files: map[string]string{
+				"google/cloud/workloadidentity/v2/service.proto": `syntax = "proto3";
+option ruby_package = "Google::Cloud::WorkloadIdentity::V2";
+`,
+			},
+			apiPath: "google/cloud/workloadidentity/v2",
+			want:    "google-cloud-workload_identity-v2",
+		},
+		{
+			name:      "new version of existing service reuses custom base name",
+			libraries: []*config.Library{backupDRV1},
+			files: map[string]string{
+				"google/cloud/backupdr/v1beta/service.proto": `syntax = "proto3";
+option ruby_package = "Google::Cloud::BackupDR::V1beta";
+`,
+			},
+			apiPath: "google/cloud/backupdr/v1beta",
+			want:    "google-cloud-backupdr-v1beta",
+		},
+		{
+			name:      "new version under multi-wrapper reuses sub-gem name",
+			libraries: []*config.Library{workflowsMultiWrapper},
+			files: map[string]string{
+				"google/cloud/workflows/executions/v2/service.proto": `syntax = "proto3";
+option ruby_package = "Google::Cloud::Workflows::Executions::V2";
+`,
+			},
+			apiPath: "google/cloud/workflows/executions/v2",
+			want:    "google-cloud-workflows-executions-v2",
+		},
+		{
+			name:      "nested child service of an existing service is net-new",
+			libraries: []*config.Library{dialogflowWrapper},
 			files: map[string]string{
 				"google/cloud/dialogflow/cx/v3/service.proto": `syntax = "proto3";
 option ruby_package = "Google::Cloud::Dialogflow::CX::V3";
 `,
 			},
-			apiPath:       "google/cloud/dialogflow/cx/v3",
-			wantWrapper:   "google-cloud-dialogflow-cx",
-			wantVersioned: "google-cloud-dialogflow-cx-v3",
+			apiPath: "google/cloud/dialogflow/cx/v3",
+			want:    "google-cloud-dialogflow-cx-v3",
+		},
+		{
+			name:      "unversioned wrapper path uses versioned library base name",
+			libraries: []*config.Library{workloadIdentityV1},
+			apiPath:   "google/cloud/workloadidentity",
+			want:      "google-cloud-workload_identity",
+		},
+		{
+			name:      "unversioned wrapper path reuses custom base name",
+			libraries: []*config.Library{backupDRV1},
+			apiPath:   "google/cloud/backupdr",
+			want:      "google-cloud-backupdr",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			googleapisDir := t.TempDir()
 			writeProtoFiles(t, googleapisDir, test.files)
 
-			gotWrapper, gotVersioned, err := DefaultGemNames(googleapisDir, test.apiPath)
+			got, err := DefaultLibraryName(test.libraries, googleapisDir, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.wantWrapper, gotWrapper); diff != "" {
-				t.Errorf("wrapper mismatch (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(test.wantVersioned, gotVersioned); diff != "" {
-				t.Errorf("versioned mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestDefaultGemNamesErrors(t *testing.T) {
+func TestDefaultLibraryNameErrors(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		files   map[string]string
@@ -134,14 +171,9 @@ func TestDefaultGemNamesErrors(t *testing.T) {
 			wantErr: os.ErrNotExist,
 		},
 		{
-			name: "unversioned api path",
-			files: map[string]string{
-				"google/cloud/workloadidentity/service.proto": `syntax = "proto3";
-option ruby_package = "Google::Cloud::WorkloadIdentity::V1";
-`,
-			},
+			name:    "unversioned path without a versioned library",
 			apiPath: "google/cloud/workloadidentity",
-			wantErr: errRubyPackageVersionMismatch,
+			wantErr: errNoVersionedAPI,
 		},
 		{
 			name: "no proto files in directory",
@@ -239,7 +271,7 @@ option ruby_package = "Google::Cloud::Foo::V1";
 			googleapisDir := t.TempDir()
 			writeProtoFiles(t, googleapisDir, test.files)
 
-			_, _, err := DefaultGemNames(googleapisDir, test.apiPath)
+			_, err := DefaultLibraryName(nil, googleapisDir, test.apiPath)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("got error %v, want errors.Is(_, %v)", err, test.wantErr)
 			}
@@ -287,93 +319,6 @@ var (
 		Ruby: &config.RubyPackage{WrapperOf: []string{"v2:0.0"}},
 	}
 )
-
-func TestFindExistingServiceLibrary(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		libraries []*config.Library
-		apiPath   string
-		want      *config.Library
-	}{
-		{
-			name:      "versioned library preferred over wrapper",
-			libraries: []*config.Library{workloadIdentityWrapper, workloadIdentityV1},
-			apiPath:   "google/cloud/workloadidentity/v2",
-			want:      workloadIdentityV1,
-		},
-		{
-			name:      "multi-wrapper library for a sub-service",
-			libraries: []*config.Library{workflowsMultiWrapper},
-			apiPath:   "google/cloud/workflows/executions/v2",
-			want:      workflowsMultiWrapper,
-		},
-		{
-			name:      "nested child service of an existing service is net-new",
-			libraries: []*config.Library{dialogflowWrapper},
-			apiPath:   "google/cloud/dialogflow/cx/v3",
-			want:      nil,
-		},
-		{
-			name:    "no libraries",
-			apiPath: "google/cloud/workloadidentity/v1",
-			want:    nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := FindExistingServiceLibrary(test.libraries, test.apiPath)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
-func TestVersionedGemName(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		serviceLib *config.Library
-		apiPath    string
-		want       string
-	}{
-		{
-			name:       "versioned library",
-			serviceLib: workloadIdentityV1,
-			apiPath:    "google/cloud/workloadidentity/v2",
-			want:       "google-cloud-workload_identity-v2",
-		},
-		{
-			name:       "custom base gem name is reused",
-			serviceLib: backupDRV1,
-			apiPath:    "google/cloud/backupdr/v1beta",
-			want:       "google-cloud-backupdr-v1beta",
-		},
-		{
-			name:       "wrapper library",
-			serviceLib: workloadIdentityWrapper,
-			apiPath:    "google/cloud/workloadidentity/v2",
-			want:       "google-cloud-workload_identity-v2",
-		},
-		{
-			name:       "multi-wrapper sub-service uses its gem name",
-			serviceLib: workflowsMultiWrapper,
-			apiPath:    "google/cloud/workflows/executions/v2",
-			want:       "google-cloud-workflows-executions-v2",
-		},
-		{
-			name:       "library for a different service",
-			serviceLib: backupDRV1,
-			apiPath:    "google/cloud/workloadidentity/v2",
-			want:       "",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := VersionedGemName(test.serviceLib, test.apiPath)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
 
 func writeProtoFiles(t *testing.T, root string, files map[string]string) {
 	t.Helper()
