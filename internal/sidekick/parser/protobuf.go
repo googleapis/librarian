@@ -461,6 +461,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		result.Name = strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")
 	}
 	updatePackageName(result)
+	updateAutoPopulatedFields(serviceConfig, result)
 	return result, nil
 }
 
@@ -633,7 +634,6 @@ func buildProtobufMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, 
 		WithSourceServiceID(serviceID).
 		WithAPIVersion(apiVersion).
 		WithSignatures(signatures).
-		WithAutoPopulated(findAutoPopulatedFields(serviceConfig, mFQN, model.Message(inputTypeID))).
 		Build()
 	model.AddMethod(method)
 	return method, nil

@@ -19,34 +19,26 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-// findAutoPopulatedFields returns the auto-populated fields for a method with
-// ID `methodID` and input message `message`. Fields that do not conform to
-// [AIP-4235](https://google.aip.dev/client-libraries/4235) are skipped.
+// updateAutoPopulatedFields adds auto-populated fields to methods. Fields that
+// do not conform to [AIP-4235](https://google.aip.dev/client-libraries/4235)
+// are skipped.
 //
 // The first phases of the parser have no knowledge of the service config
 // settings and mark any fields that *might* be auto-populated (having the
 // right type and annotations) as `AutoPopulated: true`. This helper applies
 // the service configuration settings.
-func findAutoPopulatedFields(serviceConfig *serviceconfig.Service, methodID string, message *api.Message) []*api.Field {
-	if serviceConfig == nil || message == nil {
-		return nil
+func updateAutoPopulatedFields(serviceConfig *serviceconfig.Service, model *api.API) {
+	if serviceConfig == nil {
+		return
 	}
-	var result []*api.Field
+	methodFields := make(map[string][]string)
 	for _, m := range serviceConfig.GetPublishing().GetMethodSettings() {
-		if "."+m.GetSelector() != methodID {
-			continue
-		}
-		for _, name := range m.GetAutoPopulatedFields() {
-			for _, field := range message.Fields() {
-				if field.Name() != name {
-					continue
-				}
-				if field.AutoPopulated() {
-					result = append(result, field)
-				}
-				break
-			}
+		if fields := m.GetAutoPopulatedFields(); len(fields) > 0 {
+			selector := "." + m.GetSelector()
+			methodFields[selector] = append(methodFields[selector], fields...)
 		}
 	}
-	return result
+	if len(methodFields) > 0 {
+		model.ResolveAutoPopulatedFields(methodFields)
+	}
 }

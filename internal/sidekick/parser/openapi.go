@@ -121,6 +121,7 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 	if err != nil {
 		return nil, err
 	}
+	updateAutoPopulatedFields(serviceConfig, result)
 	return result, nil
 }
 
@@ -232,7 +233,6 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 				WithInputTypeID(requestMessage.ID()).
 				WithOutputTypeID(responseMessage.ID()).
 				WithPathInfo(pathInfo).
-				WithAutoPopulated(findAutoPopulatedFields(serviceConfig, mID, requestMessage)).
 				Build()
 			a.AddMethod(m)
 			service.Methods = append(service.Methods, m)
