@@ -166,6 +166,26 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
+			name: "nested google cloud namespace",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/security/publicca/v1"},
+				},
+			},
+			want: &config.Library{
+				Output:  "SecurityPublicCA",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/security/publicca/v1",
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "existing output preserved",
 			lib: &config.Library{
 				Output: "CustomOutput",

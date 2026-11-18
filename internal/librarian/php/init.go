@@ -123,11 +123,17 @@ func namespace(googleapisDir, apiPath string) (string, error) {
 }
 
 // componentName returns the component name from a namespace.
+//
+// The "Google\Cloud\" prefix is removed for Cloud namespaces, and the
+// "Google\" prefix for other namespaces. The remaining segments are joined
+// without separators, for example "Google\Cloud\BigQuery\DataTransfer"
+// becomes "BigQueryDataTransfer" and "Google\Ads\GoogleAds" becomes
+// "AdsGoogleAds".
 func componentName(namespace string) string {
-	if comp, ok := strings.CutPrefix(namespace, `Google\Cloud\`); ok {
-		return comp
+	comp, ok := strings.CutPrefix(namespace, `Google\Cloud\`)
+	if !ok {
+		comp = strings.TrimPrefix(namespace, `Google\`)
 	}
-	comp := strings.TrimPrefix(namespace, `Google\`)
 	return strings.ReplaceAll(comp, `\`, "")
 }
 

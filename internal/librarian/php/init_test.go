@@ -144,6 +144,11 @@ func TestComponentName(t *testing.T) {
 			want:      "SecretManager",
 		},
 		{
+			name:      "nested google cloud component",
+			namespace: `Google\Cloud\SaasPlatform\SaasServiceMgmt`,
+			want:      "SaasPlatformSaasServiceMgmt",
+		},
+		{
 			name:      "google ads",
 			namespace: `Google\Ads\GoogleAds`,
 			want:      "AdsGoogleAds",
