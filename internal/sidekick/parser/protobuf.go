@@ -391,7 +391,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 				mFQN := sFQN + "." + m.GetName()
 				apiVersion := parseAPIVersion(sFQN, s.GetOptions())
 				mDoc := lookupComment(comments, append(sPath, serviceDescriptorProtoMethod, int32(mi)))
-				method, err := processMethod(result, m, mFQN, f.GetPackage(), sFQN, apiVersion, mDoc, serviceConfig)
+				method, err := processMethod(result, m, mFQN, f.GetPackage(), sFQN, apiVersion, mDoc)
 				if err != nil {
 					return nil, err
 				}
@@ -587,12 +587,12 @@ func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN
 	return service
 }
 
-func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion, doc string, serviceConfig *serviceconfig.Service) (*api.Method, error) {
+func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion, doc string) (*api.Method, error) {
 	pathInfo, err := parsePathInfo(m, model)
 	if err != nil {
 		return nil, fmt.Errorf("unsupported http method for %q: %w", mFQN, err)
 	}
-	return buildProtobufMethod(model, m, mFQN, packagez, serviceID, apiVersion, doc, pathInfo, serviceConfig)
+	return buildProtobufMethod(model, m, mFQN, packagez, serviceID, apiVersion, doc, pathInfo)
 }
 
 func processMixinMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, originalFQN, packagez, serviceID, apiVersion string, mixin *api.Service, serviceConfig *serviceconfig.Service) (*api.Method, error) {
@@ -604,10 +604,10 @@ func processMixinMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, m
 	if err != nil {
 		return nil, err
 	}
-	return buildProtobufMethod(model, m, mFQN, packagez, serviceID, apiVersion, doc, pathInfo, serviceConfig)
+	return buildProtobufMethod(model, m, mFQN, packagez, serviceID, apiVersion, doc, pathInfo)
 }
 
-func buildProtobufMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion, doc string, pathInfo *api.PathInfo, serviceConfig *serviceconfig.Service) (*api.Method, error) {
+func buildProtobufMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion, doc string, pathInfo *api.PathInfo) (*api.Method, error) {
 	routing, err := parseRoutingAnnotations(mFQN, m)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse routing annotations for %q: %w", mFQN, err)
