@@ -25,16 +25,23 @@ import (
 
 type methodAnnotations struct {
 	Name                string
+	UnescapedName       string
 	DocLines            []string
-	PathVariables       []*pathVariable
-	PathBindings        []*pathBindingAnnotations
-	HasMultipleBindings bool
-	RoutingParams       []*routingParam
-	PathExpression      string
-	HTTPMethod          string
-	HasBody             bool
-	IsBodyWildcard      bool
-	BodyField           string
+	SeeAlsoLinks        []string
+	PollingSeeAlsoLinks []string
+	// StorageControlSeeAlsoLinks and StorageControlPollingSeeAlsoLinks omit
+	// method_signature overloads, which StorageControlProtocol does not emit.
+	StorageControlSeeAlsoLinks        []string
+	StorageControlPollingSeeAlsoLinks []string
+	PathVariables                     []*pathVariable
+	PathBindings                      []*pathBindingAnnotations
+	HasMultipleBindings               bool
+	RoutingParams                     []*routingParam
+	PathExpression                    string
+	HTTPMethod                        string
+	HasBody                           bool
+	IsBodyWildcard                    bool
+	BodyField                         string
 	// IsHTTPBodyRequest reports whether the HTTP request body is a
 	// google.api.HttpBody message, which transcodes as raw bytes and Content-Type
 	// rather than JSON.
@@ -410,34 +417,43 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	}
 	diagnoseFields = diagnoseFields || diagnoseTypes
 	deprecatedScope := inDeprecatedScope(method)
+	name := camelCase(method.Name)
+	unescapedName := strings.ReplaceAll(name, "`", "")
+	seeAlsoLinks, pollingSeeAlsoLinks := methodOverloadDocLinks(method, unescapedName, pagination, lro, discoveryLRO, true)
+	storageSeeAlsoLinks, storagePollingSeeAlsoLinks := methodOverloadDocLinks(method, unescapedName, pagination, lro, discoveryLRO, false)
 	method.Codec = &methodAnnotations{
-		Name:                   camelCase(method.Name),
-		DocLines:               docLines,
-		PathExpression:         pathExpressionStr,
-		PathVariables:          pathVariables,
-		PathBindings:           pathBindings,
-		HasMultipleBindings:    len(pathBindings) > 1,
-		RoutingParams:          routingParams,
-		HTTPMethod:             httpMethod,
-		HasBody:                hasBody,
-		IsBodyWildcard:         isBodyWildcard,
-		BodyField:              bodyField,
-		IsHTTPBodyRequest:      isHTTPBodyRequest,
-		IsHTTPBodyResponse:     isHTTPBodyResponse,
-		QueryParams:            queryParams,
-		Pagination:             pagination,
-		LRO:                    lro,
-		ReturnType:             returnType,
-		DiscoveryLRO:           discoveryLRO,
-		HasAutoPopulatedFields: method.HasAutoPopulatedFields(),
-		HasIdempotencyHook:     c.IdempotencyHook != "",
-		IdempotencyHook:        c.IdempotencyHook,
-		ResponseEncoding:       c.ResponseEncoding,
-		DiagnoseTypes:          diagnoseTypes && !deprecatedScope,
-		DiagnoseFields:         diagnoseFields && !deprecatedScope,
-		DiagnoseStubTypes:      diagnoseTypes,
-		DiagnoseStubFields:     diagnoseFields,
-		DiagnoseSnippet:        diagnoseFields || deprecatedScope,
+		Name:                              name,
+		UnescapedName:                     unescapedName,
+		DocLines:                          docLines,
+		SeeAlsoLinks:                      seeAlsoLinks,
+		PollingSeeAlsoLinks:               pollingSeeAlsoLinks,
+		StorageControlSeeAlsoLinks:        storageSeeAlsoLinks,
+		StorageControlPollingSeeAlsoLinks: storagePollingSeeAlsoLinks,
+		PathExpression:                    pathExpressionStr,
+		PathVariables:                     pathVariables,
+		PathBindings:                      pathBindings,
+		HasMultipleBindings:               len(pathBindings) > 1,
+		RoutingParams:                     routingParams,
+		HTTPMethod:                        httpMethod,
+		HasBody:                           hasBody,
+		IsBodyWildcard:                    isBodyWildcard,
+		BodyField:                         bodyField,
+		IsHTTPBodyRequest:                 isHTTPBodyRequest,
+		IsHTTPBodyResponse:                isHTTPBodyResponse,
+		QueryParams:                       queryParams,
+		Pagination:                        pagination,
+		LRO:                               lro,
+		ReturnType:                        returnType,
+		DiscoveryLRO:                      discoveryLRO,
+		HasAutoPopulatedFields:            method.HasAutoPopulatedFields(),
+		HasIdempotencyHook:                c.IdempotencyHook != "",
+		IdempotencyHook:                   c.IdempotencyHook,
+		ResponseEncoding:                  c.ResponseEncoding,
+		DiagnoseTypes:                     diagnoseTypes && !deprecatedScope,
+		DiagnoseFields:                    diagnoseFields && !deprecatedScope,
+		DiagnoseStubTypes:                 diagnoseTypes,
+		DiagnoseStubFields:                diagnoseFields,
+		DiagnoseSnippet:                   diagnoseFields || deprecatedScope,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)
@@ -504,4 +520,80 @@ func inDeprecatedScope(method *api.Method) bool {
 
 func (a *methodAnnotations) Idempotent() bool {
 	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT" || a.HasAutoPopulatedFields
+}
+
+// methodOverloadDocLinks returns the sorted DocC symbol names for the
+// convenience overloads of `method` (for its `(request:options:)` method and,
+// if applicable, its `*PollingUntilDone(request:options:)` method).
+func methodOverloadDocLinks(
+	method *api.Method,
+	unescapedName string,
+	pagination *paginationAnnotations,
+	lro *lroAnnotations,
+	discoveryLRO *discoveryLroAnnotations,
+	includeSignatures bool,
+) (requestLinks []string, pollingLinks []string) {
+	if method.IsLroPoller {
+		return nil, nil
+	}
+	selfRequest := fmt.Sprintf("%s(request:options:)", unescapedName)
+	allVariants := []string{
+		fmt.Sprintf("%s(request:)", unescapedName),
+		selfRequest,
+	}
+	isLRO := lro != nil || discoveryLRO != nil
+	if !isLRO && pagination == nil && includeSignatures {
+		for _, sig := range method.Signatures {
+			allVariants = append(allVariants, signatureDocLink(unescapedName, sig))
+		}
+	}
+	if pagination != nil {
+		itemsName := unescapedName + "ByItems"
+		allVariants = append(allVariants,
+			fmt.Sprintf("%s(request:)", itemsName),
+			fmt.Sprintf("%s(request:options:)", itemsName),
+		)
+		if includeSignatures {
+			for _, sig := range method.Signatures {
+				allVariants = append(allVariants, signatureDocLink(itemsName, sig))
+			}
+		}
+	}
+	var selfPolling string
+	if isLRO {
+		pollingName := unescapedName + "PollingUntilDone"
+		selfPolling = fmt.Sprintf("%s(request:options:)", pollingName)
+		allVariants = append(allVariants,
+			fmt.Sprintf("%s(request:)", pollingName),
+			selfPolling,
+		)
+		if includeSignatures {
+			for _, sig := range method.Signatures {
+				allVariants = append(allVariants, signatureDocLink(pollingName, sig))
+			}
+		}
+	}
+	slices.Sort(allVariants)
+	for _, link := range allVariants {
+		if link != selfRequest {
+			requestLinks = append(requestLinks, link)
+		}
+		if isLRO && link != selfPolling {
+			pollingLinks = append(pollingLinks, link)
+		}
+	}
+	return requestLinks, pollingLinks
+}
+
+func signatureDocLink(methodName string, sig *api.MethodSignature) string {
+	var params strings.Builder
+	for _, f := range sig.Fields() {
+		fieldCodec, ok := f.Codec().(*fieldAnnotations)
+		if !ok {
+			continue
+		}
+		params.WriteString(strings.ReplaceAll(fieldCodec.Name, "`", ""))
+		params.WriteByte(':')
+	}
+	return fmt.Sprintf("%s(%s)", methodName, params.String())
 }

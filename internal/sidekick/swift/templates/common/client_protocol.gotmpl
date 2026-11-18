@@ -71,6 +71,19 @@ extension Clients {
 extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- range .Codec.Methods }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if not .IsLroPoller }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Service.Codec.ClientName }}/{{ .Codec.UnescapedName }}(request:options:)``
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -93,6 +106,19 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- if .Codec.PlainRPC }}
   {{- range .Signatures }}
   {{- "\n" }}
+  {{- range .Method.Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if not .Method.IsLroPoller }}
+  {{- if .Method.Codec.DocLines }}
+  ///
+  {{- end }}
+  /// @Snippet(path: "{{ .Method.Service.Name }}_{{ .Method.Name }}")
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Method.Service.Codec.ClientName }}/{{ .Method.Codec.UnescapedName }}(request:options:)``
+  {{- end }}
   {{- if .Method.Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -113,6 +139,19 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- end }}
   {{- if .Codec.Pagination }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if not .IsLroPoller }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Service.Codec.ClientName }}/{{ .Codec.UnescapedName }}(request:options:)``
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -126,8 +165,16 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- range .Codec.DocLines }}
   /// {{ . }}
   {{- end }}
+  {{- if not .IsLroPoller }}
+  {{- if .Codec.DocLines }}
   ///
+  {{- end }}
   /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Service.Codec.ClientName }}/{{ .Codec.UnescapedName }}(request:options:)``
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -144,6 +191,19 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   }
   {{- range .Signatures }}
   {{- "\n" }}
+  {{- range .Method.Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if not .Method.IsLroPoller }}
+  {{- if .Method.Codec.DocLines }}
+  ///
+  {{- end }}
+  /// @Snippet(path: "{{ .Method.Service.Name }}_{{ .Method.Name }}")
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Method.Service.Codec.ClientName }}/{{ .Method.Codec.UnescapedName }}(request:options:)``
+  {{- end }}
   {{- if .Method.Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -160,6 +220,19 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- end }}
   {{- if .Codec.LRO }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  {{- if not .IsLroPoller }}
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Service.Codec.ClientName }}/{{ .Codec.UnescapedName }}PollingUntilDone(request:options:)``
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -185,6 +258,19 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   }
   {{- range .Signatures }}
   {{- "\n" }}
+  {{- range .Method.Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Method.Codec.DocLines }}
+  ///
+  {{- end }}
+  /// @Snippet(path: "{{ .Method.Service.Name }}_{{ .Method.Name }}")
+  {{- if not .Method.IsLroPoller }}
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Method.Service.Codec.ClientName }}/{{ .Method.Codec.UnescapedName }}PollingUntilDone(request:options:)``
+  {{- end }}
   {{- if .Method.Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -205,6 +291,24 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- end }}
   {{- if .Codec.DiscoveryLRO }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// - Note: Unlike standard gRPC long-running operations where polling returns the resulting
+  ///   resource, Discovery-based operations return the terminal `{{ .Codec.DiscoveryLRO.ReturnType }}`
+  ///   status object. To obtain the created or modified resource, invoke the corresponding `get`
+  ///   method once the operation completes.
+  ///
+  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  {{- if not .IsLroPoller }}
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Service.Codec.ClientName }}/{{ .Codec.UnescapedName }}PollingUntilDone(request:options:)``
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -226,6 +330,24 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   }
   {{- range .Signatures }}
   {{- "\n" }}
+  {{- range .Method.Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Method.Codec.DocLines }}
+  ///
+  {{- end }}
+  /// - Note: Unlike standard gRPC long-running operations where polling returns the resulting
+  ///   resource, Discovery-based operations return the terminal `{{ .Method.Codec.DiscoveryLRO.ReturnType }}`
+  ///   status object. To obtain the created or modified resource, invoke the corresponding `get`
+  ///   method once the operation completes.
+  ///
+  /// @Snippet(path: "{{ .Method.Service.Name }}_{{ .Method.Name }}")
+  {{- if not .Method.IsLroPoller }}
+  ///
+  /// ## See Also
+  ///
+  /// - ``{{ .Method.Service.Codec.ClientName }}/{{ .Method.Codec.UnescapedName }}PollingUntilDone(request:options:)``
+  {{- end }}
   {{- if .Method.Deprecated }}
   @available(*, deprecated)
   {{- end }}

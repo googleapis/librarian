@@ -42,6 +42,10 @@ import Foundation
 {{- end }}
 ///
 /// @Snippet(path: "{{ .Name }}Quickstart")
+///
+/// ## See Also
+///
+/// - ``Clients/{{ .Codec.StubPrefix }}Protocol``
 {{- if .Deprecated }}
 @available(*, deprecated)
 {{- end }}
@@ -72,6 +76,14 @@ public final class {{ .Codec.ClientName }}: Clients.{{ .Codec.StubPrefix }}Proto
   {{- end }}
   ///
   /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  {{- if .Codec.SeeAlsoLinks }}
+  ///
+  /// ## See Also
+  ///
+  {{- range .Codec.SeeAlsoLinks }}
+  /// - ``{{ . }}``
+  {{- end }}
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -105,6 +117,14 @@ public final class {{ .Codec.ClientName }}: Clients.{{ .Codec.StubPrefix }}Proto
   {{- end }}
   ///
   /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  {{- if .Codec.PollingSeeAlsoLinks }}
+  ///
+  /// ## See Also
+  ///
+  {{- range .Codec.PollingSeeAlsoLinks }}
+  /// - ``{{ . }}``
+  {{- end }}
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -152,6 +172,14 @@ public final class {{ .Codec.ClientName }}: Clients.{{ .Codec.StubPrefix }}Proto
   ///   method once the operation completes.
   ///
   /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  {{- if .Codec.PollingSeeAlsoLinks }}
+  ///
+  /// ## See Also
+  ///
+  {{- range .Codec.PollingSeeAlsoLinks }}
+  /// - ``{{ . }}``
+  {{- end }}
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
