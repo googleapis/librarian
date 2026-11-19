@@ -197,10 +197,6 @@ type RustModule struct {
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`
 
-	// ExtendGrpcTransport indicates whether the transport stub can be
-	// extended (in order to support streams).
-	ExtendGrpcTransport bool `yaml:"extend_grpc_transport,omitempty"`
-
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples string `yaml:"generate_setter_samples,omitempty"`
 

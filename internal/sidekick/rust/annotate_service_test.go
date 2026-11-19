@@ -24,23 +24,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
-func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
-	model := serviceAnnotationsModel()
-	service := model.Service(".test.v1.ResourceService")
-	if service == nil {
-		t.Fatal("cannot find .test.v1.ResourceService")
-	}
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"extend-grpc-transport": "true",
-	})
-	annotateModel(model, codec)
-	serviceAnn := service.Codec.(*serviceAnnotations)
-
-	if !serviceAnn.ExtendGrpcTransport {
-		t.Errorf("expected `extend-grpc-transport` to be set on the service.")
-	}
-}
-
 func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 	model := serviceAnnotationsModel()
 	service := model.Service(".test.v1.ResourceService")

@@ -46,9 +46,6 @@ type serviceAnnotations struct {
 	PerServiceFeatures bool
 	// If true, there is a handwritten client surface.
 	HasVeneer bool
-	// If true, the transport stub is extensible from outside of
-	// `transport.rs`. This is done to add ad-hoc streaming support.
-	ExtendGrpcTransport bool
 	// If true, the service has a method we cannot wrap (yet).
 	Incomplete bool
 	// If true, the generated code includes detailed tracing attributes on HTTP
@@ -228,7 +225,6 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		APITitle:                  s.Model.Title,
 		PerServiceFeatures:        c.perServiceFeatures,
 		HasVeneer:                 c.serviceHasVeneer(s.ID),
-		ExtendGrpcTransport:       c.extendGrpcTransport,
 		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.serviceInternalBuilders(s.ID),
