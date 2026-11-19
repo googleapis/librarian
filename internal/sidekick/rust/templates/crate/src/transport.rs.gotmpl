@@ -169,20 +169,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
 
         So we only need to generate one of the two code paths.
         */ -}}
-        {{- if .HasRouting }}
         {{- include "templates/grpc-client/routinginfo" . | indent 8 }}
-        {{- else }}
-        let x_goog_request_params = [
-            {{- range .PathInfo.Codec.UniqueParameters }}
-                {{ .FieldAccessor }}.map(|v| format!("{{ .FieldName }}={v}")),
-            {{- else }}
-            None::<String>; 0
-            {{- end }}
-        ]
-        .into_iter()
-        .flatten()
-        .fold(String::new(), |b, p| b + "&" + &p);
-        {{- end }}
 
         let extensions = {
             let mut e = gaxi::grpc::tonic::Extensions::new();
@@ -250,21 +237,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
 
         So we only need to generate one of the two code paths.
         */ -}}
-        {{- if .HasRouting }}
         {{- include "templates/grpc-client/routinginfo" . | indent 8 }}
-        {{- else }}
-        let x_goog_request_params = [
-            {{- range .PathInfo.Codec.UniqueParameters }}
-                {{ .FieldAccessor }}.map(|v| format!("{{ .FieldName }}={v}")),
-            {{- else }}
-            None::<String>; 0
-            {{- end }}
-        ]
-        .into_iter()
-        .flatten()
-        {{- /* TODO(#2548) - skip empty strings, and don't lead with a '&' */}}
-        .fold(String::new(), |b, p| b + "&" + &p);
-        {{- end }}
 
         {{- if .ReturnsEmpty }}
         type TR = ();
