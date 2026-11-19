@@ -63,8 +63,12 @@ The <api> is a path within the configured googleapis source, such as
 "google/cloud/secretmanager/v1". The library name and other defaults are
 derived from the first API path using language-specific rules.
 
-When adding a Ruby library, the --name flag can be used to explicitly
-specify the library name.
+For Ruby, the library name is the gem name. A versioned API path, such as
+"google/cloud/secretmanager/v1", gets its own library. Its name reuses the base
+gem name of an existing version of the same service, or is otherwise derived
+from the ruby_package option in the API's protos. An unversioned path, such as
+"google/cloud/secretmanager", adds the wrapper library for an existing versioned
+library. Use the --name flag only to override the derived name.
 
 If the API path should naturally be included in an existing library, and if the
 language supports doing so, that library is modified. Otherwise, a new library
@@ -90,7 +94,7 @@ A typical librarian workflow for adding a new client library is:
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "name",
-				Usage: "explicitly specified library name; only applicable for Ruby",
+				Usage: "library name that overrides the derived name; only applicable for Ruby",
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
@@ -198,8 +202,8 @@ func setupResolve(ctx context.Context, cfg *config.Config, name string) (*config
 
 // deriveLibraryName derives a library name from an API path.
 // The derivation is language-specific.
-func deriveLibraryName(language, googleapisDir, api string) (string, error) {
-	switch language {
+func deriveLibraryName(cfg *config.Config, googleapisDir, api string) (string, error) {
+	switch cfg.Language {
 	case config.LanguageDart:
 		return dart.DefaultLibraryName(api), nil
 	case config.LanguageFake:
@@ -218,6 +222,9 @@ func deriveLibraryName(language, googleapisDir, api string) (string, error) {
 		return swift.DefaultLibraryName(api), nil
 	case config.LanguagePhp:
 		return php.DefaultLibraryName(api), nil
+	case config.LanguageRuby:
+		// Ruby also uses the existing libraries, to reuse an existing service's gem name.
+		return ruby.DefaultLibraryName(cfg.Libraries, googleapisDir, api)
 	default:
 		return strings.ReplaceAll(api, "/", "-"), nil
 	}
@@ -268,7 +275,7 @@ func findExistingLibraryForAPI(cfg *config.Config, googleapisDir, apiPath, expli
 				}
 			}
 			var err error
-			name, err = deriveLibraryName(cfg.Language, googleapisDir, apiPath)
+			name, err = deriveLibraryName(cfg, googleapisDir, apiPath)
 			if err != nil {
 				return nil, err
 			}
@@ -309,7 +316,7 @@ func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName, goo
 	name := explicitLibraryName
 	if name == "" {
 		var err error
-		name, err = deriveLibraryName(cfg.Language, googleapisDir, api.Path)
+		name, err = deriveLibraryName(cfg, googleapisDir, api.Path)
 		if err != nil {
 			return "", nil, err
 		}

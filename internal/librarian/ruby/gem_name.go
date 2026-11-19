@@ -45,55 +45,59 @@ var (
 //     Google::Cloud::SecretManager::V1 gives google-cloud-secret_manager-v1.
 //   - For a versioned path of a service that already has another version in
 //     libraries, it reuses that service's base gem name, such as
-//     google-cloud-backupdr-v1beta.
+//     google-cloud-backupdr-v1beta, without reading ruby_package.
 //   - For an unversioned (wrapper) path, it is the base gem name of the
 //     service's existing versioned library, such as google-cloud-backupdr.
 func DefaultLibraryName(libraries []*config.Library, googleapisDir, apiPath string) (string, error) {
-	version := serviceconfig.ExtractVersion(apiPath)
-	if version == "" {
-		if base := existingBaseGemName(libraries, apiPath); base != "" {
-			return base, nil
-		}
-		return "", fmt.Errorf("%w: %q", errNoVersionedAPI, apiPath)
+	if serviceconfig.ExtractVersion(apiPath) == "" {
+		return wrapperLibraryName(libraries, apiPath)
 	}
-	// Always read and check ruby_package, so a missing or invalid value is
-	// reported even for a new version of an existing service.
+	return versionedLibraryName(libraries, googleapisDir, apiPath)
+}
+
+// wrapperLibraryName returns the name for the unversioned (wrapper) apiPath:
+// the base name of the versioned library that Add uses for wrapper_of, so the
+// wrapper's name and its wrapper_of come from the same library.
+func wrapperLibraryName(libraries []*config.Library, apiPath string) (string, error) {
+	versionedAPI, err := searchVersionedAPI(libraries, apiPath)
+	if err != nil {
+		return "", err
+	}
+	if base := existingBaseGemName(libraries, func(api *config.API) bool { return api.Path == versionedAPI }); base != "" {
+		return base, nil
+	}
+	return "", fmt.Errorf("%w: %q", errNoVersionedAPI, apiPath)
+}
+
+// versionedLibraryName returns the name for the versioned apiPath. If another
+// version of the same service is already in libraries, it reuses that library's
+// base name, so option ruby_package is not needed. Otherwise it derives the name
+// from ruby_package, which must be present and valid.
+func versionedLibraryName(libraries []*config.Library, googleapisDir, apiPath string) (string, error) {
+	version := serviceconfig.ExtractVersion(apiPath)
+	service := path.Dir(apiPath)
+	if base := existingBaseGemName(libraries, func(api *config.API) bool { return path.Dir(api.Path) == service }); base != "" {
+		return base + "-" + version, nil
+	}
 	segments, err := inspectRubyPackage(googleapisDir, apiPath, version)
 	if err != nil {
 		return "", err
 	}
-	if base := existingBaseGemName(libraries, path.Dir(apiPath)); base != "" {
-		return base + "-" + version, nil
-	}
 	return versionedGemNameFromSegments(segments), nil
 }
 
-// existingBaseGemName returns the base gem name (without a version suffix) of
-// the service at unversionedPath, from a library for one of its versions, or
-// "" if libraries has none. A versioned library is preferred over a wrapper, so
-// a sub-service of a multi-wrapper library resolves to its own gem name rather
-// than the broader wrapper name.
-func existingBaseGemName(libraries []*config.Library, unversionedPath string) string {
+// existingBaseGemName returns the base gem name (the library name without its
+// "-<version>" suffix) of the first versioned library with an API matching
+// match, or "" if there is none. Wrapper library names have no version suffix,
+// so they never match.
+func existingBaseGemName(libraries []*config.Library, match func(*config.API) bool) string {
 	for _, lib := range libraries {
-		if isWrapperLibrary(lib) {
-			continue
-		}
 		for _, api := range lib.APIs {
-			if path.Dir(api.Path) != unversionedPath {
+			if !match(api) {
 				continue
 			}
 			if base := versionedBase(lib, api); base != "" {
 				return base
-			}
-		}
-	}
-	for _, lib := range libraries {
-		if !isWrapperLibrary(lib) {
-			continue
-		}
-		for _, api := range lib.APIs {
-			if path.Dir(api.Path) == unversionedPath {
-				return apiGemName(lib, api)
 			}
 		}
 	}

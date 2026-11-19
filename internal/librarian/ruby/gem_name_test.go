@@ -98,26 +98,15 @@ option ruby_package = "Google::Cloud::WorkloadIdentity::V2";
 			want:    "google-cloud-workload_identity-v2",
 		},
 		{
-			name:      "new version of existing service reuses custom base name",
+			name:      "new version of existing service reuses its base name without reading ruby_package",
 			libraries: []*config.Library{backupDRV1},
 			files: map[string]string{
 				"google/cloud/backupdr/v1beta/service.proto": `syntax = "proto3";
-option ruby_package = "Google::Cloud::BackupDR::V1beta";
+package google.cloud.backupdr.v1beta;
 `,
 			},
 			apiPath: "google/cloud/backupdr/v1beta",
 			want:    "google-cloud-backupdr-v1beta",
-		},
-		{
-			name:      "new version under multi-wrapper reuses sub-gem name",
-			libraries: []*config.Library{workflowsMultiWrapper},
-			files: map[string]string{
-				"google/cloud/workflows/executions/v2/service.proto": `syntax = "proto3";
-option ruby_package = "Google::Cloud::Workflows::Executions::V2";
-`,
-			},
-			apiPath: "google/cloud/workflows/executions/v2",
-			want:    "google-cloud-workflows-executions-v2",
 		},
 		{
 			name:      "nested child service of an existing service is net-new",
@@ -292,26 +281,6 @@ var (
 	backupDRV1 = &config.Library{
 		Name: "google-cloud-backupdr-v1",
 		APIs: []*config.API{{Path: "google/cloud/backupdr/v1"}},
-	}
-	workflowsMultiWrapper = &config.Library{
-		Name: "google-cloud-workflows",
-		APIs: []*config.API{
-			{
-				Path: "google/cloud/workflows/v1",
-				Ruby: &config.RubyAPI{
-					RubyCloudOpts: &config.RubyCloudOpts{WrapperOf: "v1:2.0"},
-				},
-			},
-			{
-				Path: "google/cloud/workflows/executions/v1",
-				Ruby: &config.RubyAPI{
-					RubyCloudOpts: &config.RubyCloudOpts{
-						GemName:   "google-cloud-workflows-executions",
-						WrapperOf: "v1:1.2",
-					},
-				},
-			},
-		},
 	}
 	dialogflowWrapper = &config.Library{
 		Name: "google-cloud-dialogflow",
