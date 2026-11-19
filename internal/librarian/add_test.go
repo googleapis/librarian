@@ -812,10 +812,10 @@ func TestDeriveLibraryName(t *testing.T) {
 		{config.LanguagePhp, "google/cloud/secretmanager/v1", "secretmanager"},
 		{config.LanguagePhp, "google/cloud/security/privateca/v1", "security-privateca"},
 		{config.LanguagePhp, "google/pubsub/v1", "pubsub"},
-		{config.LanguageRuby, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
+		{config.LanguageRuby, "google/cloud/secretmanager/v1", "google-cloud-secret_manager-v1"},
 	} {
 		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
-			got, err := deriveLibraryName(test.language, googleapisDir, test.apiPath)
+			got, err := deriveLibraryName(&config.Config{Language: test.language}, googleapisDir, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1110,7 +1110,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			args: []string{"google/cloud/secretmanager/v1"},
 			wantFinalLibraries: []*config.Library{
 				{
-					Name:          "google-cloud-secretmanager-v1",
+					Name:          "google-cloud-secret_manager-v1",
 					CopyrightYear: "",
 					Version:       "0.0.1",
 					APIs: []*config.API{
@@ -1119,13 +1119,132 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 				},
 			},
 			wantManifest: map[string]string{
-				"google-cloud-secretmanager-v1":        "0.0.1",
-				"google-cloud-secretmanager-v1+FILLER": "0.0.0",
+				"google-cloud-secret_manager-v1":        "0.0.1",
+				"google-cloud-secret_manager-v1+FILLER": "0.0.0",
 			},
 			wantPackages: map[string]any{
-				"google-cloud-secretmanager-v1": map[string]any{
-					"component":    "google-cloud-secretmanager-v1",
-					"version_file": "lib/google/cloud/secretmanager/v1/version.rb",
+				"google-cloud-secret_manager-v1": map[string]any{
+					"component":    "google-cloud-secret_manager-v1",
+					"version_file": "lib/google/cloud/secret_manager/v1/version.rb",
+				},
+			},
+		},
+		{
+			name: "default wrapper library name without flag",
+			initialLibraries: []*config.Library{
+				{
+					Name:          "google-cloud-secret_manager-v1",
+					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					Version:       "0.0.1",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+			initialManifest: map[string]string{
+				"google-cloud-secret_manager-v1":        "0.0.1",
+				"google-cloud-secret_manager-v1+FILLER": "0.0.0",
+			},
+			initialPackages: map[string]any{
+				"google-cloud-secret_manager-v1": map[string]any{
+					"component":    "google-cloud-secret_manager-v1",
+					"version_file": "lib/google/cloud/secret_manager/v1/version.rb",
+				},
+			},
+			args: []string{"google/cloud/secretmanager"},
+			wantFinalLibraries: []*config.Library{
+				{
+					Name:          "google-cloud-secret_manager",
+					CopyrightYear: "",
+					Version:       "0.0.1",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+					Ruby: &config.RubyPackage{
+						WrapperOf: []string{"v1:0.0"},
+					},
+				},
+				{
+					Name:          "google-cloud-secret_manager-v1",
+					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					Version:       "0.0.1",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+			wantManifest: map[string]string{
+				"google-cloud-secret_manager":           "0.0.1",
+				"google-cloud-secret_manager+FILLER":    "0.0.0",
+				"google-cloud-secret_manager-v1":        "0.0.1",
+				"google-cloud-secret_manager-v1+FILLER": "0.0.0",
+			},
+			wantPackages: map[string]any{
+				"google-cloud-secret_manager": map[string]any{
+					"component":    "google-cloud-secret_manager",
+					"version_file": "lib/google/cloud/secret_manager/version.rb",
+				},
+				"google-cloud-secret_manager-v1": map[string]any{
+					"component":    "google-cloud-secret_manager-v1",
+					"version_file": "lib/google/cloud/secret_manager/v1/version.rb",
+				},
+			},
+		},
+		{
+			name: "default library name for new version of existing service reuses its name without ruby_package",
+			initialLibraries: []*config.Library{
+				{
+					Name:          "google-cloud-tasks-v2beta3",
+					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					Version:       "0.0.1",
+					APIs: []*config.API{
+						{Path: "google/cloud/tasks/v2beta3"},
+					},
+				},
+			},
+			initialManifest: map[string]string{
+				"google-cloud-tasks-v2beta3":        "0.0.1",
+				"google-cloud-tasks-v2beta3+FILLER": "0.0.0",
+			},
+			initialPackages: map[string]any{
+				"google-cloud-tasks-v2beta3": map[string]any{
+					"component":    "google-cloud-tasks-v2beta3",
+					"version_file": "lib/google/cloud/tasks/v2beta3/version.rb",
+				},
+			},
+			args: []string{"google/cloud/tasks/v2"},
+			wantFinalLibraries: []*config.Library{
+				{
+					Name:          "google-cloud-tasks-v2",
+					CopyrightYear: "",
+					Version:       "0.0.1",
+					APIs: []*config.API{
+						{Path: "google/cloud/tasks/v2"},
+					},
+				},
+				{
+					Name:          "google-cloud-tasks-v2beta3",
+					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					Version:       "0.0.1",
+					APIs: []*config.API{
+						{Path: "google/cloud/tasks/v2beta3"},
+					},
+				},
+			},
+			wantManifest: map[string]string{
+				"google-cloud-tasks-v2":             "0.0.1",
+				"google-cloud-tasks-v2+FILLER":      "0.0.0",
+				"google-cloud-tasks-v2beta3":        "0.0.1",
+				"google-cloud-tasks-v2beta3+FILLER": "0.0.0",
+			},
+			wantPackages: map[string]any{
+				"google-cloud-tasks-v2": map[string]any{
+					"component":    "google-cloud-tasks-v2",
+					"version_file": "lib/google/cloud/tasks/v2/version.rb",
+				},
+				"google-cloud-tasks-v2beta3": map[string]any{
+					"component":    "google-cloud-tasks-v2beta3",
+					"version_file": "lib/google/cloud/tasks/v2beta3/version.rb",
 				},
 			},
 		},
@@ -1240,6 +1359,27 @@ func TestAddLibraryCommand_Ruby_Error(t *testing.T) {
 				},
 			},
 			args:    []string{"google/cloud/secretmanager/v1", "--name", "google-cloud-secret_manager-v1"},
+			wantErr: errLibraryAlreadyExists,
+		},
+		{
+			name:     "default wrapper library name matches existing wrapper",
+			language: config.LanguageRuby,
+			initialLibraries: []*config.Library{
+				{
+					Name: "google-cloud-secret_manager",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+					Ruby: &config.RubyPackage{WrapperOf: []string{"v1:0.0"}},
+				},
+				{
+					Name: "google-cloud-secret_manager-v1",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+			args:    []string{"google/cloud/secretmanager"},
 			wantErr: errLibraryAlreadyExists,
 		},
 	} {

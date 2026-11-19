@@ -198,8 +198,8 @@ func setupResolve(ctx context.Context, cfg *config.Config, name string) (*config
 
 // deriveLibraryName derives a library name from an API path.
 // The derivation is language-specific.
-func deriveLibraryName(language, googleapisDir, api string) (string, error) {
-	switch language {
+func deriveLibraryName(cfg *config.Config, googleapisDir, api string) (string, error) {
+	switch cfg.Language {
 	case config.LanguageDart:
 		return dart.DefaultLibraryName(api), nil
 	case config.LanguageFake:
@@ -218,6 +218,9 @@ func deriveLibraryName(language, googleapisDir, api string) (string, error) {
 		return swift.DefaultLibraryName(api), nil
 	case config.LanguagePhp:
 		return php.DefaultLibraryName(api), nil
+	case config.LanguageRuby:
+		// Ruby also uses the existing libraries, to reuse an existing service's gem name.
+		return ruby.DefaultLibraryName(cfg.Libraries, googleapisDir, api)
 	default:
 		return strings.ReplaceAll(api, "/", "-"), nil
 	}
@@ -268,7 +271,7 @@ func findExistingLibraryForAPI(cfg *config.Config, googleapisDir, apiPath, expli
 				}
 			}
 			var err error
-			name, err = deriveLibraryName(cfg.Language, googleapisDir, apiPath)
+			name, err = deriveLibraryName(cfg, googleapisDir, apiPath)
 			if err != nil {
 				return nil, err
 			}
@@ -309,7 +312,7 @@ func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName, goo
 	name := explicitLibraryName
 	if name == "" {
 		var err error
-		name, err = deriveLibraryName(cfg.Language, googleapisDir, api.Path)
+		name, err = deriveLibraryName(cfg, googleapisDir, api.Path)
 		if err != nil {
 			return "", nil, err
 		}

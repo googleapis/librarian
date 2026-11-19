@@ -493,7 +493,7 @@ func TestSearchVersionedAPI(t *testing.T) {
 					},
 				},
 			}
-			got, err := searchVersionedAPI(cfg, test.apiPath)
+			got, err := searchVersionedAPI(cfg.Libraries, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
