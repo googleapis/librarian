@@ -116,17 +116,18 @@ func loadMixinMethods(serviceConfig *serviceconfig.Service) mixinMethods {
 	return enabledMixinMethods
 }
 
-// applyServiceConfigMethodOverrides applies `serviceConfig` overrides to `targetMethod`.
+// serviceConfigMethodOverrides computes `serviceConfig` overrides for a mixin method.
 //
 // The service config file may include overrides to mixin method definitions.
 // These overrides reference the original fully-qualified name of the method,
 // but should be applied to each copy of the method.
-func applyServiceConfigMethodOverrides(
-	targetMethod *api.Method,
-	originalID string,
+func serviceConfigMethodOverrides(
+	methodID, originalID, inputTypeID string,
+	defaultPathInfo *api.PathInfo,
 	serviceConfig *serviceconfig.Service,
-	api *api.API,
-	mixin *api.Service) error {
+	model *api.API,
+	mixin *api.Service) (*api.PathInfo, string, error) {
+	pathInfo := defaultPathInfo
 	for _, rule := range serviceConfig.GetHttp().GetRules() {
 		selector := rule.GetSelector()
 		if !strings.HasPrefix(selector, ".") {
@@ -135,13 +136,14 @@ func applyServiceConfigMethodOverrides(
 		if selector != originalID {
 			continue
 		}
-		pathInfo, err := processRule(rule, api, targetMethod.InputTypeID)
+		var err error
+		pathInfo, err = processRule(rule, model, inputTypeID)
 		if err != nil {
-			return fmt.Errorf("unsupported http rule %q in method %s", rule, targetMethod.ID)
+			return nil, "", fmt.Errorf("unsupported http rule %q in method %s", rule, methodID)
 		}
-		targetMethod.PathInfo = pathInfo
 	}
 
+	var documentation string
 	for _, rule := range serviceConfig.GetDocumentation().GetRules() {
 		selector := rule.GetSelector()
 		if !strings.HasPrefix(selector, ".") {
@@ -150,10 +152,10 @@ func applyServiceConfigMethodOverrides(
 		if selector != originalID {
 			continue
 		}
-		targetMethod.Documentation = rule.GetDescription()
+		documentation = rule.GetDescription()
 	}
-	if targetMethod.Documentation == "" {
-		targetMethod.Documentation = fmt.Sprintf("Provides the [%s][%s] service functionality in this service.", mixin.Name, mixin.ID[1:])
+	if documentation == "" {
+		documentation = fmt.Sprintf("Provides the [%s][%s] service functionality in this service.", mixin.Name, mixin.ID[1:])
 	}
-	return nil
+	return pathInfo, documentation, nil
 }

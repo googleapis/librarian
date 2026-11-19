@@ -51,7 +51,7 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 
 	for _, service := range model.Services {
 		for _, m := range service.Methods {
-			nameLower := strings.ToLower(m.Name)
+			nameLower := strings.ToLower(m.Name())
 
 			var isCRUDPrefix bool
 			for _, prefix := range crudPrefixes {
@@ -77,10 +77,10 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 				continue
 			}
 
-			if m.PathInfo == nil {
+			if m.PathInfo() == nil {
 				continue
 			}
-			bindings := m.PathInfo.Bindings()
+			bindings := m.PathInfo().Bindings()
 			if len(bindings) == 0 {
 				continue
 			}

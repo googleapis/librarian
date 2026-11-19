@@ -91,17 +91,17 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		// Recurse one level, depending on the input type.
 		if service := model.Service(id); service != nil {
 			for _, method := range service.Methods {
-				add(method.ID)
+				add(method.ID())
 			}
 			continue
 		}
 
 		if method := model.Method(id); method != nil {
-			add(method.InputTypeID)
-			add(method.OutputTypeID)
-			if method.OperationInfo != nil {
-				add(method.OperationInfo.MetadataTypeID())
-				add(method.OperationInfo.ResponseTypeID())
+			add(method.InputTypeID())
+			add(method.OutputTypeID())
+			if op := method.OperationInfo(); op != nil {
+				add(op.MetadataTypeID())
+				add(op.ResponseTypeID())
 			}
 			continue
 		}
@@ -134,7 +134,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 
 		// Recurse one level, depending on the input type.
 		if method := model.Method(id); method != nil {
-			add(method.Service.ID)
+			add(method.Service().ID)
 			continue
 		}
 

@@ -121,7 +121,7 @@ func TestDisco_ParsePagination(t *testing.T) {
 		WithType(api.TypezString).
 		WithTypezID("string").
 		WithOptional()
-	if diff := cmp.Diff(wantPagination, got.Pagination, apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
+	if diff := cmp.Diff(wantPagination, got.Pagination(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -145,7 +145,7 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 		WithType(api.TypezString).
 		WithTypezID("string").
 		WithOptional()
-	if diff := cmp.Diff(wantPagination, got.Pagination, apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
+	if diff := cmp.Diff(wantPagination, got.Pagination(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

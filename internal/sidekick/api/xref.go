@@ -61,25 +61,25 @@ func CrossReference(model *API) error {
 		}
 	}
 	for m := range model.AllMethods() {
-		input := model.Message(m.InputTypeID)
+		input := model.Message(m.InputTypeID())
 		if input == nil {
-			return fmt.Errorf("cannot find input type %s for method %s", m.InputTypeID, m.ID)
+			return fmt.Errorf("cannot find input type %s for method %s", m.InputTypeID(), m.ID())
 		}
-		output := model.Message(m.OutputTypeID)
+		output := model.Message(m.OutputTypeID())
 		if output == nil {
-			return fmt.Errorf("cannot find output type %s for method %s", m.OutputTypeID, m.ID)
+			return fmt.Errorf("cannot find output type %s for method %s", m.OutputTypeID(), m.ID())
 		}
-		m.InputType = input
-		m.OutputType = output
-		if m.OperationInfo != nil {
-			m.OperationInfo.method = m
+		m.inputType = input
+		m.outputType = output
+		if op := m.OperationInfo(); op != nil {
+			op.method = m
 		}
-		for _, signature := range m.Signatures {
+		for _, signature := range m.Signatures() {
 			signature.method = m
 			for _, name := range signature.names {
 				idx := slices.IndexFunc(input.fields, func(f *Field) bool { return f.name == name })
 				if idx == -1 {
-					return fmt.Errorf("cannot find field %s in method signature for method %s", name, m.ID)
+					return fmt.Errorf("cannot find field %s in method signature for method %s", name, m.ID())
 				}
 				signature.fields = append(signature.fields, input.fields[idx])
 			}
@@ -88,14 +88,14 @@ func CrossReference(model *API) error {
 	for s := range model.AllServices() {
 		s.Model = model
 		for _, m := range s.Methods {
-			m.Model = model
-			m.Service = s
-			if source := model.Service(m.SourceServiceID); source != nil {
-				m.SourceService = source
+			m.model = model
+			m.service = s
+			if source := model.Service(m.SourceServiceID()); source != nil {
+				m.sourceService = source
 			} else {
 				// Default to the regular service. OpenAPI does not define the
 				// services for mixins.
-				m.SourceService = s
+				m.sourceService = s
 			}
 		}
 	}
@@ -134,16 +134,16 @@ func enrichSamples(model *API) {
 func findQuickstartMethod(s *Service) *Method {
 	// Priority: List > Get > Create > Delete > Update
 	priorities := []func(m *Method) bool{
-		func(m *Method) bool { return m.IsAIPStandardList },
-		func(m *Method) bool { return m.IsAIPStandardGet },
-		func(m *Method) bool { return m.IsAIPStandardCreate },
-		func(m *Method) bool { return m.IsAIPStandardDelete },
-		func(m *Method) bool { return m.IsAIPStandardUpdate },
+		func(m *Method) bool { return m.IsAIPStandardList() },
+		func(m *Method) bool { return m.IsAIPStandardGet() },
+		func(m *Method) bool { return m.IsAIPStandardCreate() },
+		func(m *Method) bool { return m.IsAIPStandardDelete() },
+		func(m *Method) bool { return m.IsAIPStandardUpdate() },
 		// Fallback for when no standard AIP method is available: any method that is not streaming.
-		func(m *Method) bool { return !m.ClientSideStreaming && !m.ServerSideStreaming },
+		func(m *Method) bool { return !m.ClientSideStreaming() && !m.ServerSideStreaming() },
 		// Fallback for streaming methods when no unary methods exist.
-		func(m *Method) bool { return !m.ClientSideStreaming && m.ServerSideStreaming },
-		func(m *Method) bool { return m.ClientSideStreaming && m.ServerSideStreaming },
+		func(m *Method) bool { return !m.ClientSideStreaming() && m.ServerSideStreaming() },
+		func(m *Method) bool { return m.ClientSideStreaming() && m.ServerSideStreaming() },
 	}
 
 	strippedServiceName := strings.TrimSuffix(s.Name, "Service")
@@ -155,7 +155,7 @@ func findQuickstartMethod(s *Service) *Method {
 
 		for _, m := range s.Methods {
 			if isType(m) {
-				if m.Deprecated {
+				if m.Deprecated() {
 					deprecated = append(deprecated, m)
 				} else {
 					nonDeprecated = append(nonDeprecated, m)
@@ -178,7 +178,7 @@ func findQuickstartMethod(s *Service) *Method {
 
 		// Tie-breaking: Substring match on method name
 		for _, m := range searchList {
-			if strings.Contains(strings.ToLower(m.Name), lowerStripped) {
+			if strings.Contains(strings.ToLower(m.Name()), lowerStripped) {
 				return m
 			}
 		}
@@ -238,11 +238,11 @@ func findQuickstartService(api *API) *Service {
 	for _, s := range searchList {
 		if s.QuickstartMethod != nil {
 			servicesWithAnyQuickstart = append(servicesWithAnyQuickstart, s)
-			if s.QuickstartMethod.IsAIPStandardList ||
-				s.QuickstartMethod.IsAIPStandardGet ||
-				s.QuickstartMethod.IsAIPStandardCreate ||
-				s.QuickstartMethod.IsAIPStandardDelete ||
-				s.QuickstartMethod.IsAIPStandardUpdate {
+			if s.QuickstartMethod.IsAIPStandardList() ||
+				s.QuickstartMethod.IsAIPStandardGet() ||
+				s.QuickstartMethod.IsAIPStandardCreate() ||
+				s.QuickstartMethod.IsAIPStandardDelete() ||
+				s.QuickstartMethod.IsAIPStandardUpdate() {
 				servicesWithStandardQuickstart = append(servicesWithStandardQuickstart, s)
 			}
 		}
@@ -363,40 +363,40 @@ func sortOneOfFieldForExamples(f1, f2 *Field) int {
 
 func enrichMethodSamples(m *Method) {
 	// Methods with AIP-151 LRO annotations *OR* discovery LRO annotations are LROs.
-	m.IsLRO = m.OperationInfo != nil || m.DiscoveryLro != nil
-	m.IsStreaming = m.ClientSideStreaming || m.ServerSideStreaming
+	m.isLRO = m.OperationInfo() != nil || m.DiscoveryLro() != nil
+	m.isStreaming = m.ClientSideStreaming() || m.ServerSideStreaming()
 	// A simple method is not paginated, not streaming and not an LRO.
-	m.IsSimple = m.Pagination == nil && !m.IsStreaming && !m.IsLRO
+	m.isSimple = m.Pagination() == nil && !m.IsStreaming() && !m.IsLRO()
 
-	if m.SourceServiceID == ".google.longrunning.Operations" &&
-		m.Name == "GetOperation" &&
-		m.Service != nil && m.Service.Package != "google.longrunning" {
-		m.IsLroPoller = true
+	if m.SourceServiceID() == ".google.longrunning.Operations" &&
+		m.Name() == "GetOperation" &&
+		m.Service() != nil && m.Service().Package != "google.longrunning" {
+		m.isLroPoller = true
 	}
 
-	if m.OperationInfo != nil && m.Model != nil {
-		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID())
+	if m.OperationInfo() != nil && m.Model() != nil {
+		m.longRunningResponseType = m.Model().Message(m.OperationInfo().ResponseTypeID())
 	}
 
-	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.id == ".google.protobuf.Empty"
+	m.longRunningReturnsEmpty = m.LongRunningResponseType() != nil && m.LongRunningResponseType().ID() == ".google.protobuf.Empty"
 
-	m.IsList = m.OutputType != nil && m.OutputType.pagination != nil
+	m.isList = m.OutputType() != nil && m.OutputType().Pagination() != nil
 
-	if m.SampleInfo = aipStandardGetInfo(m); m.SampleInfo != nil {
-		m.IsAIPStandardGet = true
-	} else if m.SampleInfo = aipStandardDeleteInfo(m); m.SampleInfo != nil {
-		m.IsAIPStandardDelete = true
-	} else if m.SampleInfo = aipStandardUndeleteInfo(m); m.SampleInfo != nil {
-		m.IsAIPStandardUndelete = true
-	} else if m.SampleInfo = aipStandardCreateInfo(m); m.SampleInfo != nil {
-		m.IsAIPStandardCreate = true
-	} else if m.SampleInfo = aipStandardUpdateInfo(m); m.SampleInfo != nil {
-		m.IsAIPStandardUpdate = true
-	} else if m.SampleInfo = aipStandardListInfo(m); m.SampleInfo != nil {
-		m.IsAIPStandardList = true
+	if m.sampleInfo = aipStandardGetInfo(m); m.SampleInfo() != nil {
+		m.isAIPStandardGet = true
+	} else if m.sampleInfo = aipStandardDeleteInfo(m); m.SampleInfo() != nil {
+		m.isAIPStandardDelete = true
+	} else if m.sampleInfo = aipStandardUndeleteInfo(m); m.SampleInfo() != nil {
+		m.isAIPStandardUndelete = true
+	} else if m.sampleInfo = aipStandardCreateInfo(m); m.SampleInfo() != nil {
+		m.isAIPStandardCreate = true
+	} else if m.sampleInfo = aipStandardUpdateInfo(m); m.SampleInfo() != nil {
+		m.isAIPStandardUpdate = true
+	} else if m.sampleInfo = aipStandardListInfo(m); m.SampleInfo() != nil {
+		m.isAIPStandardList = true
 	}
 
-	m.IsAIPStandard = m.SampleInfo != nil
+	m.isAIPStandard = m.SampleInfo() != nil
 }
 
 func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
@@ -466,7 +466,7 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 }
 
 func aipStandardGetInfo(m *Method) *SampleInfo {
-	if !m.IsSimple || m.InputType == nil || m.ReturnsEmpty {
+	if !m.IsSimple() || m.InputType() == nil || m.ReturnsEmpty() {
 		return nil
 	}
 	outputResource := standardMethodOutputResource(m)
@@ -474,11 +474,11 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "get")
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name()), "get")
 	if !found || maybeSingular == "" {
 		return nil
 	}
-	if strings.ToLower(m.InputType.name) != fmt.Sprintf("get%srequest", maybeSingular) {
+	if strings.ToLower(m.InputType().Name()) != fmt.Sprintf("get%srequest", maybeSingular) {
 		return nil
 	}
 
@@ -487,70 +487,70 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	resourceField := findBestResourceFieldByType(m.InputType, m.Model, outputResource.Type())
+	resourceField := findBestResourceFieldByType(m.InputType(), m.Model(), outputResource.Type())
 
 	if resourceField == nil {
 		return nil
 	}
 
-	return NewSampleInfoBuilder().
-		WithResourceNameField(resourceField).
-		WithIsRequestResourceName(true).
-		Build()
+	return &SampleInfo{
+		resourceNameField:     resourceField,
+		isRequestResourceName: true,
+	}
 }
 
 func aipStandardDeleteInfo(m *Method) *SampleInfo {
-	if !m.IsSimple && m.OperationInfo == nil {
+	if !m.IsSimple() && m.OperationInfo() == nil {
 		return nil
 	}
 
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "delete")
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name()), "delete")
 	if !found || maybeSingular == "" {
 		return nil
 	}
-	if m.InputType == nil ||
-		strings.ToLower(m.InputType.name) != fmt.Sprintf("delete%srequest", maybeSingular) {
+	if m.InputType() == nil ||
+		strings.ToLower(m.InputType().Name()) != fmt.Sprintf("delete%srequest", maybeSingular) {
 		return nil
 	}
 
-	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model, maybeSingular)
+	resourceField := findBestResourceFieldBySingular(m.InputType(), m.Model(), maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
 
-	return NewSampleInfoBuilder().
-		WithResourceNameField(resourceField).
-		WithIsRequestResourceName(true).
-		Build()
+	return &SampleInfo{
+		resourceNameField:     resourceField,
+		isRequestResourceName: true,
+	}
 }
 
 func aipStandardUndeleteInfo(m *Method) *SampleInfo {
-	if !m.IsSimple && m.OperationInfo == nil {
+	if !m.IsSimple() && m.OperationInfo() == nil {
 		return nil
 	}
 
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "undelete")
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name()), "undelete")
 	if !found || maybeSingular == "" {
 		return nil
 	}
-	if m.InputType == nil ||
-		strings.ToLower(m.InputType.name) != fmt.Sprintf("undelete%srequest", maybeSingular) {
+	if m.InputType() == nil ||
+		strings.ToLower(m.InputType().Name()) != fmt.Sprintf("undelete%srequest", maybeSingular) {
 		return nil
 	}
 
-	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model, maybeSingular)
+	resourceField := findBestResourceFieldBySingular(m.InputType(), m.Model(), maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
 
-	return NewSampleInfoBuilder().
-		WithResourceNameField(resourceField).
-		WithIsRequestResourceName(true).
-		Build()
+	return &SampleInfo{
+		resourceNameField:     resourceField,
+		isRequestResourceName: true,
+	}
 }
 
 func aipStandardCreateInfo(m *Method) *SampleInfo {
-	if (!m.IsSimple && !m.IsLRO) || m.InputType == nil || m.ReturnsEmpty {
+	if (!m.IsSimple() && !m.IsLRO()) || m.InputType() == nil || m.ReturnsEmpty() {
 		return nil
 	}
 	outputResource := standardMethodOutputResource(m)
@@ -558,12 +558,12 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "create")
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name()), "create")
 	if !found || maybeSingular == "" {
 		return nil
 	}
 
-	if strings.ToLower(m.InputType.name) != fmt.Sprintf("create%srequest", maybeSingular) {
+	if strings.ToLower(m.InputType().Name()) != fmt.Sprintf("create%srequest", maybeSingular) {
 		return nil
 	}
 
@@ -572,32 +572,35 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	parentField := findBestParentFieldByType(m.InputType, outputResource.Type())
+	parentField := findBestParentFieldByType(m.InputType(), outputResource.Type())
 	if parentField == nil {
 		return nil
 	}
 
 	var targetTypeID string
 	if outputResource.Self() != nil {
-		targetTypeID = outputResource.Self().id
+		targetTypeID = outputResource.Self().ID()
 	}
-	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
+	resourceField := findBodyField(m.InputType(), m.PathInfo(), targetTypeID, maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
 
-	resourceIDField := findResourceIDField(m.InputType, maybeSingular)
+	resourceIDField := findResourceIDField(m.InputType(), maybeSingular)
 
-	return NewSampleInfoBuilder().
-		WithResourceNameField(parentField).
-		WithIsRequestResourceName(true).
-		WithMessageField(resourceField).
-		WithResourceIDField(resourceIDField).
-		Build()
+	info := &SampleInfo{
+		resourceNameField:     parentField,
+		isRequestResourceName: true,
+		messageField:          resourceField,
+	}
+	if resourceIDField != nil {
+		info.resourceIDField = resourceIDField
+	}
+	return info
 }
 
 func aipStandardUpdateInfo(m *Method) *SampleInfo {
-	if (!m.IsSimple && !m.IsLRO) || m.InputType == nil || m.ReturnsEmpty {
+	if (!m.IsSimple() && !m.IsLRO()) || m.InputType() == nil || m.ReturnsEmpty() {
 		return nil
 	}
 	outputResource := standardMethodOutputResource(m)
@@ -605,11 +608,11 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "update")
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name()), "update")
 	if !found || maybeSingular == "" {
 		return nil
 	}
-	if strings.ToLower(m.InputType.name) != fmt.Sprintf("update%srequest", maybeSingular) {
+	if strings.ToLower(m.InputType().Name()) != fmt.Sprintf("update%srequest", maybeSingular) {
 		return nil
 	}
 	if outputResource.Singular() != "" &&
@@ -619,14 +622,14 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 
 	var targetTypeID string
 	if outputResource.Self() != nil {
-		targetTypeID = outputResource.Self().id
+		targetTypeID = outputResource.Self().ID()
 	}
-	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
+	resourceField := findBodyField(m.InputType(), m.PathInfo(), targetTypeID, maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
 	var updateMaskField *Field
-	for _, f := range m.InputType.fields {
+	for _, f := range m.InputType().Fields() {
 		if f.Name() == StandardFieldNameForUpdateMask && f.TypezID() == ".google.protobuf.FieldMask" {
 			updateMaskField = f
 			break
@@ -635,7 +638,7 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 
 	var resourceNameField *Field
 	if resourceField.MessageType() != nil {
-		for _, f := range resourceField.MessageType().fields {
+		for _, f := range resourceField.MessageType().Fields() {
 			if f.Name() == StandardFieldNameForResourceRef {
 				resourceNameField = f
 				break
@@ -643,48 +646,48 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 		}
 	}
 
-	return NewSampleInfoBuilder().
-		WithResourceNameField(resourceNameField).
-		WithIsMessageResourceName(true).
-		WithMessageField(resourceField).
-		WithUpdateMaskField(updateMaskField).
-		Build()
+	return &SampleInfo{
+		resourceNameField:     resourceNameField,
+		isMessageResourceName: true,
+		messageField:          resourceField,
+		updateMaskField:       updateMaskField,
+	}
 }
 
 func aipStandardListInfo(m *Method) *SampleInfo {
-	if !m.IsList || m.InputType == nil {
+	if !m.IsList() || m.InputType() == nil {
 		return nil
 	}
 
-	maybePlural, found := strings.CutPrefix(strings.ToLower(m.Name), "list")
+	maybePlural, found := strings.CutPrefix(strings.ToLower(m.Name()), "list")
 	if !found || maybePlural == "" {
 		return nil
 	}
 
-	if strings.ToLower(m.InputType.name) != fmt.Sprintf("list%srequest", maybePlural) {
+	if strings.ToLower(m.InputType().Name()) != fmt.Sprintf("list%srequest", maybePlural) {
 		return nil
 	}
 
-	if strings.ToLower(m.OutputType.name) != fmt.Sprintf("list%sresponse", maybePlural) {
+	if strings.ToLower(m.OutputType().Name()) != fmt.Sprintf("list%sresponse", maybePlural) {
 		return nil
 	}
 
-	pageableItem := m.OutputType.pagination.PageableItem()
-	if pageableItem == nil || pageableItem.MessageType() == nil || pageableItem.MessageType().resource == nil {
+	pageableItem := m.OutputType().Pagination().PageableItem()
+	if pageableItem == nil || pageableItem.MessageType() == nil || pageableItem.MessageType().Resource() == nil {
 		return nil
 	}
-	resourceType := pageableItem.MessageType().resource.Type()
+	resourceType := pageableItem.MessageType().Resource().Type()
 
-	parentField := findBestParentFieldByType(m.InputType, resourceType)
+	parentField := findBestParentFieldByType(m.InputType(), resourceType)
 
 	if parentField == nil {
 		return nil
 	}
 
-	return NewSampleInfoBuilder().
-		WithResourceNameField(parentField).
-		WithIsRequestResourceName(true).
-		Build()
+	return &SampleInfo{
+		resourceNameField:     parentField,
+		isRequestResourceName: true,
+	}
 }
 
 func findBestResourceFieldByType(message *Message, model *API, targetType string) *Field {
@@ -779,12 +782,12 @@ func findResourceIDField(message *Message, singular string) *Field {
 }
 
 func standardMethodOutputResource(m *Method) *Resource {
-	if m.OutputType != nil && m.OutputType.resource != nil {
-		return m.OutputType.resource
+	if m.OutputType() != nil && m.OutputType().Resource() != nil {
+		return m.OutputType().Resource()
 	}
-	if m.OperationInfo != nil {
-		if lroResponse := m.LongRunningResponseType; lroResponse != nil {
-			return lroResponse.resource
+	if m.OperationInfo() != nil {
+		if lroResponse := m.LongRunningResponseType(); lroResponse != nil {
+			return lroResponse.Resource()
 		}
 	}
 	return nil

@@ -40,10 +40,10 @@ func TestMakeServiceMethods(t *testing.T) {
 			WithVariableNamed("zone").
 			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("")
-	m1.InputTypeID = "..zones.getRequest"
-	m1.OutputTypeID = "..Zone"
-	m1.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "zone")}
+		WithBodyFieldPath("").
+		WithInputTypeID("..zones.getRequest").
+		WithOutputTypeID("..Zone").
+		WithRawSignatures(api.NewTestMethodSignature("project", "zone"))
 
 	m2 := api.NewTestMethod("insert").
 		WithID("..firewallPolicies.insert").
@@ -57,10 +57,10 @@ func TestMakeServiceMethods(t *testing.T) {
 			WithLiteral("firewallPolicies").
 			Build()).
 		WithQueryParameters("parentId", "requestId").
-		WithBodyFieldPath("body")
-	m2.InputTypeID = "..firewallPolicies.insertRequest"
-	m2.OutputTypeID = "..Operation"
-	m2.Signatures = []*api.MethodSignature{}
+		WithBodyFieldPath("body").
+		WithInputTypeID("..firewallPolicies.insertRequest").
+		WithOutputTypeID("..Operation").
+		WithRawSignatures()
 
 	for _, test := range []struct {
 		id   string
@@ -113,10 +113,10 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 			Build()).
 		WithQueryParameters().
 		WithBodyFieldPath("").
-		ReturnEmpty()
-	want.InputTypeID = "..zoneOperations.deleteRequest"
-	want.OutputTypeID = ".google.protobuf.Empty"
-	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "zone", "operation")}
+		ReturnEmpty().
+		WithInputTypeID("..zoneOperations.deleteRequest").
+		WithOutputTypeID(".google.protobuf.Empty").
+		WithRawSignatures(api.NewTestMethodSignature("project", "zone", "operation"))
 	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -145,10 +145,10 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 			WithLiteral("moveInstance").
 			Build()).
 		WithQueryParameters("requestId").
-		WithBodyFieldPath("body")
-	want.InputTypeID = "..projects.moveInstanceRequest"
-	want.OutputTypeID = "..Operation"
-	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "body")}
+		WithBodyFieldPath("body").
+		WithInputTypeID("..projects.moveInstanceRequest").
+		WithOutputTypeID("..Operation").
+		WithRawSignatures(api.NewTestMethodSignature("project", "body"))
 	if diff := cmp.Diff(want, got, apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -186,8 +186,8 @@ func TestMakeServiceMethodsApiversion(t *testing.T) {
 			if got == nil {
 				t.Fatalf("expected method %s in the API model", test.id)
 			}
-			if got.APIVersion != test.wantVersion {
-				t.Errorf("method.APIVersion = %q, want = %q", got.APIVersion, test.wantVersion)
+			if got.APIVersion() != test.wantVersion {
+				t.Errorf("method.APIVersion() = %q, want = %q", got.APIVersion(), test.wantVersion)
 			}
 		})
 	}

@@ -143,7 +143,7 @@ func TestAnnotateMethod(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			got := method.Codec.(*methodAnnotations)
+			got := method.Codec().(*methodAnnotations)
 			want := test.wantFunc(keyField)
 			if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent", "codec"), cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -232,7 +232,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			got := method.Codec.(*methodAnnotations)
+			got := method.Codec().(*methodAnnotations)
 			var gotOmitted [][]string
 			var gotExpressions []string
 			for _, binding := range got.PathBindings {
@@ -296,7 +296,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				ResponseEncoding:           "json;enum-encoding=int",
 			}
 
-			if diff := cmp.Diff(want, method.Codec, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
+			if diff := cmp.Diff(want, method.Codec(), cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -377,7 +377,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	}
 
 	// Verify method annotations
-	gotMethod := method.Codec.(*methodAnnotations)
+	gotMethod := method.Codec().(*methodAnnotations)
 	wantMethod := &methodAnnotations{
 		Name:          "listItems",
 		UnescapedName: "listItems",
@@ -469,7 +469,7 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotMethod := method.Codec.(*methodAnnotations)
+	gotMethod := method.Codec().(*methodAnnotations)
 	wantMethod := &methodAnnotations{
 		Name:          "lroMethod",
 		UnescapedName: "lroMethod",
@@ -536,7 +536,7 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotMethod := method.Codec.(*methodAnnotations)
+	gotMethod := method.Codec().(*methodAnnotations)
 	wantMethod := &methodAnnotations{
 		Name:          "lroMethod",
 		UnescapedName: "lroMethod",
@@ -615,7 +615,7 @@ func TestAnnotateMethod_MultipleBindings(t *testing.T) {
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
-	got := method.Codec.(*methodAnnotations)
+	got := method.Codec().(*methodAnnotations)
 	if !got.HasMultipleBindings {
 		t.Errorf("got.HasMultipleBindings = false, want true")
 	}
@@ -655,9 +655,9 @@ type methodDiagnoseFlags struct {
 
 func getMethodDiagnoseFlags(t *testing.T, method *api.Method) methodDiagnoseFlags {
 	t.Helper()
-	ann, ok := method.Codec.(*methodAnnotations)
+	ann, ok := method.Codec().(*methodAnnotations)
 	if !ok {
-		t.Fatalf("method %q is not annotated", method.Name)
+		t.Fatalf("method %q is not annotated", method.Name())
 	}
 	return methodDiagnoseFlags{
 		Types:      ann.DiagnoseTypes,
@@ -971,9 +971,9 @@ func TestAnnotateMethod_AutoPopulated(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ann, ok := method.Codec.(*methodAnnotations)
+			ann, ok := method.Codec().(*methodAnnotations)
 			if !ok {
-				t.Fatalf("method.Codec is not *methodAnnotations")
+				t.Fatalf("method.Codec() is not *methodAnnotations")
 			}
 			if ann.HasAutoPopulatedFields != test.wantHasAutoPopulated {
 				t.Errorf("ann.HasAutoPopulatedFields = %v, want %v", ann.HasAutoPopulatedFields, test.wantHasAutoPopulated)
@@ -1027,9 +1027,9 @@ func TestAnnotateMethodIdempotencyHook(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			ann, ok := method.Codec.(*methodAnnotations)
+			ann, ok := method.Codec().(*methodAnnotations)
 			if !ok {
-				t.Fatalf("expected method.Codec to be *methodAnnotations, got %T", method.Codec)
+				t.Fatalf("expected method.Codec() to be *methodAnnotations, got %T", method.Codec())
 			}
 			if ann.HasIdempotencyHook != test.wantHasIdempotencyHook {
 				t.Errorf("got HasIdempotencyHook = %v, want %v", ann.HasIdempotencyHook, test.wantHasIdempotencyHook)
@@ -1169,7 +1169,7 @@ func TestAnnotateMethod_HTTPBody(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			got := method.Codec.(*methodAnnotations)
+			got := method.Codec().(*methodAnnotations)
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -1211,7 +1211,7 @@ func TestAnnotateMethod_ExplicitEmptyRoutingSuppressesHTTPFallback(t *testing.T)
 		t.Fatal(err)
 	}
 
-	gotExplicit := explicitEmpty.Codec.(*methodAnnotations)
+	gotExplicit := explicitEmpty.Codec().(*methodAnnotations)
 	if gotExplicit.HasRoutingParams() {
 		t.Errorf("ExplicitEmpty HasRoutingParams() = true, want false; got %v", gotExplicit.RoutingParams)
 	}
@@ -1219,7 +1219,7 @@ func TestAnnotateMethod_ExplicitEmptyRoutingSuppressesHTTPFallback(t *testing.T)
 		t.Errorf("ExplicitEmpty RoutingParams = %v, want empty", gotExplicit.RoutingParams)
 	}
 
-	gotImplicit := implicitOnly.Codec.(*methodAnnotations)
+	gotImplicit := implicitOnly.Codec().(*methodAnnotations)
 	if !gotImplicit.HasRoutingParams() {
 		t.Errorf("ImplicitOnly HasRoutingParams() = false, want true")
 	}
@@ -1273,8 +1273,8 @@ func TestAnnotateMethod_SeeAlsoLinks(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("GET").
-		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build())
-	pollerMethod.IsLroPoller = true
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").Build()).
+		WithIsLroPoller()
 
 	service := api.NewTestService("TestService").
 		WithPackage("test").
@@ -1323,7 +1323,7 @@ func TestAnnotateMethod_SeeAlsoLinks(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.method.Codec.(*methodAnnotations)
+			got := test.method.Codec().(*methodAnnotations)
 			if diff := cmp.Diff(test.wantSeeAlso, got.SeeAlsoLinks); diff != "" {
 				t.Errorf("SeeAlsoLinks mismatch (-want +got):\n%s", diff)
 			}

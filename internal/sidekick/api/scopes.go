@@ -85,10 +85,10 @@ func (x *Field) Scopes() []string {
 
 // Scopes returns the scopes for a method.
 func (x *Method) Scopes() []string {
-	if x.Service != nil {
-		return x.Service.Scopes()
+	if x.Service() != nil {
+		return x.Service().Scopes()
 	}
-	return fallbackScopes(x.ID)
+	return fallbackScopes(x.ID())
 }
 
 // Scopes returns the scopes for a oneof.

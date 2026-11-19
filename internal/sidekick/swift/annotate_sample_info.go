@@ -35,7 +35,7 @@ type sampleInfoAnnotation struct {
 }
 
 func (c *codec) annotateSampleInfo(method *api.Method) {
-	si := method.SampleInfo
+	si := method.SampleInfo()
 	if si == nil {
 		return
 	}
@@ -51,7 +51,7 @@ func (c *codec) annotateSampleInfo(method *api.Method) {
 				FormatString: fmt.Sprintf("\\(%s)", fieldAnn.Name),
 			}
 		}
-	} else if method.IsAIPStandardUpdate {
+	} else if method.IsAIPStandardUpdate() {
 		ann = &sampleInfoAnnotation{
 			Parameters:   []string{"name"},
 			Name:         "name",

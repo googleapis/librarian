@@ -431,10 +431,10 @@ func TestProtobuf_Comments(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	createMethod.SourceServiceID = ".test.Service"
-	createMethod.InputTypeID = ".test.Request"
-	createMethod.OutputTypeID = ".test.Response"
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".test.Service").
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response")
 
 	wantService := api.NewTestService("Service").
 		WithPackage("test").
@@ -693,11 +693,11 @@ func TestProtobuf_Service(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		WithBodyFieldPath("")
-	getFoo.SourceServiceID = ".test.TestService"
-	getFoo.InputTypeID = ".test.GetFooRequest"
-	getFoo.OutputTypeID = ".test.Foo"
-	getFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
+		WithBodyFieldPath("").
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.GetFooRequest").
+		WithOutputTypeID(".test.Foo").
+		WithRawSignatures(api.NewTestMethodSignature("name"))
 
 	createFoo := api.NewTestMethod("CreateFoo").
 		WithID(".test.TestService.CreateFoo").
@@ -714,11 +714,11 @@ func TestProtobuf_Service(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters("foo_id").
-		WithBodyFieldPath("foo")
-	createFoo.SourceServiceID = ".test.TestService"
-	createFoo.InputTypeID = ".test.CreateFooRequest"
-	createFoo.OutputTypeID = ".test.Foo"
-	createFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "foo_id", "foo")}
+		WithBodyFieldPath("foo").
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".test.Foo").
+		WithRawSignatures(api.NewTestMethodSignature("parent", "foo_id", "foo"))
 
 	deleteFoo := api.NewTestMethod("DeleteFoo").
 		WithID(".test.TestService.DeleteFoo").
@@ -736,19 +736,19 @@ func TestProtobuf_Service(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		ReturnEmpty()
-	deleteFoo.SourceServiceID = ".test.TestService"
-	deleteFoo.InputTypeID = ".test.DeleteFooRequest"
-	deleteFoo.OutputTypeID = ".google.protobuf.Empty"
+		ReturnEmpty().
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.DeleteFooRequest").
+		WithOutputTypeID(".google.protobuf.Empty")
 
 	uploadFoos := api.NewTestMethod("UploadFoos").
 		WithID(".test.TestService.UploadFoos").
 		WithDocumentation("A client-side streaming RPC.").
 		WithClientSideStreaming().
-		WithPathInfo(api.NewPathInfoBuilder().Build())
-	uploadFoos.SourceServiceID = ".test.TestService"
-	uploadFoos.InputTypeID = ".test.CreateFooRequest"
-	uploadFoos.OutputTypeID = ".test.Foo"
+		WithPathInfo(api.NewPathInfoBuilder().Build()).
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".test.Foo")
 
 	downloadFoos := api.NewTestMethod("DownloadFoos").
 		WithID(".test.TestService.DownloadFoos").
@@ -768,19 +768,19 @@ func TestProtobuf_Service(t *testing.T) {
 		).
 		WithQueryParameters().
 		WithBodyFieldPath("").
-		WithServerSideStreaming()
-	downloadFoos.SourceServiceID = ".test.TestService"
-	downloadFoos.InputTypeID = ".test.GetFooRequest"
-	downloadFoos.OutputTypeID = ".test.Foo"
+		WithServerSideStreaming().
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.GetFooRequest").
+		WithOutputTypeID(".test.Foo")
 
 	chatLike := api.NewTestMethod("ChatLike").
 		WithID(".test.TestService.ChatLike").
 		WithDocumentation("A bidi streaming RPC.").
 		WithBidiStreaming().
-		WithPathInfo(api.NewPathInfoBuilder().Build())
-	chatLike.SourceServiceID = ".test.TestService"
-	chatLike.InputTypeID = ".test.Foo"
-	chatLike.OutputTypeID = ".test.Foo"
+		WithPathInfo(api.NewPathInfoBuilder().Build()).
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.Foo").
+		WithOutputTypeID(".test.Foo")
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -815,11 +815,11 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters("foo_id").
-		WithBodyFieldPath("bar")
-	createFoo.SourceServiceID = ".test.TestService"
-	createFoo.InputTypeID = ".test.CreateFooRequest"
-	createFoo.OutputTypeID = ".test.Foo"
-	createFoo.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "foo_id", "bar")}
+		WithBodyFieldPath("bar").
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".test.Foo").
+		WithRawSignatures(api.NewTestMethodSignature("parent", "foo_id", "bar"))
 
 	addBar := api.NewTestMethod("AddBar").
 		WithID(".test.TestService.AddBar").
@@ -838,11 +838,11 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	addBar.SourceServiceID = ".test.TestService"
-	addBar.InputTypeID = ".test.AddBarRequest"
-	addBar.OutputTypeID = ".test.Bar"
-	addBar.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent", "payload")}
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test.AddBarRequest").
+		WithOutputTypeID(".test.Bar").
+		WithRawSignatures(api.NewTestMethodSignature("parent", "payload"))
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -914,11 +914,11 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 				WithLiteral("foos").
 				Build(),
 		).
-		WithQueryParameters(queryParams...)
-	m.SourceServiceID = ".test.TestService"
-	m.InputTypeID = ".test." + inputType
-	m.OutputTypeID = ".test.ListFooResponse"
-	m.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("parent")}
+		WithQueryParameters(queryParams...).
+		WithSourceServiceID(".test.TestService").
+		WithInputTypeID(".test." + inputType).
+		WithOutputTypeID(".test.ListFooResponse").
+		WithRawSignatures(api.NewTestMethodSignature("parent"))
 	if pageTokenReq != "" {
 		m.WithPagination(
 			api.NewTestField("page_token").
@@ -926,8 +926,7 @@ func newTestPaginationMethod(name, inputType, pageTokenReq string, queryParams .
 				WithJSONName("pageToken").
 				WithType(api.TypezString).
 				WithBehavior(api.FieldBehaviorOptional),
-		)
-		m.IsList = false
+		).WithIsList(false)
 	}
 	return m
 }
@@ -943,11 +942,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", "", "page_size", "page_token")
-	missingNextPageToken.OutputTypeID = ".test.ListFooMissingNextPageTokenResponse"
+	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", "", "page_size", "page_token").
+		WithOutputTypeID(".test.ListFooMissingNextPageTokenResponse")
 
-	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", "", "page_size", "page_token")
-	missingRepeatedItem.OutputTypeID = ".test.ListFooMissingRepeatedItemResponse"
+	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", "", "page_size", "page_token").
+		WithOutputTypeID(".test.ListFooMissingRepeatedItemResponse")
 
 	wantService := api.NewTestService("TestService").
 		WithPackage("test").
@@ -1049,11 +1048,11 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithOperationInfo(api.NewOperationInfoBuilder().
 			WithMetadataTypeID(".google.protobuf.Empty").
 			WithResponseTypeID(".test.Foo").
-			Build())
-	createFoo.SourceServiceID = ".test.LroService"
-	createFoo.InputTypeID = ".test.CreateFooRequest"
-	createFoo.OutputTypeID = ".google.longrunning.Operation"
-	createFoo.IsLRO = false
+			Build()).
+		WithSourceServiceID(".test.LroService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".google.longrunning.Operation").
+		WithIsLRO(false)
 
 	createFooWithProgress := api.NewTestMethod("CreateFooWithProgress").
 		WithID(".test.LroService.CreateFooWithProgress").
@@ -1074,11 +1073,11 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithOperationInfo(api.NewOperationInfoBuilder().
 			WithMetadataTypeID(".test.CreateMetadata").
 			WithResponseTypeID(".test.Foo").
-			Build())
-	createFooWithProgress.SourceServiceID = ".test.LroService"
-	createFooWithProgress.InputTypeID = ".test.CreateFooRequest"
-	createFooWithProgress.OutputTypeID = ".google.longrunning.Operation"
-	createFooWithProgress.IsLRO = false
+			Build()).
+		WithSourceServiceID(".test.LroService").
+		WithInputTypeID(".test.CreateFooRequest").
+		WithOutputTypeID(".google.longrunning.Operation").
+		WithIsLRO(false)
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithID(".test.LroService.GetOperation").
@@ -1094,11 +1093,11 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 				Build(),
 		).
 		WithQueryParameters().
-		WithBodyFieldPath("*")
-	getOperation.SourceServiceID = ".google.longrunning.Operations"
-	getOperation.InputTypeID = ".google.longrunning.GetOperationRequest"
-	getOperation.OutputTypeID = ".google.longrunning.Operation"
-	getOperation.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("name")}
+		WithBodyFieldPath("*").
+		WithSourceServiceID(".google.longrunning.Operations").
+		WithInputTypeID(".google.longrunning.GetOperationRequest").
+		WithOutputTypeID(".google.longrunning.Operation").
+		WithRawSignatures(api.NewTestMethodSignature("name"))
 
 	wantService := api.NewTestService("LroService").
 		WithPackage("test").
@@ -1218,7 +1217,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	want := []*api.Field{requestID, requestIDOptional, requestIDWithFieldBehavior}
-	if diff := cmp.Diff(want, method.AutoPopulated, apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
+	if diff := cmp.Diff(want, method.AutoPopulated(), apitest.AllowUnexported(), apitest.IgnoreFieldNames("parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -1245,10 +1244,10 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	rpcA := api.NewTestMethod("RpcA").
 		WithID(".test.ServiceB.RpcA").
 		WithDeprecated(true).
-		WithPathInfo(api.NewPathInfoBuilder().Build())
-	rpcA.InputTypeID = ".test.Request"
-	rpcA.OutputTypeID = ".test.Response"
-	rpcA.SourceServiceID = ".test.ServiceB"
+		WithPathInfo(api.NewPathInfoBuilder().Build()).
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response").
+		WithSourceServiceID(".test.ServiceB")
 
 	wantServiceB := api.NewTestService("ServiceB").
 		WithPackage("test").

@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestFindBestResourceFieldByType(t *testing.T) {
@@ -405,24 +404,20 @@ func TestFindResourceIDField(t *testing.T) {
 func TestFindQuickstartMethod(t *testing.T) {
 	fooMethod := NewTestMethod("FooMethod")
 	listPolicies := NewTestMethod("ListAccessPolicies").
-		WithOutput(NewTestMessage("ListAccessPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy")))
-	listPolicies.IsAIPStandardList = true
-	getPolicy := NewTestMethod("GetAccessPolicy")
-	getPolicy.IsAIPStandardGet = true
-	createPolicy := NewTestMethod("CreateAccessPolicy")
-	createPolicy.IsAIPStandardCreate = true
-	deletePolicy := NewTestMethod("DeleteAccessPolicy")
-	deletePolicy.IsAIPStandardDelete = true
-	updatePolicy := NewTestMethod("UpdateAccessPolicy")
-	updatePolicy.IsAIPStandardUpdate = true
+		WithOutput(NewTestMessage("ListAccessPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy"))).
+		WithIsAIPStandardList(true)
+	getPolicy := NewTestMethod("GetAccessPolicy").WithIsAIPStandardGet(true)
+	createPolicy := NewTestMethod("CreateAccessPolicy").WithIsAIPStandardCreate(true)
+	deletePolicy := NewTestMethod("DeleteAccessPolicy").WithIsAIPStandardDelete(true)
+	updatePolicy := NewTestMethod("UpdateAccessPolicy").WithIsAIPStandardUpdate(true)
 	listOther := NewTestMethod("ListOtherThings").
-		WithOutput(NewTestMessage("ListOtherThingsResponse").WithResource(NewTestResource("otherthing").WithSingular("otherthing")))
-	listOther.IsAIPStandardList = true
+		WithOutput(NewTestMessage("ListOtherThingsResponse").WithResource(NewTestResource("otherthing").WithSingular("otherthing"))).
+		WithIsAIPStandardList(true)
 
 	deprecatedList := NewTestMethod("DeprecatedList").WithDeprecated(true)
 	listPoliciesMatch := NewTestMethod("ListPolicies").
-		WithOutput(NewTestMessage("ListPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy")))
-	listPoliciesMatch.IsAIPStandardList = true
+		WithOutput(NewTestMessage("ListPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy"))).
+		WithIsAIPStandardList(true)
 	expandMethod := NewTestMethod("Expand").WithServerSideStreaming()
 	chatMethod := NewTestMethod("Chat").WithBidiStreaming()
 
@@ -491,7 +486,7 @@ func TestFindQuickstartMethod(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartMethod(tc.service)
-			if diff := cmp.Diff(tc.want, got, allowUnexported(), cmpopts.IgnoreFields(Method{}, "Service", "Model")); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported(), ignoreMethodFields("service", "model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

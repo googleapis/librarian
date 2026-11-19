@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
@@ -56,43 +55,49 @@ func TestLroAnnotations(t *testing.T) {
 		WithBodyFieldPath("body").
 		WithDiscoveryLro(api.NewDiscoveryLroBuilder().
 			WithPollingPathParameters("project", "zone").
-			Build())
-	want.InputTypeID = "..instances.insertRequest"
-	want.OutputTypeID = "..Operation"
-	want.Signatures = []*api.MethodSignature{api.NewTestMethodSignature("project", "zone", "body")}
-	got := model.Method(want.ID)
+			Build()).
+		WithInputTypeID("..instances.insertRequest").
+		WithOutputTypeID("..Operation").
+		WithRawSignatures(api.NewTestMethodSignature("project", "zone", "body"))
+	got := model.Method(want.ID())
 	if got == nil {
-		t.Fatalf("missing method %s in model", want.ID)
+		t.Fatalf("missing method %s in model", want.ID())
 	}
-	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Documentation")); diff != "" {
+	if diff := cmp.Diff(want, got, apitest.AllowUnexported(), apitest.IgnoreMethodFields("documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// The parser should have injected a mixin method.
-	wantMixin := api.NewTestMethod("getOperation").
+	wantMixin := api.NewMethodBuilder().
+		WithName("getOperation").
 		WithID("..instances.getOperation").
-		WithVerb("GET").
-		WithPathTemplate(api.NewPathTemplateBuilder().
-			WithLiteral("compute").
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("project").
-			WithLiteral("zones").
-			WithVariableNamed("zone").
-			WithLiteral("operations").
-			WithVariableNamed("operation").
+		WithPathInfo(api.NewPathInfoBuilder().
+			WithBindings(api.NewPathBindingBuilder().
+				WithVerb("GET").
+				WithPathTemplate(api.NewPathTemplateBuilder().
+					WithLiteral("compute").
+					WithLiteral("v1").
+					WithLiteral("projects").
+					WithVariableNamed("project").
+					WithLiteral("zones").
+					WithVariableNamed("zone").
+					WithLiteral("operations").
+					WithVariableNamed("operation").
+					Build()).
+				WithQueryParameters().
+				Build()).
+			WithBodyFieldPath("").
 			Build()).
-		WithQueryParameters().
-		WithBodyFieldPath("")
-	wantMixin.InputTypeID = "..zoneOperations.getRequest"
-	wantMixin.OutputTypeID = "..Operation"
-	wantMixin.SourceServiceID = "..zoneOperations"
-	wantMixin.IsLroPoller = true
-	gotMixin := model.Method(wantMixin.ID)
+		WithInputTypeID("..zoneOperations.getRequest").
+		WithOutputTypeID("..Operation").
+		WithSourceServiceID("..zoneOperations").
+		WithIsLroPoller(true).
+		Build()
+	gotMixin := model.Method(wantMixin.ID())
 	if gotMixin == nil {
-		t.Fatalf("missing method %s in model", wantMixin.ID)
+		t.Fatalf("missing method %s in model", wantMixin.ID())
 	}
-	if diff := cmp.Diff(wantMixin, gotMixin, apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Documentation", "Service")); diff != "" {
+	if diff := cmp.Diff(wantMixin, gotMixin, apitest.AllowUnexported(), apitest.IgnoreMethodFields("documentation", "service")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

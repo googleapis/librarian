@@ -225,15 +225,15 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 				WithBodyFieldPath(bodyFieldPath).
 				Build()
 			mID := fmt.Sprintf("%s.%s", serviceID, op.Operation.OperationId)
-			m := &api.Method{
-				Name:          op.Operation.OperationId,
-				ID:            mID,
-				Deprecated:    op.Operation.Deprecated != nil && *op.Operation.Deprecated,
-				Documentation: op.Operation.Description,
-				InputTypeID:   requestMessage.ID(),
-				OutputTypeID:  responseMessage.ID(),
-				PathInfo:      pathInfo,
-			}
+			m := api.NewMethodBuilder().
+				WithName(op.Operation.OperationId).
+				WithID(mID).
+				WithDeprecated(op.Operation.Deprecated != nil && *op.Operation.Deprecated).
+				WithDocumentation(op.Operation.Description).
+				WithInputTypeID(requestMessage.ID()).
+				WithOutputTypeID(responseMessage.ID()).
+				WithPathInfo(pathInfo).
+				Build()
 			a.AddMethod(m)
 			service.Methods = append(service.Methods, m)
 		}

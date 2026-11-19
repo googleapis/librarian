@@ -70,61 +70,6 @@ func TestPathParameters(t *testing.T) {
 	}
 }
 
-func TestDiscoveryLro(t *testing.T) {
-	got := NewDiscoveryLroBuilder().
-		WithPollingPathParameters("project", "zone").
-		Build()
-	got.SetAnnotations("lro-codec")
-	want := &DiscoveryLro{
-		pollingPathParameters: []string{"project", "zone"},
-		codec:                 "lro-codec",
-	}
-	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff(want.pollingPathParameters, got.PollingPathParameters()); diff != "" {
-		t.Errorf("PollingPathParameters() mismatch (-want +got):\n%s", diff)
-	}
-	got.PollingPathParameters()[0] = "mutated"
-	if got.PollingPathParameters()[0] != "project" {
-		t.Errorf("PollingPathParameters() should return a defensive copy")
-	}
-	if got.Codec() != "lro-codec" {
-		t.Errorf("Codec() = %v, want %q", got.Codec(), "lro-codec")
-	}
-}
-
-func TestDiscoveryLroSetAnnotationsPanicsWhenAlreadySet(t *testing.T) {
-	d := NewDiscoveryLroBuilder().Build()
-	d.SetAnnotations("first")
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected panic when calling SetAnnotations a second time, got none")
-		}
-	}()
-	d.SetAnnotations("second")
-}
-
-func TestDiscoveryLroClone(t *testing.T) {
-	var nilLro *DiscoveryLro
-	if got := nilLro.Clone(); got != nil {
-		t.Errorf("nilLro.Clone() = %v, want nil", got)
-	}
-
-	orig := NewDiscoveryLroBuilder().
-		WithPollingPathParameters("project", "zone").
-		Build()
-	orig.SetAnnotations("lro-codec")
-
-	got := orig.Clone()
-	want := &DiscoveryLro{
-		pollingPathParameters: []string{"project", "zone"},
-	}
-	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
-		t.Errorf("Clone() mismatch (-want +got):\n%s", diff)
-	}
-}
-
 func TestAddDiscoveryLroAnnotations(t *testing.T) {
 	discoveryConfig := &Discovery{
 		OperationID: "..Operation",
@@ -172,20 +117,20 @@ func TestAddDiscoveryLroAnnotations(t *testing.T) {
 	}
 	gotInsert := model.Method("..instances.insert")
 	wantLro := NewDiscoveryLroBuilder().WithPollingPathParameters("project", "zone").Build()
-	if diff := cmp.Diff(wantLro, gotInsert.DiscoveryLro, allowUnexported()); diff != "" {
+	if diff := cmp.Diff(wantLro, gotInsert.DiscoveryLro(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	gotPoller := model.Method("..instances.getOperation")
 	if gotPoller == nil {
 		t.Fatal("missing injected ..instances.getOperation method")
 	}
-	if !gotPoller.IsLroPoller {
+	if !gotPoller.IsLroPoller() {
 		t.Errorf("expected IsLroPoller to be true")
 	}
-	if diff := cmp.Diff("..zoneOperations", gotPoller.SourceServiceID); diff != "" {
+	if diff := cmp.Diff("..zoneOperations", gotPoller.SourceServiceID()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(pollerService.Methods[0].PathInfo, gotPoller.PathInfo, allowUnexported(), cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(pollerService.Methods[0].PathInfo(), gotPoller.PathInfo(), allowUnexported(), cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -254,5 +199,60 @@ func TestAddDiscoveryLroAnnotationsError(t *testing.T) {
 	model := NewTestAPI([]*Message{operation}, nil, []*Service{badService, pollerService})
 	if err := AddDiscoveryLroAnnotations(model, discoveryConfig); err == nil {
 		t.Errorf("expected error for mismatched LRO mixin, got nil")
+	}
+}
+
+func TestDiscoveryLro(t *testing.T) {
+	got := NewDiscoveryLroBuilder().
+		WithPollingPathParameters("project", "zone").
+		Build()
+	got.SetAnnotations("lro-codec")
+	want := &DiscoveryLro{
+		pollingPathParameters: []string{"project", "zone"},
+		codec:                 "lro-codec",
+	}
+	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(want.pollingPathParameters, got.PollingPathParameters()); diff != "" {
+		t.Errorf("PollingPathParameters() mismatch (-want +got):\n%s", diff)
+	}
+	got.PollingPathParameters()[0] = "mutated"
+	if got.PollingPathParameters()[0] != "project" {
+		t.Errorf("PollingPathParameters() should return a defensive copy")
+	}
+	if got.Codec() != "lro-codec" {
+		t.Errorf("Codec() = %v, want %q", got.Codec(), "lro-codec")
+	}
+}
+
+func TestDiscoveryLroSetAnnotationsPanicsWhenAlreadySet(t *testing.T) {
+	d := NewDiscoveryLroBuilder().Build()
+	d.SetAnnotations("first")
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("expected panic when calling SetAnnotations a second time, got none")
+		}
+	}()
+	d.SetAnnotations("second")
+}
+
+func TestDiscoveryLroClone(t *testing.T) {
+	var nilLro *DiscoveryLro
+	if got := nilLro.Clone(); got != nil {
+		t.Errorf("nilLro.Clone() = %v, want nil", got)
+	}
+
+	orig := NewDiscoveryLroBuilder().
+		WithPollingPathParameters("project", "zone").
+		Build()
+	orig.SetAnnotations("lro-codec")
+
+	got := orig.Clone()
+	want := &DiscoveryLro{
+		pollingPathParameters: []string{"project", "zone"},
+	}
+	if diff := cmp.Diff(want, got, allowUnexported()); diff != "" {
+		t.Errorf("Clone() mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -248,10 +248,10 @@ func shouldGenerateMethod(m *api.Method) bool {
 	// Ignore methods without HTTP annotations; we cannot generate working RPCs
 	// for them.
 	// TODO(#499) Switch to explicitly excluding such functions.
-	if m.ClientSideStreaming || m.PathInfo == nil {
+	if m.ClientSideStreaming() || m.PathInfo() == nil {
 		return false
 	}
-	bindings := m.PathInfo.Bindings()
+	bindings := m.PathInfo().Bindings()
 	if len(bindings) == 0 {
 		return false
 	}
