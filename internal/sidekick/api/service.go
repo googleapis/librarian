@@ -98,6 +98,9 @@ func (s *Service) Clone() *Service {
 		svcCopy.methods = make([]*Method, len(s.methods))
 		for i, m := range s.methods {
 			svcCopy.methods[i] = m.CloneForService(svcCopy)
+			if m == s.quickstartMethod {
+				svcCopy.quickstartMethod = svcCopy.methods[i]
+			}
 		}
 	}
 	return svcCopy

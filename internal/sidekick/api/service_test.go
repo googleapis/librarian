@@ -75,3 +75,53 @@ func TestService(t *testing.T) {
 		t.Errorf("Service.Methods() getter should return a defensive copy")
 	}
 }
+
+func TestService_Clone(t *testing.T) {
+	if (*Service)(nil).Clone() != nil {
+		t.Errorf("(*Service)(nil).Clone() should return nil")
+	}
+
+	m1 := NewMethodBuilder().WithName("M1").Build()
+	m2 := NewMethodBuilder().WithName("M2").Build()
+	model := NewTestAPI(nil, nil, nil)
+
+	orig := NewServiceBuilder().
+		WithName("BookService").
+		WithID(".test.BookService").
+		WithPackage("test").
+		WithDocumentation("Service docs.").
+		WithDefaultHost("test.googleapis.com").
+		WithDeprecated(true).
+		WithMethods(m1, m2).
+		WithModel(model).
+		WithQuickstartMethod(m1).
+		Build()
+	orig.SetAnnotations("svc-codec")
+
+	cloned := orig.Clone()
+	if cloned == nil {
+		t.Fatal("Service.Clone() returned nil")
+	}
+	if cloned == orig {
+		t.Errorf("Service.Clone() should return a new instance pointer")
+	}
+	if cloned.Codec() != nil {
+		t.Errorf("Service.Clone() should clear Codec, got %v", cloned.Codec())
+	}
+	clonedMethods := cloned.Methods()
+	if len(clonedMethods) != 2 {
+		t.Fatalf("expected 2 cloned methods, got %d", len(clonedMethods))
+	}
+	if clonedMethods[0] == m1 || clonedMethods[1] == m2 {
+		t.Errorf("cloned methods should be new instances, not original pointers")
+	}
+	if clonedMethods[0].Service() != cloned || clonedMethods[1].Service() != cloned {
+		t.Errorf("cloned methods should point to the cloned service")
+	}
+	if cloned.QuickstartMethod() == m1 {
+		t.Errorf("cloned QuickstartMethod should point to the cloned method, not the original")
+	}
+	if cloned.QuickstartMethod() != clonedMethods[0] {
+		t.Errorf("cloned QuickstartMethod should point to the corresponding cloned method")
+	}
+}
