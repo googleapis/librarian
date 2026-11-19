@@ -79,6 +79,15 @@ extension StorageControlProtocol {
   {{- range .Codec.Storage.Services }}
   {{- range .Codec.Methods }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  /// - ``StorageControlClient/{{ .Codec.UnescapedName }}(request:options:)``
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -94,6 +103,15 @@ extension StorageControlProtocol {
   }
   {{- if .Codec.Pagination }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  /// - ``StorageControlClient/{{ .Codec.UnescapedName }}(request:options:)``
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -101,6 +119,15 @@ extension StorageControlProtocol {
     self.{{ .Codec.Name }}ByItems(request: request, options: .init())
   }
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  /// - ``StorageControlClient/{{ .Codec.UnescapedName }}(request:options:)``
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -115,6 +142,15 @@ extension StorageControlProtocol {
   {{- end }}
   {{- if .Codec.LRO }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  /// - ``StorageControlClient/{{ .Codec.UnescapedName }}PollingUntilDone(request:options:)``
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -138,6 +174,15 @@ extension StorageControlProtocol {
   {{- range .Codec.Control.Services }}
   {{- range .Codec.Methods }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  /// - ``StorageControlClient/{{ .Codec.UnescapedName }}(request:options:)``
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -153,6 +198,15 @@ extension StorageControlProtocol {
   }
   {{- if .Codec.Pagination }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  /// - ``StorageControlClient/{{ .Codec.UnescapedName }}(request:options:)``
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -160,6 +214,15 @@ extension StorageControlProtocol {
     self.{{ .Codec.Name }}ByItems(request: request, options: .init())
   }
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  /// - ``StorageControlClient/{{ .Codec.UnescapedName }}(request:options:)``
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -174,6 +237,15 @@ extension StorageControlProtocol {
   {{- end }}
   {{- if .Codec.LRO }}
   {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  /// - ``StorageControlClient/{{ .Codec.UnescapedName }}PollingUntilDone(request:options:)``
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}

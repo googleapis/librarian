@@ -30,6 +30,10 @@ import GoogleAuth
 
 /// A client for Google Cloud Storage control-plane and administrative operations that unifies bucket lifecycle,
 /// IAM access control, object metadata, and control-plane features (folders, caches, intelligence).
+///
+/// ## See Also
+///
+/// - ``StorageControlProtocol``
 public final class StorageControlClient: StorageControlProtocol, Sendable {
   private let storage: any Clients.StorageStub
   private let control: any Clients.StorageControlStub
@@ -83,6 +87,16 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
   {{- range .Codec.DocLines }}
   /// {{ . }}
   {{- end }}
+  {{- if .Codec.StorageControlSeeAlsoLinks }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  {{- range .Codec.StorageControlSeeAlsoLinks }}
+  /// - ``{{ . }}``
+  {{- end }}
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -110,6 +124,16 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
   {{- "\n" }}
   {{- range .Codec.DocLines }}
   /// {{ . }}
+  {{- end }}
+  {{- if .Codec.StorageControlPollingSeeAlsoLinks }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  {{- range .Codec.StorageControlPollingSeeAlsoLinks }}
+  /// - ``{{ . }}``
+  {{- end }}
   {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
@@ -149,6 +173,16 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
   {{- range .Codec.DocLines }}
   /// {{ . }}
   {{- end }}
+  {{- if .Codec.StorageControlSeeAlsoLinks }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  {{- range .Codec.StorageControlSeeAlsoLinks }}
+  /// - ``{{ . }}``
+  {{- end }}
+  {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)
   {{- end }}
@@ -176,6 +210,16 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
   {{- "\n" }}
   {{- range .Codec.DocLines }}
   /// {{ . }}
+  {{- end }}
+  {{- if .Codec.StorageControlPollingSeeAlsoLinks }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// ## See Also
+  ///
+  {{- range .Codec.StorageControlPollingSeeAlsoLinks }}
+  /// - ``{{ . }}``
+  {{- end }}
   {{- end }}
   {{- if .Deprecated }}
   @available(*, deprecated)

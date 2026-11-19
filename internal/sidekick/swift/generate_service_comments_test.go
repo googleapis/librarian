@@ -66,14 +66,14 @@ func TestGenerateService_DocComments(t *testing.T) {
 	contentStr := string(content)
 
 	// Verify service documentation
-	want := "/// Documentation for SecretManager service.\n///\n/// @Snippet(path: \"SecretManagerQuickstart\")\npublic final class SecretManagerClient: "
+	want := "/// Documentation for SecretManager service.\n///\n/// @Snippet(path: \"SecretManagerQuickstart\")\n///\n/// ## See Also\n///\n/// - ``Clients/SecretManagerProtocol``\npublic final class SecretManagerClient: "
 	got := extractBlock(t, contentStr, "/// Documentation for SecretManager service.", "public final class SecretManagerClient: ")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Verify method documentation
-	want = "  /// Documentation for GetSecret method.\n  ///\n  /// @Snippet(path: \"SecretManager_GetSecret\")\n  public func getSecret"
+	want = "  /// Documentation for GetSecret method.\n  ///\n  /// @Snippet(path: \"SecretManager_GetSecret\")\n  ///\n  /// ## See Also\n  ///\n  /// - ``getSecret(request:)``\n  public func getSecret"
 	got = extractBlock(t, contentStr, "  /// Documentation for GetSecret method.", "public func getSecret")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -133,6 +133,12 @@ func TestGenerateService_DiscoveryLRODocComments(t *testing.T) {
   ///   method once the operation completes.
   ///
   /// @Snippet(path: "Instances_Insert")
+  ///
+  /// ## See Also
+  ///
+  /// - ` + "``insert(request:)``" + `
+  /// - ` + "``insert(request:options:)``" + `
+  /// - ` + "``insertPollingUntilDone(request:)``" + `
   public func insertPollingUntilDone`
 	gotMethod := extractBlock(t, contentStr, "  /// Creates an instance resource.\n  ///\n  /// - Note: Unlike standard gRPC long-running operations where polling returns the resulting", "public func insertPollingUntilDone")
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
