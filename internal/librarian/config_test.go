@@ -95,6 +95,52 @@ libraries:
 `, googleapisDir),
 			want: "oslogin\n",
 		},
+		{
+			name:  "get library with API path derived from name (rust)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-secretmanager-v1
+`,
+			want: "google-cloud-secretmanager-v1\n",
+		},
+		{
+			name:  "get versioned library, not wrapper (ruby)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: `language: ruby
+libraries:
+- name: google-cloud-secret_manager
+  apis:
+  - path: google/cloud/secretmanager/v1
+  ruby:
+    wrapper_of:
+    - v1:0.0
+- name: google-cloud-secret_manager-v1
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			want: "google-cloud-secret_manager-v1\n",
+		},
+		{
+			name:  "get wrapper library for unversioned path (ruby)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager",
+			configYAML: `language: ruby
+libraries:
+- name: google-cloud-secret_manager
+  apis:
+  - path: google/cloud/secretmanager/v1
+  ruby:
+    wrapper_of:
+    - v1:0.0
+- name: google-cloud-secret_manager-v1
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			want: "google-cloud-secret_manager\n",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -107,7 +153,7 @@ libraries:
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err = runConfigGet(t.Context(), &buf, test.path, test.value)
+			err = runConfigGet(&buf, test.path, test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -161,6 +207,57 @@ sources:
 `, googleapisDir),
 			wantErr: ErrLibraryNotFound,
 		},
+		{
+			name:  "unconfigured API path in configured service (go)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/logging/v1",
+			configYAML: `language: go
+libraries:
+- name: secretmanager
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			wantErr: ErrLibraryNotFound,
+		},
+		{
+			name:  "API path not in googleapis (go)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1beta3",
+			configYAML: fmt.Sprintf(`language: go
+sources:
+  googleapis:
+    dir: %s
+libraries:
+- name: secretmanager
+  apis:
+  - path: google/cloud/secretmanager/v1
+`, googleapisDir),
+			wantErr: ErrLibraryNotFound,
+		},
+		{
+			name:  "unconfigured version of configured service (python)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1beta2",
+			configYAML: `language: python
+libraries:
+- name: google-cloud-secret-manager
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			wantErr: ErrLibraryNotFound,
+		},
+		{
+			name:  "unconfigured service (ruby)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: `language: ruby
+libraries:
+- name: google-cloud-tasks-v2
+  apis:
+  - path: google/cloud/tasks/v2
+`,
+			wantErr: ErrLibraryNotFound,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -169,7 +266,7 @@ sources:
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err := runConfigGet(t.Context(), &buf, test.path, test.value)
+			err := runConfigGet(&buf, test.path, test.value)
 			if err == nil {
 				t.Fatal("expected error; got nil")
 			}

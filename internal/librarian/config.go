@@ -19,8 +19,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -54,7 +56,7 @@ Supported cases:
   - Source repository field (e.g., commit, sha256, dir, subpath):
     librarian config get sources.[source-name].[field-name]`,
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return runConfigGet(ctx, cmd.Root().Writer, cmd.Args().Get(0), cmd.Args().Get(1))
+					return runConfigGet(cmd.Root().Writer, cmd.Args().Get(0), cmd.Args().Get(1))
 				},
 			},
 			{
@@ -69,7 +71,7 @@ Supported cases:
 	}
 }
 
-func runConfigGet(ctx context.Context, w io.Writer, path, value string) error {
+func runConfigGet(w io.Writer, path, value string) error {
 	if path == "" {
 		return errPathRequired
 	}
@@ -81,11 +83,7 @@ func runConfigGet(ctx context.Context, w io.Writer, path, value string) error {
 		if value == "" {
 			return errValueRequired
 		}
-		googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-		if err != nil {
-			return err
-		}
-		name, err := libraryName(cfg, googleapisDir, value)
+		name, err := libraryName(cfg, value)
 		if err != nil {
 			return err
 		}
@@ -118,13 +116,51 @@ func runConfigSet(path, value string) error {
 	return yaml.Write(config.LibrarianYAML, updated)
 }
 
-func libraryName(cfg *config.Config, googleapisDir, apiPath string) (string, error) {
-	library, err := findExistingLibraryForAPI(cfg, googleapisDir, apiPath, "")
-	if err != nil {
-		return "", err
-	}
+// libraryName returns the name of the library in cfg that configures apiPath,
+// or ErrLibraryNotFound. It only reads cfg; unlike librarian add, it does not
+// derive a name for an API path that is not configured.
+func libraryName(cfg *config.Config, apiPath string) (string, error) {
+	library := findConfiguredLibrary(cfg, apiPath)
 	if library == nil {
 		return "", fmt.Errorf("%w for API: %s", ErrLibraryNotFound, apiPath)
 	}
 	return library.Name, nil
+}
+
+// findConfiguredLibrary returns the first library in cfg that configures
+// apiPath, or nil if there is none.
+func findConfiguredLibrary(cfg *config.Config, apiPath string) *config.Library {
+	if cfg.Language == config.LanguageRuby {
+		return ruby.FindConfiguredLibrary(cfg.Libraries, apiPath)
+	}
+	for _, library := range cfg.Libraries {
+		if slices.Contains(configuredAPIPaths(cfg.Language, library), apiPath) {
+			return library
+		}
+	}
+	return nil
+}
+
+// configuredAPIPaths returns the API paths that library configures. These are
+// the paths listed in its APIs, with an empty path, or a missing APIs list in a
+// language where canDeriveAPIPath is true, meaning the path derived from the
+// library name, as in applyDefaults.
+func configuredAPIPaths(language string, library *config.Library) []string {
+	derived := !isMixedLibrary(language, library)
+	if len(library.APIs) == 0 {
+		if derived && canDeriveAPIPath(language) {
+			return []string{deriveAPIPath(language, library.Name)}
+		}
+		return nil
+	}
+	var paths []string
+	for _, api := range library.APIs {
+		switch {
+		case api.Path != "":
+			paths = append(paths, api.Path)
+		case derived:
+			paths = append(paths, deriveAPIPath(language, library.Name))
+		}
+	}
+	return paths
 }
