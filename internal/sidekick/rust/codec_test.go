@@ -1655,7 +1655,7 @@ func TestFormatDocCommentsSkippedMethodsAndServices(t *testing.T) {
 		WithPackage("test.v1").
 		WithMethods(createFoo)
 	skippedMethod := api.NewTestMethod("SkippedMethod").
-		WithID(fmt.Sprintf("%s.SkippedMethod", someService.ID)).
+		WithID(fmt.Sprintf("%s.SkippedMethod", someService.ID())).
 		WithVerb("GET").
 		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").

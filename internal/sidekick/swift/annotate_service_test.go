@@ -84,11 +84,11 @@ func TestAnnotateService(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn", "PublicDependsOn")); diff != "" {
+			if diff := cmp.Diff(test.wantAnnotations, s.Codec(), cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn", "PublicDependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
-			annotations := s.Codec.(*serviceAnnotations)
+			annotations := s.Codec().(*serviceAnnotations)
 			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -122,9 +122,9 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	serviceCodec, ok := service.Codec.(*serviceAnnotations)
+	serviceCodec, ok := service.Codec().(*serviceAnnotations)
 	if !ok {
-		t.Fatalf("mismatched service annotations, got=%T", service.Codec)
+		t.Fatalf("mismatched service annotations, got=%T", service.Codec())
 	}
 	if serviceCodec.HasLROs() {
 		t.Errorf("expected HasLROs() == false, annotations=%+v", serviceCodec)
@@ -169,8 +169,7 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			service := api.NewTestService("TestService")
-			service.QuickstartMethod = test.quickstartMethod
+			service := api.NewTestService("TestService").WithQuickstartMethod(test.quickstartMethod)
 
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
 			codec := newTestCodec(t, model, nil)
@@ -178,7 +177,7 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			annotations, ok := service.Codec.(*serviceAnnotations)
+			annotations, ok := service.Codec().(*serviceAnnotations)
 			if !ok {
 				t.Fatal("service.Codec is not *serviceAnnotations")
 			}
@@ -206,10 +205,10 @@ func TestAnnotateService_Gating(t *testing.T) {
 	}
 
 	for _, service := range model.Services {
-		t.Run(service.Name, func(t *testing.T) {
-			ann, ok := service.Codec.(*serviceAnnotations)
+		t.Run(service.Name(), func(t *testing.T) {
+			ann, ok := service.Codec().(*serviceAnnotations)
 			if !ok {
-				t.Fatalf("expected service.Codec to be *serviceAnnotations, got %T", service.Codec)
+				t.Fatalf("expected service.Codec to be *serviceAnnotations, got %T", service.Codec())
 			}
 			if !ann.IsGated {
 				t.Error("expected IsGated to be true when PerServiceTraits is true")
@@ -234,9 +233,9 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 	if targetService == nil {
 		t.Fatalf("missing target service .test.zoneOperations")
 	}
-	targetCodec, ok := targetService.Codec.(*serviceAnnotations)
+	targetCodec, ok := targetService.Codec().(*serviceAnnotations)
 	if !ok {
-		t.Fatalf("expected targetService.Codec to be *serviceAnnotations, got %T", targetService.Codec)
+		t.Fatalf("expected targetService.Codec to be *serviceAnnotations, got %T", targetService.Codec())
 	}
 
 	sourceService := model.Service(".test.zoneOperations")
@@ -244,9 +243,9 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 		t.Fatalf("missing source service .test.zoneOperations")
 	}
 	wantRequired := map[string]*api.Service{
-		sourceService.ID: sourceService,
+		sourceService.ID(): sourceService,
 	}
-	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), apitest.IgnoreMethodFields("model"), cmpopts.IgnoreFields(api.Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), apitest.IgnoreMethodFields("model"), apitest.IgnoreServiceFields("model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -292,9 +291,9 @@ func TestAnnotateService_LRO(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations, ok := service.Codec.(*serviceAnnotations)
+	annotations, ok := service.Codec().(*serviceAnnotations)
 	if !ok {
-		t.Fatalf("expected `serviceAnnotations`, got %T", service.Codec)
+		t.Fatalf("expected `serviceAnnotations`, got %T", service.Codec())
 	}
 	if !annotations.HasLROs() {
 		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
@@ -349,7 +348,7 @@ func TestAnnotateService_Pagination(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	wantImports := []string{"GoogleCloudExternal"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -402,7 +401,7 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	wantImports := []string{"GoogleCloudExternal"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -471,9 +470,9 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			annotations := service.Codec.(*serviceAnnotations)
+			annotations := service.Codec().(*serviceAnnotations)
 			if annotations == nil {
-				t.Fatalf("service should have a `serviceAnnotations`, got=%+v", service.Codec)
+				t.Fatalf("service should have a `serviceAnnotations`, got=%+v", service.Codec())
 			}
 			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -509,7 +508,7 @@ func TestAnnotateService_WktImports(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	wantImports := []string{"GoogleWKT"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -551,7 +550,7 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	if !annotations.HasData {
 		t.Errorf("expected annotations.HasData to be true for signature with map<string, bytes>")
 	}
@@ -629,7 +628,7 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			annotations := service.Codec.(*serviceAnnotations)
+			annotations := service.Codec().(*serviceAnnotations)
 			if diff := cmp.Diff(test.wantSnippetImports, annotations.SnippetImports(), cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("SnippetImports mismatch (-want +got):\n%s", diff)
 			}
@@ -684,9 +683,9 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations, ok := service.Codec.(*serviceAnnotations)
+	annotations, ok := service.Codec().(*serviceAnnotations)
 	if !ok {
-		t.Fatalf("expected *serviceAnnotations, got %T", service.Codec)
+		t.Fatalf("expected *serviceAnnotations, got %T", service.Codec())
 	}
 
 	var gotMethods []string
@@ -730,7 +729,7 @@ func TestAnnotateService_HTTPBodyRequestImports(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations := service.Codec().(*serviceAnnotations)
 	wantImports := []string{"GoogleApi"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("ServiceImports() mismatch (-want +got):\n%s", diff)
