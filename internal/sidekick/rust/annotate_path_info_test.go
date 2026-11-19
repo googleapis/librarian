@@ -563,22 +563,34 @@ func TestPathTemplateGeneration(t *testing.T) {
 }
 
 func TestBindingSubstitutionTemplates(t *testing.T) {
-	b := bindingSubstitution{
-		Template: []string{"projects", "*", "locations", "*", "**"},
-	}
-
-	got := b.TemplateAsString()
-	want := "projects/*/locations/*/**"
-
-	if want != got {
-		t.Errorf("TemplateAsString() failed. want=%q, got=%q", want, got)
-	}
-
-	got = b.TemplateAsArray()
-	want = `&[Segment::Literal("projects/"), Segment::SingleWildcard, Segment::Literal("/locations/"), Segment::SingleWildcard, Segment::TrailingMultiWildcard]`
-
-	if want != got {
-		t.Errorf("TemplateAsArray() failed. want=`%s`, got=`%s`", want, got)
+	for _, test := range []struct {
+		name       string
+		template   []string
+		wantString string
+		wantArray  string
+	}{
+		{
+			name:       "multi segment template",
+			template:   []string{"projects", "*", "locations", "*", "**"},
+			wantString: "projects/*/locations/*/**",
+			wantArray:  `&[Segment::Literal("projects/"), Segment::SingleWildcard, Segment::Literal("/locations/"), Segment::SingleWildcard, Segment::TrailingMultiWildcard]`,
+		},
+		{
+			name:       "singleton multi wildcard",
+			template:   []string{"**"},
+			wantString: "**",
+			wantArray:  `&[Segment::MultiWildcard]`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			b := bindingSubstitution{Template: test.template}
+			if got := b.TemplateAsString(); test.wantString != got {
+				t.Errorf("TemplateAsString() failed. want=%q, got=%q", test.wantString, got)
+			}
+			if got := b.TemplateAsArray(); test.wantArray != got {
+				t.Errorf("TemplateAsArray() failed. want=`%s`, got=`%s`", test.wantArray, got)
+			}
+		})
 	}
 }
 

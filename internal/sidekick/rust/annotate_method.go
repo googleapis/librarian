@@ -217,7 +217,7 @@ type bindingSubstitution struct {
 //
 // e.g.: `&[Segment::Literal("projects/"), Segment::SingleWildcard]`.
 func (s *bindingSubstitution) TemplateAsArray() string {
-	return "&[" + strings.Join(annotateSegments(s.Template), ", ") + "]"
+	return "&[" + strings.Join(annotateSegments(s.Template, segmentMatching), ", ") + "]"
 }
 
 // TemplateAsString returns the expected template, which can be used as a static string.
@@ -324,9 +324,9 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			}
 			routingVariantAnnotations := &routingVariantAnnotations{
 				FieldAccessors:   fieldAccessors,
-				PrefixSegments:   annotateSegments(variant.Prefix().Segments()),
-				MatchingSegments: annotateSegments(variant.Matching().Segments()),
-				SuffixSegments:   annotateSegments(variant.Suffix().Segments()),
+				PrefixSegments:   annotateSegments(variant.Prefix().Segments(), segmentPrefix),
+				MatchingSegments: annotateSegments(variant.Matching().Segments(), segmentMatching),
+				SuffixSegments:   annotateSegments(variant.Suffix().Segments(), segmentSuffix),
 			}
 			variant.SetAnnotations(routingVariantAnnotations)
 		}
@@ -521,7 +521,15 @@ func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 	return formatAccessors(resolved), nil
 }
 
-func annotateSegments(segments []string) []string {
+type segmentPosition int
+
+const (
+	segmentMatching segmentPosition = iota
+	segmentPrefix
+	segmentSuffix
+)
+
+func annotateSegments(segments []string, pos segmentPosition) []string {
 	var ann []string
 	// The model may have multiple consecutive literal segments. We use this
 	// buffer to consolidate them into a single literal segment.
@@ -536,25 +544,26 @@ func annotateSegments(segments []string) []string {
 		switch segment {
 		case api.MultiSegmentWildcard:
 			flushBuffer()
-			if len(segments) == 1 {
-				ann = append(ann, "Segment::MultiWildcard")
-			} else if len(segments) != index+1 {
+			if (len(segments) == 1 && pos != segmentSuffix) || len(segments) != index+1 {
 				ann = append(ann, "Segment::MultiWildcard")
 			} else {
 				ann = append(ann, "Segment::TrailingMultiWildcard")
 			}
 		case api.SingleSegmentWildcard:
-			if index != 0 {
+			if index != 0 || pos == segmentSuffix {
 				literalBuffer += "/"
 			}
 			flushBuffer()
 			ann = append(ann, "Segment::SingleWildcard")
 		default:
-			if index != 0 {
+			if index != 0 || pos == segmentSuffix {
 				literalBuffer += "/"
 			}
 			literalBuffer += segment
 		}
+	}
+	if pos == segmentPrefix && len(segments) > 0 {
+		literalBuffer += "/"
 	}
 	flushBuffer()
 	return ann
