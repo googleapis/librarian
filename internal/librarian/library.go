@@ -131,9 +131,6 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Rust.DetailedTracingAttributes == nil {
 		lib.Rust.DetailedTracingAttributes = d.Rust.DetailedTracingAttributes
 	}
-	if lib.Rust.LroStubOptions == nil {
-		lib.Rust.LroStubOptions = d.Rust.LroStubOptions
-	}
 	if lib.Rust.ResourceNameHeuristic == nil {
 		lib.Rust.ResourceNameHeuristic = d.Rust.ResourceNameHeuristic
 	}
@@ -761,9 +758,6 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	}
 	if src.DetailedTracingAttributes != nil {
 		res.DetailedTracingAttributes = src.DetailedTracingAttributes
-	}
-	if src.LroStubOptions != nil {
-		res.LroStubOptions = src.LroStubOptions
 	}
 	if src.ResourceNameHeuristic != nil {
 		res.ResourceNameHeuristic = src.ResourceNameHeuristic
