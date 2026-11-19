@@ -25,7 +25,7 @@ func (a *API) ResolveAutoPopulatedFields(methodFields map[string][]string) {
 		if method == nil {
 			continue
 		}
-		message := a.Message(method.inputTypeID)
+		message := a.Message(method.InputTypeID())
 		if message == nil {
 			continue
 		}

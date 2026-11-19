@@ -141,7 +141,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 		}
 		var svcMixin *Method
 		for _, method := range svc.Methods {
-			if method.outputTypeID != discoveryConfig.OperationID {
+			if method.OutputTypeID() != discoveryConfig.OperationID {
 				continue
 			}
 			mixin, pathParams := findDiscoveryLroPoller(method, model, discoveryConfig)
@@ -152,7 +152,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 				WithPollingPathParameters(pathParams...).
 				Build()
 			if svcMixin != nil && mixin != svcMixin {
-				return fmt.Errorf("mismatched LRO mixin, want=%s, got=%s", svcMixin.id, mixin.id)
+				return fmt.Errorf("mismatched LRO mixin, want=%s, got=%s", svcMixin.ID(), mixin.ID())
 			}
 			svcMixin = mixin
 		}
@@ -160,24 +160,24 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 			continue
 		}
 		sourceID := ""
-		if l := strings.LastIndex(svcMixin.id, "."); l != -1 {
-			sourceID = svcMixin.id[0:l]
+		if l := strings.LastIndex(svcMixin.ID(), "."); l != -1 {
+			sourceID = svcMixin.ID()[0:l]
 		}
-		method := &Method{
-			name:            "getOperation",
-			id:              fmt.Sprintf("%s.getOperation", svc.ID),
-			documentation:   svcMixin.documentation,
-			inputTypeID:     svcMixin.inputTypeID,
-			outputTypeID:    svcMixin.outputTypeID,
-			returnsEmpty:    svcMixin.returnsEmpty,
-			pathInfo:        svcMixin.pathInfo.Clone(),
-			pagination:      svcMixin.pagination,
-			routing:         svcMixin.routing,
-			autoPopulated:   svcMixin.autoPopulated,
-			service:         svc,
-			sourceServiceID: sourceID,
-			isLroPoller:     true,
-		}
+		method := NewMethodBuilder().
+			WithName("getOperation").
+			WithID(fmt.Sprintf("%s.getOperation", svc.ID)).
+			WithDocumentation(svcMixin.Documentation()).
+			WithInputTypeID(svcMixin.InputTypeID()).
+			WithOutputTypeID(svcMixin.OutputTypeID()).
+			WithReturnsEmpty(svcMixin.ReturnsEmpty()).
+			WithPathInfo(svcMixin.PathInfo().Clone()).
+			WithPagination(svcMixin.Pagination()).
+			WithRouting(svcMixin.Routing()).
+			WithAutoPopulated(svcMixin.AutoPopulated()).
+			WithService(svc).
+			WithSourceServiceID(sourceID).
+			WithIsLroPoller(true).
+			Build()
 		svc.Methods = append(svc.Methods, method)
 		model.AddMethod(method)
 	}
@@ -185,11 +185,11 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 }
 
 func findDiscoveryLroPoller(method *Method, model *API, discoveryConfig *Discovery) (*Method, []string) {
-	if method.pathInfo == nil {
+	if method.PathInfo() == nil {
 		return nil, nil
 	}
 	var flatPath []string
-	for _, binding := range method.pathInfo.Bindings() {
+	for _, binding := range method.PathInfo().Bindings() {
 		if binding.PathTemplate() == nil {
 			continue
 		}

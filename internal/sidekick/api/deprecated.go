@@ -73,7 +73,7 @@ func (service *Service) hasDeprecatedEntities() bool {
 		return true
 	}
 	for _, m := range service.Methods {
-		if m.deprecated {
+		if m.Deprecated() {
 			return true
 		}
 	}
