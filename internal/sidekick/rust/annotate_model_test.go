@@ -477,14 +477,13 @@ func TestPackageNames(t *testing.T) {
 		t.Fatal(err)
 	}
 	codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{
-		"version":                     "1.2.3",
-		"release-level":               "stable",
-		"copyright-year":              "2035",
-		"per-service-features":        "true",
-		"extra-modules":               "operation",
-		"generate-setter-samples":     "true",
-		"generate-rpc-samples":        "true",
-		"detailed-tracing-attributes": "true",
+		"version":                 "1.2.3",
+		"release-level":           "stable",
+		"copyright-year":          "2035",
+		"per-service-features":    "true",
+		"extra-modules":           "operation",
+		"generate-setter-samples": "true",
+		"generate-rpc-samples":    "true",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -497,62 +496,25 @@ func TestPackageNames(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &modelAnnotations{
-		PackageName:               "google-cloud-workflows-v1",
-		PackageModuleName:         "google::cloud::workflows::v1",
-		PackageVersion:            "1.2.3",
-		ReleaseLevel:              "stable",
-		PackageNamespace:          "google_cloud_workflows_v1",
-		RequiredPackages:          []string{},
-		ExternPackages:            []string{},
-		HasLROs:                   false,
-		CopyrightYear:             "2035",
-		Services:                  []*api.Service{},
-		NameToLower:               "workflows-v1",
-		PerServiceFeatures:        false, // no services
-		ExtraModules:              []string{"operation"},
-		GenerateSetterSamples:     true,
-		GenerateRpcSamples:        true,
-		DetailedTracingAttributes: true,
-		GrpcClient:                "gaxi::grpc::Client",
+		PackageName:           "google-cloud-workflows-v1",
+		PackageModuleName:     "google::cloud::workflows::v1",
+		PackageVersion:        "1.2.3",
+		ReleaseLevel:          "stable",
+		PackageNamespace:      "google_cloud_workflows_v1",
+		RequiredPackages:      []string{},
+		ExternPackages:        []string{},
+		HasLROs:               false,
+		CopyrightYear:         "2035",
+		Services:              []*api.Service{},
+		NameToLower:           "workflows-v1",
+		PerServiceFeatures:    false, // no services
+		ExtraModules:          []string{"operation"},
+		GenerateSetterSamples: true,
+		GenerateRpcSamples:    true,
+		GrpcClient:            "gaxi::grpc::Client",
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestAnnotateModelWithDetailedTracing(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		options map[string]string
-		want    bool
-	}{
-		{
-			name:    "DetailedTracingTrue",
-			options: map[string]string{"detailed-tracing-attributes": "true"},
-			want:    true,
-		},
-		{
-			name:    "DetailedTracingFalse",
-			options: map[string]string{"detailed-tracing-attributes": "false"},
-			want:    false,
-		},
-		{
-			name:    "DetailedTracingMissing",
-			options: map[string]string{},
-			want:    false,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
-			got, err := annotateModel(model, codec)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got.DetailedTracingAttributes != test.want {
-				t.Errorf("annotateModel() DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, test.want)
-			}
-		})
 	}
 }
 

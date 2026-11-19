@@ -141,12 +141,6 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.perServiceFeatures = value
 		case key == "default-features":
 			codec.defaultFeatures = splitOption(definition)
-		case key == "detailed-tracing-attributes":
-			value, err := strconv.ParseBool(definition)
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
-			}
-			codec.detailedTracingAttributes = value
 		case key == "idempotency-hook":
 			codec.idempotencyHook = definition
 		case key == "has-veneer":
@@ -329,12 +323,6 @@ type codec struct {
 	perServiceFeatures bool
 	// If not empty, and if `perServiceFeatures` is true, the default features
 	defaultFeatures []string
-	// If true, the generated code includes detailed tracing attributes on HTTP
-	// requests. This feature flag exists to reduce unexpected changes to the
-	// generated code until the feature is ready and well-tested.
-	// TODO(https://github.com/googleapis/google-cloud-rust/issues/3239) -
-	//   remove this flag once we switch the default.
-	detailedTracingAttributes bool
 	// If true, there is a handwritten client surface.
 	hasVeneer bool
 	// Additional modules, maybe with hand-crafted code.

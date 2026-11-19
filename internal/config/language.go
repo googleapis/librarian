@@ -149,9 +149,6 @@ type RustDefault struct {
 	// GenerateRpcSamples indicates whether to generate RPC samples.
 	GenerateRpcSamples string `yaml:"generate_rpc_samples,omitempty"`
 
-	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
-	DetailedTracingAttributes *bool `yaml:"detailed_tracing_attributes,omitempty"`
-
 	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
 	ResourceNameHeuristic *bool `yaml:"resource_name_heuristic,omitempty"`
 
@@ -182,10 +179,6 @@ type RustModule struct {
 	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
 	// This overrides the crate-level setting.
 	DefaultTransport string `yaml:"default_transport,omitempty"`
-
-	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
-	// This overrides the crate-level setting.
-	DetailedTracingAttributes *bool `yaml:"detailed_tracing_attributes,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`

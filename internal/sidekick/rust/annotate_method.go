@@ -39,7 +39,6 @@ type methodAnnotation struct {
 	HasVeneer                 bool
 	Attributes                []string
 	RoutingRequired           bool
-	DetailedTracingAttributes bool
 	InternalBuilders          bool
 	HasResourceNameGeneration bool
 	ResourceNameTemplateGrpc  string
@@ -244,9 +243,6 @@ type pathBindingAnnotation struct {
 	// The variables to be substituted into the path
 	Substitutions []*bindingSubstitution
 
-	// The codec is configured to generated detailed tracing attributes.
-	DetailedTracingAttributes bool
-
 	// Resource name generation fields, propagated from method scope.
 	HasResourceNameGeneration bool
 	ResourceNameTemplate      string
@@ -354,28 +350,27 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	internalBuilders := c.serviceInternalBuilders(m.Service().ID())
 	generateRpcSamples := c.serviceGenerateRpcSamples(m.Service().ID())
 	annotation := &methodAnnotation{
-		Name:                      toSnake(m.Name()),
-		NameNoMangling:            toSnakeNoMangling(m.Name()),
-		BuilderName:               toPascal(m.Name()),
-		Body:                      bodyAccessor(m),
-		DocLines:                  docLines,
-		PathInfo:                  m.PathInfo(),
-		ServiceNameToPascal:       toPascal(serviceName),
-		ServiceNameToCamel:        toCamel(serviceName),
-		ServiceNameToSnake:        toSnake(serviceName),
-		SystemParameters:          systemParameters,
-		ReturnType:                returnType,
-		HasVeneer:                 hasVeneer,
-		RoutingRequired:           c.routingRequired,
-		DetailedTracingAttributes: c.detailedTracingAttributes,
-		InternalBuilders:          internalBuilders,
-		GenerateRpcSamples:        generateRpcSamples,
-		IsLroPoller:               m.IsLroPoller(),
-		IsDiscoveryLro:            isDiscoveryLro(m),
-		ExtensibleBuilder:         slices.Contains(c.extensibleBuilders, m.ID()),
-		ClientSideStreaming:       m.ClientSideStreaming(),
-		ServerSideStreaming:       m.ServerSideStreaming(),
-		IsGrpc:                    c.methodUsesGrpc(m),
+		Name:                toSnake(m.Name()),
+		NameNoMangling:      toSnakeNoMangling(m.Name()),
+		BuilderName:         toPascal(m.Name()),
+		Body:                bodyAccessor(m),
+		DocLines:            docLines,
+		PathInfo:            m.PathInfo(),
+		ServiceNameToPascal: toPascal(serviceName),
+		ServiceNameToCamel:  toCamel(serviceName),
+		ServiceNameToSnake:  toSnake(serviceName),
+		SystemParameters:    systemParameters,
+		ReturnType:          returnType,
+		HasVeneer:           hasVeneer,
+		RoutingRequired:     c.routingRequired,
+		InternalBuilders:    internalBuilders,
+		GenerateRpcSamples:  generateRpcSamples,
+		IsLroPoller:         m.IsLroPoller(),
+		IsDiscoveryLro:      isDiscoveryLro(m),
+		ExtensibleBuilder:   slices.Contains(c.extensibleBuilders, m.ID()),
+		ClientSideStreaming: m.ClientSideStreaming(),
+		ServerSideStreaming: m.ServerSideStreaming(),
+		IsGrpc:              c.methodUsesGrpc(m),
 	}
 
 	if c.idempotencyHook != "" {
@@ -629,10 +624,9 @@ func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBin
 		}
 	}
 	binding := &pathBindingAnnotation{
-		PathFmt:                   httpPathFmt(b.PathTemplate()),
-		QueryParams:               language.QueryParams(m, b),
-		Substitutions:             subs,
-		DetailedTracingAttributes: c.detailedTracingAttributes,
+		PathFmt:       httpPathFmt(b.PathTemplate()),
+		QueryParams:   language.QueryParams(m, b),
+		Substitutions: subs,
 	}
 	return binding, nil
 }
@@ -696,9 +690,6 @@ func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 }
 
 func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
-	if !annotation.DetailedTracingAttributes {
-		return nil
-	}
 	if m.PathInfo() != nil {
 		bindings := m.PathInfo().Bindings()
 		var firstBindingWithTargetResource *api.PathBinding

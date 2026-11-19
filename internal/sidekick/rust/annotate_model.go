@@ -94,9 +94,6 @@ type modelAnnotations struct {
 	GenerateSetterSamples bool
 	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
 	GenerateRpcSamples bool
-	// If true, the generated code includes detailed tracing attributes on HTTP
-	// requests.
-	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
 	// The Rust type used for the inner gRPC client in generated transports.
@@ -378,12 +375,11 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
 			return slices.ContainsFunc(s.Methods(), func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),
-		GenerateSetterSamples:     codec.generateSetterSamples,
-		GenerateRpcSamples:        codec.generateRpcSamples,
-		DetailedTracingAttributes: codec.detailedTracingAttributes,
-		InternalBuilders:          codec.internalBuilders,
-		GrpcClient:                codec.grpcClient,
-		QuickstartService:         quickstartService,
+		GenerateSetterSamples: codec.generateSetterSamples,
+		GenerateRpcSamples:    codec.generateRpcSamples,
+		InternalBuilders:      codec.internalBuilders,
+		GrpcClient:            codec.grpcClient,
+		QuickstartService:     quickstartService,
 	}
 
 	codec.addFeatureAnnotations(model, ann)

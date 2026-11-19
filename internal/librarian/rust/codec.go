@@ -153,9 +153,6 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if len(rust.DefaultFeatures) > 0 {
 		codec["default-features"] = strings.Join(rust.DefaultFeatures, ",")
 	}
-	if rust.DetailedTracingAttributes != nil && *rust.DetailedTracingAttributes {
-		codec["detailed-tracing-attributes"] = "true"
-	}
 	if rust.DefaultTransport != "" {
 		codec["default-transport"] = rust.DefaultTransport
 	}
@@ -352,13 +349,6 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if idempotencyHook != "" {
 		codec["idempotency-hook"] = idempotencyHook
-	}
-	detailedTracingAttributes := library.Rust != nil && library.Rust.DetailedTracingAttributes != nil && *library.Rust.DetailedTracingAttributes
-	if module.DetailedTracingAttributes != nil {
-		detailedTracingAttributes = *module.DetailedTracingAttributes
-	}
-	if detailedTracingAttributes {
-		codec["detailed-tracing-attributes"] = "true"
 	}
 	if module.ModulePath != "" {
 		codec["module-path"] = module.ModulePath

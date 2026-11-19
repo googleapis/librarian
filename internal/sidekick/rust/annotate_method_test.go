@@ -322,9 +322,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			Build(),
 	)
 
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"detailed-tracing-attributes": "true",
-	})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	if _, err := annotateModel(model, codec); err != nil {
 		t.Fatal(err)
 	}
@@ -384,7 +382,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				"Name", "NameNoMangling", "BuilderName", "Body", "DocLines",
 				"ServiceNameToPascal", "ServiceNameToCamel", "ServiceNameToSnake",
 				"SystemParameters", "ReturnType", "PathInfo", "Attributes",
-				"RoutingRequired", "DetailedTracingAttributes",
+				"RoutingRequired",
 				"ResourceNameTemplateGrpc", "GrpcResourceNameArgs",
 				"InternalBuilders")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -393,7 +391,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			if test.wantBindings != nil {
 				for i, wantBinding := range test.wantBindings {
 					gotBinding := m.PathInfo().Bindings()[i].Codec().(*pathBindingAnnotation)
-					if diff := cmp.Diff(wantBinding, gotBinding, cmpopts.IgnoreFields(pathBindingAnnotation{}, "DetailedTracingAttributes", "PathFmt", "QueryParams", "Substitutions")); diff != "" {
+					if diff := cmp.Diff(wantBinding, gotBinding, cmpopts.IgnoreFields(pathBindingAnnotation{}, "PathFmt", "QueryParams", "Substitutions")); diff != "" {
 						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
 				}
@@ -500,22 +498,6 @@ func TestAnnotateSampleInfo(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestMethodAnnotationsDetailedTracing(t *testing.T) {
-	model := serviceAnnotationsModel()
-	method := model.Method(".test.v1.ResourceService.GetResource")
-	if method == nil {
-		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
-	}
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"detailed-tracing-attributes": "true",
-	})
-	annotateModel(model, codec)
-	got := method.Codec().(*methodAnnotation)
-	if !got.DetailedTracingAttributes {
-		t.Errorf("methodAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
 	}
 }
 
