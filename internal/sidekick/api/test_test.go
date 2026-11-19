@@ -390,11 +390,13 @@ func TestMethod_FluentSetters(t *testing.T) {
 	if m.PathInfo() != nil {
 		t.Errorf("m.PathInfo() = %v, want nil", m.PathInfo())
 	}
-	if len(m.Routing()) != 1 || m.Routing()[0] != routing {
-		t.Errorf("m.Routing() = %v, want [%v]", m.Routing(), routing)
+	gotRouting := m.Routing()
+	if len(gotRouting) != 1 || gotRouting[0] != routing {
+		t.Errorf("m.Routing() = %v, want [%v]", gotRouting, routing)
 	}
-	if len(m.AutoPopulated()) != 1 || m.AutoPopulated()[0] != reqID {
-		t.Errorf("m.AutoPopulated() = %v, want [%v]", m.AutoPopulated(), reqID)
+	gotAutoPopulated := m.AutoPopulated()
+	if len(gotAutoPopulated) != 1 || gotAutoPopulated[0] != reqID {
+		t.Errorf("m.AutoPopulated() = %v, want [%v]", gotAutoPopulated, reqID)
 	}
 	if !reqID.AutoPopulated() {
 		t.Errorf("reqID.AutoPopulated() = false, want true")

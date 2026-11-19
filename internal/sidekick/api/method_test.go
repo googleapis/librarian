@@ -107,13 +107,16 @@ func TestMethod(t *testing.T) {
 	if got.PathInfo() != pi || got.OperationInfo() != op || got.DiscoveryLro() != lro || got.Pagination() != f || got.Service() != svc || got.SourceService() != srcSvc || got.Model() != model || got.SampleInfo() != gotSI || !got.IsAIPStandard() || got.Codec() != "method-codec" {
 		t.Errorf("unexpected Method pointers: %+v", got)
 	}
-	if len(got.Routing()) != 1 || got.Routing()[0] != r1 || len(got.AutoPopulated()) != 1 || got.AutoPopulated()[0] != f || len(got.Signatures()) != 1 || got.Signatures()[0] != sig {
+	routing := got.Routing()
+	autoPopulated := got.AutoPopulated()
+	signatures := got.Signatures()
+	if len(routing) != 1 || routing[0] != r1 || len(autoPopulated) != 1 || autoPopulated[0] != f || len(signatures) != 1 || signatures[0] != sig {
 		t.Errorf("Method slice inputs were not cloned")
 	}
 
-	got.Routing()[0] = nil
-	got.AutoPopulated()[0] = nil
-	got.Signatures()[0] = nil
+	routing[0] = nil
+	autoPopulated[0] = nil
+	signatures[0] = nil
 	if got.Routing()[0] != r1 || got.AutoPopulated()[0] != f || got.Signatures()[0] != sig {
 		t.Errorf("Method slice getters should return defensive copies")
 	}

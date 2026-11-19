@@ -134,16 +134,16 @@ func enrichSamples(model *API) {
 func findQuickstartMethod(s *Service) *Method {
 	// Priority: List > Get > Create > Delete > Update
 	priorities := []func(m *Method) bool{
-		func(m *Method) bool { return m.isAIPStandardList },
-		func(m *Method) bool { return m.isAIPStandardGet },
-		func(m *Method) bool { return m.isAIPStandardCreate },
-		func(m *Method) bool { return m.isAIPStandardDelete },
-		func(m *Method) bool { return m.isAIPStandardUpdate },
+		func(m *Method) bool { return m.IsAIPStandardList() },
+		func(m *Method) bool { return m.IsAIPStandardGet() },
+		func(m *Method) bool { return m.IsAIPStandardCreate() },
+		func(m *Method) bool { return m.IsAIPStandardDelete() },
+		func(m *Method) bool { return m.IsAIPStandardUpdate() },
 		// Fallback for when no standard AIP method is available: any method that is not streaming.
-		func(m *Method) bool { return !m.clientSideStreaming && !m.serverSideStreaming },
+		func(m *Method) bool { return !m.ClientSideStreaming() && !m.ServerSideStreaming() },
 		// Fallback for streaming methods when no unary methods exist.
-		func(m *Method) bool { return !m.clientSideStreaming && m.serverSideStreaming },
-		func(m *Method) bool { return m.clientSideStreaming && m.serverSideStreaming },
+		func(m *Method) bool { return !m.ClientSideStreaming() && m.ServerSideStreaming() },
+		func(m *Method) bool { return m.ClientSideStreaming() && m.ServerSideStreaming() },
 	}
 
 	strippedServiceName := strings.TrimSuffix(s.Name, "Service")
@@ -155,7 +155,7 @@ func findQuickstartMethod(s *Service) *Method {
 
 		for _, m := range s.Methods {
 			if isType(m) {
-				if m.deprecated {
+				if m.Deprecated() {
 					deprecated = append(deprecated, m)
 				} else {
 					nonDeprecated = append(nonDeprecated, m)
@@ -178,7 +178,7 @@ func findQuickstartMethod(s *Service) *Method {
 
 		// Tie-breaking: Substring match on method name
 		for _, m := range searchList {
-			if strings.Contains(strings.ToLower(m.name), lowerStripped) {
+			if strings.Contains(strings.ToLower(m.Name()), lowerStripped) {
 				return m
 			}
 		}
@@ -238,11 +238,11 @@ func findQuickstartService(api *API) *Service {
 	for _, s := range searchList {
 		if s.QuickstartMethod != nil {
 			servicesWithAnyQuickstart = append(servicesWithAnyQuickstart, s)
-			if s.QuickstartMethod.isAIPStandardList ||
-				s.QuickstartMethod.isAIPStandardGet ||
-				s.QuickstartMethod.isAIPStandardCreate ||
-				s.QuickstartMethod.isAIPStandardDelete ||
-				s.QuickstartMethod.isAIPStandardUpdate {
+			if s.QuickstartMethod.IsAIPStandardList() ||
+				s.QuickstartMethod.IsAIPStandardGet() ||
+				s.QuickstartMethod.IsAIPStandardCreate() ||
+				s.QuickstartMethod.IsAIPStandardDelete() ||
+				s.QuickstartMethod.IsAIPStandardUpdate() {
 				servicesWithStandardQuickstart = append(servicesWithStandardQuickstart, s)
 			}
 		}
