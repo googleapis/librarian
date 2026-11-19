@@ -63,12 +63,10 @@ pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
         options: &crate::RequestOptions,
     ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy>;
 
-    {{ if .Model.Codec.LroStubOptions }}
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,
     ) -> google_cloud_lro::PollerOptions;
-    {{- end }}
     {{- end }}
 }
 
@@ -127,14 +125,12 @@ impl<T: super::{{ .Codec.Name }}> {{ .Codec.Name }} for T {
         T::get_polling_backoff_policy(self, options)
     }
 
-    {{ if .Model.Codec.LroStubOptions }}
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,
     ) -> google_cloud_lro::PollerOptions {
         T::get_poller_options(self, options)
     }
-    {{- end }}
     {{- end }}
 }
 {{- end }}

@@ -285,7 +285,6 @@ pub mod {{ .Codec.ModuleName }} {
         {
             let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
             let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
-            {{- if .Model.Codec.LroStubOptions }}
             {{- /*
               `poller_options` must be extracted here before `self` is moved into
               the `start` closure.
@@ -294,7 +293,6 @@ pub mod {{ .Codec.ModuleName }} {
             if let Some(ref mut details) = poller_options.tracing {
                 details.method_name = "{{ .Model.Codec.PackageNamespace }}::client::{{ .DiscoveryLro.Codec.ServiceNameToPascal }}::{{ .DiscoveryLro.Codec.MethodName }}::until_done";
             }
-            {{- end }}
 
             let stub = self.0.stub.clone();
             let mut options = self.0.options.clone();
@@ -324,7 +322,6 @@ pub mod {{ .Codec.ModuleName }} {
                 self.send().await
             };
 
-            {{ if .Model.Codec.LroStubOptions }}
             use google_cloud_lro::internal::PollerExt;
             google_cloud_lro::internal::new_discovery_poller(
                 polling_error_policy,
@@ -333,14 +330,6 @@ pub mod {{ .Codec.ModuleName }} {
                 query,
             )
             .with_options(poller_options)
-            {{- else }}
-            google_cloud_lro::internal::new_discovery_poller(
-                polling_error_policy,
-                polling_backoff_policy,
-                start,
-                query,
-            )
-            {{- end }}
         }
         {{- end }}
         {{- with .OperationInfo }}
@@ -362,7 +351,6 @@ pub mod {{ .Codec.ModuleName }} {
             type Operation = google_cloud_lro::internal::Operation<{{ .Codec.ResponseType }}, {{ .Codec.MetadataType }}>;
             let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
             let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
-            {{- if .Method.Model.Codec.LroStubOptions }}
             {{- /*
               `poller_options` must be extracted here before `self` is moved into
               the `start` closure.
@@ -371,7 +359,6 @@ pub mod {{ .Codec.ModuleName }} {
             if let Some(ref mut details) = poller_options.tracing {
                 details.method_name = "{{ .Method.Model.Codec.PackageNamespace }}::client::{{ .Method.Codec.ServiceNameToPascal }}::{{ .Method.Codec.Name }}::until_done";
             }
-            {{- end }}
 
             let stub = self.0.stub.clone();
             let mut options = self.0.options.clone();
@@ -394,7 +381,6 @@ pub mod {{ .Codec.ModuleName }} {
                 Ok(Operation::new(op))
             };
 
-            {{ if .Method.Model.Codec.LroStubOptions }}
             use google_cloud_lro::internal::PollerExt;
             {
                 {{- if .Codec.NoneAreEmpty }}
@@ -408,17 +394,6 @@ pub mod {{ .Codec.ModuleName }} {
                 {{- end }}
             }
             .with_options(poller_options)
-            {{- else }}
-            {{- if .Codec.NoneAreEmpty }}
-            google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
-            {{- else if .Codec.OnlyResponseIsEmpty }}
-            google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
-            {{- else if .Codec.OnlyMetadataIsEmpty }}
-            google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
-            {{- else if .Codec.BothAreEmpty }}
-            google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
-            {{- end }}
-            {{- end }}
         }
         {{- end }}
         {{- if .HasAutoPopulatedFields }}

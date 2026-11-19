@@ -149,12 +149,6 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.detailedTracingAttributes = value
 		case key == "idempotency-hook":
 			codec.idempotencyHook = definition
-		case key == "lro-stub-options":
-			value, err := strconv.ParseBool(definition)
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert `lro-stub-options` value %q to boolean: %w", definition, err)
-			}
-			codec.lroStubOptions = value
 		case key == "has-veneer":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -341,8 +335,6 @@ type codec struct {
 	// TODO(https://github.com/googleapis/google-cloud-rust/issues/3239) -
 	//   remove this flag once we switch the default.
 	detailedTracingAttributes bool
-	// If true, the generated code includes LRO poller options in generated stub traits.
-	lroStubOptions bool
 	// If true, there is a handwritten client surface.
 	hasVeneer bool
 	// Additional modules, maybe with hand-crafted code.
@@ -415,7 +407,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool
 		// almost always performing the full loop. `break`ing early does
 		// not save us any computations.
 
-		for _, m := range s.Methods {
+		for _, m := range s.Methods() {
 			if m.OperationInfo() != nil || m.IsLroPoller() || m.ID() == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
@@ -1495,7 +1487,7 @@ func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 	if s == nil {
 		return ""
 	}
-	if !slices.Contains(s.Methods, m) {
+	if !slices.Contains(s.Methods(), m) {
 		return ""
 	}
 	serviceLink := c.serviceRustdocLink(s, model)
@@ -1506,7 +1498,7 @@ func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 }
 
 func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
-	mapped, ok := c.packageMapping[s.Package]
+	mapped, ok := c.packageMapping[s.Package()]
 	name := c.ServiceName(s)
 	if ok {
 		return fmt.Sprintf("%s::client::%s", mapped.name, toPascal(name))
@@ -1576,7 +1568,7 @@ func findUsedPackages(model *api.API, c *codec) {
 		usePackage(enum.Package(), model, c)
 	}
 	for _, s := range model.Services {
-		for _, method := range s.Methods {
+		for _, method := range s.Methods() {
 			if m := model.Message(method.InputTypeID()); m != nil {
 				findUsedPackagesMessage(m, model, c, map[string]bool{})
 			}
@@ -1665,10 +1657,10 @@ func (c *codec) nameInExamplesFromQualifiedName(qualifiedName string, model *api
 
 // ServiceName returns the service name.
 func (c *codec) ServiceName(service *api.Service) string {
-	if override, ok := c.nameOverrides[service.ID]; ok {
+	if override, ok := c.nameOverrides[service.ID()]; ok {
 		return override
 	}
-	return service.Name
+	return service.Name()
 }
 
 // OneOfEnumName returns the oneof enum name.

@@ -109,7 +109,6 @@ pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
         std::sync::Arc::new(google_cloud_gax::exponential_backoff::ExponentialBackoff::default())
     }
 
-    {{ if .Model.Codec.LroStubOptions }}
     #[doc(hidden)]
     /// Returns the poller options.
     ///
@@ -121,7 +120,6 @@ pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
     ) -> google_cloud_lro::PollerOptions {
         google_cloud_lro::PollerOptions::default()
     }
-    {{- end }}
     {{- end }}
 }
 {{- end }}

@@ -86,8 +86,8 @@ func CrossReference(model *API) error {
 		}
 	}
 	for s := range model.AllServices() {
-		s.Model = model
-		for _, m := range s.Methods {
+		s.model = model
+		for _, m := range s.Methods() {
 			m.model = model
 			m.service = s
 			if source := model.Service(m.SourceServiceID()); source != nil {
@@ -126,7 +126,7 @@ func enrichSamples(model *API) {
 	}
 
 	for _, s := range model.Services {
-		s.QuickstartMethod = findQuickstartMethod(s)
+		s.quickstartMethod = findQuickstartMethod(s)
 	}
 	model.QuickstartService = findQuickstartService(model)
 }
@@ -146,14 +146,15 @@ func findQuickstartMethod(s *Service) *Method {
 		func(m *Method) bool { return m.ClientSideStreaming() && m.ServerSideStreaming() },
 	}
 
-	strippedServiceName := strings.TrimSuffix(s.Name, "Service")
+	strippedServiceName := strings.TrimSuffix(s.Name(), "Service")
 	lowerStripped := strings.ToLower(strippedServiceName)
+	methods := s.Methods()
 
 	for _, isType := range priorities {
 		var nonDeprecated []*Method
 		var deprecated []*Method
 
-		for _, m := range s.Methods {
+		for _, m := range methods {
 			if isType(m) {
 				if m.Deprecated() {
 					deprecated = append(deprecated, m)
@@ -208,8 +209,8 @@ func findQuickstartService(api *API) *Service {
 	var deprecated []*Service
 
 	for _, s := range api.Services {
-		if len(s.Methods) > 0 {
-			if s.Deprecated {
+		if len(s.Methods()) > 0 {
+			if s.Deprecated() {
 				deprecated = append(deprecated, s)
 			} else {
 				nonDeprecated = append(nonDeprecated, s)
@@ -236,13 +237,13 @@ func findQuickstartService(api *API) *Service {
 	var servicesWithAnyQuickstart []*Service
 
 	for _, s := range searchList {
-		if s.QuickstartMethod != nil {
+		if s.QuickstartMethod() != nil {
 			servicesWithAnyQuickstart = append(servicesWithAnyQuickstart, s)
-			if s.QuickstartMethod.IsAIPStandardList() ||
-				s.QuickstartMethod.IsAIPStandardGet() ||
-				s.QuickstartMethod.IsAIPStandardCreate() ||
-				s.QuickstartMethod.IsAIPStandardDelete() ||
-				s.QuickstartMethod.IsAIPStandardUpdate() {
+			if s.QuickstartMethod().IsAIPStandardList() ||
+				s.QuickstartMethod().IsAIPStandardGet() ||
+				s.QuickstartMethod().IsAIPStandardCreate() ||
+				s.QuickstartMethod().IsAIPStandardDelete() ||
+				s.QuickstartMethod().IsAIPStandardUpdate() {
 				servicesWithStandardQuickstart = append(servicesWithStandardQuickstart, s)
 			}
 		}
@@ -256,7 +257,7 @@ func findQuickstartService(api *API) *Service {
 
 	lowerApiName := strings.ToLower(api.Name)
 	for _, s := range searchList {
-		if strings.Contains(strings.ToLower(s.Name), lowerApiName) {
+		if strings.Contains(strings.ToLower(s.Name()), lowerApiName) {
 			return s
 		}
 	}
@@ -370,7 +371,7 @@ func enrichMethodSamples(m *Method) {
 
 	if m.SourceServiceID() == ".google.longrunning.Operations" &&
 		m.Name() == "GetOperation" &&
-		m.Service() != nil && m.Service().Package != "google.longrunning" {
+		m.Service() != nil && m.Service().Package() != "google.longrunning" {
 		m.isLroPoller = true
 	}
 

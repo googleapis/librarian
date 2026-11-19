@@ -56,7 +56,7 @@ func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error
 	if serviceconfig.ExtractVersion(apiPath) != "" {
 		return lib, nil
 	}
-	versionedAPI, err := searchVersionedAPI(cfg, apiPath)
+	versionedAPI, err := searchVersionedAPI(cfg.Libraries, apiPath)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +66,8 @@ func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error
 
 // searchVersionedAPI finds a versioned API in the config that is a prefix of the given API path,
 // otherwise it returns an error.
-func searchVersionedAPI(cfg *config.Config, apiPath string) (string, error) {
-	for _, lib := range cfg.Libraries {
+func searchVersionedAPI(libraries []*config.Library, apiPath string) (string, error) {
+	for _, lib := range libraries {
 		for _, api := range lib.APIs {
 			if strings.HasPrefix(api.Path, apiPath+"/v") {
 				return api.Path, nil

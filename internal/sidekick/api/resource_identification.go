@@ -32,7 +32,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 	vocabulary := BuildHeuristicVocabulary(model)
 
 	for _, service := range model.Services {
-		for _, method := range service.Methods {
+		for _, method := range service.Methods() {
 			if method.PathInfo() == nil {
 				continue
 			}
@@ -279,8 +279,8 @@ func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, e
 }
 
 func getServiceHost(method *Method) (string, error) {
-	if method.Service() != nil && method.Service().DefaultHost != "" {
-		return method.Service().DefaultHost, nil
+	if method.Service() != nil && method.Service().DefaultHost() != "" {
+		return method.Service().DefaultHost(), nil
 	}
 	if method.Model() != nil && method.Model().Name != "" {
 		return method.Model().Name + ".googleapis.com", nil

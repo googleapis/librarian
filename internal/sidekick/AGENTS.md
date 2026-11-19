@@ -359,6 +359,14 @@ Follow Librarian's overall Go guidelines ([`AGENTS.md`](../../AGENTS.md) and
 - **Multi-line Strings:** Use raw string literals (backticks `` ` ``) for
   expected template or code outputs.
 - **Error Tests:** Keep error cases in separate `TestXxx_Error` functions.
+- **Read-Only `api` Accessors:** Always use the public getter methods (e.g.,
+  `ID()`, `Fields()`, `PathInfo()`) for read-only access to `api` AST types,
+  including within `internal/sidekick/api`. Direct access to unexported fields
+  is reserved for:
+  - Mutations during parsing, cross-referencing, or skipping.
+  - Unit tests that verify the getter returns the underlying unexported field.
+  - When a slice-cloning getter (such as `Fields()`) is read multiple times in
+    the same function, cache its result in a local variable.
 
 ## Workflow & Verification
 

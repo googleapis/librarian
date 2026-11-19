@@ -264,15 +264,6 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
-				"lro-stub-options": "true",
-			},
-			Update: func(c *codec) {
-				c.lroStubOptions = true
-			},
-		},
-		{
-			Format: libconfig.SpecProtobuf,
-			Options: map[string]string{
 				"has-veneer": "true",
 			},
 			Update: func(c *codec) {
@@ -422,7 +413,6 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"include-streaming-methods": ""}},
 		{Options: map[string]string{"per-service-features": ""}},
 		{Options: map[string]string{"detailed-tracing-attributes": ""}},
-		{Options: map[string]string{"lro-stub-options": ""}},
 		{Options: map[string]string{"routing-required": ""}},
 		{Options: map[string]string{"generate-setter-samples": ""}},
 		{Options: map[string]string{"generate-rpc-samples": ""}},
@@ -1646,7 +1636,7 @@ func TestFormatDocCommentsSkippedMethodsAndServices(t *testing.T) {
 		WithPackage("test.v1").
 		WithMethods(createFoo)
 	skippedMethod := api.NewTestMethod("SkippedMethod").
-		WithID(fmt.Sprintf("%s.SkippedMethod", someService.ID)).
+		WithID(fmt.Sprintf("%s.SkippedMethod", someService.ID())).
 		WithVerb("GET").
 		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").

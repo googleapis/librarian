@@ -75,8 +75,8 @@ func TestService(t *testing.T) {
 
 	want := newDiscoveryTestService("zones").
 		WithDocumentation("Service for the `zones` resource.").
-		WithDefaultHost("compute.googleapis.com")
-	want.Methods = []*api.Method{getMethod, listMethod}
+		WithDefaultHost("compute.googleapis.com").
+		WithMethods(getMethod, listMethod)
 	apitest.CheckService(t, got, want)
 }
 
@@ -96,9 +96,9 @@ func TestServiceDeprecated(t *testing.T) {
 	want := newDiscoveryTestService("TestDeprecated").
 		WithDocumentation("Service for the `TestDeprecated` resource.").
 		WithDeprecated(true)
-	got := model.Service(want.ID)
+	got := model.Service(want.ID())
 	if got == nil {
-		t.Fatalf("missing service %s", want.ID)
+		t.Fatalf("missing service %s", want.ID())
 	}
 	apitest.CheckService(t, got, want)
 }
