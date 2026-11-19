@@ -309,15 +309,6 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
-				"extend-grpc-transport": "true",
-			},
-			Update: func(c *codec) {
-				c.extendGrpcTransport = true
-			},
-		},
-		{
-			Format: libconfig.SpecProtobuf,
-			Options: map[string]string{
 				"generate-setter-samples": "true",
 			},
 			Update: func(c *codec) {

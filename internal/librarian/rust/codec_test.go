@@ -1245,16 +1245,6 @@ func TestBuildModuleCodec(t *testing.T) {
 			},
 		},
 		{
-			name:    "with ExtendGrpcTransport",
-			library: &config.Library{},
-			module: &config.RustModule{
-				ExtendGrpcTransport: true,
-			},
-			want: map[string]string{
-				"extend-grpc-transport": "true",
-			},
-		},
-		{
 			name:    "with Template prepends templates/",
 			library: &config.Library{},
 			module: &config.RustModule{
@@ -1340,7 +1330,6 @@ func TestBuildModuleCodec(t *testing.T) {
 				NameOverrides:             "a=b",
 				PostProcessProtos:         "post",
 				RoutingRequired:           true,
-				ExtendGrpcTransport:       true,
 				Template:                  "grpc-client",
 				DisabledRustdocWarnings:   []string{"w1", "w2"},
 				RootName:                  "my-root",
@@ -1362,7 +1351,6 @@ func TestBuildModuleCodec(t *testing.T) {
 				"name-overrides":              "a=b",
 				"post-process-protos":         "post",
 				"routing-required":            "true",
-				"extend-grpc-transport":       "true",
 				"template-override":           "templates/grpc-client",
 				"root-name":                   "my-root",
 				"internal-builders":           "true",

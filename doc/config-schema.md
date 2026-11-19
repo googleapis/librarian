@@ -602,7 +602,6 @@ This document describes the schema for the librarian.yaml.
 | `default_transport` | string | Specifies the default transport protocol for unary methods ("grpc" or "http"). This overrides the crate-level setting. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. This overrides the crate-level setting. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
-| `extend_grpc_transport` | bool | Indicates whether the transport stub can be extended (in order to support streams). |
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | Indicates whether to generate RPC samples. |
 | `has_veneer` | bool | Indicates whether this module has a handwritten wrapper. |

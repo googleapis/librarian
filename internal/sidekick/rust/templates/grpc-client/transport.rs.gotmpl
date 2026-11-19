@@ -57,11 +57,7 @@ mod info {
 {{- end }}
 #[derive(Clone)]
 pub struct {{ .Codec.Name }} {
-    {{- if .Codec.ExtendGrpcTransport }}
     pub(crate) inner: {{ .Codec.GrpcClient }},
-    {{- else }}
-    inner: {{ .Codec.GrpcClient }},
-    {{- end }}
 }
 
 {{ if .Codec.PerServiceFeatures }}
