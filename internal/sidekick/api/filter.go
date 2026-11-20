@@ -19,9 +19,9 @@ import (
 	"slices"
 )
 
-// Filter returns a shallow copy of the API containing cloned services and only
-// the top-level messages, enums, and external types whose IDs satisfy keep.
-// If keep is nil, all types are retained.
+// Filter returns a shallow copy of the API with Codec cleared, cloned services,
+// and only the top-level messages, enums, and external types whose IDs satisfy
+// keep. If keep is nil, all types are retained.
 //
 // Lookup maps on the returned API retain all messages, enums, maps, and
 // resources from the receiver so cross-type references continue to resolve
@@ -114,7 +114,7 @@ func (a *API) Filter(keep func(id string) bool) *API {
 	for m := range a.AllMaps() {
 		filtered.AddMap(m)
 	}
-	for _, r := range filtered.ResourceDefinitions {
+	for r := range a.AllResources() {
 		filtered.AddResource(r)
 	}
 	return filtered
