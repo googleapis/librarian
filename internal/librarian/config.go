@@ -142,10 +142,18 @@ func findConfiguredLibrary(cfg *config.Config, apiPath string) *config.Library {
 	}
 	// Fall back to non-embedded module API paths for Rust and Swift mixed
 	// libraries, which configure APIs under modules instead of top-level apis.
+	// Prefer releasable libraries over skip_release entries (such as internal
+	// mock crates) that may sort earlier alphabetically.
+	var fallback *config.Library
 	for _, library := range cfg.Libraries {
 		if slices.Contains(moduleAPIPaths(library), apiPath) {
-			return library
+			if !library.SkipRelease {
+				return library
+			}
+			if fallback == nil {
+				fallback = library
+			}
 		}
 	}
-	return nil
+	return fallback
 }

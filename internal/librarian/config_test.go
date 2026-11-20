@@ -154,6 +154,38 @@ libraries:
 `,
 			want: "google-cloud-storage\n",
 		},
+		{
+			name:  "prefer releasable mixed library over earlier skip_release mock (rust)",
+			path:  "libraries",
+			value: "google/storage/v2",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-internal-mock
+  skip_release: true
+  rust:
+    modules:
+    - api_path: google/storage/v2
+- name: google-cloud-storage
+  rust:
+    modules:
+    - api_path: google/storage/v2
+`,
+			want: "google-cloud-storage\n",
+		},
+		{
+			name:  "fall back to skip_release mixed library when no releasable library matches (rust)",
+			path:  "libraries",
+			value: "google/cloud/bigquery/v2",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-bigquery
+  skip_release: true
+  rust:
+    modules:
+    - api_path: google/cloud/bigquery/v2
+`,
+			want: "google-cloud-bigquery\n",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
