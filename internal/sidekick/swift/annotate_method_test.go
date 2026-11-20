@@ -1228,6 +1228,115 @@ func TestAnnotateMethod_ExplicitEmptyRoutingSuppressesHTTPFallback(t *testing.T)
 	}
 }
 
+func TestAnnotateMethod_RoutingAdditionalBindings(t *testing.T) {
+	inputType := api.NewTestMessage("BillingRequest").
+		WithPackage("google.cloud.billing.v1").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("destination_parent").WithType(api.TypezString),
+		)
+	outputType := api.NewTestMessage("BillingResponse").
+		WithPackage("google.cloud.billing.v1")
+
+	listAccounts := api.NewTestMethod("ListBillingAccounts").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithBindings(
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("billingAccounts").Build()),
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").WithLiteral("billingAccounts").Build()),
+		)
+
+	moveAccount := api.NewTestMethod("MoveBillingAccount").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithBindings(
+			newTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("name").WithVerb("move").Build()),
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("destination_parent").WithVariableNamed("name").WithVerb("move").Build()),
+		)
+
+	explicitOverride := api.NewTestMethod("ExplicitOverride").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithBindings(
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("billingAccounts").Build()),
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").WithLiteral("billingAccounts").Build()),
+		).
+		WithRouting(api.NewTestRoutingInfo("bucket", api.NewTestRoutingInfoVariant("destination_parent")))
+
+	explicitEmpty := api.NewTestMethod("ExplicitEmpty").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithBindings(
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("billingAccounts").Build()),
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").WithLiteral("billingAccounts").Build()),
+		).
+		WithRouting()
+
+	service := api.NewTestService("CloudBilling").
+		WithPackage("google.cloud.billing.v1").
+		WithMethods(listAccounts, moveAccount, explicitOverride, explicitEmpty)
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName("google.cloud.billing.v1")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   []*routingParam
+	}{
+		{
+			name:   "literal primary with additional binding variable",
+			method: listAccounts,
+			want:   []*routingParam{newTestMultiWildcardRoutingParam("parent", "request.parent")},
+		},
+		{
+			name:   "overlapping and secondary variables preserve order",
+			method: moveAccount,
+			want: []*routingParam{
+				newTestMultiWildcardRoutingParam("name", "request.name"),
+				newTestMultiWildcardRoutingParam("destination_parent", "request.destinationParent"),
+			},
+		},
+		{
+			name:   "explicit routing overrides additional bindings",
+			method: explicitOverride,
+			want: []*routingParam{
+				{
+					RoutingKey: "bucket",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor: "request.destinationParent",
+							Last:          true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:   "explicit empty routing suppresses additional bindings",
+			method: explicitEmpty,
+			want:   nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.method.Codec().(*methodAnnotations)
+			if diff := cmp.Diff(test.want, got.RoutingParams); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if got.HasRoutingParams() != (len(test.want) > 0) {
+				t.Errorf("HasRoutingParams() = %v, want %v", got.HasRoutingParams(), len(test.want) > 0)
+			}
+		})
+	}
+}
+
 func TestAnnotateMethod_SeeAlsoLinks(t *testing.T) {
 	nameField := api.NewTestField("name").WithType(api.TypezString)
 	typeField := api.NewTestField("type").WithType(api.TypezString)

@@ -462,3 +462,168 @@ func TestGenerateStub_MultipleBindings(t *testing.T) {
 		t.Errorf("transport missing configure(&req):\n%s", transportStr)
 	}
 }
+
+func TestGenerateStub_GRPCClient_AdditionalBindingsRouting(t *testing.T) {
+	outDir := t.TempDir()
+
+	request := api.NewTestMessage("BillingRequest").
+		WithPackage("google.cloud.billing.v1").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("destination_parent").WithType(api.TypezString),
+		)
+	response := api.NewTestMessage("BillingResponse").
+		WithPackage("google.cloud.billing.v1")
+
+	listAccounts := api.NewTestMethod("ListBillingAccounts").
+		WithInput(request).
+		WithOutput(response).
+		WithBindings(
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("billingAccounts").Build()),
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").WithLiteral("billingAccounts").Build()),
+		)
+
+	moveAccount := api.NewTestMethod("MoveBillingAccount").
+		WithInput(request).
+		WithOutput(response).
+		WithBindings(
+			newTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("name").WithVerb("move").Build()),
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("destination_parent").WithVariableNamed("name").WithVerb("move").Build()),
+		)
+
+	explicitEmpty := api.NewTestMethod("ExplicitEmpty").
+		WithInput(request).
+		WithOutput(response).
+		WithBindings(
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("billingAccounts").Build()),
+			newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").WithLiteral("billingAccounts").Build()),
+		).
+		WithRouting()
+
+	service := api.NewTestService("CloudBilling").
+		WithPackage("google.cloud.billing.v1").
+		WithDefaultHost("cloudbilling.googleapis.com").
+		WithMethods(listAccounts, moveAccount, explicitEmpty)
+
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service}).
+		WithPackageName("google.cloud.billing.v1")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	module := &config.SwiftModule{
+		Output:     outDir,
+		ModuleType: "grpc-client",
+		ModulePath: "CloudBillingProtos",
+	}
+	swiftPkg := swiftConfig(t, nil)
+	swiftPkg.PackageNameOverride = "GoogleCloudBillingV1"
+	swiftPkg.LibraryNameOverride = "GoogleCloudBillingV1"
+	library := &config.Library{
+		Name:  "google-cloud-billing-v1",
+		Swift: swiftPkg,
+	}
+
+	if err := Generate(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	transportFilename := filepath.Join(outDir, "CloudBilling+Transport.swift")
+	transportContent, err := os.ReadFile(transportFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	transportStr := string(transportContent)
+
+	for _, test := range []struct {
+		method string
+		want   string
+	}{
+		{
+			method: "listBillingAccounts",
+			want: `    public func listBillingAccounts(
+    request: BillingRequest, options: GoogleGax.RequestOptions
+) async throws -> BillingResponse
+ {
+      let routingParams = GoogleGaxGRPC._RoutingMatcher.format([
+        ("parent",
+          GoogleGaxGRPC._RoutingMatcher.value(
+            request.parent,
+            prefix: [],
+            matching: [.multiWildcard, ],
+            suffix: []
+          )
+        ),
+      ])
+
+      let protoRequest = try request.toProto()
+      let protoResponse: CloudBillingProtos.Google_Cloud_Billing_V1_BillingResponse = try await self.inner.execute(
+        path: "/google.cloud.billing.v1.CloudBilling/ListBillingAccounts",
+        request: protoRequest,
+        options: options,
+        routingParams: routingParams
+      )
+      return try BillingResponse(proto: protoResponse)
+    }`,
+		},
+		{
+			method: "moveBillingAccount",
+			want: `    public func moveBillingAccount(
+    request: BillingRequest, options: GoogleGax.RequestOptions
+) async throws -> BillingResponse
+ {
+      let routingParams = GoogleGaxGRPC._RoutingMatcher.format([
+        ("name",
+          GoogleGaxGRPC._RoutingMatcher.value(
+            request.name,
+            prefix: [],
+            matching: [.multiWildcard, ],
+            suffix: []
+          )
+        ),
+        ("destination_parent",
+          GoogleGaxGRPC._RoutingMatcher.value(
+            request.destinationParent,
+            prefix: [],
+            matching: [.multiWildcard, ],
+            suffix: []
+          )
+        ),
+      ])
+
+      let protoRequest = try request.toProto()
+      let protoResponse: CloudBillingProtos.Google_Cloud_Billing_V1_BillingResponse = try await self.inner.execute(
+        path: "/google.cloud.billing.v1.CloudBilling/MoveBillingAccount",
+        request: protoRequest,
+        options: options,
+        routingParams: routingParams
+      )
+      return try BillingResponse(proto: protoResponse)
+    }`,
+		},
+		{
+			method: "explicitEmpty",
+			want: `    public func explicitEmpty(
+    request: BillingRequest, options: GoogleGax.RequestOptions
+) async throws -> BillingResponse
+ {
+
+      let protoRequest = try request.toProto()
+      let protoResponse: CloudBillingProtos.Google_Cloud_Billing_V1_BillingResponse = try await self.inner.execute(
+        path: "/google.cloud.billing.v1.CloudBilling/ExplicitEmpty",
+        request: protoRequest,
+        options: options
+      )
+      return try BillingResponse(proto: protoResponse)
+    }`,
+		},
+	} {
+		t.Run(test.method, func(t *testing.T) {
+			got := extractBlock(t, transportStr, "    public func "+test.method+"(", "\n    }")
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

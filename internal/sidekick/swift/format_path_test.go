@@ -520,26 +520,140 @@ func TestRoutingParamsFromPathTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	template := api.NewPathTemplateBuilder().
-		WithLiteral("v2").
-		WithVariableNamed("name").
-		Build()
-
-	got := codec.routingParamsFromPathTemplate(template)
-
-	want := []*routingParam{
+	for _, test := range []struct {
+		name     string
+		template *api.PathTemplate
+		want     []*routingParam
+	}{
 		{
-			RoutingKey: "name",
-			Variants: []*routingParamVariant{
-				{
-					FieldAccessor:    "request.name",
-					MatchingSegments: []string{".multiWildcard"},
-					Last:             true,
-				},
+			name:     "nil template",
+			template: nil,
+			want:     nil,
+		},
+		{
+			name: "template with variable",
+			template: api.NewPathTemplateBuilder().
+				WithLiteral("v2").
+				WithVariableNamed("name").
+				Build(),
+			want: []*routingParam{newTestMultiWildcardRoutingParam("name", "request.name")},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := codec.routingParamsFromPathTemplate(test.template)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRoutingParamsFromBindings(t *testing.T) {
+	c := &codec{}
+
+	for _, test := range []struct {
+		name     string
+		bindings []*api.PathBinding
+		want     []*routingParam
+	}{
+		{
+			name:     "empty bindings",
+			bindings: nil,
+			want:     nil,
+		},
+		{
+			name: "literal-only bindings",
+			bindings: []*api.PathBinding{
+				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("items").Build()),
+			},
+			want: nil,
+		},
+		{
+			name: "nil binding and nil template are skipped",
+			bindings: []*api.PathBinding{
+				nil,
+				api.NewPathBindingBuilder().WithVerb("GET").Build(),
+				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()),
+			},
+			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", "request.parent")},
+		},
+		{
+			// CloudBilling.ListBillingAccounts: GET /v1/billingAccounts + GET /v1/{parent=organizations/*}/billingAccounts
+			name: "primary literal-only with variable in additional_bindings",
+			bindings: []*api.PathBinding{
+				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("billingAccounts").Build()),
+				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").WithLiteral("billingAccounts").Build()),
+			},
+			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", "request.parent")},
+		},
+		{
+			// CloudBilling.MoveBillingAccount: POST /v1/{name=billingAccounts/*}:move + GET /v1/{destination_parent=organizations/*}/{name=billingAccounts/*}:move
+			name: "overlapping and secondary-only variables preserve first-seen order",
+			bindings: []*api.PathBinding{
+				newTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("name").WithVerb("move").Build()),
+				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("destination_parent").WithVariableNamed("name").WithVerb("move").Build()),
+			},
+			want: []*routingParam{
+				newTestMultiWildcardRoutingParam("name", "request.name"),
+				newTestMultiWildcardRoutingParam("destination_parent", "request.destinationParent"),
 			},
 		},
+		{
+			// StorageControl.SummarizeIntelligenceFindings: repeated {parent=...} with distinct resource sub-patterns across 3 bindings
+			name: "distinct sub-patterns on same variable deduplicated",
+			bindings: []*api.PathBinding{
+				newTestPathBinding("GET", api.NewPathTemplateBuilder().
+					WithLiteral("v2").
+					WithVariable(api.NewPathVariableBuilder("parent").WithLiteral("projects").WithMatch().Build()).
+					WithLiteral("intelligenceFindings").
+					WithVerb("summarize").Build()),
+				newTestPathBinding("GET", api.NewPathTemplateBuilder().
+					WithLiteral("v2").
+					WithVariable(api.NewPathVariableBuilder("parent").WithLiteral("folders").WithMatch().Build()).
+					WithLiteral("intelligenceFindings").
+					WithVerb("summarize").Build()),
+				newTestPathBinding("GET", api.NewPathTemplateBuilder().
+					WithLiteral("v2").
+					WithVariable(api.NewPathVariableBuilder("parent").WithLiteral("organizations").WithMatch().Build()).
+					WithLiteral("intelligenceFindings").
+					WithVerb("summarize").Build()),
+			},
+			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", "request.parent")},
+		},
+		{
+			name: "nested field path deduplication",
+			bindings: []*api.PathBinding{
+				newTestPathBinding("PATCH", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("book", "name").Build()),
+				newTestPathBinding("PATCH", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("shelf").WithVariableNamed("book", "name").Build()),
+			},
+			want: []*routingParam{
+				newTestMultiWildcardRoutingParam("book.name", "request.book?.name"),
+				newTestMultiWildcardRoutingParam("shelf", "request.shelf"),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := c.routingParamsFromBindings(test.bindings)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+}
+
+func newTestPathBinding(verb string, template *api.PathTemplate) *api.PathBinding {
+	return api.NewPathBindingBuilder().WithVerb(verb).WithPathTemplate(template).Build()
+}
+
+func newTestMultiWildcardRoutingParam(key, accessor string) *routingParam {
+	return &routingParam{
+		RoutingKey: key,
+		Variants: []*routingParamVariant{
+			{
+				FieldAccessor:    accessor,
+				MatchingSegments: []string{".multiWildcard"},
+				Last:             true,
+			},
+		},
 	}
 }
