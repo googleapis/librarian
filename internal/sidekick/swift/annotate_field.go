@@ -131,6 +131,13 @@ const (
 	// EncodingSimple means that the field is encoded using a simple `.encode()` call.
 	EncodingSimple EncodingStyle = iota
 
+	// EncodingOptional means that the field is encoded using an `.encodeIfPresent()` call.
+	EncodingOptional
+
+	// EncodingSingularEnum means that the field is a non-optional singular enum
+	// encoded only when its value differs from the default value.
+	EncodingSingularEnum
+
 	// EncodingMapCustomKey means that the field is a map, with non-string keys
 	// and requires mapping through a string-keyed temporary.
 	EncodingMapCustomKey
@@ -165,6 +172,16 @@ func (a *fieldAnnotations) IsDecodingMapCustomKey() bool {
 // IsEncodingSimple is used in templates to check for simple encoding.
 func (a *fieldAnnotations) IsEncodingSimple() bool {
 	return a.Encoding == EncodingSimple
+}
+
+// IsEncodingOptional is used in templates to check for optional encoding.
+func (a *fieldAnnotations) IsEncodingOptional() bool {
+	return a.Encoding == EncodingOptional
+}
+
+// IsEncodingSingularEnum is used in templates to check for non-optional singular enum encoding.
+func (a *fieldAnnotations) IsEncodingSingularEnum() bool {
+	return a.Encoding == EncodingSingularEnum
 }
 
 // IsEncodingMapCustomKey is used in templates to check for custom-key map encoding.
@@ -213,6 +230,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		annotations.BaseFieldType = fmt.Sprintf("%s.WKTRecursive<%s>", wellKnownSwiftPackage, parts.Base)
 		annotations.FieldType = annotations.BaseFieldType + "?"
 		annotations.Decoding = DecodingOptional
+		annotations.Encoding = EncodingOptional
 	}
 	if field.Typez() == api.TypezMap {
 		if !annotations.IsStringKeyed() {
@@ -236,6 +254,9 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	}
 	if field.Optional() {
 		annotations.Decoding = DecodingOptional
+		annotations.Encoding = EncodingOptional
+	} else if field.Singular() && field.IsEnum() && !field.IsOneOf() {
+		annotations.Encoding = EncodingSingularEnum
 	}
 	if isExplicitNullField(field) {
 		annotations.Decoding = DecodingExplicitNull

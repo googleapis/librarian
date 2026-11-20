@@ -221,3 +221,125 @@ func TestGenerateField_ExplicitNull(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestGenerateField_EncodeToEncoder(t *testing.T) {
+	outDir := t.TempDir()
+
+	statusEnum := api.NewTestEnum("Status").
+		WithPackage("google.cloud.test.v1").
+		WithValues(
+			api.NewTestEnumValue("STATUS_UNSPECIFIED", 0),
+			api.NewTestEnumValue("STATUS_ACTIVE", 1),
+		)
+
+	msg := api.NewTestMessage("EncodeMessage").
+		WithPackage("google.cloud.test.v1")
+	msg.WithFields(
+		api.NewTestField("name").WithType(api.TypezString),
+		api.NewTestField("count").WithType(api.TypezInt32),
+		api.NewTestField("optional_count").WithType(api.TypezInt32).WithOptional(),
+		api.NewTestField("status").WithEnumType(statusEnum),
+		api.NewTestField("optional_status").WithEnumType(statusEnum).WithOptional(),
+		api.NewTestField("repeated_status").WithEnumType(statusEnum).WithRepeated(),
+		api.NewTestField("next").WithMessageType(msg).WithRecursive(),
+	)
+
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{statusEnum}, nil)
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "EncodeMessage.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := extractBlock(t, string(content), "  public func encode(to encoder: any Encoder) throws {", "\n  }")
+	want := `  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(self.name, forKey: .name)
+    try container.encode(self.count, forKey: .count)
+    try container.encodeIfPresent(self.optionalCount, forKey: .optionalCount)
+    if self.status != Status() {
+      try container.encode(self.status, forKey: .status)
+    }
+    try container.encodeIfPresent(self.optionalStatus, forKey: .optionalStatus)
+    try container.encode(self.repeatedStatus, forKey: .repeatedStatus)
+    try container.encodeIfPresent(self.next, forKey: .next)
+    for (key, value) in self._unknownFields.json {
+      try container.encode(value, forKey: CodingKeys(stringValue: key))
+    }
+  }`
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateField_EncodeUrlSafe(t *testing.T) {
+	outDir := t.TempDir()
+
+	mapBytes := api.NewTestMapWithFields(
+		"$map<string, bytes>",
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithType(api.TypezBytes),
+	)
+
+	msg := api.NewTestMessage("UrlSafeMessage").
+		WithPackage("google.cloud.test.v1").
+		WithFields(
+			api.NewTestField("singular").WithType(api.TypezBytes),
+			api.NewTestField("optional").WithType(api.TypezBytes).WithOptional(),
+			api.NewTestField("repeated").WithType(api.TypezBytes).WithRepeated(),
+			api.NewTestField("map").WithMapType(mapBytes),
+		)
+
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil).
+		WithMaps(mapBytes)
+	library := &config.Library{
+		SpecificationFormat: config.SpecDiscovery,
+		Swift:               swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "UrlSafeMessage.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := extractBlock(t, string(content), "  public func encode(to encoder: any Encoder) throws {", "\n  }")
+	want := `  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(
+      GoogleWKT._DiscoveryBase64.encode(singular), forKey: .singular
+    )
+    if let v = ` + "`optional`" + ` {
+      try container.encodeIfPresent(
+        GoogleWKT._DiscoveryBase64.encode(v), forKey: .` + "`optional`" + `
+      )
+    }
+    try container.encode(
+      repeated.map { GoogleWKT._DiscoveryBase64.encode($0) }, forKey: .repeated
+    )
+    do {
+      let transformed = self.map.mapValues {
+        GoogleWKT._DiscoveryBase64.encode($0)
+      }
+      try container.encode(transformed, forKey: .map)
+    }
+    for (key, value) in self._unknownFields.json {
+      try container.encode(value, forKey: CodingKeys(stringValue: key))
+    }
+  }`
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
