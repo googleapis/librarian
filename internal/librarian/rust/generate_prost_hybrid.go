@@ -15,7 +15,6 @@
 package rust
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -26,7 +25,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/language"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
@@ -230,67 +228,12 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		return nil, nil, false, errors.New(strings.TrimSuffix(sb.String(), "\n"))
 	}
 
-	// Collect external top-level messages (e.g. google.type.LatLng) referenced by roots.
-	// We sort external types by ID because model.AllMessages() iterates over a map whose
-	// iteration order is randomized by the Go runtime.
-	var externalMessages []*api.Message
-	for m := range model.AllMessages() {
-		if m.ID() != "" && reachableMsgs[m.ID()] && !isWKT(m.ID()) && m.ID() != ".google.rpc.Status" && m.Parent() == nil {
-			if m.Package() != model.PackageName && m.Package() != api.ReservedPackageName {
-				externalMessages = append(externalMessages, m)
-			}
+	hybridModel := model.Filter(func(id string) bool {
+		if id == "" || isWKT(id) || id == ".google.rpc.Status" {
+			return false
 		}
-	}
-	slices.SortFunc(externalMessages, func(a, b *api.Message) int { return cmp.Compare(a.ID(), b.ID()) })
-
-	// Collect external top-level enums referenced by roots.
-	var externalEnums []*api.Enum
-	for e := range model.AllEnums() {
-		if e.ID() != "" && reachableEnums[e.ID()] && !isWKT(e.ID()) && e.Parent() == nil {
-			if e.Package() != model.PackageName && e.Package() != api.ReservedPackageName {
-				externalEnums = append(externalEnums, e)
-			}
-		}
-	}
-	slices.SortFunc(externalEnums, func(a, b *api.Enum) int { return cmp.Compare(a.ID(), b.ID()) })
-
-	// Construct hybridModel for prost conversion code generation.
-	hybridModel := api.API{
-		Name:                model.Name,
-		PackageName:         model.PackageName,
-		Title:               model.Title,
-		Description:         model.Description,
-		Revision:            model.Revision,
-		Services:            cloneServices(model.Services),
-		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return reachableMsgs[m.ID()] }),
-		ExternalMessages:    externalMessages,
-		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return reachableEnums[e.ID()] }),
-		ExternalEnums:       externalEnums,
-		ResourceDefinitions: model.ResourceDefinitions,
-		QuickstartService:   model.QuickstartService,
-		Codec:               model.Codec,
-	}
-	for _, s := range hybridModel.Services {
-		hybridModel.AddService(s)
-		for _, m := range s.Methods() {
-			hybridModel.AddMethod(m)
-		}
-	}
-	// Populate messageByID and enumByID with ALL package messages and enums.
-	// This avoids aliasing model.messageByID while allowing model
-	// annotation to resolve field types across the entire package.
-	for m := range model.AllMessages() {
-		hybridModel.AddMessage(m)
-	}
-	for e := range model.AllEnums() {
-		hybridModel.AddEnum(e)
-	}
-	for m := range model.AllMaps() {
-		hybridModel.AddMap(m)
-	}
-	for _, r := range hybridModel.ResourceDefinitions {
-		hybridModel.AddResource(r)
-	}
+		return reachableMsgs[id] || reachableEnums[id]
+	})
 
 	var unusedTypes []string
 	for m := range model.AllMessages() {
@@ -305,7 +248,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	}
 	slices.Sort(unusedTypes)
 
-	return &hybridModel, slices.Compact(unusedTypes), hasGoogleRpcStatus, nil
+	return hybridModel, slices.Compact(unusedTypes), hasGoogleRpcStatus, nil
 }
 
 func isAnyType(id string) bool {
@@ -318,15 +261,4 @@ func isGoogleRpcStatus(id string) bool {
 
 func isWKT(id string) bool {
 	return strings.HasPrefix(strings.TrimPrefix(id, "."), "google.protobuf.")
-}
-
-func cloneServices(services []*api.Service) []*api.Service {
-	if services == nil {
-		return nil
-	}
-	cloned := make([]*api.Service, len(services))
-	for i, s := range services {
-		cloned[i] = s.Clone()
-	}
-	return cloned
 }
