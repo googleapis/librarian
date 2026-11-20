@@ -22,8 +22,9 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-// FindConfiguredLibrary returns the library in libraries that configures
-// apiPath, or nil if there is none. It only reads libraries.
+// FindConfiguredLibrary returns the library in the libraries field that
+// configures apiPath, or nil if there is none. It only reads the libraries
+// field in librarian.yaml, without deriving a name.
 //
 // Ruby needs special handling because a wrapper library (e.g.
 // google-cloud-secret_manager) lists the same versioned API path as the
