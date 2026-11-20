@@ -407,3 +407,277 @@ func verifyImplicitHTTPRouting(t *testing.T, tc implicitHTTPRoutingCase) {
 		})
 	}
 }
+
+func TestGenerateExplicitRoutingSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		filePath string
+		codec    map[string]string
+	}{
+		{
+			name:     "crate template",
+			filePath: filepath.Join("src", "transport.rs"),
+			codec: map[string]string{
+				"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+				"default-transport": "grpc",
+				"routing-required":  "true",
+			},
+		},
+		{
+			name:     "grpc-client template",
+			filePath: "transport.rs",
+			codec: map[string]string{
+				"template-override": "templates/grpc-client",
+				"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+				"routing-required":  "true",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			verifyExplicitRoutingSegments(t, test.filePath, test.codec)
+		})
+	}
+}
+
+func verifyExplicitRoutingSegments(t *testing.T, filePath string, codec map[string]string) {
+	t.Helper()
+
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("resource").WithType(api.TypezString),
+			api.NewTestField("table_name").WithType(api.TypezString),
+		)
+	response := api.NewTestMessage("Response").WithPackage("test.v1")
+
+	getFolder := api.NewTestMethod("GetFolder").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("name").Build()).
+		WithRouting(api.NewRoutingInfoBuilder().
+			WithName("bucket").
+			WithVariant(api.NewRoutingInfoVariantBuilder().
+				WithFieldPath("name").
+				WithMatchingSegments("projects", "*", "buckets", "*").
+				WithSuffixSegments("**").
+				Build()).
+			Build())
+
+	testIamPermissions := api.NewTestMethod("TestIamPermissions").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("POST").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("resource").Build()).
+		WithRouting(api.NewRoutingInfoBuilder().
+			WithName("bucket").
+			WithVariants(
+				api.NewRoutingInfoVariantBuilder().
+					WithFieldPath("resource").
+					WithMatchingSegments("projects", "*", "buckets", "*").
+					WithSuffixSegments("managedFolders", "**").
+					Build(),
+				api.NewRoutingInfoVariantBuilder().
+					WithFieldPath("resource").
+					WithMatchingSegments("projects", "*", "buckets", "*").
+					WithSuffixSegments("objects", "**").
+					Build(),
+				api.NewRoutingInfoVariantBuilder().
+					WithFieldPath("resource").
+					WithMatchingSegments("**").
+					Build(),
+			).
+			Build())
+
+	getInstanceTable := api.NewTestMethod("GetInstanceTable").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("table_name").Build()).
+		WithRouting(api.NewRoutingInfoBuilder().
+			WithName("instance_id").
+			WithVariant(api.NewRoutingInfoVariantBuilder().
+				WithFieldPath("table_name").
+				WithPrefixSegments("projects", "*").
+				WithMatchingSegments("instances", "*").
+				WithSuffixSegments("**").
+				Build()).
+			Build())
+
+	service := api.NewTestService("StorageControl").
+		WithPackage("test.v1").
+		WithMethods(getFolder, testIamPermissions, getInstanceTable)
+
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service}).
+		WithPackageName("test.v1")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	outDir := t.TempDir()
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec:               codec,
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contentBytes, err := os.ReadFile(filepath.Join(outDir, filePath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(contentBytes)
+
+	for _, test := range []struct {
+		name     string
+		startStr string
+		want     string
+	}{
+		{
+			name:     "get_folder emits TrailingMultiWildcard for singleton ** suffix",
+			startStr: "    async fn get_folder(\n",
+			want: `        let x_goog_request_params = {
+            use gaxi::routing_parameter::Segment;
+            gaxi::routing_parameter::format(&[
+                None
+                .or_else(|| gaxi::routing_parameter::value(
+                    Some(&req).map(|m| &m.name).map(|s| s.as_str()),
+                    &[ ],
+                    &[Segment::Literal("projects/"),Segment::SingleWildcard,Segment::Literal("/buckets/"),Segment::SingleWildcard, ],
+                    &[Segment::TrailingMultiWildcard, ],
+                ))
+                .map(|v| ("bucket", v)),
+            ])
+        };
+        if x_goog_request_params.is_empty() {
+            use google_cloud_gax::error::binding::BindingError;
+            use gaxi::routing_parameter::Segment;
+            use gaxi::path_parameter::PathMismatchBuilder;
+            let mut paths = Vec::new();
+            {
+                let builder = PathMismatchBuilder::default();
+                let builder = builder.maybe_add(
+                    Some(&req).map(|m| &m.name).map(|s| s.as_str()),
+                    &[Segment::Literal("projects/"),Segment::SingleWildcard,Segment::Literal("/buckets/"),Segment::SingleWildcard,Segment::TrailingMultiWildcard,
+                    ],
+                    "name",
+                    "projects/*/buckets/*/**");
+                paths.push(builder.build());
+            }
+            return Err(google_cloud_gax::error::Error::binding(BindingError { paths }))
+        }`,
+		},
+		{
+			name:     "test_iam_permissions preserves leading slash on suffix literals",
+			startStr: "    async fn test_iam_permissions(\n",
+			want: `        let x_goog_request_params = {
+            use gaxi::routing_parameter::Segment;
+            gaxi::routing_parameter::format(&[
+                None
+                .or_else(|| gaxi::routing_parameter::value(
+                    Some(&req).map(|m| &m.resource).map(|s| s.as_str()),
+                    &[ ],
+                    &[Segment::Literal("projects/"),Segment::SingleWildcard,Segment::Literal("/buckets/"),Segment::SingleWildcard, ],
+                    &[Segment::Literal("/managedFolders"),Segment::TrailingMultiWildcard, ],
+                ))
+                .or_else(|| gaxi::routing_parameter::value(
+                    Some(&req).map(|m| &m.resource).map(|s| s.as_str()),
+                    &[ ],
+                    &[Segment::Literal("projects/"),Segment::SingleWildcard,Segment::Literal("/buckets/"),Segment::SingleWildcard, ],
+                    &[Segment::Literal("/objects"),Segment::TrailingMultiWildcard, ],
+                ))
+                .or_else(|| gaxi::routing_parameter::value(
+                    Some(&req).map(|m| &m.resource).map(|s| s.as_str()),
+                    &[ ],
+                    &[Segment::MultiWildcard, ],
+                    &[ ],
+                ))
+                .map(|v| ("bucket", v)),
+            ])
+        };
+        if x_goog_request_params.is_empty() {
+            use google_cloud_gax::error::binding::BindingError;
+            use gaxi::routing_parameter::Segment;
+            use gaxi::path_parameter::PathMismatchBuilder;
+            let mut paths = Vec::new();
+            {
+                let builder = PathMismatchBuilder::default();
+                let builder = builder.maybe_add(
+                    Some(&req).map(|m| &m.resource).map(|s| s.as_str()),
+                    &[Segment::Literal("projects/"),Segment::SingleWildcard,Segment::Literal("/buckets/"),Segment::SingleWildcard,Segment::Literal("/managedFolders"),Segment::TrailingMultiWildcard,
+                    ],
+                    "resource",
+                    "projects/*/buckets/*/managedFolders/**");
+                paths.push(builder.build());
+            }
+            {
+                let builder = PathMismatchBuilder::default();
+                let builder = builder.maybe_add(
+                    Some(&req).map(|m| &m.resource).map(|s| s.as_str()),
+                    &[Segment::Literal("projects/"),Segment::SingleWildcard,Segment::Literal("/buckets/"),Segment::SingleWildcard,Segment::Literal("/objects"),Segment::TrailingMultiWildcard,
+                    ],
+                    "resource",
+                    "projects/*/buckets/*/objects/**");
+                paths.push(builder.build());
+            }
+            {
+                let builder = PathMismatchBuilder::default();
+                let builder = builder.maybe_add(
+                    Some(&req).map(|m| &m.resource).map(|s| s.as_str()),
+                    &[Segment::MultiWildcard,
+                    ],
+                    "resource",
+                    "**");
+                paths.push(builder.build());
+            }
+            return Err(google_cloud_gax::error::Error::binding(BindingError { paths }))
+        }`,
+		},
+		{
+			name:     "get_instance_table preserves prefix trailing slash and suffix wildcard",
+			startStr: "    async fn get_instance_table(\n",
+			want: `        let x_goog_request_params = {
+            use gaxi::routing_parameter::Segment;
+            gaxi::routing_parameter::format(&[
+                None
+                .or_else(|| gaxi::routing_parameter::value(
+                    Some(&req).map(|m| &m.table_name).map(|s| s.as_str()),
+                    &[Segment::Literal("projects/"),Segment::SingleWildcard,Segment::Literal("/"), ],
+                    &[Segment::Literal("instances/"),Segment::SingleWildcard, ],
+                    &[Segment::TrailingMultiWildcard, ],
+                ))
+                .map(|v| ("instance_id", v)),
+            ])
+        };
+        if x_goog_request_params.is_empty() {
+            use google_cloud_gax::error::binding::BindingError;
+            use gaxi::routing_parameter::Segment;
+            use gaxi::path_parameter::PathMismatchBuilder;
+            let mut paths = Vec::new();
+            {
+                let builder = PathMismatchBuilder::default();
+                let builder = builder.maybe_add(
+                    Some(&req).map(|m| &m.table_name).map(|s| s.as_str()),
+                    &[Segment::Literal("projects/"),Segment::SingleWildcard,Segment::Literal("/"),Segment::Literal("instances/"),Segment::SingleWildcard,Segment::TrailingMultiWildcard,
+                    ],
+                    "table_name",
+                    "projects/*/instances/*/**");
+                paths.push(builder.build());
+            }
+            return Err(google_cloud_gax::error::Error::binding(BindingError { paths }))
+        }`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			methodBody := extractBlock(t, content, test.startStr, "\n    }")
+			endStr := "\n        type TR ="
+			raw := extractBlock(t, methodBody, "        let x_goog_request_params =", endStr)
+			got := strings.TrimRight(strings.TrimSuffix(raw, endStr), " \n")
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

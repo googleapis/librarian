@@ -734,3 +734,234 @@ func TestAnnotateMethodExtensibleBuilders(t *testing.T) {
 		t.Error("expected ExtensibleBuilder to be false for .test.v1.ResourceService.move")
 	}
 }
+
+func TestAnnotateMethodRoutingSegments(t *testing.T) {
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("resource").WithType(api.TypezString),
+			api.NewTestField("table_name").WithType(api.TypezString),
+		)
+	response := api.NewTestMessage("Response").WithPackage("test.v1")
+
+	newMethod := func(name, routingName, field string, prefix, matching, suffix []string) *api.Method {
+		return api.NewTestMethod(name).
+			WithInput(request).
+			WithOutput(response).
+			WithVerb("POST").
+			WithPathTemplate(api.NewPathTemplateBuilder().Build()).
+			WithRouting(api.NewRoutingInfoBuilder().
+				WithName(routingName).
+				WithVariant(api.NewRoutingInfoVariantBuilder().
+					WithFieldPath(field).
+					WithPrefixSegments(prefix...).
+					WithMatchingSegments(matching...).
+					WithSuffixSegments(suffix...).
+					Build()).
+				Build())
+	}
+
+	methods := []*api.Method{
+		// routing.proto Example 6a / 6b: projects/*/{instance_id=instances/*}/**
+		newMethod("Example6a", "instance_id", "table_name",
+			[]string{"projects", "*"}, []string{"instances", "*"}, []string{"**"}),
+		// routing.proto Example 6b: {project_id=projects/*}/**
+		newMethod("Example6b", "project_id", "table_name",
+			nil, []string{"projects", "*"}, []string{"**"}),
+		// Prefix + multi-segment matching without suffix: projects/*/{table_name=instances/*/tables/*}
+		newMethod("MultiSegmentMatching", "table_name", "table_name",
+			[]string{"projects", "*"}, []string{"instances", "*", "tables", "*"}, nil),
+		// Non-singleton matching ending in **: {parent=projects/**}
+		newMethod("MatchingTrailingWildcard", "parent", "name",
+			nil, []string{"projects", "**"}, nil),
+		// routing.proto Example 9 (prefix empty, literal + wildcard suffix): {table_location=regions/*/zones/*}/tables/*
+		newMethod("Example9Suffix", "table_location", "table_name",
+			nil, []string{"regions", "*", "zones", "*"}, []string{"tables", "*"}),
+		// routing.proto Example 9 (both prefix and suffix): projects/*/{table_location=instances/*}/tables/*
+		newMethod("Example9Both", "table_location", "table_name",
+			[]string{"projects", "*"}, []string{"instances", "*"}, []string{"tables", "*"}),
+		// Prefix ending in a literal: projects/{project=*}
+		newMethod("PrefixLiteral", "project", "name",
+			[]string{"projects"}, []string{"*"}, nil),
+		// Multi-literal prefix: v1/projects/{project=*}
+		newMethod("PrefixMultiLiteral", "project", "name",
+			[]string{"v1", "projects"}, []string{"*"}, nil),
+		// Literal-only suffix: {parent=projects/*}/tables
+		newMethod("SuffixSingleLiteral", "parent", "name",
+			nil, []string{"projects", "*"}, []string{"tables"}),
+		// Multi-literal-only suffix: {parent=projects/*}/tables/subtables
+		newMethod("SuffixMultiLiteral", "parent", "name",
+			nil, []string{"projects", "*"}, []string{"tables", "subtables"}),
+		// Suffix starting with single wildcard: {parent=projects/*}/*
+		newMethod("SuffixSingleWildcard", "parent", "name",
+			nil, []string{"projects", "*"}, []string{"*"}),
+		// Suffix starting with single wildcard followed by **: {parent=projects/*}/*/**
+		newMethod("SuffixWildcardAndMulti", "parent", "name",
+			nil, []string{"projects", "*"}, []string{"*", "**"}),
+		// StorageControl folder/IAM variant: {bucket=projects/*/buckets/*}/**
+		newMethod("StorageFolder", "bucket", "name",
+			nil, []string{"projects", "*", "buckets", "*"}, []string{"**"}),
+		// StorageControl IAM variant: {bucket=projects/*/buckets/*}/objects/**
+		newMethod("StorageObjects", "bucket", "resource",
+			nil, []string{"projects", "*", "buckets", "*"}, []string{"objects", "**"}),
+		// StorageControl IAM variant: {bucket=projects/*/buckets/*}/managedFolders/**
+		newMethod("StorageManagedFolders", "bucket", "resource",
+			nil, []string{"projects", "*", "buckets", "*"}, []string{"managedFolders", "**"}),
+		// Fallback full wildcard: {bucket=**}
+		newMethod("StorageFallback", "bucket", "resource",
+			nil, []string{"**"}, nil),
+	}
+
+	service := api.NewTestService("TestService").
+		WithPackage("test.v1").
+		WithMethods(methods...)
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+	})
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		methodID     string
+		field        string
+		wantPrefix   []string
+		wantMatching []string
+		wantSuffix   []string
+	}{
+		{
+			methodID:     ".test.v1.TestService.Example6a",
+			field:        "table_name",
+			wantPrefix:   []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard", `Segment::Literal("/")`},
+			wantMatching: []string{`Segment::Literal("instances/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{"Segment::TrailingMultiWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.Example6b",
+			field:        "table_name",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{"Segment::TrailingMultiWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.MultiSegmentMatching",
+			field:        "table_name",
+			wantPrefix:   []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard", `Segment::Literal("/")`},
+			wantMatching: []string{`Segment::Literal("instances/")`, "Segment::SingleWildcard", `Segment::Literal("/tables/")`, "Segment::SingleWildcard"},
+			wantSuffix:   nil,
+		},
+		{
+			methodID:     ".test.v1.TestService.MatchingTrailingWildcard",
+			field:        "name",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects")`, "Segment::TrailingMultiWildcard"},
+			wantSuffix:   nil,
+		},
+		{
+			methodID:     ".test.v1.TestService.Example9Suffix",
+			field:        "table_name",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("regions/")`, "Segment::SingleWildcard", `Segment::Literal("/zones/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{`Segment::Literal("/tables/")`, "Segment::SingleWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.Example9Both",
+			field:        "table_name",
+			wantPrefix:   []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard", `Segment::Literal("/")`},
+			wantMatching: []string{`Segment::Literal("instances/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{`Segment::Literal("/tables/")`, "Segment::SingleWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.PrefixLiteral",
+			field:        "name",
+			wantPrefix:   []string{`Segment::Literal("projects/")`},
+			wantMatching: []string{"Segment::SingleWildcard"},
+			wantSuffix:   nil,
+		},
+		{
+			methodID:     ".test.v1.TestService.PrefixMultiLiteral",
+			field:        "name",
+			wantPrefix:   []string{`Segment::Literal("v1/projects/")`},
+			wantMatching: []string{"Segment::SingleWildcard"},
+			wantSuffix:   nil,
+		},
+		{
+			methodID:     ".test.v1.TestService.SuffixSingleLiteral",
+			field:        "name",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{`Segment::Literal("/tables")`},
+		},
+		{
+			methodID:     ".test.v1.TestService.SuffixMultiLiteral",
+			field:        "name",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{`Segment::Literal("/tables/subtables")`},
+		},
+		{
+			methodID:     ".test.v1.TestService.SuffixSingleWildcard",
+			field:        "name",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{`Segment::Literal("/")`, "Segment::SingleWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.SuffixWildcardAndMulti",
+			field:        "name",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{`Segment::Literal("/")`, "Segment::SingleWildcard", "Segment::TrailingMultiWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.StorageFolder",
+			field:        "name",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard", `Segment::Literal("/buckets/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{"Segment::TrailingMultiWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.StorageObjects",
+			field:        "resource",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard", `Segment::Literal("/buckets/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{`Segment::Literal("/objects")`, "Segment::TrailingMultiWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.StorageManagedFolders",
+			field:        "resource",
+			wantPrefix:   nil,
+			wantMatching: []string{`Segment::Literal("projects/")`, "Segment::SingleWildcard", `Segment::Literal("/buckets/")`, "Segment::SingleWildcard"},
+			wantSuffix:   []string{`Segment::Literal("/managedFolders")`, "Segment::TrailingMultiWildcard"},
+		},
+		{
+			methodID:     ".test.v1.TestService.StorageFallback",
+			field:        "resource",
+			wantPrefix:   nil,
+			wantMatching: []string{"Segment::MultiWildcard"},
+			wantSuffix:   nil,
+		},
+	} {
+		t.Run(test.methodID, func(t *testing.T) {
+			m := model.Method(test.methodID)
+			if m == nil {
+				t.Fatalf("missing method %s", test.methodID)
+			}
+			got := m.Routing()[0].Variants()[0].Codec().(*routingVariantAnnotations)
+			want := &routingVariantAnnotations{
+				FieldAccessors:   []string{".map(|m| &m." + test.field + ")", ".map(|s| s.as_str())"},
+				PrefixSegments:   test.wantPrefix,
+				MatchingSegments: test.wantMatching,
+				SuffixSegments:   test.wantSuffix,
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
