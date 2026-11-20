@@ -37,10 +37,10 @@ func TestAPI_Filter_Nil(t *testing.T) {
 
 	got := model.Filter(nil)
 	if diff := cmp.Diff([]*Message{m1}, got.Messages, allowUnexported()); diff != "" {
-		t.Errorf("Messages mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff([]*Enum{e1}, got.Enums, allowUnexported()); diff != "" {
-		t.Errorf("Enums mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if !slices.Contains(got.ExternalMessages, extM1) || !slices.Contains(got.ExternalMessages, model.Message(".google.protobuf.Any")) {
 		t.Errorf("ExternalMessages = %v, want extM1 and pre-registered external messages retained", got.ExternalMessages)
@@ -63,6 +63,7 @@ func TestAPI_Filter(t *testing.T) {
 	s1 := NewTestService("S1").WithMethods(meth1)
 	s2 := NewTestService("S2")
 	res := NewTestResource("test.googleapis.com/Book")
+	msgRes := NewTestResource("test.googleapis.com/Shelf")
 	mapType := NewTestMap("AttributesEntry", TypezString, TypezString)
 
 	model := NewTestAPI([]*Message{m1, m2}, []*Enum{e1, e2}, []*Service{s1, s2})
@@ -83,6 +84,7 @@ func TestAPI_Filter(t *testing.T) {
 	model.AddEnum(extE2)
 	model.AddMap(mapType)
 	model.AddResource(res)
+	model.AddResource(msgRes)
 
 	filtered := model.Filter(func(id string) bool {
 		return id == m1.ID() || id == e1.ID() || id == extM1.ID() || id == extE1.ID()
@@ -111,6 +113,9 @@ func TestAPI_Filter(t *testing.T) {
 	}
 	if got := filtered.Resource(res.Type()); got != res {
 		t.Errorf("filtered.Resource(%q) = %v, want %v", res.Type(), got, res)
+	}
+	if got := filtered.Resource(msgRes.Type()); got != msgRes {
+		t.Errorf("filtered.Resource(%q) = %v, want %v", msgRes.Type(), got, msgRes)
 	}
 	if filtered.Codec != nil {
 		t.Errorf("filtered.Codec = %v, want nil", filtered.Codec)
