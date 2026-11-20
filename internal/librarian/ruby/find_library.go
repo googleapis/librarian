@@ -25,11 +25,13 @@ import (
 // FindConfiguredLibrary returns the library in libraries that configures
 // apiPath, or nil if there is none. It only reads libraries.
 //
-// A wrapper library lists the same API path as the versioned library it wraps,
-// so a versioned path, such as google/cloud/secretmanager/v1, returns the
-// library that is not a wrapper, such as google-cloud-secret_manager-v1. An
-// unversioned path, such as google/cloud/secretmanager, returns the wrapper
-// library that lists a version of it, such as google-cloud-secret_manager.
+// Ruby needs special handling because a wrapper library (e.g.
+// google-cloud-secret_manager) lists the same versioned API path as the
+// versioned library it wraps (e.g. google-cloud-secret_manager-v1), often
+// appearing first in librarian.yaml. A plain first-match lookup would return
+// the wrapper for versioned paths and miss it for unversioned ones. Instead,
+// versioned paths match only non-wrapper libraries, and unversioned paths match
+// a wrapper listing a version of that path.
 func FindConfiguredLibrary(libraries []*config.Library, apiPath string) *config.Library {
 	for _, library := range libraries {
 		if isWrapperLibrary(library) {
