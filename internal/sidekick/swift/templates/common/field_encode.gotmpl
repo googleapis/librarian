@@ -14,11 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 {{- if .Codec.IsEncodingSimple }}
-{{- if .Optional }}
-try container.encodeIfPresent(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
-{{- else }}
 try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
 {{- end }}
+{{- if .Codec.IsEncodingOptional }}
+try container.encodeIfPresent(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+{{- end }}
+{{- if .Codec.IsEncodingSingularEnum }}
+if self.{{ .Codec.Name }} != {{ .Codec.FieldType }}() {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
 {{- end }}
 {{- if .Codec.IsEncodingMapCustomKey }}
 do {

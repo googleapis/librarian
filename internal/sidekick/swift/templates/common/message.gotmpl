@@ -162,7 +162,7 @@ public struct {{ .Codec.Name }}: Codable, Equatable, {{ .Codec.Model.WktPackage 
       switch choice {
       {{- range .Fields }}
       case .{{ .Codec.Name }}(let value):
-        try container.encode(value, forKey: .{{ .Codec.Name }})
+        try container.encodeIfPresent(value, forKey: .{{ .Codec.Name }})
       {{- end }}
       }
     }
