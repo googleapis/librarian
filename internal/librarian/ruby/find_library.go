@@ -48,7 +48,9 @@ func FindConfiguredLibrary(libraries []*config.Library, apiPath string) *config.
 		if !isWrapperLibrary(library) {
 			continue
 		}
-		if slices.ContainsFunc(library.APIs, func(api *config.API) bool { return path.Dir(api.Path) == apiPath }) {
+		if slices.ContainsFunc(library.APIs, func(api *config.API) bool {
+			return api.Path != "" && path.Dir(api.Path) == apiPath
+		}) {
 			return library
 		}
 	}

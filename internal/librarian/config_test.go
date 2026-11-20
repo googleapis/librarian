@@ -31,10 +31,6 @@ import (
 
 // TestRunConfigGet tests that the config get command successfully reads a value from librarian.yaml.
 func TestRunConfigGet(t *testing.T) {
-	googleapisDir, err := filepath.Abs("../testdata/googleapis")
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, test := range []struct {
 		name       string
 		path       string
@@ -48,51 +44,41 @@ func TestRunConfigGet(t *testing.T) {
 			configYAML: "version: 1.2.3\n",
 			want:       "1.2.3\n",
 		},
-
 		{
 			name:  "get library (existing)",
 			path:  "libraries",
 			value: "google/cloud/secretmanager/v1",
-			configYAML: fmt.Sprintf(`language: python
-sources:
-  googleapis:
-    dir: %s
+			configYAML: `language: python
 libraries:
 - name: mysecretmanager
   apis:
   - path: google/cloud/secretmanager/v1
-`, googleapisDir),
+`,
 			want: "mysecretmanager\n",
 		},
 		{
 			name:  "get library with custom name (ruby)",
 			path:  "libraries",
 			value: "google/cloud/secretmanager/v1",
-			configYAML: fmt.Sprintf(`language: ruby
-sources:
-  googleapis:
-    dir: %s
+			configYAML: `language: ruby
 libraries:
 - name: google-cloud-secret_manager-v1
   apis:
   - path: google/cloud/secretmanager/v1
-`, googleapisDir),
+`,
 			want: "google-cloud-secret_manager-v1\n",
 		},
 		{
 			name:  "get library with subpackage API path (go)",
 			path:  "libraries",
 			value: "google/cloud/oslogin/common",
-			configYAML: fmt.Sprintf(`language: go
-sources:
-  googleapis:
-    dir: %s
+			configYAML: `language: go
 libraries:
 - name: oslogin
   apis:
   - path: google/cloud/oslogin/v1
   - path: google/cloud/oslogin/common
-`, googleapisDir),
+`,
 			want: "oslogin\n",
 		},
 		{
@@ -197,15 +183,11 @@ func TestRunConfigGet_Error(t *testing.T) {
 			wantErr:    errValueRequired,
 		},
 		{
-			name:  "library not found for API",
-			path:  "libraries",
-			value: "google/cloud/secretmanager/v1",
-			configYAML: fmt.Sprintf(`language: go
-sources:
-  googleapis:
-    dir: %s
-`, googleapisDir),
-			wantErr: ErrLibraryNotFound,
+			name:       "library not found for API",
+			path:       "libraries",
+			value:      "google/cloud/secretmanager/v1",
+			configYAML: "language: go\n",
+			wantErr:    ErrLibraryNotFound,
 		},
 		{
 			name:  "unconfigured API path in configured service (go)",
