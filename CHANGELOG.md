@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.54.0](https://github.com/googleapis/librarian/compare/v0.53.0...v0.54.0) (2026-11-20)
+
+
+### Features
+
+* **internal/librarian/ruby:** add DefaultLibraryName to derive Ruby library names ([#7938](https://github.com/googleapis/librarian/issues/7938)) ([7e6411f](https://github.com/googleapis/librarian/commit/7e6411fb9a6eabb5d805758182ced25dd8e4c4d7))
+* **internal/librarian:** derive Ruby library names in librarian add ([#7959](https://github.com/googleapis/librarian/issues/7959)) ([be88e93](https://github.com/googleapis/librarian/commit/be88e937d165f0b685aeb42163781d71636bd6e7))
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** remove backslashes from nested Cloud component names ([#7948](https://github.com/googleapis/librarian/issues/7948)) ([fd62ad3](https://github.com/googleapis/librarian/commit/fd62ad39d3fd0e09e20ce4f02ae18e3c59e3f701)), refs [#7901](https://github.com/googleapis/librarian/issues/7901)
+* **internal/librarian:** only return configured libraries in config get libraries ([#7965](https://github.com/googleapis/librarian/issues/7965)) ([37a6445](https://github.com/googleapis/librarian/commit/37a6445aeb6d156a0c3ff811b580f3970f9bd9af)), refs [#7958](https://github.com/googleapis/librarian/issues/7958)
+* **internal/sidekick:** reject empty field names in routing parameters ([#7928](https://github.com/googleapis/librarian/issues/7928)) ([fac562c](https://github.com/googleapis/librarian/commit/fac562ccb8ebbf8c3db16ec6906bc0e08c49dc0a))
+* **librarian/rust:** avoid manifest format race ([#7946](https://github.com/googleapis/librarian/issues/7946)) ([75cdf2d](https://github.com/googleapis/librarian/commit/75cdf2dc9d0baff1067de584ff25bc64fe16e213))
+* **sidekick/api:** prevent slice aliasing in Method.RoutingCombos ([#7935](https://github.com/googleapis/librarian/issues/7935)) ([20fdb69](https://github.com/googleapis/librarian/commit/20fdb6912b3a087d5d6e93495b8145bf04d4d2ef))
+* **sidekick/parser:** validate routing templates ([#7947](https://github.com/googleapis/librarian/issues/7947)) ([5a64e54](https://github.com/googleapis/librarian/commit/5a64e54a32f45ad3208f35080f9fa9d62a5701da))
+* **sidekick/rust:** encode implicit HTTP routing ([#7950](https://github.com/googleapis/librarian/issues/7950)) ([8b8c6a1](https://github.com/googleapis/librarian/commit/8b8c6a1cf2cdd0d27276c9e6f52bd496e97eade7))
+* **sidekick/rust:** preserve routing boundaries ([#7963](https://github.com/googleapis/librarian/issues/7963)) ([40c5096](https://github.com/googleapis/librarian/commit/40c5096357bbd41e9b807706d5f385f67ebdb709))
+* **sidekick/swift:** drop Codable from *OneOf ([#7921](https://github.com/googleapis/librarian/issues/7921)) ([b071290](https://github.com/googleapis/librarian/commit/b071290415f397ae0dae525949b73b2f48ab5811))
+* **sidekick/swift:** format xrefs in API docs ([#7936](https://github.com/googleapis/librarian/issues/7936)) ([8404267](https://github.com/googleapis/librarian/commit/840426749abe2635d5130729e57a5bf2230d20d0))
+
 ## [0.53.0](https://github.com/googleapis/librarian/compare/v0.52.0...v0.53.0) (2026-11-16)
 
 
