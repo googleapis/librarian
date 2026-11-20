@@ -49,7 +49,7 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 		"get", "list", "create", "update", "delete", "patch", "insert",
 	}
 
-	for _, service := range model.Services {
+	for _, service := range model.services {
 		for _, m := range service.Methods() {
 			nameLower := strings.ToLower(m.Name())
 

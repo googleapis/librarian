@@ -83,10 +83,11 @@ func TestTemplatesExecuteAndGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	model := api.NewTestAPI(nil, nil, nil)
-	model.Name = "Outer"
-	model.Description = "1"
-	model.Title = ""
+	model := api.NewAPIBuilder().
+		WithName("Outer").
+		WithDescription("1").
+		WithTitle("").
+		BuildSyntaxTree()
 
 	outDir := t.TempDir()
 	files := WalkTemplatesDir(fsys, "templates")

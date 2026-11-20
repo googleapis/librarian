@@ -61,12 +61,10 @@ func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, 
 		return err
 	}
 
-	model := &api.API{
-		Codec: &storageAnnotations{
-			Storage: storageModel,
-			Control: controlModel,
-		},
-	}
+	model := api.NewAnnotatedAPI(&storageAnnotations{
+		Storage: storageModel,
+		Control: controlModel,
+	})
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/storage")
 	return parsedTemplates.GenerateFromModel(outdir, model, generatedFiles)
 }
@@ -124,18 +122,16 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 		return err
 	}
 
-	model = &api.API{
-		Codec: &bigQueryAnnotations{
-			Model:                       model,
-			QueryBuilderFields:          queryBuilder.fieldGroupList(),
-			QueryBuilderMsg:             queryBuilderMsg,
-			QueryBuilderRequestMsg:      queryBuilderRequestMsg,
-			QueryMetadataFields:         queryMetadata.fieldGroupList(),
-			QueryMetadataMsg:            queryMetadataMsg,
-			CompleteQueryMetadataFields: completeQueryMetadata.fieldGroupList(),
-			CompleteQueryMetadataMsg:    completeQueryMetadataMsg,
-		},
-	}
+	model = api.NewAnnotatedAPI(&bigQueryAnnotations{
+		Model:                       model,
+		QueryBuilderFields:          queryBuilder.fieldGroupList(),
+		QueryBuilderMsg:             queryBuilderMsg,
+		QueryBuilderRequestMsg:      queryBuilderRequestMsg,
+		QueryMetadataFields:         queryMetadata.fieldGroupList(),
+		QueryMetadataMsg:            queryMetadataMsg,
+		CompleteQueryMetadataFields: completeQueryMetadata.fieldGroupList(),
+		CompleteQueryMetadataMsg:    completeQueryMetadataMsg,
+	})
 
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/bigquery")
 	return parsedTemplates.GenerateFromModel(outdir, model, generatedFiles)

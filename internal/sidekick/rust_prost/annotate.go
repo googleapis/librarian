@@ -72,10 +72,10 @@ func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error
 		UnusedTypes:       codec.UnusedTypes,
 		WktTypes:          rust.ProstWktTypes(),
 	}
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		codec.annotateService(s)
 	}
-	model.Codec = annotations
+	model.SetAnnotations(annotations)
 	return nil
 }
 

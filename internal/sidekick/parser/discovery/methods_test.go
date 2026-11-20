@@ -316,6 +316,7 @@ func TestMakeServiceMethodsError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 	doc := document{}
 	input := &resource{
 		Name: "testResource",
@@ -330,7 +331,7 @@ func TestMakeServiceMethodsError(t *testing.T) {
 		WithName("Service").
 		WithPackage("test").
 		WithID(".test.Service")
-	if err := makeServiceMethods(model, service, &doc, input); err == nil {
+	if err := makeServiceMethods(ab, service, &doc, input); err == nil {
 		t.Errorf("expected error on method with media upload, service=%v", service)
 	}
 }
@@ -340,6 +341,7 @@ func TestMakeMethodError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ab := api.NewAPIBuilderFrom(model)
 
 	for _, test := range []struct {
 		Name  string
@@ -361,7 +363,7 @@ func TestMakeMethodError(t *testing.T) {
 	} {
 		doc := document{}
 		parent := api.NewMessageBuilderFrom(api.NewTestMessage("Service").WithPackage("test"))
-		if got, err := makeMethod(model, parent, &doc, &test.Input); err == nil {
+		if got, err := makeMethod(ab, parent, &doc, &test.Input); err == nil {
 			t.Errorf("expected error on method[%s], got=%v", test.Name, got)
 		}
 	}

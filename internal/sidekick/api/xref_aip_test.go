@@ -42,13 +42,11 @@ func newAIPTestFixture() *aipTestFixture {
 	nonExistentResourceField := NewTestField("name").WithResourceReference("nonexistent.googleapis.com/NonExistent")
 	wildcardResourceField := NewTestField("name").WithResourceReference("*")
 
-	model := &API{
-		ResourceDefinitions: []*Resource{resource, resourceWithoutSingular},
-		resourceByType: map[string]*Resource{
-			resource.Type():                resource,
-			resourceWithoutSingular.Type(): resourceWithoutSingular,
-		},
-	}
+	model := NewAPIBuilder().
+		WithResourceDefinitions(resource, resourceWithoutSingular).
+		AddResource(resource).
+		AddResource(resourceWithoutSingular).
+		BuildSyntaxTree()
 
 	return &aipTestFixture{
 		resource:                         resource,
