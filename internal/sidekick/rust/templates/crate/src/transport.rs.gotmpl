@@ -64,7 +64,6 @@ impl std::fmt::Debug for {{ .Codec.Name }} {
 {{- end }}
 impl {{ .Codec.Name }} {
     pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
-        {{- if .Codec.DetailedTracingAttributes }}
         let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
         {{- if .Codec.HasHttp }}
         let inner = gaxi::http::ReqwestClient::new(config{{- if .Codec.HasGrpc }}.clone(){{- end }}, crate::DEFAULT_HOST).await?;
@@ -74,13 +73,7 @@ impl {{ .Codec.Name }} {
             inner
         };
         {{- end }}
-        {{- else }}
-        {{- if .Codec.HasHttp }}
-        let inner = gaxi::http::ReqwestClient::new(config{{- if .Codec.HasGrpc }}.clone(){{- end }}, crate::DEFAULT_HOST).await?;
-        {{- end }}
-        {{- end }}
         {{- if .Codec.HasGrpc }}
-        {{- if .Codec.DetailedTracingAttributes }}
         let grpc_inner = if tracing_is_enabled {
             gaxi::grpc::Client::new_with_instrumentation(
                 config,
@@ -91,9 +84,6 @@ impl {{ .Codec.Name }} {
         } else {
             gaxi::grpc::Client::new(config, crate::DEFAULT_HOST).await?
         };
-        {{- else }}
-        let grpc_inner = gaxi::grpc::Client::new(config, crate::DEFAULT_HOST).await?;
-        {{- end }}
         {{- end }}
         {{- if .Codec.IsPureHttp }}
         Ok(Self { inner })
@@ -244,7 +234,6 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
         {{- else }}
         type TR = crate::prost::{{ .OutputType.Codec.PackageModuleName }}::{{ .OutputType.Codec.ProstRelativeName }};
         {{- end }}
-        {{- if .Codec.DetailedTracingAttributes }}
         if let Some(recorder) = gaxi::observability::RequestRecorder::current() {
             let attributes = gaxi::observability::ClientRequestAttributes::default()
                 .set_rpc_method("{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}");
@@ -269,7 +258,6 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
             {{- end }}
             recorder.on_client_request(attributes);
         }
-        {{- end }}
         self.grpc_inner
             .execute(
                 extensions,
@@ -306,17 +294,9 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
         );
         {{- end }}
         {{- if .Codec.HasResourceNameGeneration }}
-        {{- if .Codec.DetailedTracingAttributes }}
-        let (builder, method, _path_template, _resource_name) = None
+        let (builder, method, path_template, resource_name) = None
         {{- else }}
-        let (builder, method, _resource_name) = None
-        {{- end }}
-        {{- else }}
-        {{- if .Codec.DetailedTracingAttributes }}
-        let (builder, method, _path_template) = None
-        {{- else }}
-        let (builder, method) = None
-        {{- end }}
+        let (builder, method, path_template) = None
         {{- end }}
         {{- range .PathInfo.Bindings }}
         .or_else(|| {
@@ -333,9 +313,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
             {{- else }}
             let path = "{{ .Codec.PathFmt }}".to_string();
             {{- end }}
-            {{- if .Codec.DetailedTracingAttributes }}
             let path_template = "{{ .Codec.PathTemplate }}";
-            {{- end }}
             {{- "\n" }}
             {{- if .Codec.HasResourceNameGeneration }}
             {{- if .Codec.ResourceNameTemplate }}
@@ -369,17 +347,9 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
             let builder = Ok(builder);
             {{- end }}
             {{- if .Codec.HasResourceNameGeneration }}
-            {{- if .Codec.DetailedTracingAttributes }}
             Some(builder.map(|b| (b, Method::{{ .Verb }}, path_template, resource_name)))
             {{- else }}
-            Some(builder.map(|b| (b, Method::{{ .Verb }}, resource_name)))
-            {{- end }}
-            {{- else }}
-            {{- if .Codec.DetailedTracingAttributes }}
             Some(builder.map(|b| (b, Method::{{ .Verb }}, path_template)))
-            {{- else }}
-            Some(builder.map(|b| (b, Method::{{ .Verb }})))
-            {{- end }}
             {{- end }}
         })
         {{- end }}
@@ -400,18 +370,16 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
             {{- end }}
             google_cloud_gax::error::Error::binding(BindingError { paths })
         })??;
-        {{- if .Codec.DetailedTracingAttributes }}
         if let Some(recorder) = gaxi::observability::RequestRecorder::current() {
             recorder.on_client_request(
                 gaxi::observability::ClientRequestAttributes::default()
                     .set_rpc_method("{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}")
-                    .set_url_template(_path_template)
+                    .set_url_template(path_template)
                     {{- if .Codec.HasResourceNameGeneration }}
-                    .set_resource_name(_resource_name)
+                    .set_resource_name(resource_name)
                     {{- end }}
             );
         }
-        {{- end }}
         let options = google_cloud_gax::options::internal::set_default_idempotency(
             options,
             {{- /* TODO(#4156) - return idempotency from the above closure */}}

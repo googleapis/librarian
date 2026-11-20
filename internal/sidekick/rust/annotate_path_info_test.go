@@ -331,42 +331,6 @@ func TestPathBindingAnnotations(t *testing.T) {
 	}
 }
 
-func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
-	fName := api.NewTestField("name").WithType(api.TypezString)
-	request := api.NewTestMessage("Request").WithFields(fName)
-	response := api.NewTestMessage("Response")
-	binding := api.NewPathBindingBuilder().
-		WithVerb("POST").
-		WithPathTemplate(api.NewPathTemplateBuilder().
-			WithLiteral("v2").
-			WithVariable(api.NewPathVariableBuilder("name").
-				WithLiteral("projects").
-				WithMatch().
-				Build()).
-			WithVerb("create").
-			Build()).
-		Build()
-	method := api.NewTestMethod("DoFoo").
-		WithInput(request).
-		WithOutput(response).
-		WithBindings(binding)
-	service := api.NewTestService("FooService").WithMethods(method)
-	model := api.NewTestAPI(
-		[]*api.Message{request, response},
-		nil,
-		[]*api.Service{service})
-	api.CrossReference(model)
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"detailed-tracing-attributes": "true",
-	})
-	annotateModel(model, codec)
-
-	got := binding.Codec().(*pathBindingAnnotation)
-	if !got.DetailedTracingAttributes {
-		t.Errorf("pathBindingAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
-	}
-}
-
 func TestPathBindingAnnotationsStyle(t *testing.T) {
 	for _, test := range []struct {
 		FieldName     string

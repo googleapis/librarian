@@ -24,22 +24,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
-func TestServiceAnnotationsDetailedTracing(t *testing.T) {
-	model := serviceAnnotationsModel()
-	service := model.Service(".test.v1.ResourceService")
-	if service == nil {
-		t.Fatal("cannot find .test.v1.ResourceService")
-	}
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"detailed-tracing-attributes": "true",
-	})
-	annotateModel(model, codec)
-	got := service.Codec().(*serviceAnnotations)
-	if !got.DetailedTracingAttributes {
-		t.Errorf("serviceAnnotations.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
-	}
-}
-
 func TestServiceAnnotationsHasVeneer(t *testing.T) {
 	for _, test := range []struct {
 		name         string

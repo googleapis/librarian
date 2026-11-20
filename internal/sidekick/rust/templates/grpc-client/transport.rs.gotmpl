@@ -76,15 +76,11 @@ impl std::fmt::Debug for {{ .Codec.Name }} {
 {{- end }}
 impl {{ .Codec.Name }} {
     pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
-        {{- if .Codec.DetailedTracingAttributes }}
         let inner = if gaxi::options::tracing_enabled(&config) {
             {{ .Codec.GrpcClient }}::new_with_instrumentation(config, DEFAULT_HOST, &super::tracing::info::INSTRUMENTATION_CLIENT_INFO).await?
         } else {
             {{ .Codec.GrpcClient }}::new(config, DEFAULT_HOST).await?
         };
-        {{- else }}
-        let inner = {{ .Codec.GrpcClient }}::new(config, DEFAULT_HOST).await?;
-        {{- end }}
         Ok(Self { inner })
     }
 }
@@ -226,7 +222,6 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
         {{- else }}
         type TR = crate::{{ .OutputType.Codec.PackageModuleName }}::{{ .OutputType.Codec.ProstRelativeName }};
         {{- end }}
-        {{- if .Codec.DetailedTracingAttributes }}
         if let Some(recorder) = gaxi::observability::RequestRecorder::current() {
             let attributes = gaxi::observability::ClientRequestAttributes::default()
                 .set_rpc_method("{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}");
@@ -251,7 +246,6 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
             {{- end }}
             recorder.on_client_request(attributes);
         }
-        {{- end }}
         self.inner
             .execute(
                 extensions,

@@ -34,14 +34,12 @@ use crate::Result;
 pub struct {{ .Codec.Name }}<T>
 where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
     inner: T,
-    {{- if .Codec.DetailedTracingAttributes }}
     {{- /* Use a fully qualified name to avoid conflicts with any client called `DurationMetric` */}}
     {{- if .Codec.HasStreaming }}
     {{- /* TODO(#6835) - remove `allow(dead_code)` when duration is used in streaming RPCs */}}
     #[allow(dead_code)]
     {{- end }}
     duration: gaxi::observability::DurationMetric,
-    {{- end }}
 }
 
 {{ if .Codec.PerServiceFeatures }}
@@ -52,11 +50,9 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
     pub fn new(inner: T) -> Self {
         Self {
             inner,
-            {{- if .Codec.DetailedTracingAttributes }}
             duration: gaxi::observability::DurationMetric::new(
                 &info::INSTRUMENTATION_CLIENT_INFO,
             ),
-            {{- end }}
         }
     }
 }
@@ -89,17 +85,12 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
         self.inner.{{ .Codec.Name }}(req, options).await
     }
     {{- else }}
-    {{- if .Codec.DetailedTracingAttributes }}
     #[tracing::instrument(level = tracing::Level::DEBUG, ret)]
-    {{- else }}
-    #[tracing::instrument(ret)]
-    {{- end }}
     async fn {{ .Codec.Name }}(
         &self,
         req: {{ .InputType.Codec.QualifiedName }},
         options: crate::RequestOptions,
     ) -> Result<crate::Response<{{ .Codec.ReturnType }}>> {
-        {{- if .Codec.DetailedTracingAttributes }}
         let (_span, pending) = gaxi::client_request_signals!(
             metric: self.duration.clone(),
             info: *info::INSTRUMENTATION_CLIENT_INFO,
@@ -143,9 +134,6 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
         {{- else }}
         pending.await
         {{- end }}
-        {{- else }}
-        self.inner.{{ .Codec.Name }}(req, options).await
-        {{- end }}
     }
     {{- end }}
     {{- end }}
@@ -181,7 +169,6 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
 {{- end }}
 {{- "\n" }}
 {{- if .Codec.HasServices }}
-{{- if .Codec.DetailedTracingAttributes }}
 pub(crate) mod info {
     const NAME: &str = env!("CARGO_PKG_NAME");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -196,5 +183,4 @@ pub(crate) mod info {
         info
     });
 }
-{{- end }}
 {{- end }}

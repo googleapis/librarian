@@ -128,9 +128,6 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if len(lib.Rust.DisabledRustdocWarnings) == 0 {
 		lib.Rust.DisabledRustdocWarnings = d.Rust.DisabledRustdocWarnings
 	}
-	if lib.Rust.DetailedTracingAttributes == nil {
-		lib.Rust.DetailedTracingAttributes = d.Rust.DetailedTracingAttributes
-	}
 	if lib.Rust.ResourceNameHeuristic == nil {
 		lib.Rust.ResourceNameHeuristic = d.Rust.ResourceNameHeuristic
 	}
@@ -755,9 +752,6 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	}
 	if src.GenerateRpcSamples != "" {
 		res.GenerateRpcSamples = src.GenerateRpcSamples
-	}
-	if src.DetailedTracingAttributes != nil {
-		res.DetailedTracingAttributes = src.DetailedTracingAttributes
 	}
 	if src.ResourceNameHeuristic != nil {
 		res.ResourceNameHeuristic = src.ResourceNameHeuristic

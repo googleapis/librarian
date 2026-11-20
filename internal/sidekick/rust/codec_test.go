@@ -255,15 +255,6 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
-				"detailed-tracing-attributes": "true",
-			},
-			Update: func(c *codec) {
-				c.detailedTracingAttributes = true
-			},
-		},
-		{
-			Format: libconfig.SpecProtobuf,
-			Options: map[string]string{
 				"has-veneer": "true",
 			},
 			Update: func(c *codec) {
@@ -412,7 +403,6 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"include-grpc-only-methods": ""}},
 		{Options: map[string]string{"include-streaming-methods": ""}},
 		{Options: map[string]string{"per-service-features": ""}},
-		{Options: map[string]string{"detailed-tracing-attributes": ""}},
 		{Options: map[string]string{"routing-required": ""}},
 		{Options: map[string]string{"generate-setter-samples": ""}},
 		{Options: map[string]string{"generate-rpc-samples": ""}},

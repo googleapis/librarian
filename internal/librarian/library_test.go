@@ -1583,7 +1583,6 @@ func TestMergePython(t *testing.T) {
 }
 
 func TestMergeRust(t *testing.T) {
-	detailedTracing := true
 	resourceHeuristic := false
 	for _, test := range []struct {
 		name string
@@ -1613,13 +1612,12 @@ func TestMergeRust(t *testing.T) {
 			},
 			src: &config.RustCrate{
 				RustDefault: config.RustDefault{
-					PackageDependencies:       []*config.RustPackageDependency{{Name: "dep"}},
-					DisabledRustdocWarnings:   []string{"w"},
-					GenerateSetterSamples:     "true",
-					GenerateRpcSamples:        "true",
-					DetailedTracingAttributes: &detailedTracing,
-					ResourceNameHeuristic:     &resourceHeuristic,
-					AllowGrpcAnyFields:        []string{".any.field"},
+					PackageDependencies:     []*config.RustPackageDependency{{Name: "dep"}},
+					DisabledRustdocWarnings: []string{"w"},
+					GenerateSetterSamples:   "true",
+					GenerateRpcSamples:      "true",
+					ResourceNameHeuristic:   &resourceHeuristic,
+					AllowGrpcAnyFields:      []string{".any.field"},
 				},
 				Modules:                   []*config.RustModule{{Output: "out"}},
 				PerServiceFeatures:        true,
@@ -1647,13 +1645,12 @@ func TestMergeRust(t *testing.T) {
 			},
 			want: &config.RustCrate{
 				RustDefault: config.RustDefault{
-					PackageDependencies:       []*config.RustPackageDependency{{Name: "dep"}},
-					DisabledRustdocWarnings:   []string{"w"},
-					GenerateSetterSamples:     "true",
-					GenerateRpcSamples:        "true",
-					DetailedTracingAttributes: &detailedTracing,
-					ResourceNameHeuristic:     &resourceHeuristic,
-					AllowGrpcAnyFields:        []string{".any.field"},
+					PackageDependencies:     []*config.RustPackageDependency{{Name: "dep"}},
+					DisabledRustdocWarnings: []string{"w"},
+					GenerateSetterSamples:   "true",
+					GenerateRpcSamples:      "true",
+					ResourceNameHeuristic:   &resourceHeuristic,
+					AllowGrpcAnyFields:      []string{".any.field"},
 				},
 				Modules:                   []*config.RustModule{{Output: "out"}},
 				PerServiceFeatures:        true,

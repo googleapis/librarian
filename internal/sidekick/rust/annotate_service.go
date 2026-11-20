@@ -48,9 +48,6 @@ type serviceAnnotations struct {
 	HasVeneer bool
 	// If true, the service has a method we cannot wrap (yet).
 	Incomplete bool
-	// If true, the generated code includes detailed tracing attributes on HTTP
-	// requests.
-	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
 	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
@@ -216,21 +213,20 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		return nil, err
 	}
 	ann := &serviceAnnotations{
-		Name:                      toPascal(serviceName),
-		PackageModuleName:         packageToModuleName(s.Package()),
-		ModuleName:                moduleName,
-		DocLines:                  docLines,
-		Methods:                   methods,
-		DefaultHost:               s.DefaultHost(),
-		LROTypes:                  lroTypes,
-		APITitle:                  s.Model().Title,
-		PerServiceFeatures:        c.perServiceFeatures,
-		HasVeneer:                 c.serviceHasVeneer(s.ID()),
-		Incomplete:                slices.ContainsFunc(allMethods, func(m *api.Method) bool { return !c.generateMethod(m) }),
-		DetailedTracingAttributes: c.detailedTracingAttributes,
-		InternalBuilders:          c.serviceInternalBuilders(s.ID()),
-		GenerateRpcSamples:        c.serviceGenerateRpcSamples(s.ID()),
-		GrpcClient:                c.grpcClient,
+		Name:               toPascal(serviceName),
+		PackageModuleName:  packageToModuleName(s.Package()),
+		ModuleName:         moduleName,
+		DocLines:           docLines,
+		Methods:            methods,
+		DefaultHost:        s.DefaultHost(),
+		LROTypes:           lroTypes,
+		APITitle:           s.Model().Title,
+		PerServiceFeatures: c.perServiceFeatures,
+		HasVeneer:          c.serviceHasVeneer(s.ID()),
+		Incomplete:         slices.ContainsFunc(allMethods, func(m *api.Method) bool { return !c.generateMethod(m) }),
+		InternalBuilders:   c.serviceInternalBuilders(s.ID()),
+		GenerateRpcSamples: c.serviceGenerateRpcSamples(s.ID()),
+		GrpcClient:         c.grpcClient,
 	}
 	s.SetAnnotations(ann)
 	return ann, nil
