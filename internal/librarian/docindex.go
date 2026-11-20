@@ -149,6 +149,12 @@ func candidateAPIPaths(lib *config.Library) []string {
 		}
 		return apiPaths
 	}
+	return moduleAPIPaths(lib)
+}
+
+// moduleAPIPaths returns non-embedded API paths configured under Rust or Swift
+// veneer modules.
+func moduleAPIPaths(lib *config.Library) []string {
 	var apiPaths []string
 	if lib.Rust != nil {
 		for _, m := range lib.Rust.Modules {

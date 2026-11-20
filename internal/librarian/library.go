@@ -295,18 +295,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	if !isMixedLibrary(language, lib) {
-		if len(lib.APIs) == 0 && canDeriveAPIPath(language) {
-			// Do not derive API path for some languages because the library
-			// name doesn't contain all the required info.
-			lib.APIs = append(lib.APIs, &config.API{})
-		}
-		for _, api := range lib.APIs {
-			if api.Path == "" {
-				api.Path = deriveAPIPath(language, lib.Name)
-			}
-		}
-	}
+	lib.APIs = defaultAPIs(language, lib)
 	if lib.Output == "" {
 		if isMixedLibrary(language, lib) {
 			return nil, fmt.Errorf("%s: %w", lib.Name, errNoExplicitOutput)
@@ -322,6 +311,31 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		lib.Output = defaultOutput(language, lib.Name, apiPath, defaultOut)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
+}
+
+// defaultAPIs returns lib's APIs with default paths derived from the library
+// name where applicable, without mutating lib.
+func defaultAPIs(language string, lib *config.Library) []*config.API {
+	if isMixedLibrary(language, lib) {
+		return lib.APIs
+	}
+	if len(lib.APIs) == 0 {
+		// Do not derive API path for some languages because the library name
+		// doesn't contain all the required info.
+		if canDeriveAPIPath(language) {
+			return []*config.API{{Path: deriveAPIPath(language, lib.Name)}}
+		}
+		return nil
+	}
+	apis := make([]*config.API, len(lib.APIs))
+	for i, api := range lib.APIs {
+		copied := *api
+		if copied.Path == "" {
+			copied.Path = deriveAPIPath(language, lib.Name)
+		}
+		apis[i] = &copied
+	}
+	return apis
 }
 
 // canDeriveAPIPath reports whether the language's library name contains enough information to

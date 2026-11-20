@@ -31,10 +31,6 @@ import (
 
 // TestRunConfigGet tests that the config get command successfully reads a value from librarian.yaml.
 func TestRunConfigGet(t *testing.T) {
-	googleapisDir, err := filepath.Abs("../testdata/googleapis")
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, test := range []struct {
 		name       string
 		path       string
@@ -48,52 +44,147 @@ func TestRunConfigGet(t *testing.T) {
 			configYAML: "version: 1.2.3\n",
 			want:       "1.2.3\n",
 		},
-
 		{
 			name:  "get library (existing)",
 			path:  "libraries",
 			value: "google/cloud/secretmanager/v1",
-			configYAML: fmt.Sprintf(`language: python
-sources:
-  googleapis:
-    dir: %s
+			configYAML: `language: python
 libraries:
 - name: mysecretmanager
   apis:
   - path: google/cloud/secretmanager/v1
-`, googleapisDir),
+`,
 			want: "mysecretmanager\n",
 		},
 		{
 			name:  "get library with custom name (ruby)",
 			path:  "libraries",
 			value: "google/cloud/secretmanager/v1",
-			configYAML: fmt.Sprintf(`language: ruby
-sources:
-  googleapis:
-    dir: %s
+			configYAML: `language: ruby
 libraries:
 - name: google-cloud-secret_manager-v1
   apis:
   - path: google/cloud/secretmanager/v1
-`, googleapisDir),
+`,
 			want: "google-cloud-secret_manager-v1\n",
 		},
 		{
 			name:  "get library with subpackage API path (go)",
 			path:  "libraries",
 			value: "google/cloud/oslogin/common",
-			configYAML: fmt.Sprintf(`language: go
-sources:
-  googleapis:
-    dir: %s
+			configYAML: `language: go
 libraries:
 - name: oslogin
   apis:
   - path: google/cloud/oslogin/v1
   - path: google/cloud/oslogin/common
-`, googleapisDir),
+`,
 			want: "oslogin\n",
+		},
+		{
+			name:  "get library with API path derived from name (rust)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-secretmanager-v1
+`,
+			want: "google-cloud-secretmanager-v1\n",
+		},
+		{
+			name:  "get versioned library, not wrapper (ruby)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: `language: ruby
+libraries:
+- name: google-cloud-secret_manager
+  apis:
+  - path: google/cloud/secretmanager/v1
+  ruby:
+    wrapper_of:
+    - v1:0.0
+- name: google-cloud-secret_manager-v1
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			want: "google-cloud-secret_manager-v1\n",
+		},
+		{
+			name:  "get wrapper library for unversioned path (ruby)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager",
+			configYAML: `language: ruby
+libraries:
+- name: google-cloud-secret_manager
+  apis:
+  - path: google/cloud/secretmanager/v1
+  ruby:
+    wrapper_of:
+    - v1:0.0
+- name: google-cloud-secret_manager-v1
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			want: "google-cloud-secret_manager\n",
+		},
+		{
+			name:  "get mixed library via rust module API path",
+			path:  "libraries",
+			value: "google/storage/v2",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-storage
+  rust:
+    modules:
+    - api_path: google/storage/v2
+    - api_path: google/iam/v1
+`,
+			want: "google-cloud-storage\n",
+		},
+		{
+			name:  "get mixed library via swift module API path",
+			path:  "libraries",
+			value: "google/storage/v2",
+			configYAML: `language: swift
+libraries:
+- name: google-cloud-storage
+  swift:
+    modules:
+    - api_path: google/storage/v2
+`,
+			want: "google-cloud-storage\n",
+		},
+		{
+			name:  "prefer releasable mixed library over earlier skip_release mock (rust)",
+			path:  "libraries",
+			value: "google/storage/v2",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-internal-mock
+  skip_release: true
+  rust:
+    modules:
+    - api_path: google/storage/v2
+- name: google-cloud-storage
+  rust:
+    modules:
+    - api_path: google/storage/v2
+`,
+			want: "google-cloud-storage\n",
+		},
+		{
+			name:  "fall back to skip_release mixed library when no releasable library matches (rust)",
+			path:  "libraries",
+			value: "google/cloud/bigquery/v2",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-bigquery
+  skip_release: true
+  rust:
+    modules:
+    - api_path: google/cloud/bigquery/v2
+`,
+			want: "google-cloud-bigquery\n",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -107,7 +198,7 @@ libraries:
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err = runConfigGet(t.Context(), &buf, test.path, test.value)
+			err = runConfigGet(&buf, test.path, test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -151,14 +242,75 @@ func TestRunConfigGet_Error(t *testing.T) {
 			wantErr:    errValueRequired,
 		},
 		{
-			name:  "library not found for API",
+			name:       "library not found for API",
+			path:       "libraries",
+			value:      "google/cloud/secretmanager/v1",
+			configYAML: "language: go\n",
+			wantErr:    ErrLibraryNotFound,
+		},
+		{
+			name:  "unconfigured API path in configured service (go)",
 			path:  "libraries",
-			value: "google/cloud/secretmanager/v1",
+			value: "google/cloud/secretmanager/logging/v1",
+			configYAML: `language: go
+libraries:
+- name: secretmanager
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			wantErr: ErrLibraryNotFound,
+		},
+		{
+			name:  "API path not in googleapis (go)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1beta3",
 			configYAML: fmt.Sprintf(`language: go
 sources:
   googleapis:
     dir: %s
+libraries:
+- name: secretmanager
+  apis:
+  - path: google/cloud/secretmanager/v1
 `, googleapisDir),
+			wantErr: ErrLibraryNotFound,
+		},
+		{
+			name:  "unconfigured version of configured service (python)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1beta2",
+			configYAML: `language: python
+libraries:
+- name: google-cloud-secret-manager
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			wantErr: ErrLibraryNotFound,
+		},
+		{
+			name:  "unconfigured service (ruby)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: `language: ruby
+libraries:
+- name: google-cloud-tasks-v2
+  apis:
+  - path: google/cloud/tasks/v2
+`,
+			wantErr: ErrLibraryNotFound,
+		},
+		{
+			name:  "embedded mixin module API path is not matched (rust)",
+			path:  "libraries",
+			value: "google/iam/v1",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-storage
+  rust:
+    modules:
+    - api_path: google/storage/v2
+    - api_path: google/iam/v1
+`,
 			wantErr: ErrLibraryNotFound,
 		},
 	} {
@@ -169,7 +321,7 @@ sources:
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err := runConfigGet(t.Context(), &buf, test.path, test.value)
+			err := runConfigGet(&buf, test.path, test.value)
 			if err == nil {
 				t.Fatal("expected error; got nil")
 			}
