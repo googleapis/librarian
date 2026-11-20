@@ -127,6 +127,33 @@ libraries:
 `,
 			want: "google-cloud-secret_manager\n",
 		},
+		{
+			name:  "get mixed library via rust module API path",
+			path:  "libraries",
+			value: "google/storage/v2",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-storage
+  rust:
+    modules:
+    - api_path: google/storage/v2
+    - api_path: google/iam/v1
+`,
+			want: "google-cloud-storage\n",
+		},
+		{
+			name:  "get mixed library via swift module API path",
+			path:  "libraries",
+			value: "google/storage/v2",
+			configYAML: `language: swift
+libraries:
+- name: google-cloud-storage
+  swift:
+    modules:
+    - api_path: google/storage/v2
+`,
+			want: "google-cloud-storage\n",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -237,6 +264,20 @@ libraries:
 - name: google-cloud-tasks-v2
   apis:
   - path: google/cloud/tasks/v2
+`,
+			wantErr: ErrLibraryNotFound,
+		},
+		{
+			name:  "embedded mixin module API path is not matched (rust)",
+			path:  "libraries",
+			value: "google/iam/v1",
+			configYAML: `language: rust
+libraries:
+- name: google-cloud-storage
+  rust:
+    modules:
+    - api_path: google/storage/v2
+    - api_path: google/iam/v1
 `,
 			wantErr: ErrLibraryNotFound,
 		},
