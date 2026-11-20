@@ -134,33 +134,11 @@ func findConfiguredLibrary(cfg *config.Config, apiPath string) *config.Library {
 		return ruby.FindConfiguredLibrary(cfg.Libraries, apiPath)
 	}
 	for _, library := range cfg.Libraries {
-		if slices.Contains(configuredAPIPaths(cfg.Language, library), apiPath) {
+		if slices.ContainsFunc(defaultAPIs(cfg.Language, library), func(api *config.API) bool {
+			return api.Path != "" && api.Path == apiPath
+		}) {
 			return library
 		}
 	}
 	return nil
-}
-
-// configuredAPIPaths returns the API paths that library configures. These are
-// the paths listed in its APIs, with an empty path, or a missing APIs list in a
-// language where canDeriveAPIPath is true, meaning the path derived from the
-// library name, as in applyDefaults.
-func configuredAPIPaths(language string, library *config.Library) []string {
-	derived := !isMixedLibrary(language, library)
-	if len(library.APIs) == 0 {
-		if derived && canDeriveAPIPath(language) {
-			return []string{deriveAPIPath(language, library.Name)}
-		}
-		return nil
-	}
-	var paths []string
-	for _, api := range library.APIs {
-		switch {
-		case api.Path != "":
-			paths = append(paths, api.Path)
-		case derived:
-			paths = append(paths, deriveAPIPath(language, library.Name))
-		}
-	}
-	return paths
 }
