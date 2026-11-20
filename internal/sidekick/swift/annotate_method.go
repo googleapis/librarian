@@ -278,11 +278,11 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 
 	// Extract routing parameters for gRPC per AIP-4222:
 	// - Prefer explicit google.api.routing annotations if present.
-	// - Fall back to extracting path parameters from the google.api.http path template.
+	// - Fall back to extracting path parameters across all google.api.http bindings.
 	if method.HasRouting() {
 		routingParams = c.routingParamsFromRouting(method.Routing())
 	} else if len(bindings) > 0 {
-		routingParams = c.routingParamsFromPathTemplate(bindings[0].PathTemplate())
+		routingParams = c.routingParamsFromBindings(bindings)
 	}
 
 	// In Protobuf APIs (such as Storage Control or pure gRPC services), some RPC

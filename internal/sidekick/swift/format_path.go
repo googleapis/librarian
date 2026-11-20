@@ -266,6 +266,9 @@ func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*rou
 // Extracts fallback routing parameters from a google.api.http path template when explicit
 // google.api.routing annotations are absent per AIP-4222.
 func (c *codec) routingParamsFromPathTemplate(t *api.PathTemplate) []*routingParam {
+	if t == nil {
+		return nil
+	}
 	var params []*routingParam
 	for _, segment := range t.Segments() {
 		if segment.Variable() != nil {
@@ -285,6 +288,27 @@ func (c *codec) routingParamsFromPathTemplate(t *api.PathTemplate) []*routingPar
 					},
 				},
 			})
+		}
+	}
+	return params
+}
+
+// routingParamsFromBindings extracts fallback routing parameters across all
+// google.api.http bindings in declaration order, deduplicating repeated routing
+// keys per AIP-4222.
+func (c *codec) routingParamsFromBindings(bindings []*api.PathBinding) []*routingParam {
+	var params []*routingParam
+	seen := make(map[string]bool)
+	for _, binding := range bindings {
+		if binding == nil {
+			continue
+		}
+		for _, param := range c.routingParamsFromPathTemplate(binding.PathTemplate()) {
+			if seen[param.RoutingKey] {
+				continue
+			}
+			seen[param.RoutingKey] = true
+			params = append(params, param)
 		}
 	}
 	return params
