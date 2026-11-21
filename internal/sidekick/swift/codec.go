@@ -188,6 +188,22 @@ func (c *codec) ServiceName(service *api.Service) string {
 	return service.Name()
 }
 
+// placeholderServiceName returns the service name for a service placeholder
+// message, taking name_overrides into account.
+func (c *codec) placeholderServiceName(m *api.Message) string {
+	if override, ok := c.NameOverrides[m.ID()]; ok {
+		return override
+	}
+	return m.Name()
+}
+
+func (c *codec) messageSimpleName(m *api.Message) string {
+	if m.ServicePlaceholder() {
+		return pascalCase(c.placeholderServiceName(m) + "Client")
+	}
+	return messageSimpleName(m)
+}
+
 func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
 	year, _, _ := time.Now().Date()
 	absOutdir, err := filepath.Abs(outdir)
@@ -306,7 +322,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 	if model != nil {
 		typeCounts := make(map[string]int)
 		for m := range model.AllMessages() {
-			typeCounts[messageSimpleName(m)]++
+			typeCounts[result.messageSimpleName(m)]++
 		}
 		for e := range model.AllEnums() {
 			typeCounts[enumName(e)]++

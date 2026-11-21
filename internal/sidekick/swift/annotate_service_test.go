@@ -29,6 +29,7 @@ func TestAnnotateService(t *testing.T) {
 		name            string
 		serviceName     string
 		doc             string
+		nameOverrides   map[string]string
 		wantAnnotations *serviceAnnotations
 		wantImports     []string
 	}{
@@ -38,6 +39,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "IAM service documentation.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "IAM",
+				ServiceName: "IAM",
 				LibraryName: "Test",
 				ClientName:  "IAMClient",
 				StubPrefix:  "IAM",
@@ -52,6 +54,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "Docs are not relevant.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "Protocol_",
+				ServiceName: "Protocol",
 				LibraryName: "Test",
 				ClientName:  "ProtocolClient",
 				StubPrefix:  "Protocol",
@@ -66,6 +69,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "Secret Manager Service documentation.\nLine 2.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "SecretManagerService",
+				ServiceName: "SecretManagerService",
 				LibraryName: "Test",
 				ClientName:  "SecretManagerServiceClient",
 				StubPrefix:  "SecretManagerService",
@@ -74,11 +78,30 @@ func TestAnnotateService(t *testing.T) {
 			},
 			wantImports: []string{},
 		},
+		{
+			name:          "Service with name_override",
+			serviceName:   "Publisher",
+			doc:           "Publisher documentation.",
+			nameOverrides: map[string]string{".test.Publisher": "TopicAdmin"},
+			wantAnnotations: &serviceAnnotations{
+				Name:        "TopicAdmin",
+				ServiceName: "TopicAdmin",
+				LibraryName: "Test",
+				ClientName:  "TopicAdminClient",
+				StubPrefix:  "TopicAdmin",
+				DocLines:    []string{"Publisher documentation."},
+				Description: "Publisher documentation.",
+			},
+			wantImports: []string{},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			s := api.NewTestService(test.serviceName).WithDocumentation(test.doc)
 			model := api.NewTestAPI(nil, nil, []*api.Service{s})
 			codec := newTestCodec(t, model, nil)
+			if len(test.nameOverrides) > 0 {
+				codec.NameOverrides = test.nameOverrides
+			}
 
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)

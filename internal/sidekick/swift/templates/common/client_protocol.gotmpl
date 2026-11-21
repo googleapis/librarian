@@ -78,7 +78,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- if .Codec.DocLines }}
   ///
   {{- end }}
-  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  /// @Snippet(path: "{{ .Service.Codec.ServiceName }}_{{ .Name }}")
   ///
   /// ## See Also
   ///
@@ -113,7 +113,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- if .Method.Codec.DocLines }}
   ///
   {{- end }}
-  /// @Snippet(path: "{{ .Method.Service.Name }}_{{ .Method.Name }}")
+  /// @Snippet(path: "{{ .Method.Service.Codec.ServiceName }}_{{ .Method.Name }}")
   ///
   /// ## See Also
   ///
@@ -146,7 +146,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- if .Codec.DocLines }}
   ///
   {{- end }}
-  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  /// @Snippet(path: "{{ .Service.Codec.ServiceName }}_{{ .Name }}")
   ///
   /// ## See Also
   ///
@@ -169,7 +169,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- if .Codec.DocLines }}
   ///
   {{- end }}
-  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  /// @Snippet(path: "{{ .Service.Codec.ServiceName }}_{{ .Name }}")
   ///
   /// ## See Also
   ///
@@ -198,7 +198,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- if .Method.Codec.DocLines }}
   ///
   {{- end }}
-  /// @Snippet(path: "{{ .Method.Service.Name }}_{{ .Method.Name }}")
+  /// @Snippet(path: "{{ .Method.Service.Codec.ServiceName }}_{{ .Method.Name }}")
   ///
   /// ## See Also
   ///
@@ -226,7 +226,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- if .Codec.DocLines }}
   ///
   {{- end }}
-  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  /// @Snippet(path: "{{ .Service.Codec.ServiceName }}_{{ .Name }}")
   {{- if not .IsLroPoller }}
   ///
   /// ## See Also
@@ -264,7 +264,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   {{- if .Method.Codec.DocLines }}
   ///
   {{- end }}
-  /// @Snippet(path: "{{ .Method.Service.Name }}_{{ .Method.Name }}")
+  /// @Snippet(path: "{{ .Method.Service.Codec.ServiceName }}_{{ .Method.Name }}")
   {{- if not .Method.IsLroPoller }}
   ///
   /// ## See Also
@@ -302,7 +302,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   ///   status object. To obtain the created or modified resource, invoke the corresponding `get`
   ///   method once the operation completes.
   ///
-  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  /// @Snippet(path: "{{ .Service.Codec.ServiceName }}_{{ .Name }}")
   {{- if not .IsLroPoller }}
   ///
   /// ## See Also
@@ -341,7 +341,7 @@ extension Clients.{{ .Codec.StubPrefix }}Protocol {
   ///   status object. To obtain the created or modified resource, invoke the corresponding `get`
   ///   method once the operation completes.
   ///
-  /// @Snippet(path: "{{ .Method.Service.Name }}_{{ .Method.Name }}")
+  /// @Snippet(path: "{{ .Method.Service.Codec.ServiceName }}_{{ .Method.Name }}")
   {{- if not .Method.IsLroPoller }}
   ///
   /// ## See Also
