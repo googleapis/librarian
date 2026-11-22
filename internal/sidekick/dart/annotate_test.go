@@ -1934,7 +1934,7 @@ func TestAnnotateField(t *testing.T) {
 
 			model := api.NewTestAPI([]*api.Message{message, empty}, []*api.Enum{enumState}, nil).WithMaps(mapEntry)
 			annotate := newAnnotateModel(model)
-			registerMissingWkt(annotate.model)
+			annotate.registerMissingWkt()
 
 			annotate.annotateField(field)
 			got := field.Codec().(*fieldAnnotation)

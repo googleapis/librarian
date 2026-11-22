@@ -191,9 +191,10 @@ func TestFilterModelToTypesExternalTypes(t *testing.T) {
 		api.NewTestField("day").WithEnumType(externalEnum),
 	)
 
-	model := api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{})
-	model.AddMessage(externalMsg)
-	model.AddEnum(externalEnum)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{})).
+		AddMessage(externalMsg).
+		AddEnum(externalEnum).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -374,8 +375,9 @@ func TestFilterModelToTypesGoogleRpcStatus(t *testing.T) {
 		api.NewTestField("status").WithMessageType(statusMsg),
 	)
 
-	statusModel := api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{})
-	statusModel.AddMessage(statusMsg)
+	statusModel := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{})).
+		AddMessage(statusMsg).
+		BuildSyntaxTree()
 
 	filtered, unused, hasStatus, err := filterModelToTypes(statusModel, []string{reqMsg.ID()}, nil)
 	if err != nil {

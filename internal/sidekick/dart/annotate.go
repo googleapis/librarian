@@ -452,8 +452,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		}
 	}
 
+	origModel := annotate.model
 	// Register any missing WKTs.
-	registerMissingWkt(annotate.model)
+	annotate.registerMissingWkt()
 
 	model := annotate.model
 
@@ -572,6 +573,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	model.Codec = ann
+	if origModel != model {
+		origModel.Codec = ann
+	}
 	return nil
 }
 
@@ -1516,9 +1520,11 @@ func (annotate *annotateModel) updateUsedPackages(packageName string) {
 	}
 }
 
-func registerMissingWkt(model *api.API) {
+func (annotate *annotateModel) registerMissingWkt() {
 	// If these definitions weren't provided by protoc then provide our own
 	// placeholders.
+	ab := api.NewAPIBuilderFrom(annotate.model)
+	changed := false
 	for _, message := range []struct {
 		ID      string
 		Name    string
@@ -1527,14 +1533,18 @@ func registerMissingWkt(model *api.API) {
 		{".google.protobuf.Any", "Any", "google.protobuf"},
 		{".google.protobuf.Empty", "Empty", "google.protobuf"},
 	} {
-		msg := model.Message(message.ID)
+		msg := annotate.model.Message(message.ID)
 		if msg == nil {
-			model.AddMessage(api.NewMessageBuilder().
+			ab.AddMessage(api.NewMessageBuilder().
 				WithID(message.ID).
 				WithName(message.Name).
 				WithPackage(message.Package).
 				Build())
+			changed = true
 		}
+	}
+	if changed {
+		annotate.model = ab.BuildSyntaxTree()
 	}
 }
 

@@ -20,11 +20,11 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func maybeInlineObjectField(model *api.API, parentBuilder *api.MessageBuilder, name string, input *schema) (*api.Field, error) {
+func maybeInlineObjectField(model *api.APIBuilder, parentBuilder *api.MessageBuilder, name string, input *schema) (*api.Field, error) {
 	return makeInlineObjectField(model, parentBuilder, name, input, input.Description, true, false)
 }
 
-func makeInlineObjectField(model *api.API, parentBuilder *api.MessageBuilder, name string, input *schema, description string, optional, repeated bool) (*api.Field, error) {
+func makeInlineObjectField(model *api.APIBuilder, parentBuilder *api.MessageBuilder, name string, input *schema, description string, optional, repeated bool) (*api.Field, error) {
 	if input.Type != "object" || input.Properties == nil {
 		return nil, nil
 	}
