@@ -67,6 +67,9 @@ type modelAnnotations struct {
 	// Markdown (`README.md`), resolving proto cross-reference links to Swift
 	// Package Index URLs and stripping unresolved links to their display text.
 	ReadmeDocLines []string
+
+	// QuickstartService is the service used to generate the package-level quickstart sample.
+	QuickstartService *api.Service
 }
 
 // traitDefinition provides information about each package trait.
@@ -199,9 +202,11 @@ func (c *codec) annotateModel() error {
 		if idx == -1 {
 			return fmt.Errorf("%w: %q not found in services for package %q", errQuickstartServiceNotFound, c.QuickstartServiceOverride, c.PackageName)
 		}
-		c.Model.QuickstartService = c.Model.Services[idx]
-	} else if c.Model.QuickstartService == nil && len(c.Model.Services) > 0 {
-		c.Model.QuickstartService = c.Model.Services[0]
+		annotations.QuickstartService = c.Model.Services[idx]
+	} else if c.Model.QuickstartService != nil {
+		annotations.QuickstartService = c.Model.QuickstartService
+	} else if len(c.Model.Services) > 0 {
+		annotations.QuickstartService = c.Model.Services[0]
 	}
 	// The services are annotated last because the annotation assumes messages
 	// and enums are already annotated.

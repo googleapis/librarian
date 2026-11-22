@@ -245,7 +245,7 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 	wantRequired := map[string]*api.Service{
 		sourceService.ID(): sourceService,
 	}
-	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), apitest.IgnoreMethodFields("model"), apitest.IgnoreServiceFields("model")); diff != "" {
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, apitest.AllowUnexported(), apitest.IgnoreMethodFields("model"), apitest.IgnoreServiceFields("model"), cmpopts.IgnoreFields(modelAnnotations{}, "QuickstartService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
