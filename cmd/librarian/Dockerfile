@@ -37,6 +37,7 @@
 #
 
 # Base/Build dependency versions
+ARG BASE_IMAGE=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 ARG GO_VERSION=1.26.1
 ARG GO_CHECKSUM=031f088e5d955bab8657ede27ad4e3bc5b7c1ba281f05f245bcc304f327c987a
 ARG PROTOC_VERSION=29.3
@@ -53,6 +54,10 @@ ARG CARGO_MINIMAL_VERSIONS_VERSION=0.1.39
 ARG CARGO_HACK_VERSION=0.6.46
 
 # Python dependency versions
+ARG PYTHON_VERSION=3.10.12
+ARG PYTHON_CHECKSUM=afb74bf19130e7a47d10312c8f5e784f24e0527981eab68e20546cfb865830b8
+# Shared libraries the compiled Python needs at run time.
+ARG PYTHON_RUNTIME_LIBRARIES="libbz2-1.0 libffi8 liblzma5 libncursesw6 libreadline8 libsqlite3-0 libssl3 libuuid1 zlib1g"
 ARG PYTHON_PROTOC_VERSION=33.5
 ARG PYTHON_PROTOC_CHECKSUM=eb842a2259a90a402207cae3a9261dc9501f43a535b3b3d786ecc496e117f499cf373fe41181fd9047035f7ed6c2dee9a55f7f0a7afa1c5d7cb5be3e672bf527
 ARG PANDOC_VERSION=3.8.2
@@ -122,7 +127,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 go build -buildvcs=false -o /go/bin/librarian ./cmd/librarian
 
 # ============== Base Stage ==============
-FROM --platform=linux/amd64 debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS base
+FROM --platform=linux/amd64 ${BASE_IMAGE} AS base
 ARG PROTOC_VERSION
 ARG PROTOC_CHECKSUM
 
@@ -186,16 +191,50 @@ RUN chmod a+wx /root && \
 RUN ln -s ${RUST_VERSION}-x86_64-unknown-linux-gnu /root/.rustup/toolchains/${RUST_VERSION%.*}-x86_64-unknown-linux-gnu
 ENV HOME=/root
 
+# ============== Python Runtime Stage ==============
+# Python has no official Linux binaries, so it is compiled from the official
+# source. This stage does not depend on librarian, so changes to librarian or
+# the Python tools do not recompile Python.
+FROM --platform=linux/amd64 ${BASE_IMAGE} AS python-runtime
+ARG PYTHON_VERSION
+ARG PYTHON_CHECKSUM
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ca-certificates curl xz-utils \
+    libbz2-dev libffi-dev liblzma-dev libncurses-dev libreadline-dev \
+    libsqlite3-dev libssl-dev uuid-dev zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# The test suite and static libraries are not needed at run time, so they are
+# removed in the same layer as `make install`.
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/python.tar.xz \
+        https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz && \
+    echo "${PYTHON_CHECKSUM} /tmp/python.tar.xz" | sha256sum -c - && \
+    mkdir /tmp/python && \
+    tar -xJf /tmp/python.tar.xz -C /tmp/python --strip-components=1 && \
+    cd /tmp/python && \
+    ./configure --prefix=/opt/python --with-ensurepip=install && \
+    make -j"$(nproc)" && \
+    make install && \
+    rm -rf /opt/python/lib/python3*/test /opt/python/lib/libpython3*.a \
+        /opt/python/lib/python3*/config-3*/libpython3*.a && \
+    ln -s python3 /opt/python/bin/python && \
+    ln -s pip3 /opt/python/bin/pip && \
+    cd / && rm -rf /tmp/python /tmp/python.tar.xz
+
 # ============== Python Stage ==============
 FROM base AS python
+ARG PYTHON_RUNTIME_LIBRARIES
 ARG PYTHON_PROTOC_VERSION
 ARG PYTHON_PROTOC_CHECKSUM
 ARG PANDOC_VERSION
 ARG PANDOC_CHECKSUM
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip python3-venv \
+    ${PYTHON_RUNTIME_LIBRARIES} \
     && rm -rf /var/lib/apt/lists/*
+COPY --from=python-runtime /opt/python /opt/python
+ENV PATH=/opt/python/bin:${PATH}
 
 # Install pandoc
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/pandoc.tar.gz \
@@ -210,21 +249,24 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
     echo "${PYTHON_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
 
-# Make sure Python uses /python-packages for all installations.
-# This makes it easier to predict where things are installed, e.g. for
-# SYNTHTOOL_TEMPLATES later.
-ENV PYTHONPATH=/python-packages
-ENV PATH=${PATH}:${PYTHONPATH}/bin
-# Specify where pip should install, and disable its cache.
-ENV PIP_TARGET=${PYTHONPATH}
+# Jobs run `librarian install python` before generating, which pip installs
+# the Python tools. They go into a virtual environment in /python-packages, so
+# it is predictable where they are installed. Putting it first on PATH makes
+# its python3 and pip the defaults. A virtual environment is used instead of
+# PIP_TARGET, because pip with --target skips the console scripts of later
+# installs when the bin directory already exists.
+ENV VIRTUAL_ENV=/python-packages
+RUN python3 -m venv ${VIRTUAL_ENV}
+ENV PATH=${VIRTUAL_ENV}/bin:${PATH}
 ENV PIP_NO_CACHE_DIR=1
 
-# Install Python dependencies, into /python-packages (so it's predictable).
-RUN --mount=type=cache,target=/root/.cache/pip \
-    /app/librarian install python -v
+# Librarian keeps installed tools and downloads in its cache directory.
+ENV LIBRARIAN_CACHE=/python-packages/librarian-cache
 
-# Ensure we use the local synthtool templates.
-ENV SYNTHTOOL_TEMPLATES=${PYTHONPATH}/synthtool/gcp/templates
+# Grant broad write permissions, so any UID running the container (like
+# librarianops) can run `librarian install python`.
+RUN mkdir -p ${LIBRARIAN_CACHE} && \
+    chmod -R a+rwX ${VIRTUAL_ENV}
 
 # ============== Go Stage ==============
 FROM base AS go

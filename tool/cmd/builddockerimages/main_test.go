@@ -27,28 +27,34 @@ import (
 const dockerfilePath = "../../../cmd/librarian/Dockerfile"
 
 var (
-	argPattern = regexp.MustCompile(`(?m)^ARG\s+(\w+)=(\S+)`)
+	argPattern = regexp.MustCompile(`(?m)^ARG\s+(\w+)=("[^"]*"|\S+)`)
 	// Versions are x.y.z, optionally after a tag prefix such as
 	// gapic-generator-v.
 	exactVersionPattern = regexp.MustCompile(`^(?:[a-z-]+-v)?\d+\.\d+\.\d+$`)
 	// Protobuf releases only have a major and a minor version, such as 29.3.
-	protocVersionPattern = regexp.MustCompile(`^\d+\.\d+$`)
-	installPattern       = regexp.MustCompile(`\b(?:cargo install|go install|npm install|pnpm add) [^&|;)]*`)
-	pinnedPackagePattern = regexp.MustCompile(`@v?(?:\$\{\w+_VERSION\}|\d+\.\d+\.\d+)$`)
-	downloadPattern      = regexp.MustCompile(`\b(?:curl|wget)\b.*https?://`)
-	downloadFilePattern  = regexp.MustCompile(`\s-[oO]\s+(\S+)`)
-	verifyPattern        = regexp.MustCompile(`sha(?:256|512)sum -c|gpg --verify`)
-	variablePattern      = regexp.MustCompile(`\$\{?(\w+)`)
+	protocVersionPattern    = regexp.MustCompile(`^\d+\.\d+$`)
+	installPattern          = regexp.MustCompile(`\b(?:cargo install|go install|npm install|pnpm add) [^&|;)]*`)
+	pinnedPackagePattern    = regexp.MustCompile(`@v?(?:\$\{\w+_VERSION\}|\d+\.\d+\.\d+)$`)
+	downloadPattern         = regexp.MustCompile(`\b(?:curl|wget)\b.*https?://`)
+	downloadFilePattern     = regexp.MustCompile(`\s-[oO]\s+(\S+)`)
+	verifyPattern           = regexp.MustCompile(`sha(?:256|512)sum -c|gpg --verify`)
+	variablePattern         = regexp.MustCompile(`\$\{?(\w+)`)
+	copyFromPattern         = regexp.MustCompile(`--from=(\S+)`)
+	librarianInstallPattern = regexp.MustCompile(`\blibrarian install\b`)
+	// Language runtimes must come from official releases, not from apt.
+	aptRuntimePattern = regexp.MustCompile(`^(?:python3?|php|ruby|nodejs|npm|openjdk|default-jdk|golang|rustc|cargo|swift)(?:[.\d-]|$)`)
 )
+
+// compiledRuntimes lists the languages whose runtime is compiled from source.
+var compiledRuntimes = []string{"python"}
 
 // TestSupportedLanguages checks that every language image stage in the
 // Dockerfile is built. Helper stages, such as php-runtime, have a hyphen in
 // their name.
 func TestSupportedLanguages(t *testing.T) {
 	var want []string
-	for _, instruction := range dockerfileInstructions(t) {
-		_, stage, ok := parseFrom(instruction)
-		if !ok || stage == "build" || stage == "base" || strings.Contains(stage, "-") {
+	for stage := range dockerfileStages(t) {
+		if stage == "build" || stage == "base" || strings.Contains(stage, "-") {
 			continue
 		}
 		want = append(want, stage)
@@ -63,8 +69,7 @@ func TestSupportedLanguages(t *testing.T) {
 // TestDockerfileVersionsArePinned checks that every FOO_VERSION argument is an
 // exact x.y.z version, or x.y for protoc.
 func TestDockerfileVersionsArePinned(t *testing.T) {
-	for _, match := range argPattern.FindAllStringSubmatch(readDockerfile(t), -1) {
-		name, value := match[1], match[2]
+	for name, value := range dockerfileArgDefaults(t) {
 		if !strings.HasSuffix(name, "_VERSION") {
 			continue
 		}
@@ -157,6 +162,107 @@ func TestDockerfileStageArgsAreDeclared(t *testing.T) {
 	}
 }
 
+// TestDockerfileRuntimesAreNotFromApt checks that no language runtime is
+// installed with apt, whose versions are not pinned. Packages given through
+// ARGs are expanded from their defaults.
+func TestDockerfileRuntimesAreNotFromApt(t *testing.T) {
+	defaults := dockerfileArgDefaults(t)
+	for _, instruction := range dockerfileInstructions(t) {
+		for command := range strings.SplitSeq(instruction, "&&") {
+			_, packages, found := strings.Cut(command, "apt-get install")
+			if !found {
+				continue
+			}
+			packages = os.Expand(packages, func(name string) string { return defaults[name] })
+			for packageName := range strings.FieldsSeq(packages) {
+				if aptRuntimePattern.MatchString(packageName) {
+					t.Errorf("runtime installed with apt: %s", packageName)
+				}
+			}
+		}
+	}
+}
+
+// TestDockerfileDoesNotRunLibrarianInstall checks that no image runs
+// librarian install at build time. The images only provide language runtimes;
+// the presubmit installs tools from the repository's librarian.yaml.
+func TestDockerfileDoesNotRunLibrarianInstall(t *testing.T) {
+	for _, instruction := range dockerfileInstructions(t) {
+		if strings.HasPrefix(instruction, "RUN ") && librarianInstallPattern.MatchString(instruction) {
+			t.Errorf("librarian install at build time: %s", instruction)
+		}
+	}
+}
+
+// TestDockerfileCompiledRuntimes checks that each runtime compiled from source
+// has its own <language>-runtime stage that the language stage uses. The
+// runtime stage must not depend on the librarian binary, so a librarian or
+// tool change never recompiles the runtime.
+func TestDockerfileCompiledRuntimes(t *testing.T) {
+	stages := dockerfileStages(t)
+	for _, language := range compiledRuntimes {
+		t.Run(language, func(t *testing.T) {
+			runtime := language + "-runtime"
+			if _, ok := stages[runtime]; !ok {
+				t.Fatalf("missing stage %s", runtime)
+			}
+			if !stageUses(stages, language, runtime) {
+				t.Errorf("stage %s does not use %s", language, runtime)
+			}
+			if stageUses(stages, runtime, "build") {
+				t.Errorf("stage %s depends on the build stage", runtime)
+			}
+		})
+	}
+}
+
+// dockerfileStage is a build stage of the Dockerfile.
+type dockerfileStage struct {
+	parent       string
+	instructions []string
+}
+
+// dockerfileStages returns the build stages of the Dockerfile by name.
+func dockerfileStages(t *testing.T) map[string]dockerfileStage {
+	t.Helper()
+	stages := map[string]dockerfileStage{}
+	var name string
+	for _, instruction := range dockerfileInstructions(t) {
+		if parent, stage, ok := parseFrom(instruction); ok {
+			name = stage
+			stages[name] = dockerfileStage{parent: parent}
+			continue
+		}
+		if name != "" {
+			stage := stages[name]
+			stage.instructions = append(stage.instructions, instruction)
+			stages[name] = stage
+		}
+	}
+	return stages
+}
+
+// stageUses reports whether a stage is built from, or copies from, the other
+// stage, directly or through the stages it uses.
+func stageUses(stages map[string]dockerfileStage, name, other string) bool {
+	stage, ok := stages[name]
+	if !ok {
+		return false
+	}
+	sources := []string{stage.parent}
+	for _, instruction := range stage.instructions {
+		for _, match := range copyFromPattern.FindAllStringSubmatch(instruction, -1) {
+			sources = append(sources, match[1])
+		}
+	}
+	for _, source := range sources {
+		if source == other || stageUses(stages, source, other) {
+			return true
+		}
+	}
+	return false
+}
+
 // parseFrom returns the image and stage name of a FROM instruction, skipping
 // flags such as --platform.
 func parseFrom(instruction string) (image, stage string, ok bool) {
@@ -167,6 +273,16 @@ func parseFrom(instruction string) (image, stage string, ok bool) {
 		return "", "", false
 	}
 	return fields[1], fields[3], true
+}
+
+// dockerfileArgDefaults returns the default value of each ARG, without quotes.
+func dockerfileArgDefaults(t *testing.T) map[string]string {
+	t.Helper()
+	defaults := map[string]string{}
+	for _, match := range argPattern.FindAllStringSubmatch(readDockerfile(t), -1) {
+		defaults[match[1]] = strings.Trim(match[2], `"`)
+	}
+	return defaults
 }
 
 func readDockerfile(t *testing.T) string {
