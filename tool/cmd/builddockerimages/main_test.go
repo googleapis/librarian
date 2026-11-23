@@ -37,10 +37,13 @@ var (
 	pinnedPackagePattern    = regexp.MustCompile(`@v?(?:\$\{\w+_VERSION\}|\d+\.\d+\.\d+)$`)
 	downloadPattern         = regexp.MustCompile(`\b(?:curl|wget)\b.*https?://`)
 	downloadFilePattern     = regexp.MustCompile(`\s-[oO]\s+(\S+)`)
-	verifyPattern           = regexp.MustCompile(`sha(?:256|512)sum -c|gpg --verify`)
+	gpgVerifyPattern        = regexp.MustCompile(`\bgpg\b[^&|;]*\s--verify\b`)
+	verifyPattern           = regexp.MustCompile(`sha(?:256|512)sum -c|` + gpgVerifyPattern.String())
 	variablePattern         = regexp.MustCompile(`\$\{?(\w+)`)
 	copyFromPattern         = regexp.MustCompile(`--from=(\S+)`)
 	librarianInstallPattern = regexp.MustCompile(`\blibrarian install\b`)
+	// GPG keys are pinned by their full 40 character fingerprint.
+	fingerprintPattern = regexp.MustCompile(`^[0-9A-F]{40}$`)
 	// Language runtimes and Composer must come from official releases, not from
 	// apt.
 	aptRuntimePattern = regexp.MustCompile(`^(?:python3?|php|composer|ruby|nodejs|npm|openjdk|default-jdk|golang|rustc|cargo|swift)(?:[.\d-]|$)`)
@@ -49,11 +52,17 @@ var (
 // runtimeStages lists, for each language image, the runtimes it needs that are
 // built in their own stage. The PHP image reuses the Python and Node runtimes.
 var runtimeStages = map[string][]string{
+	"go":     {"go"},
 	"nodejs": {"nodejs"},
 	"php":    {"nodejs", "php", "python"},
 	"python": {"python"},
 	"ruby":   {"ruby"},
+	"swift":  {"go", "swift"},
 }
+
+// signedRuntimes lists the runtimes that are verified with the publisher's GPG
+// signature.
+var signedRuntimes = []string{"swift"}
 
 // TestSupportedLanguages checks that every language image stage in the
 // Dockerfile is built. Helper stages, such as php-runtime, have a hyphen in
@@ -220,6 +229,38 @@ func TestDockerfileRuntimeStages(t *testing.T) {
 				}
 				if stageUses(stages, runtimeStage, "build") {
 					t.Errorf("stage %s depends on the build stage", runtimeStage)
+				}
+			}
+		})
+	}
+}
+
+// TestDockerfileSignedRuntimes checks that each signed runtime is verified with
+// gpg in its runtime stage, and that the keys come from a verified download or
+// are fetched by their full fingerprint.
+func TestDockerfileSignedRuntimes(t *testing.T) {
+	stages := dockerfileStages(t)
+	defaults := dockerfileArgDefaults(t)
+	for _, runtime := range signedRuntimes {
+		t.Run(runtime, func(t *testing.T) {
+			stage := runtime + "-runtime"
+			index := slices.IndexFunc(stages[stage].instructions, gpgVerifyPattern.MatchString)
+			if index < 0 {
+				t.Fatalf("stage %s does not run gpg --verify", stage)
+			}
+			instruction := os.Expand(stages[stage].instructions[index], func(name string) string { return defaults[name] })
+			if !strings.Contains(instruction, "--import") && !strings.Contains(instruction, "--recv-keys") {
+				t.Errorf("stage %s does not import gpg keys", stage)
+			}
+			for command := range strings.SplitSeq(instruction, "&&") {
+				_, keys, found := strings.Cut(command, "--recv-keys")
+				if !found {
+					continue
+				}
+				for key := range strings.FieldsSeq(keys) {
+					if !fingerprintPattern.MatchString(key) {
+						t.Errorf("gpg key %s is not a full fingerprint", key)
+					}
 				}
 			}
 		})

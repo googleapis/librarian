@@ -32,6 +32,7 @@
 #   docker build --target python -t librarian:python -f cmd/librarian/Dockerfile .
 #   docker build --target ruby -t librarian:ruby -f cmd/librarian/Dockerfile .
 #   docker build --target rust -t librarian:rust -f cmd/librarian/Dockerfile .
+#   docker build --target swift -t librarian:swift -f cmd/librarian/Dockerfile .
 #
 # Usage:
 #   docker run --rm -v "$(pwd)":/workspace -w /workspace librarian:rust generate
@@ -113,6 +114,11 @@ ARG RUBY_VERSION=3.4.9
 ARG RUBY_CHECKSUM=4231c54072601a171faed1699f105985e9971c94cd382b78feb4eb44eec2dd1a
 # Shared libraries the compiled Ruby needs at run time.
 ARG RUBY_RUNTIME_LIBRARIES="libffi8 libssl3 libyaml-0-2 zlib1g"
+
+# Swift dependency versions
+ARG SWIFT_VERSION=6.4.2
+# Swift 6.x Release Signing Key, from https://www.swift.org/keys/.
+ARG SWIFT_SIGNING_FINGERPRINT=52BB7E3DE28A71BE22EC05FFEF80A866B47A981F
 
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image.
@@ -300,6 +306,40 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/ruby.tar.xz \
     find /opt/ruby/lib -name '*.so*' -type f -exec strip --strip-debug {} + && \
     cd / && rm -rf /tmp/ruby /tmp/ruby.tar.xz
 
+# ============== Go Runtime Stage ==============
+FROM runtime-builder AS go-runtime
+ARG GO_RUNTIME_VERSION
+ARG GO_RUNTIME_CHECKSUM
+
+# Install Go from the official binaries.
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/go.tar.gz \
+        https://go.dev/dl/go${GO_RUNTIME_VERSION}.linux-amd64.tar.gz && \
+    echo "${GO_RUNTIME_CHECKSUM} /tmp/go.tar.gz" | sha256sum -c - && \
+    tar -C /usr/local -xzf /tmp/go.tar.gz && \
+    rm /tmp/go.tar.gz
+
+# ============== Swift Runtime Stage ==============
+# Swift publishes a toolchain per Linux distribution, signed with the Swift
+# release signing key. The Debian 12 build matches the base image.
+FROM runtime-builder AS swift-runtime
+ARG SWIFT_VERSION
+ARG SWIFT_SIGNING_FINGERPRINT
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dirmngr gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/swift.tar.gz \
+        https://download.swift.org/swift-${SWIFT_VERSION}-release/debian12/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-debian12.tar.gz && \
+    curl -fsSL --retry 5 --retry-delay 15 -o /tmp/swift.tar.gz.sig \
+        https://download.swift.org/swift-${SWIFT_VERSION}-release/debian12/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-debian12.tar.gz.sig && \
+    export GNUPGHOME="$(mktemp -d)" && \
+    gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys ${SWIFT_SIGNING_FINGERPRINT} && \
+    gpg --batch --verify /tmp/swift.tar.gz.sig /tmp/swift.tar.gz && \
+    mkdir -p /opt/swift && \
+    tar -xzf /tmp/swift.tar.gz -C /opt/swift --strip-components=1 --no-same-owner && \
+    rm -rf "${GNUPGHOME}" /tmp/swift.tar.gz /tmp/swift.tar.gz.sig
+
 # ============== NodeJS Runtime Stage ==============
 FROM runtime-builder AS nodejs-runtime
 ARG NODEJS_NODE_VERSION
@@ -417,10 +457,32 @@ ENV LIBRARIAN_CACHE=/usr/local/ruby_tools/cache
 RUN mkdir -p ${LIBRARIAN_CACHE} && \
     chmod -R a+rwX /usr/local/ruby_tools
 
+# ============== Swift Stage ==============
+FROM base AS swift
+
+# Libraries and tools the Swift toolchain needs to compile and link.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    binutils gcc libc6-dev libcurl4-openssl-dev libedit-dev libicu-dev \
+    libncurses-dev libsqlite3-dev libstdc++-12-dev libxml2-dev pkg-config \
+    tzdata uuid-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=swift-runtime /opt/swift /opt/swift
+COPY --from=go-runtime /usr/local/go /usr/local/go
+# Swift Build finds the toolchain only in its usr layout, so the toolchain
+# keeps its usr directory.
+ENV PATH=/opt/swift/usr/bin:/usr/local/go/bin:${PATH}
+
+# Librarian keeps installed tools and downloads in its cache directory.
+ENV LIBRARIAN_CACHE=/usr/local/swift_tools/cache
+
+# Grant broad write permissions, so any UID running the container (like
+# librarianops) can run `librarian install swift`.
+RUN mkdir -p ${LIBRARIAN_CACHE} && \
+    chmod -R a+rwX /usr/local/swift_tools
+
 # ============== Go Stage ==============
 FROM base AS go
 ARG GO_RUNTIME_VERSION
-ARG GO_RUNTIME_CHECKSUM
 ARG GO_PROTOC_VERSION
 ARG GO_PROTOC_CHECKSUM
 ARG GO_PROTOC_PLUGIN_VERSION
@@ -430,14 +492,7 @@ ARG GO_GOIMPORTS_VERSION
 
 ENV GO_VERSION=$GO_RUNTIME_VERSION
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN wget -q https://go.dev/dl/go${GO_RUNTIME_VERSION}.linux-amd64.tar.gz -O go.tar.gz && \
-    echo "${GO_RUNTIME_CHECKSUM} go.tar.gz" | sha256sum -c - && \
-    tar -C /usr/local -xzf go.tar.gz && \
-    rm go.tar.gz
+COPY --from=go-runtime /usr/local/go /usr/local/go
 ENV PATH=/root/go/bin:/usr/local/go/bin:$PATH
 
 # Install required Go tools for protoc and the post-processor.

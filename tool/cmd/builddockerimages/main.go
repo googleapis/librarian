@@ -35,6 +35,7 @@ var supportedLanguages = []string{
 	"python",
 	"ruby",
 	"rust",
+	"swift",
 }
 
 func main() {
