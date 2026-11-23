@@ -41,12 +41,18 @@ var (
 	variablePattern         = regexp.MustCompile(`\$\{?(\w+)`)
 	copyFromPattern         = regexp.MustCompile(`--from=(\S+)`)
 	librarianInstallPattern = regexp.MustCompile(`\blibrarian install\b`)
-	// Language runtimes must come from official releases, not from apt.
-	aptRuntimePattern = regexp.MustCompile(`^(?:python3?|php|ruby|nodejs|npm|openjdk|default-jdk|golang|rustc|cargo|swift)(?:[.\d-]|$)`)
+	// Language runtimes and Composer must come from official releases, not from
+	// apt.
+	aptRuntimePattern = regexp.MustCompile(`^(?:python3?|php|composer|ruby|nodejs|npm|openjdk|default-jdk|golang|rustc|cargo|swift)(?:[.\d-]|$)`)
 )
 
-// compiledRuntimes lists the languages whose runtime is compiled from source.
-var compiledRuntimes = []string{"python"}
+// runtimeStages lists, for each language image, the runtimes it needs that are
+// built in their own stage. The PHP image reuses the Python and Node runtimes.
+var runtimeStages = map[string][]string{
+	"nodejs": {"nodejs"},
+	"php":    {"nodejs", "php", "python"},
+	"python": {"python"},
+}
 
 // TestSupportedLanguages checks that every language image stage in the
 // Dockerfile is built. Helper stages, such as php-runtime, have a hyphen in
@@ -194,23 +200,26 @@ func TestDockerfileDoesNotRunLibrarianInstall(t *testing.T) {
 	}
 }
 
-// TestDockerfileCompiledRuntimes checks that each runtime compiled from source
-// has its own <language>-runtime stage that the language stage uses. The
-// runtime stage must not depend on the librarian binary, so a librarian or
-// tool change never recompiles the runtime.
-func TestDockerfileCompiledRuntimes(t *testing.T) {
+// TestDockerfileRuntimeStages checks that each runtime has its own
+// <runtime>-runtime stage, and that every language stage needing it uses that
+// stage instead of installing it again. The runtime stage must not depend on
+// the librarian binary, so a librarian or tool change never rebuilds the
+// runtime.
+func TestDockerfileRuntimeStages(t *testing.T) {
 	stages := dockerfileStages(t)
-	for _, language := range compiledRuntimes {
+	for language, runtimes := range runtimeStages {
 		t.Run(language, func(t *testing.T) {
-			runtime := language + "-runtime"
-			if _, ok := stages[runtime]; !ok {
-				t.Fatalf("missing stage %s", runtime)
-			}
-			if !stageUses(stages, language, runtime) {
-				t.Errorf("stage %s does not use %s", language, runtime)
-			}
-			if stageUses(stages, runtime, "build") {
-				t.Errorf("stage %s depends on the build stage", runtime)
+			for _, runtime := range runtimes {
+				runtimeStage := runtime + "-runtime"
+				if _, ok := stages[runtimeStage]; !ok {
+					t.Fatalf("missing stage %s", runtimeStage)
+				}
+				if !stageUses(stages, language, runtimeStage) {
+					t.Errorf("stage %s does not use %s", language, runtimeStage)
+				}
+				if stageUses(stages, runtimeStage, "build") {
+					t.Errorf("stage %s depends on the build stage", runtimeStage)
+				}
 			}
 		})
 	}

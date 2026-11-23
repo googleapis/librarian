@@ -28,6 +28,7 @@
 #   docker build --target go -t librarian:go -f cmd/librarian/Dockerfile .
 #   docker build --target java -t librarian:java -f cmd/librarian/Dockerfile .
 #   docker build --target nodejs -t librarian:nodejs -f cmd/librarian/Dockerfile .
+#   docker build --target php -t librarian:php -f cmd/librarian/Dockerfile .
 #   docker build --target python -t librarian:python -f cmd/librarian/Dockerfile .
 #   docker build --target rust -t librarian:rust -f cmd/librarian/Dockerfile .
 #
@@ -94,6 +95,17 @@ ARG JAVA_BUILD=7
 ARG JAVA_CHECKSUM=e9458b38e97358850902c2936a1bb5f35f6cffc59da9fcd28c63eab8dbbfbc3b
 ARG JAVA_MAVEN_VERSION=3.9.8
 ARG JAVA_MAVEN_CHECKSUM=7d171def9b85846bf757a2cec94b7529371068a0670df14682447224e57983528e97a6d1b850327e4ca02b139abaab7fcb93c4315119e6f0ffb3f0cbc0d0b9a2
+
+# PHP dependency versions
+ARG PHP_VERSION=8.4.27
+ARG PHP_CHECKSUM=dcf93923b0e38e0d5252b25b796520b5a47761a08b3488b6d0b5d1115764d3f0
+# Shared libraries the compiled PHP needs at run time.
+ARG PHP_RUNTIME_LIBRARIES="libcurl4 libicu72 libonig5 libsqlite3-0 libssl3 libxml2 libzip4 zlib1g"
+ARG PHP_COMPOSER_VERSION=2.9.8
+ARG PHP_COMPOSER_CHECKSUM=59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
+# Librarian's PHP formatting finds @prettier/plugin-php in pnpm 7's global
+# directory layout.
+ARG PHP_PNPM_VERSION=7.33.7
 
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image.
@@ -191,16 +203,24 @@ RUN chmod a+wx /root && \
 RUN ln -s ${RUST_VERSION}-x86_64-unknown-linux-gnu /root/.rustup/toolchains/${RUST_VERSION%.*}-x86_64-unknown-linux-gnu
 ENV HOME=/root
 
+# ============== Runtime Builder Stage ==============
+# Runtimes are downloaded or compiled in stages that do not depend on
+# librarian, so changes to librarian or the language tools do not rebuild
+# them. The language stages copy the finished runtimes from these stages.
+FROM --platform=linux/amd64 ${BASE_IMAGE} AS runtime-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ca-certificates curl pkg-config xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
 # ============== Python Runtime Stage ==============
 # Python has no official Linux binaries, so it is compiled from the official
-# source. This stage does not depend on librarian, so changes to librarian or
-# the Python tools do not recompile Python.
-FROM --platform=linux/amd64 ${BASE_IMAGE} AS python-runtime
+# source.
+FROM runtime-builder AS python-runtime
 ARG PYTHON_VERSION
 ARG PYTHON_CHECKSUM
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential ca-certificates curl xz-utils \
     libbz2-dev libffi-dev liblzma-dev libncurses-dev libreadline-dev \
     libsqlite3-dev libssl-dev uuid-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -222,19 +242,78 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/python.tar.xz \
     ln -s pip3 /opt/python/bin/pip && \
     cd / && rm -rf /tmp/python /tmp/python.tar.xz
 
-# ============== Python Stage ==============
-FROM base AS python
+# ============== PHP Runtime Stage ==============
+# PHP has no official Linux binaries, so it is compiled from the official
+# source with the extensions Composer and the PHP generator need. Only the CLI
+# is built, because nothing uses the CGI or phpdbg programs.
+FROM runtime-builder AS php-runtime
+ARG PHP_VERSION
+ARG PHP_CHECKSUM
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev libicu-dev libonig-dev libsqlite3-dev libssl-dev \
+    libxml2-dev libzip-dev zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/php.tar.xz \
+        https://www.php.net/distributions/php-${PHP_VERSION}.tar.xz && \
+    echo "${PHP_CHECKSUM} /tmp/php.tar.xz" | sha256sum -c - && \
+    mkdir /tmp/php && \
+    tar -xJf /tmp/php.tar.xz -C /tmp/php --strip-components=1 && \
+    cd /tmp/php && \
+    ./configure --prefix=/opt/php --with-openssl --with-curl --with-zlib \
+        --with-zip --enable-bcmath --enable-intl --enable-mbstring \
+        --disable-cgi --disable-phpdbg && \
+    make -j"$(nproc)" && \
+    make install && \
+    strip --strip-debug /opt/php/bin/php && \
+    cd / && rm -rf /tmp/php /tmp/php.tar.xz
+
+# ============== NodeJS Runtime Stage ==============
+FROM runtime-builder AS nodejs-runtime
+ARG NODEJS_NODE_VERSION
+ARG NODEJS_NODE_CHECKSUM
+
+# Install Node from the official binaries.
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/node.tar.gz \
+        https://nodejs.org/dist/v${NODEJS_NODE_VERSION}/node-v${NODEJS_NODE_VERSION}-linux-x64.tar.gz && \
+    echo "${NODEJS_NODE_CHECKSUM} /tmp/node.tar.gz" | sha256sum -c - && \
+    mkdir -p /usr/local/node && \
+    tar -xzf /tmp/node.tar.gz -C /usr/local/node --strip-components=1 --no-same-owner && \
+    rm /tmp/node.tar.gz
+
+# ============== Python Base Stage ==============
+# Python with a virtual environment, shared by the python and php images.
+FROM base AS python-base
 ARG PYTHON_RUNTIME_LIBRARIES
-ARG PYTHON_PROTOC_VERSION
-ARG PYTHON_PROTOC_CHECKSUM
-ARG PANDOC_VERSION
-ARG PANDOC_CHECKSUM
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ${PYTHON_RUNTIME_LIBRARIES} \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=python-runtime /opt/python /opt/python
 ENV PATH=/opt/python/bin:${PATH}
+
+# Jobs run `librarian install` before generating, which pip installs the
+# Python tools. They go into a virtual environment in /python-packages, so it
+# is predictable where they are installed. Putting it first on PATH makes its
+# python3 and pip the defaults. A virtual environment is used instead of
+# PIP_TARGET, because pip with --target skips the console scripts of later
+# installs when the bin directory already exists.
+ENV VIRTUAL_ENV=/python-packages
+ENV PATH=${VIRTUAL_ENV}/bin:${PATH}
+ENV PIP_NO_CACHE_DIR=1
+
+# Grant broad write permissions, so any UID running the container (like
+# librarianops) can run `librarian install`.
+RUN python3 -m venv ${VIRTUAL_ENV} && \
+    chmod -R a+rwX ${VIRTUAL_ENV}
+
+# ============== Python Stage ==============
+FROM python-base AS python
+ARG PYTHON_PROTOC_VERSION
+ARG PYTHON_PROTOC_CHECKSUM
+ARG PANDOC_VERSION
+ARG PANDOC_CHECKSUM
 
 # Install pandoc
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/pandoc.tar.gz \
@@ -249,24 +328,44 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
     echo "${PYTHON_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
 
-# Jobs run `librarian install python` before generating, which pip installs
-# the Python tools. They go into a virtual environment in /python-packages, so
-# it is predictable where they are installed. Putting it first on PATH makes
-# its python3 and pip the defaults. A virtual environment is used instead of
-# PIP_TARGET, because pip with --target skips the console scripts of later
-# installs when the bin directory already exists.
-ENV VIRTUAL_ENV=/python-packages
-RUN python3 -m venv ${VIRTUAL_ENV}
-ENV PATH=${VIRTUAL_ENV}/bin:${PATH}
-ENV PIP_NO_CACHE_DIR=1
-
 # Librarian keeps installed tools and downloads in its cache directory.
 ENV LIBRARIAN_CACHE=/python-packages/librarian-cache
+RUN mkdir -p ${LIBRARIAN_CACHE} && \
+    chmod a+rwX ${LIBRARIAN_CACHE}
+
+# ============== PHP Stage ==============
+FROM python-base AS php
+ARG PHP_RUNTIME_LIBRARIES
+ARG PHP_COMPOSER_VERSION
+ARG PHP_COMPOSER_CHECKSUM
+ARG PHP_PNPM_VERSION
+
+# Node requires libatomic but doesn't install it.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libatomic1 ${PHP_RUNTIME_LIBRARIES} \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=php-runtime /opt/php /opt/php
+COPY --from=nodejs-runtime /usr/local/node /usr/local/node
+ENV PATH=${PATH}:/opt/php/bin:/usr/local/node/bin
+
+# Install Composer from the official release.
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /usr/local/bin/composer \
+        https://getcomposer.org/download/${PHP_COMPOSER_VERSION}/composer.phar && \
+    echo "${PHP_COMPOSER_CHECKSUM} /usr/local/bin/composer" | sha256sum -c - && \
+    chmod 755 /usr/local/bin/composer
+
+# Install pnpm
+RUN npm install --global pnpm@${PHP_PNPM_VERSION}
+
+# Librarian keeps installed tools and downloads in its cache directory, and
+# Composer keeps its settings and cache in COMPOSER_HOME.
+ENV LIBRARIAN_CACHE=/usr/local/php_tools/cache
+ENV COMPOSER_HOME=/usr/local/php_tools/composer
 
 # Grant broad write permissions, so any UID running the container (like
-# librarianops) can run `librarian install python`.
-RUN mkdir -p ${LIBRARIAN_CACHE} && \
-    chmod -R a+rwX ${VIRTUAL_ENV}
+# librarianops) can run `librarian install php`.
+RUN mkdir -p ${LIBRARIAN_CACHE} ${COMPOSER_HOME} && \
+    chmod -R a+rwX /usr/local/php_tools
 
 # ============== Go Stage ==============
 FROM base AS go
@@ -315,8 +414,6 @@ RUN chmod a+rx /root/go/bin/* && \
 FROM base AS nodejs
 ARG NODEJS_PROTOC_VERSION
 ARG NODEJS_PROTOC_CHECKSUM
-ARG NODEJS_NODE_VERSION
-ARG NODEJS_NODE_CHECKSUM
 ARG NODEJS_PNPM_VERSION
 ARG NODEJS_GAPIC_GENERATOR_VERSION
 ARG NODEJS_GAPIC_GENERATOR_CHECKSUM
@@ -330,13 +427,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node from the official binaries.
-RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/node.tar.gz \
-        https://nodejs.org/dist/v${NODEJS_NODE_VERSION}/node-v${NODEJS_NODE_VERSION}-linux-x64.tar.gz && \
-    echo "${NODEJS_NODE_CHECKSUM} /tmp/node.tar.gz" | sha256sum -c - && \
-    mkdir -p /usr/local/node && \
-    tar -xzf /tmp/node.tar.gz -C /usr/local/node --strip-components=1 --no-same-owner && \
-    rm /tmp/node.tar.gz
+COPY --from=nodejs-runtime /usr/local/node /usr/local/node
 ENV PATH=$PATH:/usr/local/node/bin
 
 # Install pnpm

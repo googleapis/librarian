@@ -31,6 +31,7 @@ var supportedLanguages = []string{
 	"go",
 	"java",
 	"nodejs",
+	"php",
 	"python",
 	"rust",
 }
