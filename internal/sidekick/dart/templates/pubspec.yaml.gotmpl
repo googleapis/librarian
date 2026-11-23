@@ -34,7 +34,7 @@ publish_to: none
 {{- end }}
 
 environment:
-  sdk: ^3.9.0
+  sdk: '{{ .Codec.SDKVersion }}'
 {{- if .Codec.UseWorkspace }}
 
 resolution: workspace
@@ -43,7 +43,7 @@ resolution: workspace
 
 dependencies:
   {{- range .Codec.PackageDependencies }}
-  {{ .Name }}: {{ .Constraint }}
+  {{ .Name }}: '{{ .Constraint }}'
   {{- end }}
 {{- end }}
 {{- if .Codec.HasDevDependencies }}

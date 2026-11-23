@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
@@ -176,6 +177,7 @@ func validateLibraries(cfg *config.Config) error {
 // languageValidators maps a language to a function that validates the language-specific
 // configuration.
 var languageValidators = map[string]func(*config.Config) error{
+	config.LanguageDart: dart.Validate,
 	config.LanguageJava: java.Validate,
 	config.LanguagePhp:  php.Validate,
 }

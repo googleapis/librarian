@@ -92,6 +92,8 @@ type modelAnnotations struct {
 	PackageSkillName string
 	// The version of the generated package.
 	PackageVersion string
+	// The Dart SDK version constraint for the generated package (e.g. ^3.9.0).
+	SDKVersion string
 	// Name of the API in snake_format (e.g. secretmanager).
 	MainFileNameWithExtension string
 	SourcePackageName         string
@@ -321,6 +323,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		generationYear             string
 		libraryPathOverride        string
 		packageVersion             string
+		sdkVersion                 string
 		partFileReference          string
 		doNotPublish               bool
 		useWorkspace               = true
@@ -360,6 +363,10 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			issueTrackerURL = definition
 		case key == "version":
 			packageVersion = definition
+		case key == "sdk-version":
+			// sdk-version = "^3.9.0"
+			// The Dart SDK version constraint for the generated package.
+			sdkVersion = definition
 		case key == "part-file":
 			partFileReference = definition
 		case key == "extra-exports":
@@ -500,6 +507,10 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return errors.New("all packages must define 'issue-tracker-url'")
 	}
 
+	if sdkVersion == "" {
+		return errors.New("all packages must define 'sdk-version'")
+	}
+
 	pkgName = packageName(model, packageNameOverride)
 	importedPackages := calculatePubPackages(annotate.imports)
 	for _, d := range dependencies {
@@ -543,6 +554,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		PackageName:               pkgName,
 		PackageSkillName:          strings.ReplaceAll(pkgName, "_", "-"),
 		PackageVersion:            packageVersion,
+		SDKVersion:                sdkVersion,
 		MainFileNameWithExtension: mainFileNameWithExtension,
 		CopyrightYear:             generationYear,
 		BoilerPlate: append(license.HeaderBulk(),

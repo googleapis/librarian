@@ -70,9 +70,9 @@ version: 1.0.0
 dependencies:
   sdk: ">=3.0.0 <4.0.0"
 
-  dep1: ^0.6.0
+  dep1: '^0.6.0'
 
-  dep2: ^1.2.0
+  dep2: '^1.2.0'
 
   unchanged_dep: ^1.0.0
 `

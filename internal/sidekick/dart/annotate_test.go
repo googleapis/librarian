@@ -30,6 +30,7 @@ var (
 	requiredConfig = map[string]string{
 		"api-keys-environment-variables": "GOOGLE_API_KEY,GEMINI_API_KEY",
 		"issue-tracker-url":              "http://www.example.com/issues",
+		"sdk-version":                    "^3.9.0",
 		"package:google_cloud_rpc":       "^1.2.3",
 		"package:http":                   "^4.5.6",
 		"package:google_cloud_protobuf":  "^7.8.9",
@@ -54,6 +55,9 @@ func TestAnnotateModel(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff("test.dart", codec.MainFileNameWithExtension); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("^3.9.0", codec.SDKVersion); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -190,6 +194,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
+			map[string]string{"sdk-version": "^3.10.0"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("^3.10.0", codec.SDKVersion); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			},
+		},
+		{
 			map[string]string{"part-file": "src/test.p.dart"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
@@ -264,6 +277,7 @@ func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
 	var tests = []string{
 		"api-keys-environment-variables",
 		"issue-tracker-url",
+		"sdk-version",
 	}
 
 	for _, test := range tests {

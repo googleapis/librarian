@@ -125,6 +125,9 @@ func buildCodec(library *config.Library) map[string]string {
 	if dart.RepositoryURL != "" {
 		codec["repository-url"] = dart.RepositoryURL
 	}
+	if dart.SDKVersion != "" {
+		codec["sdk-version"] = dart.SDKVersion
+	}
 	if dart.SupportsSSE {
 		codec["supports-sse"] = "true"
 	}

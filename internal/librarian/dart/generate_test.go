@@ -48,6 +48,7 @@ func TestGenerate(t *testing.T) {
 			CopyrightYear: "2025",
 			Dart: &config.DartPackage{
 				IssueTrackerURL: "https://placeholder",
+				SDKVersion:      "^3.9.0",
 				Packages: map[string]string{
 					"package:google_cloud_protobuf": "^0.5.0",
 				},
@@ -59,6 +60,7 @@ func TestGenerate(t *testing.T) {
 			CopyrightYear: "2025",
 			Dart: &config.DartPackage{
 				IssueTrackerURL: "https://placeholder",
+				SDKVersion:      "^3.9.0",
 				Packages: map[string]string{
 					"package:google_cloud_protobuf": "^0.5.0",
 				},
@@ -163,6 +165,7 @@ func TestGenerateLibrary(t *testing.T) {
 		Dart: &config.DartPackage{
 			APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
 			IssueTrackerURL:             "https://github.com/googleapis/google-cloud-dart/issues",
+			SDKVersion:                  "^3.9.0",
 			Packages: map[string]string{
 				"package:googleapis_auth":           "^2.0.0",
 				"package:http":                      "^1.3.0",

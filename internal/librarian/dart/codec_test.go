@@ -158,6 +158,18 @@ func TestBuildCodec(t *testing.T) {
 			},
 		},
 		{
+			name: "sdk version",
+			library: &config.Library{
+				Dart: &config.DartPackage{
+					SDKVersion: "^3.10.0",
+				},
+			},
+			want: map[string]string{
+				"sdk-version": "^3.10.0",
+				"version":     "0.1.0",
+			},
+		},
+		{
 			name: "packages map",
 			library: &config.Library{
 				Dart: &config.DartPackage{
@@ -234,6 +246,7 @@ func TestBuildCodec(t *testing.T) {
 					ReadmeAfterTitleText:        "**Note:** This package is experimental.",
 					ReadmeQuickstartText:        "Run `dart pub add` to install.",
 					RepositoryURL:               "https://github.com/googleapis/google-cloud-dart",
+					SDKVersion:                  "^3.10.0",
 					Packages: map[string]string{
 						"package:googleapis_auth": "^2.0.0",
 					},
@@ -260,6 +273,7 @@ func TestBuildCodec(t *testing.T) {
 				"readme-after-title-text":        "**Note:** This package is experimental.",
 				"readme-quickstart-text":         "Run `dart pub add` to install.",
 				"repository-url":                 "https://github.com/googleapis/google-cloud-dart",
+				"sdk-version":                    "^3.10.0",
 				"supports-sse":                   "true",
 				"package:googleapis_auth":        "^2.0.0",
 				"prefix:google.protobuf":         "pb",
@@ -414,6 +428,7 @@ func TestToModelConfig(t *testing.T) {
 					ReadmeAfterTitleText:        "readme-after-title-text",
 					ReadmeQuickstartText:        "readme-quickstart-text",
 					RepositoryURL:               "https://github.com/googleapis/google-cloud-dart",
+					SDKVersion:                  "^3.10.0",
 					Packages: map[string]string{
 						"package:googleapis_auth": "^2.0.0",
 					},
@@ -457,6 +472,7 @@ func TestToModelConfig(t *testing.T) {
 					"readme-after-title-text":        "readme-after-title-text",
 					"readme-quickstart-text":         "readme-quickstart-text",
 					"repository-url":                 "https://github.com/googleapis/google-cloud-dart",
+					"sdk-version":                    "^3.10.0",
 					"version":                        "0.1.0",
 				},
 			},
