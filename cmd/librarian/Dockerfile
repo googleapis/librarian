@@ -25,8 +25,11 @@
 #   gcloud auth configure-docker marketplace.gcr.io
 #
 # Build:
-#   docker build --target rust -t librarian:rust -f cmd/librarian/Dockerfile .
+#   docker build --target go -t librarian:go -f cmd/librarian/Dockerfile .
+#   docker build --target java -t librarian:java -f cmd/librarian/Dockerfile .
+#   docker build --target nodejs -t librarian:nodejs -f cmd/librarian/Dockerfile .
 #   docker build --target python -t librarian:python -f cmd/librarian/Dockerfile .
+#   docker build --target rust -t librarian:rust -f cmd/librarian/Dockerfile .
 #
 # Usage:
 #   docker run --rm -v "$(pwd)":/workspace -w /workspace librarian:rust generate
@@ -34,16 +37,20 @@
 #
 
 # Base/Build dependency versions
-ARG TARGETARCH
 ARG GO_VERSION=1.26.1
+ARG GO_CHECKSUM=031f088e5d955bab8657ede27ad4e3bc5b7c1ba281f05f245bcc304f327c987a
 ARG PROTOC_VERSION=29.3
 ARG PROTOC_CHECKSUM=f149c4a69910c8d241d27869d2cdf6791187a7a9434ad0f392b4a61e1697c3844e60bce634bd7147cb4cb7f2ad2530fc933be4976f67ac75d9ad78bb8b412f24
 
 # Rust dependency versions
-ARG RUST_VERSION=1.92
+ARG RUSTUP_VERSION=1.29.3
+ARG RUSTUP_CHECKSUM=b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55
+ARG RUST_VERSION=1.100.0
 ARG TAPLO_CLI_VERSION=0.10.0
 ARG CARGO_WORKSPACES_VERSION=0.4.0
 ARG CARGO_SEMVER_CHECKS_VERSION=0.46.0
+ARG CARGO_MINIMAL_VERSIONS_VERSION=0.1.39
+ARG CARGO_HACK_VERSION=0.6.46
 
 # Python dependency versions
 ARG PYTHON_PROTOC_VERSION=33.5
@@ -52,14 +59,19 @@ ARG PANDOC_VERSION=3.8.2
 ARG PANDOC_CHECKSUM=f5e90628b44a801ecdf812236291871607db8fb2fba0e99911a6c497b406c64a8940fd2a776d482ece7a9dac10d0228378d78da61091262b69e7276456495f5c
 
 # Go dependency versions
+ARG GO_RUNTIME_VERSION=1.26.0
+ARG GO_RUNTIME_CHECKSUM=aac1b08a0fb0c4e0a7c1555beb7b59180b05dfc5a3d62e40e9de90cd42f88235
 ARG GO_PROTOC_VERSION=25.7
 ARG GO_PROTOC_CHECKSUM=ac571249613458e4b9598a8f2a9b3ab9e56ed04d35f610f4181c65da4ee9bfd6fe44b5b0fd0a6d5b53ca4657d443c3bd457c3ef6164df8b8b4bc537012205aec
 ARG GO_PROTOC_PLUGIN_VERSION=1.35.2
 ARG GO_PROTOC_GRPC_PLUGIN_VERSION=1.3.0
 ARG GO_GAPIC_VERSION=0.59.0
-ARG GO_GOIMPORTS_VERSION=latest
+ARG GO_GOIMPORTS_VERSION=0.44.0
 
 # NodeJS dependency versions
+ARG NODEJS_NODE_VERSION=22.23.5
+ARG NODEJS_NODE_CHECKSUM=c54118104acc524633b5abe106bbf44a53126ec8b4e5fa105cb92b5d7de8a1a1
+ARG NODEJS_PNPM_VERSION=10.0.0
 ARG NODEJS_PROTOC_VERSION=33.2
 ARG NODEJS_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
 ARG NODEJS_GAPIC_GENERATOR_VERSION=gapic-generator-v4.12.1
@@ -72,17 +84,17 @@ ARG NODEJS_PROTOBUFJS_VERSION=7.5.8
 # Java dependency versions
 ARG JAVA_PROTOC_VERSION=33.2
 ARG JAVA_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
-ARG JAVA_VERSION=17
-ARG NODEJS_NVM_VERSION=0.40.4
-ARG NODEJS_NVM_CHECKSUM=a8e082d8d1a9b61a09e5d3e1902d2930e5b1b84a86f9777c7d2eb50ea204c0141f6a97c54a860bc3282e7b000f1c669c755f5e0db7bd6d492072744c302c0a21
-ARG NODEJS_NODE_VERSION=22
-ARG NODEJS_PNPM_VERSION=11.7.0
+ARG JAVA_VERSION=17.0.7
+ARG JAVA_BUILD=7
+ARG JAVA_CHECKSUM=e9458b38e97358850902c2936a1bb5f35f6cffc59da9fcd28c63eab8dbbfbc3b
+ARG JAVA_MAVEN_VERSION=3.9.8
+ARG JAVA_MAVEN_CHECKSUM=7d171def9b85846bf757a2cec94b7529371068a0670df14682447224e57983528e97a6d1b850327e4ca02b139abaab7fcb93c4315119e6f0ffb3f0cbc0d0b9a2
 
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image.
-FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS build
+FROM --platform=linux/amd64 marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS build
 ARG GO_VERSION
-ARG TARGETARCH
+ARG GO_CHECKSUM
 ENV GO_VERSION=$GO_VERSION
 
 RUN apt-get update && \
@@ -94,7 +106,8 @@ RUN apt-get update && \
     wget && \
     rm -rf /var/lib/apt/lists/*
 
-RUN wget -q https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz -O go.tar.gz && \
+RUN wget -q https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz -O go.tar.gz && \
+    echo "${GO_CHECKSUM} go.tar.gz" | sha256sum -c - && \
     tar -C /usr/local -xzf go.tar.gz && \
     rm go.tar.gz
 ENV PATH=/usr/local/go/bin:$PATH
@@ -109,7 +122,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 go build -buildvcs=false -o /go/bin/librarian ./cmd/librarian
 
 # ============== Base Stage ==============
-FROM debian:bookworm-slim AS base
+FROM --platform=linux/amd64 debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS base
 ARG PROTOC_VERSION
 ARG PROTOC_CHECKSUM
 
@@ -130,17 +143,26 @@ ENTRYPOINT ["/app/librarian"]
 
 # ============== Rust Stage ==============
 FROM base AS rust
+ARG RUSTUP_VERSION
+ARG RUSTUP_CHECKSUM
 ARG RUST_VERSION
 ARG TAPLO_CLI_VERSION
 ARG CARGO_WORKSPACES_VERSION
 ARG CARGO_SEMVER_CHECKS_VERSION
+ARG CARGO_MINIMAL_VERSIONS_VERSION
+ARG CARGO_HACK_VERSION
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust toolchain
-RUN curl --retry 5 --retry-delay 15 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/rustup-init \
+        https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/x86_64-unknown-linux-gnu/rustup-init && \
+    echo "${RUSTUP_CHECKSUM} /tmp/rustup-init" | sha256sum -c - && \
+    chmod +x /tmp/rustup-init && \
+    /tmp/rustup-init -y --default-toolchain none && \
+    rm /tmp/rustup-init
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install Rust and components
@@ -152,13 +174,16 @@ RUN rustup install ${RUST_VERSION} && \
 RUN cargo install --locked taplo-cli@${TAPLO_CLI_VERSION} && \
     cargo install --locked cargo-workspaces@${CARGO_WORKSPACES_VERSION} && \
     cargo install --locked cargo-semver-checks@${CARGO_SEMVER_CHECKS_VERSION} && \
-    cargo install --locked cargo-minimal-versions && \
-    cargo install --locked cargo-hack
+    cargo install --locked cargo-minimal-versions@${CARGO_MINIMAL_VERSIONS_VERSION} && \
+    cargo install --locked cargo-hack@${CARGO_HACK_VERSION}
 
 # Make sure the tools are executable by any user (not just root).
 # librarianops executes the docker image as the current user.
 RUN chmod a+wx /root && \
     chmod -R a+w /root/.cargo
+# rust-toolchain.toml files use the x.y channel name, which rustup treats as a
+# different toolchain than x.y.z. Link it so it resolves without a download.
+RUN ln -s ${RUST_VERSION}-x86_64-unknown-linux-gnu /root/.rustup/toolchains/${RUST_VERSION%.*}-x86_64-unknown-linux-gnu
 ENV HOME=/root
 
 # ============== Python Stage ==============
@@ -203,8 +228,8 @@ ENV SYNTHTOOL_TEMPLATES=${PYTHONPATH}/synthtool/gcp/templates
 
 # ============== Go Stage ==============
 FROM base AS go
-ARG GO_VERSION
-ARG TARGETARCH
+ARG GO_RUNTIME_VERSION
+ARG GO_RUNTIME_CHECKSUM
 ARG GO_PROTOC_VERSION
 ARG GO_PROTOC_CHECKSUM
 ARG GO_PROTOC_PLUGIN_VERSION
@@ -212,13 +237,14 @@ ARG GO_PROTOC_GRPC_PLUGIN_VERSION
 ARG GO_GAPIC_VERSION
 ARG GO_GOIMPORTS_VERSION
 
-ENV GO_VERSION=$GO_VERSION
+ENV GO_VERSION=$GO_RUNTIME_VERSION
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget -q https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz -O go.tar.gz && \
+RUN wget -q https://go.dev/dl/go${GO_RUNTIME_VERSION}.linux-amd64.tar.gz -O go.tar.gz && \
+    echo "${GO_RUNTIME_CHECKSUM} go.tar.gz" | sha256sum -c - && \
     tar -C /usr/local -xzf go.tar.gz && \
     rm go.tar.gz
 ENV PATH=/root/go/bin:/usr/local/go/bin:$PATH
@@ -228,7 +254,7 @@ RUN (export GOTOOLCHAIN='auto' && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v${GO_PROTOC_PLUGIN_VERSION} && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v${GO_PROTOC_GRPC_PLUGIN_VERSION} && \
     go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v${GO_GAPIC_VERSION} && \
-    go install golang.org/x/tools/cmd/goimports@${GO_GOIMPORTS_VERSION})
+    go install golang.org/x/tools/cmd/goimports@v${GO_GOIMPORTS_VERSION})
 
 # Install Go-specific protoc version
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
@@ -247,9 +273,8 @@ RUN chmod a+rx /root/go/bin/* && \
 FROM base AS nodejs
 ARG NODEJS_PROTOC_VERSION
 ARG NODEJS_PROTOC_CHECKSUM
-ARG NODEJS_NVM_VERSION
-ARG NODEJS_NVM_CHECKSUM
 ARG NODEJS_NODE_VERSION
+ARG NODEJS_NODE_CHECKSUM
 ARG NODEJS_PNPM_VERSION
 ARG NODEJS_GAPIC_GENERATOR_VERSION
 ARG NODEJS_GAPIC_GENERATOR_CHECKSUM
@@ -263,31 +288,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
-# See https://github.com/nvm-sh/nvm
-# Create a script file sourced by both interactive and non-interactive bash shells;
-# this is required for nvm installation.
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-ENV BASH_ENV="/root/.bash_env"
-RUN touch "${BASH_ENV}"
-RUN echo '. "${BASH_ENV}"' >> ~/.bashrc
-
-# Download and install nvm
-ENV NVM_DIR=/root/.nvm
-RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/nvm-install.sh \
-        https://raw.githubusercontent.com/nvm-sh/nvm/v${NODEJS_NVM_VERSION}/install.sh && \
-    echo "${NODEJS_NVM_CHECKSUM} /tmp/nvm-install.sh" | sha512sum -c - && \
-    chmod +x /tmp/nvm-install.sh && \
-    PROFILE="${BASH_ENV}" /tmp/nvm-install.sh && \
-    rm /tmp/nvm-install.sh
-RUN echo node > .nvmrc
-
-# Use nvm to install and use the specified version of node by default.
-RUN nvm install ${NODEJS_NODE_VERSION} && nvm alias default ${NODEJS_NODE_VERSION}
+# Install Node from the official binaries.
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/node.tar.gz \
+        https://nodejs.org/dist/v${NODEJS_NODE_VERSION}/node-v${NODEJS_NODE_VERSION}-linux-x64.tar.gz && \
+    echo "${NODEJS_NODE_CHECKSUM} /tmp/node.tar.gz" | sha256sum -c - && \
+    mkdir -p /usr/local/node && \
+    tar -xzf /tmp/node.tar.gz -C /usr/local/node --strip-components=1 --no-same-owner && \
+    rm /tmp/node.tar.gz
+ENV PATH=$PATH:/usr/local/node/bin
 
 # Install pnpm
-RUN npm install --global corepack@latest && \
-    corepack enable && \
-    corepack prepare pnpm@${NODEJS_PNPM_VERSION} --activate
+RUN npm install --global pnpm@${NODEJS_PNPM_VERSION}
 
 # Install Node-specific protoc version
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
@@ -299,25 +310,14 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
 # in /root/.cache, for example)
 RUN chmod a+x /root
 
-# Put the installed version of Node on the path, by using
-# the version reported by "nvm current" to find the appropriate directory,
-# and creating a symlink. The Dockerfile "ENV" instruction cannot use the output
-# of a shell command.
-#
-# We need to get node and other installed binaries on the path separately from
-# what nvm provides in nvm.sh because we'll be running librarian directly (not
-# in bash); we don't need all of nvm to be available, because we're not calling
-# nvm from Librarian. We're only using it to set up the right version of Node.
-RUN ln -s /root/.nvm/versions/node/$(nvm current) /root/.nvm/versions/node/current 
-ENV PATH=$PATH:/root/.nvm/versions/node/current/bin
-ENV PNPM_HOME=/root/.nvm/versions/node/current
-ENV PNPM_CONFIG_GLOBAL_BIN_DIR=/root/.nvm/versions/node/current/bin
-ENV PNPM_CONFIG_GLOBAL_DIR=/root/.nvm/versions/node/current/pnpm-global
-ENV PNPM_CONFIG_STORE_DIR=/root/.nvm/versions/node/current/pnpm-store
-ENV PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true
+# pnpm keeps global packages and their binaries in PNPM_HOME.
+ENV PNPM_HOME=/usr/local/pnpm
+ENV PATH=$PATH:$PNPM_HOME
 
-# Install Node generation tools
-RUN pnpm add -g \
+# Install Node generation tools. pnpm 10 skips dependency build scripts; none
+# of them are needed to generate code. The package store is only needed while
+# installing, so it is removed afterwards.
+RUN pnpm add -g --store-dir /tmp/pnpm-store \
         gapic-node-processing@${NODEJS_GAPIC_NODE_PROCESSING_VERSION} \
         gapic-tools@${NODEJS_GAPIC_TOOLS_VERSION} \
         protobufjs-cli@${NODEJS_PROTOBUFJS_CLI_VERSION} \
@@ -333,31 +333,37 @@ RUN pnpm add -g \
     tar -xzf /tmp/generator.tar.gz -C /opt/gapic-generator-typescript --strip-components=4 google-cloud-node-${NODEJS_GAPIC_GENERATOR_VERSION}/core/generator/gapic-generator-typescript && \
     rm /tmp/generator.tar.gz && \
     cd /opt/gapic-generator-typescript && \
-    pnpm install && \
+    pnpm install --store-dir /tmp/pnpm-store && \
     ./node_modules/.bin/tsc && \
     cp -a templates protos build/ && \
-    pnpm add -g "$PWD"
+    pnpm add -g --store-dir /tmp/pnpm-store "$PWD" && \
+    rm -rf /tmp/pnpm-store
 
 # ============== Java Stage ==============
 FROM base AS java
 ARG JAVA_PROTOC_VERSION
 ARG JAVA_PROTOC_CHECKSUM
 ARG JAVA_VERSION
+ARG JAVA_BUILD
+ARG JAVA_CHECKSUM
+ARG JAVA_MAVEN_VERSION
+ARG JAVA_MAVEN_CHECKSUM
 
-# Configure Adoptium APT repository and install Temurin 17 JDK, Maven, and runtime tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    unzip \
-    curl \
-    git \
-    ca-certificates \
-    gnupg \
-    apt-transport-https \
-    && curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null \
-    && echo "deb https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo "$VERSION_CODENAME") main" | tee /etc/apt/sources.list.d/adoptium.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-    temurin-${JAVA_VERSION}-jdk \
-    maven \
-    && rm -rf /var/lib/apt/lists/*
+# Install the Temurin JDK and Maven from the official binaries.
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/jdk.tar.gz \
+        https://api.adoptium.net/v3/binary/version/jdk-${JAVA_VERSION}%2B${JAVA_BUILD}/linux/x64/jdk/hotspot/normal/eclipse && \
+    echo "${JAVA_CHECKSUM} /tmp/jdk.tar.gz" | sha256sum -c - && \
+    mkdir -p /opt/java && \
+    tar -xzf /tmp/jdk.tar.gz -C /opt/java --strip-components=1 && \
+    rm /tmp/jdk.tar.gz
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/maven.tar.gz \
+        https://archive.apache.org/dist/maven/maven-3/${JAVA_MAVEN_VERSION}/binaries/apache-maven-${JAVA_MAVEN_VERSION}-bin.tar.gz && \
+    echo "${JAVA_MAVEN_CHECKSUM} /tmp/maven.tar.gz" | sha512sum -c - && \
+    mkdir -p /opt/maven && \
+    tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1 && \
+    rm /tmp/maven.tar.gz
+ENV JAVA_HOME=/opt/java
+ENV PATH=/opt/java/bin:/opt/maven/bin:$PATH
 
 # Install Java-specific protoc version
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
