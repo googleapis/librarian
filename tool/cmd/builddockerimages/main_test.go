@@ -52,6 +52,7 @@ var runtimeStages = map[string][]string{
 	"nodejs": {"nodejs"},
 	"php":    {"nodejs", "php", "python"},
 	"python": {"python"},
+	"ruby":   {"ruby"},
 }
 
 // TestSupportedLanguages checks that every language image stage in the

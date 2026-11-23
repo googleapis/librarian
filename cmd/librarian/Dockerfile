@@ -30,6 +30,7 @@
 #   docker build --target nodejs -t librarian:nodejs -f cmd/librarian/Dockerfile .
 #   docker build --target php -t librarian:php -f cmd/librarian/Dockerfile .
 #   docker build --target python -t librarian:python -f cmd/librarian/Dockerfile .
+#   docker build --target ruby -t librarian:ruby -f cmd/librarian/Dockerfile .
 #   docker build --target rust -t librarian:rust -f cmd/librarian/Dockerfile .
 #
 # Usage:
@@ -106,6 +107,12 @@ ARG PHP_COMPOSER_CHECKSUM=59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf04
 # Librarian's PHP formatting finds @prettier/plugin-php in pnpm 7's global
 # directory layout.
 ARG PHP_PNPM_VERSION=7.33.7
+
+# Ruby dependency versions
+ARG RUBY_VERSION=3.4.9
+ARG RUBY_CHECKSUM=4231c54072601a171faed1699f105985e9971c94cd382b78feb4eb44eec2dd1a
+# Shared libraries the compiled Ruby needs at run time.
+ARG RUBY_RUNTIME_LIBRARIES="libffi8 libssl3 libyaml-0-2 zlib1g"
 
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image.
@@ -269,6 +276,30 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/php.tar.xz \
     strip --strip-debug /opt/php/bin/php && \
     cd / && rm -rf /tmp/php /tmp/php.tar.xz
 
+# ============== Ruby Runtime Stage ==============
+# Ruby has no official Linux binaries, so it is compiled from the official
+# source, without the generated API documentation or debug symbols.
+FROM runtime-builder AS ruby-runtime
+ARG RUBY_VERSION
+ARG RUBY_CHECKSUM
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libffi-dev libssl-dev libyaml-dev zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/ruby.tar.xz \
+        https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.xz && \
+    echo "${RUBY_CHECKSUM} /tmp/ruby.tar.xz" | sha256sum -c - && \
+    mkdir /tmp/ruby && \
+    tar -xJf /tmp/ruby.tar.xz -C /tmp/ruby --strip-components=1 && \
+    cd /tmp/ruby && \
+    ./configure --prefix=/opt/ruby --enable-shared --disable-install-doc && \
+    make -j"$(nproc)" && \
+    make install && \
+    strip --strip-debug /opt/ruby/bin/ruby && \
+    find /opt/ruby/lib -name '*.so*' -type f -exec strip --strip-debug {} + && \
+    cd / && rm -rf /tmp/ruby /tmp/ruby.tar.xz
+
 # ============== NodeJS Runtime Stage ==============
 FROM runtime-builder AS nodejs-runtime
 ARG NODEJS_NODE_VERSION
@@ -366,6 +397,25 @@ ENV COMPOSER_HOME=/usr/local/php_tools/composer
 # librarianops) can run `librarian install php`.
 RUN mkdir -p ${LIBRARIAN_CACHE} ${COMPOSER_HOME} && \
     chmod -R a+rwX /usr/local/php_tools
+
+# ============== Ruby Stage ==============
+FROM base AS ruby
+ARG RUBY_RUNTIME_LIBRARIES
+
+# build-essential lets gems build native extensions against the Ruby headers.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ${RUBY_RUNTIME_LIBRARIES} \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=ruby-runtime /opt/ruby /opt/ruby
+ENV PATH=/opt/ruby/bin:${PATH}
+
+# Librarian keeps installed tools and downloads in its cache directory.
+ENV LIBRARIAN_CACHE=/usr/local/ruby_tools/cache
+
+# Grant broad write permissions, so any UID running the container (like
+# librarianops) can run `librarian install ruby`.
+RUN mkdir -p ${LIBRARIAN_CACHE} && \
+    chmod -R a+rwX /usr/local/ruby_tools
 
 # ============== Go Stage ==============
 FROM base AS go

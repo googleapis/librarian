@@ -33,6 +33,7 @@ var supportedLanguages = []string{
 	"nodejs",
 	"php",
 	"python",
+	"ruby",
 	"rust",
 }
 
