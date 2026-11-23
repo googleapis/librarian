@@ -203,6 +203,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
+			map[string]string{"sdk-version": ">=3.9.0 <4.0.0"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("'>=3.9.0 <4.0.0'", codec.SDKVersion); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			},
+		},
+		{
 			map[string]string{"part-file": "src/test.p.dart"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
@@ -569,6 +578,15 @@ func TestCalculateDependencies(t *testing.T) {
 			want: []packageDependency{
 				{Name: "google_cloud_baz", Constraint: "^1.2.3"},
 				{Name: "google_cloud_foo", Constraint: "^4.5.6"}},
+		},
+		{
+			testName:    "range constraint",
+			packages:    map[string]bool{"google_cloud_baz": true, "google_cloud_foo": true},
+			constraints: map[string]string{"google_cloud_baz": "^1.2.3", "google_cloud_foo": ">=4.5.6 <5.0.0"},
+			packageName: "google_cloud_bar",
+			want: []packageDependency{
+				{Name: "google_cloud_baz", Constraint: "^1.2.3"},
+				{Name: "google_cloud_foo", Constraint: "'>=4.5.6 <5.0.0'"}},
 		},
 	} {
 		t.Run(test.testName, func(t *testing.T) {

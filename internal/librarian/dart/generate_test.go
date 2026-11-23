@@ -165,7 +165,7 @@ func TestGenerateLibrary(t *testing.T) {
 		Dart: &config.DartPackage{
 			APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
 			IssueTrackerURL:             "https://github.com/googleapis/google-cloud-dart/issues",
-			SDKVersion:                  "^3.9.0",
+			SDKVersion:                  ">=3.9.0 <5.0.0",
 			Packages: map[string]string{
 				"package:googleapis_auth":           "^2.0.0",
 				"package:http":                      "^1.3.0",
@@ -196,6 +196,8 @@ func TestGenerateLibrary(t *testing.T) {
 	}{
 		{filepath.Join(outDir, "pubspec.yaml"), "name:"},
 		{filepath.Join(outDir, "pubspec.yaml"), "google_cloud_secretmanager_v1"},
+		{filepath.Join(outDir, "pubspec.yaml"), "sdk: '>=3.9.0 <5.0.0'"},
+		{filepath.Join(outDir, "pubspec.yaml"), "google_cloud_protobuf: ^0.4.0"},
 		{filepath.Join(outDir, "README.md"), "Secret Manager"},
 		{filepath.Join(outDir, "lib", "secretmanager.dart"), "library"},
 	} {
