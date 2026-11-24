@@ -81,6 +81,7 @@ ARG PYTHON_RUNTIME_LIBRARIES="libbz2-1.0 libffi8 liblzma5 libncursesw6 libreadli
 # Matches tools.protoc in google-cloud-python's librarian.yaml.
 ARG PYTHON_PROTOC_VERSION=33.5
 ARG PYTHON_PROTOC_CHECKSUM=eb842a2259a90a402207cae3a9261dc9501f43a535b3b3d786ecc496e117f499cf373fe41181fd9047035f7ed6c2dee9a55f7f0a7afa1c5d7cb5be3e672bf527
+# pandoc 3.8.2 is the version the Python generation setup requires.
 # pypandoc-binary 1.16.2, which `librarian install` installs, bundles pandoc
 # 3.8.2.1. Newer pandoc releases (3.10 and later) reject multiline links in
 # the generated docs.
@@ -130,12 +131,15 @@ ARG JAVA_MAVEN_CHECKSUM=7d171def9b85846bf757a2cec94b7529371068a0670df14682447224
 
 # PHP dependency versions
 # google-cloud-php needs PHP 8.2 or later, as its composer.json says. 8.4.27
-# is not the latest 8.4 patch.
+# comes from the initial runtime list for these images and is kept without a
+# bump, so it is not the latest 8.4 patch.
 ARG PHP_VERSION=8.4.27
 ARG PHP_CHECKSUM=dcf93923b0e38e0d5252b25b796520b5a47761a08b3488b6d0b5d1115764d3f0
 # Shared libraries the compiled PHP needs at run time.
 ARG PHP_RUNTIME_LIBRARIES="libcurl4 libicu72 libonig5 libsqlite3-0 libssl3 libxml2 libzip4 zlib1g"
-# The last Composer 2.9 release, which is older than the newest Composer.
+# The last Composer 2.9 release. It comes from the initial runtime list for
+# these images and is kept without a bump, so it is older than the newest
+# Composer.
 ARG PHP_COMPOSER_VERSION=2.9.8
 ARG PHP_COMPOSER_CHECKSUM=59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
 # Last pnpm 7 release. Librarian's PHP formatting finds @prettier/plugin-php
@@ -152,7 +156,8 @@ ARG RUBY_DEV_LIBRARIES="libffi-dev libssl-dev libyaml-dev zlib1g-dev"
 
 # Swift dependency versions
 # google-cloud-swift needs Swift 6.2 or later, as its Package.swift says, and
-# its CI uses Swift 6.4. 6.4.2 is not the latest 6.4 patch.
+# its CI uses Swift 6.4. 6.4.2 comes from the initial runtime list for these
+# images and is kept without a bump, so it is not the latest 6.4 patch.
 ARG SWIFT_VERSION=6.4.2
 # Swift 6.x Release Signing Key, from https://www.swift.org/keys/.
 ARG SWIFT_SIGNING_FINGERPRINT=52BB7E3DE28A71BE22EC05FFEF80A866B47A981F
@@ -241,7 +246,7 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/rustup-init \
         https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/x86_64-unknown-linux-gnu/rustup-init && \
     echo "${RUSTUP_CHECKSUM} /tmp/rustup-init" | sha256sum -c - && \
     chmod +x /tmp/rustup-init && \
-    /tmp/rustup-init -y --default-toolchain none && \
+    /tmp/rustup-init -y --default-toolchain none --no-modify-path && \
     rm /tmp/rustup-init
 ENV PATH="/root/.cargo/bin:${PATH}"
 
@@ -258,7 +263,7 @@ RUN cargo install --locked taplo-cli@${TAPLO_CLI_VERSION} && \
     cargo install --locked cargo-semver-checks@${CARGO_SEMVER_CHECKS_VERSION} && \
     cargo install --locked cargo-minimal-versions@${CARGO_MINIMAL_VERSIONS_VERSION} && \
     cargo install --locked cargo-hack@${CARGO_HACK_VERSION} && \
-    chmod a+wx /root && \
+    chmod a+x /root && \
     chmod -R a+rwX /root/.cargo
 # rust-toolchain.toml files use the x.y channel name, which rustup treats as a
 # different toolchain than x.y.z. Link it so it resolves without a download.
@@ -489,6 +494,7 @@ RUN mkdir -p ${LIBRARIAN_CACHE} ${COMPOSER_HOME} && \
 
 # ============== Ruby Stage ==============
 FROM base AS ruby
+ARG RUBY_VERSION
 ARG RUBY_DEV_LIBRARIES
 
 # build-essential lets gems build native extensions against the Ruby headers.
@@ -498,14 +504,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=ruby-runtime /opt/ruby /opt/ruby
 ENV PATH=/opt/ruby/bin:${PATH}
 
-# Librarian keeps installed tools and downloads in its cache directory, and
-# Bundler installs gems in BUNDLE_PATH instead of the root-owned Ruby.
+# Librarian keeps installed tools and downloads in its cache directory. Gems
+# are installed in GEM_HOME instead of the root-owned Ruby, which stays on
+# GEM_PATH for its default gems.
 ENV LIBRARIAN_CACHE=/usr/local/ruby_tools/cache
-ENV BUNDLE_PATH=/usr/local/ruby_tools/bundle
+ENV GEM_HOME=/usr/local/ruby_tools/gems
+ENV GEM_PATH=${GEM_HOME}:/opt/ruby/lib/ruby/gems/${RUBY_VERSION%.*}.0
+ENV PATH=${GEM_HOME}/bin:${PATH}
 
 # Grant broad write permissions, so any UID running the container (like
 # librarianops) can run `librarian install ruby` and `bundle install`.
-RUN mkdir -p ${LIBRARIAN_CACHE} ${BUNDLE_PATH} && \
+RUN mkdir -p ${LIBRARIAN_CACHE} ${GEM_HOME} && \
     chmod -R a+rwX /usr/local/ruby_tools
 
 # ============== Swift Stage ==============
@@ -593,14 +602,15 @@ RUN HOME=/root npm install --global pnpm@${NODEJS_PNPM_VERSION}
 # in /root/.cache, for example)
 RUN chmod a+x /root
 
-# pnpm keeps global packages and their binaries in PNPM_HOME.
-ENV PNPM_HOME=/usr/local/pnpm
-ENV PATH=$PATH:$PNPM_HOME
+# The build-time pnpm keeps global packages and their binaries in
+# /usr/local/pnpm. PNPM_HOME is only set while installing, so at run time pnpm
+# keeps the versions it downloads under the writable HOME.
+ENV PATH=$PATH:/usr/local/pnpm
 
 # Install Node generation tools. pnpm 10 skips dependency build scripts; none
 # of them are needed to generate code. The package store is only needed while
 # installing, so it is removed afterwards.
-RUN export HOME=/root && \
+RUN export HOME=/root PNPM_HOME=/usr/local/pnpm && \
     pnpm add -g --store-dir /tmp/pnpm-store \
         gapic-node-processing@${NODEJS_GAPIC_NODE_PROCESSING_VERSION} \
         gapic-tools@${NODEJS_GAPIC_TOOLS_VERSION} \
