@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -153,30 +154,187 @@ type routingParam struct {
 	Variants   []*routingParamVariant
 }
 
+// routingFieldStep describes a single hop along a routing parameter field path
+// starting from `request`.
+type routingFieldStep struct {
+	PropertyName  string
+	ChainOptional bool
+}
+
 // Represents a single candidate field path and pattern rule for extracting a routing
 // parameter value.
 type routingParamVariant struct {
-	FieldAccessor    string
+	FieldSteps       []*routingFieldStep
+	ConvertToString  bool
+	IsEnum           bool
+	IsStringEnum     bool
+	IsOptional       bool
+	NeedsParens      bool
+	RequiredPackages []string
 	PrefixSegments   []string
 	MatchingSegments []string
 	SuffixSegments   []string
 	Last             bool
 }
 
-// Builds a Swift field access expression with optional chaining from a field path slice
-// (e.g., ["table", "parent"] -> "request.table?.parent").
-//
-// Returns an empty string if fieldPath is empty; callers are expected to filter out
-// empty field paths as AIP-4222 routing parameters must extract from a specific field.
-func formatFieldAccessor(fieldPath []string) string {
+func isScalarWrapperWKT(typezID string) bool {
+	switch typezID {
+	case api.WktStringValueID,
+		api.WktInt64ValueID,
+		api.WktUInt64ValueID,
+		api.WktInt32ValueID,
+		api.WktUInt32ValueID,
+		api.WktFloatValueID,
+		api.WktDoubleValueID,
+		api.WktBoolValueID:
+		return true
+	default:
+		return false
+	}
+}
+
+// resolveRoutingFieldPath resolves a routing parameter field path against message
+// and describes how to extract and convert the leaf value into a Swift String?.
+func (c *codec) resolveRoutingFieldPath(message *api.Message, fieldPath []string) (*routingParamVariant, error) {
 	if len(fieldPath) == 0 {
-		return ""
+		return nil, nil
 	}
-	var parts []string
-	for _, p := range fieldPath {
-		parts = append(parts, camelCase(p))
+	if message == nil {
+		return nil, fmt.Errorf("missing input message for routing field path %q", strings.Join(fieldPath, "."))
 	}
-	return "request." + strings.Join(parts, "?.")
+	var modelAnn *modelAnnotations
+	if c.Model != nil {
+		modelAnn, _ = c.Model.Codec.(*modelAnnotations)
+	}
+	current := message
+	var steps []*routingFieldStep
+	var requiredPackages []string
+	addRequiredPackage := func(pkg string) {
+		if pkg == "" || (c.Model != nil && pkg == c.Model.PackageName) {
+			return
+		}
+		if !slices.Contains(requiredPackages, pkg) {
+			requiredPackages = append(requiredPackages, pkg)
+		}
+	}
+	isOptional := false
+	tailOptional := false
+	inOptionalChain := false
+	convertToString := false
+	isEnum := false
+	isStringEnum := false
+
+	for i, part := range fieldPath {
+		field, err := lookupField(current, part)
+		if err != nil {
+			return nil, err
+		}
+		if !field.Singular() {
+			return nil, fmt.Errorf("unsupported non-singular routing field %q in message %q", field.Name(), current.ID())
+		}
+		if field.IsOneOf() {
+			return nil, fmt.Errorf("unsupported oneof routing field %q in message %q", field.Name(), current.ID())
+		}
+		if field.Typez() == api.TypezBytes || field.TypezID() == api.WktBytesValueID || field.TypezID() == api.WktNullValueID || isScalarWrapperWKT(field.TypezID()) {
+			return nil, fmt.Errorf("unsupported routing parameter type %q, message=%q, path=%q", unsupportedRoutingTypeName(field), message.ID(), strings.Join(fieldPath, "."))
+		}
+		fieldAnn, err := c.ensureRoutingFieldAnnotated(field, modelAnn)
+		if err != nil {
+			return nil, err
+		}
+		if fieldAnn.Recursive {
+			return nil, fmt.Errorf("unsupported recursive routing field %q in message %q", field.Name(), current.ID())
+		}
+		addRequiredPackage(fieldAnn.PackageName)
+
+		chainOptional := tailOptional
+		if chainOptional {
+			inOptionalChain = true
+		}
+		steps = append(steps, &routingFieldStep{
+			PropertyName:  fieldAnn.Name,
+			ChainOptional: chainOptional,
+		})
+		tailOptional = field.Optional()
+		isOptional = isOptional || field.Optional()
+
+		if i < len(fieldPath)-1 {
+			if field.Typez() != api.TypezMessage {
+				return nil, fmt.Errorf("intermediate routing field %q in message %q is not a message", field.Name(), current.ID())
+			}
+			nextMsg, err := c.lookupRoutingNextMessage(field)
+			if err != nil {
+				return nil, err
+			}
+			current = nextMsg
+			continue
+		}
+
+		convertToString, isEnum, isStringEnum, err = c.classifyRoutingLeaf(field, message, fieldPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &routingParamVariant{
+		FieldSteps:       steps,
+		ConvertToString:  convertToString,
+		IsEnum:           isEnum,
+		IsStringEnum:     isStringEnum,
+		IsOptional:       isOptional,
+		NeedsParens:      inOptionalChain,
+		RequiredPackages: requiredPackages,
+	}, nil
+}
+
+// ensureRoutingFieldAnnotated ensures only the traversed field has Swift
+// annotations, without annotating unrelated sibling fields on external
+// intermediate messages.
+func (c *codec) ensureRoutingFieldAnnotated(field *api.Field, modelAnn *modelAnnotations) (*fieldAnnotations, error) {
+	fieldAnn, ok := field.Codec().(*fieldAnnotations)
+	if !ok {
+		if c.Model == nil {
+			return nil, fmt.Errorf("internal error: field %s does not have swift fieldAnnotations", field.ID())
+		}
+		var err error
+		fieldAnn, err = c.annotateField(field, modelAnn)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return fieldAnn, nil
+}
+
+func (c *codec) lookupRoutingNextMessage(field *api.Field) (*api.Message, error) {
+	if field.MessageType() != nil {
+		return field.MessageType(), nil
+	}
+	if c.Model != nil {
+		return lookupMessage(c.Model, field.TypezID())
+	}
+	return nil, fmt.Errorf("unable to lookup message %q", field.TypezID())
+}
+
+func (c *codec) classifyRoutingLeaf(field *api.Field, message *api.Message, fieldPath []string) (convertToString, isEnum, isStringEnum bool, err error) {
+	switch field.Typez() {
+	case api.TypezString:
+		return false, false, false, nil
+	case api.TypezEnum:
+		return false, true, c.UseStringEnums, nil
+	case api.TypezInt32, api.TypezInt64, api.TypezUint32, api.TypezUint64,
+		api.TypezSint32, api.TypezSint64, api.TypezFixed32, api.TypezFixed64,
+		api.TypezSfixed32, api.TypezSfixed64, api.TypezFloat, api.TypezDouble, api.TypezBool:
+		return true, false, false, nil
+	default:
+		return false, false, false, fmt.Errorf("unsupported routing parameter type %q, message=%q, path=%q", unsupportedRoutingTypeName(field), message.ID(), strings.Join(fieldPath, "."))
+	}
+}
+
+func unsupportedRoutingTypeName(field *api.Field) string {
+	if field.TypezID() == api.WktBytesValueID || field.TypezID() == api.WktNullValueID || isScalarWrapperWKT(field.TypezID()) {
+		return field.TypezID()
+	}
+	return field.Typez().String()
 }
 
 // Converts a list of path segments into Swift _RoutingMatcher token expressions
@@ -228,7 +386,7 @@ func annotateSegments(segments []string, isPrefix bool, isSuffix bool) []string 
 }
 
 // Extracts routing parameters from explicit google.api.routing annotations per AIP-4222.
-func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*routingParam {
+func (c *codec) routingParamsFromRouting(message *api.Message, routingInfos []*api.RoutingInfo) ([]*routingParam, error) {
 	var params []*routingParam
 	for _, info := range routingInfos {
 		routingKey := info.Name()
@@ -242,12 +400,14 @@ func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*rou
 			if routingKey == "" {
 				routingKey = strings.Join(fieldPath, ".")
 			}
-			variants = append(variants, &routingParamVariant{
-				FieldAccessor:    formatFieldAccessor(fieldPath),
-				PrefixSegments:   annotateSegments(variant.Prefix().Segments(), true, false),
-				MatchingSegments: annotateSegments(variant.Matching().Segments(), false, false),
-				SuffixSegments:   annotateSegments(variant.Suffix().Segments(), false, true),
-			})
+			v, err := c.resolveRoutingFieldPath(message, fieldPath)
+			if err != nil {
+				return nil, err
+			}
+			v.PrefixSegments = annotateSegments(variant.Prefix().Segments(), true, false)
+			v.MatchingSegments = annotateSegments(variant.Matching().Segments(), false, false)
+			v.SuffixSegments = annotateSegments(variant.Suffix().Segments(), false, true)
+			variants = append(variants, v)
 		}
 
 		if len(variants) > 0 {
@@ -260,14 +420,14 @@ func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*rou
 			})
 		}
 	}
-	return params
+	return params, nil
 }
 
 // Extracts fallback routing parameters from a google.api.http path template when explicit
 // google.api.routing annotations are absent per AIP-4222.
-func (c *codec) routingParamsFromPathTemplate(t *api.PathTemplate) []*routingParam {
+func (c *codec) routingParamsFromPathTemplate(message *api.Message, t *api.PathTemplate) ([]*routingParam, error) {
 	if t == nil {
-		return nil
+		return nil, nil
 	}
 	var params []*routingParam
 	for _, segment := range t.Segments() {
@@ -276,34 +436,36 @@ func (c *codec) routingParamsFromPathTemplate(t *api.PathTemplate) []*routingPar
 			if len(fieldPath) == 0 {
 				continue
 			}
+			v, err := c.resolveRoutingFieldPath(message, fieldPath)
+			if err != nil {
+				return nil, err
+			}
+			v.MatchingSegments = []string{".multiWildcard"}
+			v.Last = true
 			params = append(params, &routingParam{
 				RoutingKey: strings.Join(fieldPath, "."),
-				Variants: []*routingParamVariant{
-					{
-						FieldAccessor:    formatFieldAccessor(fieldPath),
-						PrefixSegments:   nil,
-						MatchingSegments: []string{".multiWildcard"},
-						SuffixSegments:   nil,
-						Last:             true,
-					},
-				},
+				Variants:   []*routingParamVariant{v},
 			})
 		}
 	}
-	return params
+	return params, nil
 }
 
 // routingParamsFromBindings extracts fallback routing parameters across all
 // google.api.http bindings in declaration order, deduplicating repeated routing
 // keys per AIP-4222.
-func (c *codec) routingParamsFromBindings(bindings []*api.PathBinding) []*routingParam {
+func (c *codec) routingParamsFromBindings(message *api.Message, bindings []*api.PathBinding) ([]*routingParam, error) {
 	var params []*routingParam
 	seen := make(map[string]bool)
 	for _, binding := range bindings {
 		if binding == nil {
 			continue
 		}
-		for _, param := range c.routingParamsFromPathTemplate(binding.PathTemplate()) {
+		bindingParams, err := c.routingParamsFromPathTemplate(message, binding.PathTemplate())
+		if err != nil {
+			return nil, err
+		}
+		for _, param := range bindingParams {
 			if seen[param.RoutingKey] {
 				continue
 			}
@@ -311,5 +473,5 @@ func (c *codec) routingParamsFromBindings(bindings []*api.PathBinding) []*routin
 			params = append(params, param)
 		}
 	}
-	return params
+	return params, nil
 }

@@ -283,6 +283,23 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				annotations.DependsOn[dep.Name] = dep
 			}
 		}
+		if c.isGrpc() {
+			if ma, ok := method.Codec().(*methodAnnotations); ok {
+				for _, rp := range ma.RoutingParams {
+					for _, v := range rp.Variants {
+						for _, pkg := range v.RequiredPackages {
+							dep, err := c.addApiPackageDependency(pkg)
+							if err != nil {
+								return nil, err
+							}
+							if dep != nil {
+								annotations.DependsOn[dep.Name] = dep
+							}
+						}
+					}
+				}
+			}
+		}
 		for _, signature := range method.Signatures() {
 			if err := c.addSignatureDependencies(annotations, signature); err != nil {
 				return nil, err

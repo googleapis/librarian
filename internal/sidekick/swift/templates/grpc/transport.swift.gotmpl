@@ -65,7 +65,7 @@ extension Clients {
         ("{{ .RoutingKey }}",
           {{- range .Variants }}
           GoogleGaxGRPC._RoutingMatcher.value(
-            {{ .FieldAccessor }},
+            {{ template "templates/grpc/routing_value_expr" . }},
             prefix: [{{ range .PrefixSegments }}{{ . }}, {{ end }}],
             matching: [{{ range .MatchingSegments }}{{ . }}, {{ end }}],
             suffix: [{{ range .SuffixSegments }}{{ . }}, {{ end }}]
