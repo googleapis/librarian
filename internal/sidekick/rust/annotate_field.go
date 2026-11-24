@@ -82,6 +82,7 @@ type fieldAnnotations struct {
 	// FormattedResource contains information on how to format the resource name.
 	FormattedResource     *FormattedResource
 	GenerateSetterSamples bool
+	RedactDebug           bool
 }
 
 // FormattedResource contain the format string and the format arguments of a resource name.
@@ -222,6 +223,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		IsWktValue:            field.Typez() == api.TypezMessage && field.TypezID() == ".google.protobuf.Value",
 		IsWktNullValue:        field.Typez() == api.TypezEnum && field.TypezID() == ".google.protobuf.NullValue",
 		GenerateSetterSamples: c.generateSetterSamples,
+		RedactDebug:           c.fieldRedactsDebug(field),
 	}
 	if field.Recursive() || (field.Typez() == api.TypezMessage && field.IsOneOf()) {
 		ann.IsBoxed = true

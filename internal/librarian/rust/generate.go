@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
@@ -66,6 +67,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	if len(library.APIs) != 1 {
 		return fmt.Errorf("the Rust generator only supports a single api per library")
+	}
+	if library.Rust != nil && len(library.Rust.RedactedDebugFields) > 0 && !moduleGeneratesDebug(library.Rust.TemplateOverride) {
+		return fmt.Errorf("redacted_debug_fields is not supported for template %q in library %q", library.Rust.TemplateOverride, library.Name)
 	}
 
 	modelConfig, err := libraryToModelConfig(library, library.APIs[0], sources, pc)
@@ -152,14 +156,24 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 
 func generateVeneer(ctx context.Context, pc *config.Protoc, library *config.Library, sources *sources.Sources) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
-		return nil
+		return validateMatchedCrateRedactedFields(library, nil)
 	}
+	matchedCrateFields := make(map[string]bool)
 	for _, module := range library.Rust.Modules {
+		if !moduleGeneratesDebug(module.Template) && len(module.RedactedDebugFields) > 0 {
+			return fmt.Errorf("redacted_debug_fields is not supported for template %q in module %q", module.Template, module.Output)
+		}
 		if module.Template == "storage" {
-			return generateRustStorage(ctx, pc, library, module.Output, sources)
+			if err := generateRustStorage(ctx, pc, library, module.Output, sources, matchedCrateFields); err != nil {
+				return err
+			}
+			return validateMatchedCrateRedactedFields(library, matchedCrateFields)
 		}
 		if module.Template == "bigquery" {
-			return generateRustBigQuery(ctx, pc, library, module.Output, sources)
+			if err := generateRustBigQuery(ctx, pc, library, module.Output, sources); err != nil {
+				return err
+			}
+			return validateMatchedCrateRedactedFields(library, matchedCrateFields)
 		}
 		modelConfig, err := moduleToModelConfig(library, module, sources, pc)
 		if err != nil {
@@ -172,10 +186,86 @@ func generateVeneer(ctx context.Context, pc *config.Protoc, library *config.Libr
 		if module.Template == "prost" || module.Template == "tonic" {
 			err = rust_prost.Generate(ctx, model, module.Output, module.Template, modelConfig)
 		} else {
+			if moduleGeneratesDebug(module.Template) {
+				scopeModuleRedactedDebugFields(library, module, model, modelConfig, matchedCrateFields)
+			}
 			err = sidekickrust.Generate(ctx, model, module.Output, modelConfig)
 		}
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
+		}
+	}
+	return validateMatchedCrateRedactedFields(library, matchedCrateFields)
+}
+
+func moduleGeneratesDebug(template string) bool {
+	switch strings.TrimPrefix(template, "templates/") {
+	case "", "crate", "grpc-client", "http-client", "mod", "nosvc":
+		return true
+	default:
+		return false
+	}
+}
+
+func collectModelDebugFieldIDs(model *api.API) map[string]bool {
+	known := make(map[string]bool)
+	if model == nil {
+		return known
+	}
+	var collect func(m *api.Message)
+	collect = func(m *api.Message) {
+		if m == nil {
+			return
+		}
+		if !m.ServicePlaceholder() {
+			for _, f := range m.Fields() {
+				known[f.ID()] = true
+			}
+			for _, o := range m.OneOfs() {
+				known[o.ID()] = true
+			}
+		}
+		for _, child := range m.Messages() {
+			collect(child)
+		}
+	}
+	for _, m := range model.Messages {
+		collect(m)
+	}
+	return known
+}
+
+func scopeModuleRedactedDebugFields(library *config.Library, module *config.RustModule, model *api.API, modelConfig *parser.ModelConfig, matchedCrateFields map[string]bool) {
+	var crateFields []string
+	if library.Rust != nil && len(library.Rust.RedactedDebugFields) > 0 {
+		known := collectModelDebugFieldIDs(model)
+		for _, id := range library.Rust.RedactedDebugFields {
+			if known[id] {
+				crateFields = append(crateFields, id)
+				if matchedCrateFields != nil {
+					matchedCrateFields[id] = true
+				}
+			}
+		}
+	}
+	combined := mergeUniqueStrings(crateFields, module.RedactedDebugFields)
+	if len(combined) > 0 {
+		if modelConfig.Codec == nil {
+			modelConfig.Codec = make(map[string]string)
+		}
+		modelConfig.Codec["redacted-debug-fields"] = strings.Join(combined, ",")
+	} else {
+		delete(modelConfig.Codec, "redacted-debug-fields")
+	}
+}
+
+func validateMatchedCrateRedactedFields(library *config.Library, matchedCrateFields map[string]bool) error {
+	if library.Rust == nil {
+		return nil
+	}
+	for _, id := range library.Rust.RedactedDebugFields {
+		if !matchedCrateFields[id] {
+			return fmt.Errorf("redacted_debug_fields %q did not match any generated module package in library %q", id, library.Name)
 		}
 	}
 	return nil
@@ -239,7 +329,7 @@ func DefaultOutput(api, defaultOutput string) string {
 //
 // The StorageControl client depends on multiple specification sources.
 // We load them both here, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-func generateRustStorage(ctx context.Context, pc *config.Protoc, library *config.Library, moduleOutput string, sources *sources.Sources) error {
+func generateRustStorage(ctx context.Context, pc *config.Protoc, library *config.Library, moduleOutput string, sources *sources.Sources, matchedCrateFields map[string]bool) error {
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {
@@ -253,6 +343,7 @@ func generateRustStorage(ctx context.Context, pc *config.Protoc, library *config
 	if err != nil {
 		return fmt.Errorf("failed to create storage model: %w", err)
 	}
+	scopeModuleRedactedDebugFields(library, storageModule, storageModel, storageConfig, matchedCrateFields)
 
 	output = "src/storage/src/generated/gapic_control"
 	controlModule := findModuleByOutput(library, "src/storage/src/generated/gapic_control")
@@ -267,6 +358,7 @@ func generateRustStorage(ctx context.Context, pc *config.Protoc, library *config
 	if err != nil {
 		return fmt.Errorf("failed to create control model: %w", err)
 	}
+	scopeModuleRedactedDebugFields(library, controlModule, controlModel, controlConfig, matchedCrateFields)
 
 	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, storageConfig, controlModel, controlConfig)
 }

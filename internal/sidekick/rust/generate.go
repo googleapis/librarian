@@ -17,6 +17,7 @@ package rust
 import (
 	"context"
 	"embed"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
@@ -81,6 +82,9 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 	c, err := newCodec(cfg.SpecificationFormat, cfg.Codec)
 	if err != nil {
 		return err
+	}
+	if len(c.redactedDebugFields) > 0 {
+		return fmt.Errorf("redacted_debug_fields is not supported for template %q", "templates/bigquery")
 	}
 	if _, err := annotateModel(model, c); err != nil {
 		return err

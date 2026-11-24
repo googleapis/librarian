@@ -52,6 +52,7 @@ type methodAnnotation struct {
 	GenerateRpcSamples        bool
 	HasIdempotencyHook        bool
 	IdempotencyHook           string
+	TracingTarget             string
 }
 
 // IsHttp returns true if the method is routed over HTTP transport.
@@ -371,6 +372,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		ClientSideStreaming: m.ClientSideStreaming(),
 		ServerSideStreaming: m.ServerSideStreaming(),
 		IsGrpc:              c.methodUsesGrpc(m),
+		TracingTarget:       c.tracingTarget,
 	}
 
 	if c.idempotencyHook != "" {

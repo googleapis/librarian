@@ -1403,6 +1403,8 @@ func TestBuildCodec(t *testing.T) {
 					PerServiceFeatures:        true,
 					HasVeneer:                 true,
 					ExtensibleBuilders:        []string{".a.b.Service.Method1", ".a.b.Service.Method2"},
+					RedactedDebugFields:       []string{".a.b.Message.secret_key", ".a.b.Message.token"},
+					TracingTarget:             "custom_crate::tracing",
 					RoutingRequired:           true,
 					NameOverrides:             "foo=bar",
 					QuickstartServiceOverride: "OverriddenService",
@@ -1420,6 +1422,8 @@ func TestBuildCodec(t *testing.T) {
 				"per-service-features":        "true",
 				"has-veneer":                  "true",
 				"extensible-builders":         ".a.b.Service.Method1,.a.b.Service.Method2",
+				"redacted-debug-fields":       ".a.b.Message.secret_key,.a.b.Message.token",
+				"tracing-target":              "custom_crate::tracing",
 				"routing-required":            "true",
 				"generate-setter-samples":     "true",
 				"generate-rpc-samples":        "true",
@@ -1636,4 +1640,89 @@ func TestBuildModuleCodec_ExtensibleBuilders(t *testing.T) {
 			t.Errorf("expected extensible-builders to be %q, got %q", want, got["extensible-builders"])
 		}
 	})
+}
+
+func TestBuildModuleCodec_RedactedDebugFields(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		crate  *config.RustCrate
+		module *config.RustModule
+	}{
+		{
+			name: "module level redacted_debug_fields",
+			module: &config.RustModule{
+				RedactedDebugFields: []string{
+					".a.b.Msg.field_a",
+					".a.b.Msg.field_b",
+				},
+			},
+		},
+		{
+			name: "crate level redacted_debug_fields",
+			crate: &config.RustCrate{
+				RedactedDebugFields: []string{".a.b.Msg.field_a"},
+			},
+			module: &config.RustModule{},
+		},
+		{
+			name: "crate and module redacted_debug_fields",
+			crate: &config.RustCrate{
+				RedactedDebugFields: []string{".a.b.Msg.crate_field", ".a.b.Msg.shared_field"},
+			},
+			module: &config.RustModule{
+				RedactedDebugFields: []string{".a.b.Msg.shared_field", ".a.b.Msg.module_field"},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			library := &config.Library{Name: "google-cloud-test", Rust: test.crate}
+			codec := buildModuleCodec(library, test.module)
+			if got, ok := codec["redacted-debug-fields"]; ok {
+				t.Errorf("expected redacted-debug-fields to be unset in module codec, got %q", got)
+			}
+		})
+	}
+}
+
+func TestBuildModuleCodec_TracingTarget(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		crate  *config.RustCrate
+		module *config.RustModule
+		want   string
+	}{
+		{
+			name: "module level tracing_target",
+			module: &config.RustModule{
+				TracingTarget: "google_cloud_storage::tracing",
+			},
+			want: "google_cloud_storage::tracing",
+		},
+		{
+			name: "crate level fallback tracing_target",
+			crate: &config.RustCrate{
+				TracingTarget: "google_cloud_storage::tracing",
+			},
+			module: &config.RustModule{},
+			want:   "google_cloud_storage::tracing",
+		},
+		{
+			name: "module overrides crate level tracing_target",
+			crate: &config.RustCrate{
+				TracingTarget: "crate_target::tracing",
+			},
+			module: &config.RustModule{
+				TracingTarget: "module_target::tracing",
+			},
+			want: "module_target::tracing",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			library := &config.Library{Name: "google-cloud-storage", Rust: test.crate}
+			got := buildModuleCodec(library, test.module)["tracing-target"]
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }

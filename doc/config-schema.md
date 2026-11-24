@@ -558,6 +558,8 @@ This document describes the schema for the librarian.yaml.
 | `disabled_clippy_warnings` | list of string | Is a list of clippy warnings to disable. |
 | `handwritten_surface` | string | Indicates whether the crate or specific services have a handwritten surface. Accepts "true" for all services, or a comma-separated list of service IDs. |
 | `extensible_builders` | list of string | Is a list of method IDs whose generated request builders expose pub(crate) internals. |
+| `redacted_debug_fields` | list of string | Is a list of proto field or oneof IDs whose values are redacted in generated Debug implementations. |
+| `tracing_target` | string | Overrides the target attribute on #[tracing::instrument] spans in generated tracing stubs. |
 | `has_veneer` | bool | Indicates whether the crate has a veneer. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
@@ -612,6 +614,8 @@ This document describes the schema for the librarian.yaml.
 | `handwritten_surface` | string | Indicates whether the module or specific services have a handwritten surface. Accepts "true" for all services, or a comma-separated list of service IDs. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `extensible_builders` | list of string | Is a list of method IDs whose generated request builders expose pub(crate) internals. |
+| `redacted_debug_fields` | list of string | Is a list of proto field or oneof IDs whose values are redacted in generated Debug implementations. |
+| `tracing_target` | string | Overrides the target attribute on #[tracing::instrument] spans in generated tracing stubs. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
 | `message_module_name_overrides` | map[string]string | Contains codec-level overrides for message module names in model.rs. |

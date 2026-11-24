@@ -611,3 +611,404 @@ func TestGenerateExtensibleBuilders(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateRedactedDebugFields(t *testing.T) {
+	nested := api.NewTestMessage("Nested").
+		WithFields(
+			api.NewTestField("algorithm").WithType(api.TypezString),
+			api.NewTestField("raw_key").WithType(api.TypezBytes),
+		)
+
+	req := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithMessages(nested)
+
+	secretMap := api.NewTestMap("$SecretMap", api.TypezString, api.TypezBytes)
+
+	credPublic := api.NewTestField("public_id").WithType(api.TypezString).WithOneOf()
+	credPublicNested := api.NewTestField("public_nested").WithMessageType(nested).WithOneOf()
+	credSecret := api.NewTestField("secret_token").WithType(api.TypezString).WithOneOf()
+	credNested := api.NewTestField("secret_nested").WithMessageType(nested).WithOneOf()
+	credDeprecated := api.NewTestField("deprecated_token").WithType(api.TypezString).WithDeprecated(true).WithOneOf()
+	credentialOneOf := api.NewTestOneOf("credential").WithFields(
+		credPublic,
+		credPublicNested,
+		credSecret,
+		credNested,
+		credDeprecated,
+	)
+
+	wholeVariant := api.NewTestField("secret_payload").WithType(api.TypezBytes).WithOneOf()
+	wholeSecretOneOf := api.NewTestOneOf("whole_secret").WithFields(wholeVariant)
+
+	normalVariant := api.NewTestField("label").WithType(api.TypezString).WithOneOf()
+	normalOneOf := api.NewTestOneOf("normal_choice").WithFields(normalVariant)
+
+	req.WithFields(
+		api.NewTestField("public_name").WithType(api.TypezString),
+		api.NewTestField("encryption_key_bytes").WithType(api.TypezBytes),
+		api.NewTestField("encryption_key_sha256_bytes").WithType(api.TypezBytes),
+		api.NewTestField("optional_secret").WithType(api.TypezString).WithOptional(),
+		api.NewTestField("repeated_secrets").WithType(api.TypezBytes).WithRepeated(),
+		api.NewTestField("secret_headers").WithMapType(secretMap),
+		api.NewTestField("nested").WithMessageType(nested).WithOptional(),
+	).WithOneOfs(credentialOneOf, wholeSecretOneOf, normalOneOf)
+
+	model := api.NewTestAPI([]*api.Message{req}, nil, nil).
+		WithPackageName("test.v1").
+		WithMaps(secretMap)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	outDir := t.TempDir()
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":    "source=google.protobuf,package=google-cloud-wkt",
+			"name-overrides": ".test.v1.Request.credential=CredentialOneOf",
+			"redacted-debug-fields": strings.Join([]string{
+				".test.v1.Request.encryption_key_bytes",
+				".test.v1.Request.optional_secret",
+				".test.v1.Request.repeated_secrets",
+				".test.v1.Request.secret_headers",
+				".test.v1.Request.Nested.raw_key",
+				".test.v1.Request.secret_token",
+				".test.v1.Request.secret_nested",
+				".test.v1.Request.whole_secret",
+			}, ","),
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	debugBytes, err := os.ReadFile(filepath.Join(outDir, "src", "model", "debug.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	debugRs := string(debugBytes)
+
+	wantDebugSnippets := []string{
+		`debug_struct.field("public_name", &self.public_name);`,
+		`debug_struct.field("encryption_key_bytes", &"[censored]");`,
+		`debug_struct.field("encryption_key_sha256_bytes", &self.encryption_key_sha256_bytes);`,
+		`debug_struct.field("optional_secret", &"[censored]");`,
+		`debug_struct.field("repeated_secrets", &"[censored]");`,
+		`debug_struct.field("secret_headers", &"[censored]");`,
+		`debug_struct.field("nested", &self.nested);`,
+		`debug_struct.field("credential", &self.credential);`,
+		`debug_struct.field("whole_secret", &"[censored]");`,
+		`debug_struct.field("normal_choice", &self.normal_choice);`,
+		`debug_struct.field("algorithm", &self.algorithm);`,
+		`debug_struct.field("raw_key", &"[censored]");`,
+		`impl std::fmt::Debug for super::request::CredentialOneOf {`,
+		`Self::PublicId(v) => f.debug_tuple("PublicId").field(v).finish(),`,
+		`Self::PublicNested(v) => f.debug_tuple("PublicNested").field(v).finish(),`,
+		`Self::SecretToken(_) => f.debug_tuple("SecretToken").field(&"[censored]").finish(),`,
+		`Self::SecretNested(_) => f.debug_tuple("SecretNested").field(&"[censored]").finish(),`,
+		"#[allow(deprecated)]\n            Self::DeprecatedToken(v) => f.debug_tuple(\"DeprecatedToken\").field(v).finish(),",
+		`impl std::fmt::Debug for super::request::WholeSecret {`,
+		`Self::SecretPayload(_) => f.debug_tuple("SecretPayload").field(&"[censored]").finish(),`,
+	}
+	for _, want := range wantDebugSnippets {
+		if !strings.Contains(debugRs, want) {
+			t.Errorf("debug.rs missing %q in:\n%s", want, debugRs)
+		}
+	}
+	nestedImpl := extractBlock(t, debugRs, "impl std::fmt::Debug for super::request::Nested {", "\n}")
+	if !strings.Contains(nestedImpl, `debug_struct.field("raw_key", &"[censored]");`) {
+		t.Errorf("Nested Debug impl missing redacted raw_key in:\n%s", nestedImpl)
+	}
+	if !strings.Contains(nestedImpl, `debug_struct.field("algorithm", &self.algorithm);`) {
+		t.Errorf("Nested Debug impl missing uncensored algorithm in:\n%s", nestedImpl)
+	}
+	for _, unwanted := range []string{
+		`&self.encryption_key_bytes`,
+		`&self.optional_secret`,
+		`&self.repeated_secrets`,
+		`&self.secret_headers`,
+		`&self.raw_key`,
+		`&self.whole_secret`,
+		`impl std::fmt::Debug for super::request::NormalChoice`,
+	} {
+		if strings.Contains(debugRs, unwanted) {
+			t.Errorf("debug.rs unexpectedly contained %q in:\n%s", unwanted, debugRs)
+		}
+	}
+
+	modelBytes, err := os.ReadFile(filepath.Join(outDir, "src", "model.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	modelRs := string(modelBytes)
+	wantCustomOneOf := `#[derive(Clone, PartialEq)]
+    #[non_exhaustive]
+    pub enum CredentialOneOf`
+	if !strings.Contains(modelRs, wantCustomOneOf) {
+		t.Errorf("model.rs expected CredentialOneOf without derived Debug in:\n%s", modelRs)
+	}
+	wantDerivedOneOf := `#[derive(Clone, Debug, PartialEq)]
+    #[non_exhaustive]
+    pub enum NormalChoice`
+	if !strings.Contains(modelRs, wantDerivedOneOf) {
+		t.Errorf("model.rs expected NormalChoice with derived Debug in:\n%s", modelRs)
+	}
+}
+
+func TestGenerateRedactedDebugFieldsPerServiceFeatures(t *testing.T) {
+	reqA := api.NewTestMessage("ReqA").WithPackage("test.v1")
+	reqB := api.NewTestMessage("ReqB").WithPackage("test.v1")
+
+	secretBranch := api.NewTestField("secret_key").WithType(api.TypezBytes).WithOneOf()
+	secretChoice := api.NewTestOneOf("secret_choice").WithFields(secretBranch)
+	orphan := api.NewTestMessage("Orphan").
+		WithPackage("test.v1").
+		WithOneOfs(secretChoice)
+
+	methodA := api.NewTestMethod("GetA").
+		WithInput(reqA).
+		WithOutput(reqA).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	svcA := api.NewTestService("ServiceA").
+		WithPackage("test.v1").
+		WithMethods(methodA)
+
+	methodB := api.NewTestMethod("GetB").
+		WithInput(reqB).
+		WithOutput(reqB).
+		WithVerb("GET").
+		WithPathTemplate(api.NewPathTemplateBuilder().Build())
+	svcB := api.NewTestService("ServiceB").
+		WithPackage("test.v1").
+		WithMethods(methodB)
+
+	model := api.NewTestAPI([]*api.Message{reqA, reqB, orphan}, nil, []*api.Service{svcA, svcB}).
+		WithPackageName("test.v1")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	outDir := t.TempDir()
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":           "source=google.protobuf,package=google-cloud-wkt",
+			"per-service-features":  "true",
+			"redacted-debug-fields": ".test.v1.Orphan.secret_key",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	debugBytes, err := os.ReadFile(filepath.Join(outDir, "src", "model", "debug.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	debugRs := string(debugBytes)
+	wantGatedOneOf := "#[cfg(all (feature = \"service-a\",feature = \"service-b\", ) )]\nimpl std::fmt::Debug for super::orphan::SecretChoice {"
+	if !strings.Contains(debugRs, wantGatedOneOf) {
+		t.Errorf("debug.rs missing feature-gated oneof Debug impl %q in:\n%s", wantGatedOneOf, debugRs)
+	}
+
+	modelBytes, err := os.ReadFile(filepath.Join(outDir, "src", "model.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	orphanEnumBlock := extractBlock(t, string(modelBytes), "pub mod orphan {", "pub enum SecretChoice")
+	if strings.Contains(orphanEnumBlock, "#[cfg(") {
+		t.Errorf("model.rs unexpectedly added redundant #[cfg(...)] before pub enum SecretChoice in:\n%s", orphanEnumBlock)
+	}
+	if !strings.Contains(orphanEnumBlock, "#[derive(Clone, PartialEq)]") {
+		t.Errorf("model.rs expected SecretChoice without derived Debug in:\n%s", orphanEnumBlock)
+	}
+}
+
+func TestGenerateRedactedDebugFieldsNotFound(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		field string
+	}{
+		{
+			name:  "unknown field in same package",
+			field: ".test.v1.Request.nonexistent_field",
+		},
+		{
+			name:  "package or version typo",
+			field: ".test.v2.Request.name",
+		},
+		{
+			name:  "external message field not generated in debug.rs",
+			field: ".ext.v1.ExternalMsg.secret",
+		},
+		{
+			name:  "service placeholder field not generated in debug.rs",
+			field: ".test.v1.ServicePlaceholder.secret",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			extMsg := api.NewTestMessage("ExternalMsg").
+				WithPackage("ext.v1").
+				WithFields(api.NewTestField("secret").WithType(api.TypezBytes))
+			req := api.NewTestMessage("Request").
+				WithPackage("test.v1").
+				WithFields(api.NewTestField("name").WithType(api.TypezString))
+			placeholder := api.NewTestMessage("ServicePlaceholder").
+				WithPackage("test.v1").
+				WithServicePlaceholder().
+				WithFields(api.NewTestField("secret").WithType(api.TypezBytes))
+			model := api.NewTestAPI([]*api.Message{req, placeholder}, nil, nil).
+				WithPackageName("test.v1")
+			model.ExternalMessages = []*api.Message{extMsg}
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+
+			cfg := &parser.ModelConfig{
+				SpecificationFormat: libconfig.SpecProtobuf,
+				Codec: map[string]string{
+					"package:wkt":           "source=google.protobuf,package=google-cloud-wkt",
+					"package:ext":           "source=ext.v1,package=google-cloud-ext-v1",
+					"redacted-debug-fields": test.field,
+				},
+			}
+			err := Generate(t.Context(), model, t.TempDir(), cfg)
+			if !errors.Is(err, ErrRedactedDebugFieldNotFound) {
+				t.Errorf("expected ErrRedactedDebugFieldNotFound, got %v", err)
+			}
+			if err != nil && !strings.Contains(err.Error(), `"test.v1"`) {
+				t.Errorf("expected error to name proto package %q, got %v", "test.v1", err)
+			}
+		})
+	}
+}
+
+func TestGenerateRedactedDebugFieldsTemplates(t *testing.T) {
+	newModel := func() *api.API {
+		req := api.NewTestMessage("Request").
+			WithPackage("test.v1").
+			WithFields(api.NewTestField("name").WithType(api.TypezString))
+		model := api.NewTestAPI([]*api.Message{req}, nil, nil).
+			WithPackageName("test.v1")
+		if err := api.CrossReference(model); err != nil {
+			t.Fatal(err)
+		}
+		return model
+	}
+
+	t.Run("exempt template ignores unknown redacted_debug_fields", func(t *testing.T) {
+		cfg := &parser.ModelConfig{
+			SpecificationFormat: libconfig.SpecProtobuf,
+			Codec: map[string]string{
+				"package:wkt":           "source=google.protobuf,package=google-cloud-wkt",
+				"template-override":     "templates/convert-prost",
+				"redacted-debug-fields": ".test.v1.Request.nonexistent_field",
+			},
+		}
+		if err := Generate(t.Context(), newModel(), t.TempDir(), cfg); err != nil {
+			t.Fatalf("expected convert-prost to ignore redacted-debug-fields, got %v", err)
+		}
+	})
+
+	t.Run("bigquery template-override rejects redacted_debug_fields", func(t *testing.T) {
+		cfg := &parser.ModelConfig{
+			SpecificationFormat: libconfig.SpecProtobuf,
+			Codec: map[string]string{
+				"package:wkt":           "source=google.protobuf,package=google-cloud-wkt",
+				"template-override":     "templates/bigquery",
+				"redacted-debug-fields": ".test.v1.Request.name",
+			},
+		}
+		err := Generate(t.Context(), newModel(), t.TempDir(), cfg)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "redacted_debug_fields is not supported for template") {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("GenerateBigQueryBuilder rejects redacted_debug_fields", func(t *testing.T) {
+		cfg := &parser.ModelConfig{
+			SpecificationFormat: libconfig.SpecProtobuf,
+			Codec: map[string]string{
+				"package:wkt":           "source=google.protobuf,package=google-cloud-wkt",
+				"redacted-debug-fields": ".test.v1.Request.name",
+			},
+		}
+		err := GenerateBigQueryBuilder(t.Context(), t.TempDir(), newModel(), cfg)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "redacted_debug_fields is not supported for template") {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestGenerateTracingTarget(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		codec    map[string]string
+		want     string
+		unwanted string
+	}{
+		{
+			name: "default target omitted",
+			codec: map[string]string{
+				"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
+			},
+			want:     `#[tracing::instrument(level = tracing::Level::DEBUG, ret)]`,
+			unwanted: `target =`,
+		},
+		{
+			name: "custom target override",
+			codec: map[string]string{
+				"package:wkt":    "source=google.protobuf,package=google-cloud-wkt",
+				"tracing-target": "google_cloud_storage::tracing",
+			},
+			want:     `#[tracing::instrument(target = "google_cloud_storage::tracing", level = tracing::Level::DEBUG, ret)]`,
+			unwanted: `#[tracing::instrument(level = tracing::Level::DEBUG, ret)]`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			msg := api.NewTestMessage("Request").WithPackage("test.v1")
+			method := api.NewTestMethod("GetResource").
+				WithInput(msg).
+				WithOutput(msg).
+				WithVerb("GET").
+				WithPathTemplate(api.NewPathTemplateBuilder().Build())
+			svc := api.NewTestService("TestService").
+				WithPackage("test.v1").
+				WithMethods(method)
+			model := api.NewTestAPI([]*api.Message{msg}, nil, []*api.Service{svc}).
+				WithPackageName("test.v1")
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+
+			outDir := t.TempDir()
+			cfg := &parser.ModelConfig{
+				SpecificationFormat: libconfig.SpecProtobuf,
+				Codec:               test.codec,
+			}
+			if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+				t.Fatal(err)
+			}
+
+			tracingBytes, err := os.ReadFile(filepath.Join(outDir, "src", "tracing.rs"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			tracingRs := string(tracingBytes)
+			if !strings.Contains(tracingRs, test.want) {
+				t.Errorf("tracing.rs missing %q in:\n%s", test.want, tracingRs)
+			}
+			if strings.Contains(tracingRs, test.unwanted) {
+				t.Errorf("tracing.rs unexpectedly contained %q in:\n%s", test.unwanted, tracingRs)
+			}
+		})
+	}
+}

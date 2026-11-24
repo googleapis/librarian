@@ -354,6 +354,24 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
+				"redacted-debug-fields": ".test.v1.Message.key_bytes,.test.v1.Message.secret",
+			},
+			Update: func(c *codec) {
+				c.redactedDebugFields = []string{".test.v1.Message.key_bytes", ".test.v1.Message.secret"}
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
+				"tracing-target": "google_cloud_storage::tracing",
+			},
+			Update: func(c *codec) {
+				c.tracingTarget = "google_cloud_storage::tracing"
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
 				"quickstart-service-override": "OverriddenService",
 			},
 			Update: func(c *codec) {
@@ -408,6 +426,13 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"generate-rpc-samples": ""}},
 		{Options: map[string]string{"has-veneer": ""}},
 		{Options: map[string]string{"internal-builders": ""}},
+		{Options: map[string]string{"redacted-debug-fields": "missing_leading_dot"}},
+		{Options: map[string]string{"redacted-debug-fields": ".only_one_segment"}},
+		{Options: map[string]string{"tracing-target": ""}},
+		{Options: map[string]string{"tracing-target": `bad"quote`}},
+		{Options: map[string]string{"tracing-target": `bad\slash`}},
+		{Options: map[string]string{"tracing-target": "123invalid"}},
+		{Options: map[string]string{"tracing-target": "trailing::"}},
 		{Options: map[string]string{"--invalid--": ""}},
 	} {
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
