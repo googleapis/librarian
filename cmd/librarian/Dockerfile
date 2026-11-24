@@ -46,34 +46,34 @@
 
 # Base/Build dependency versions
 # Debian 12, pinned by digest so rebuilds are reproducible. This is the
-# bookworm-20261104-slim tag.
+# bookworm-20261104-slim tag, which is not the newest build.
 ARG BASE_IMAGE=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 # Compiles librarian. Matches the go directive in librarian's go.mod.
 ARG GO_VERSION=1.26.1
 ARG GO_CHECKSUM=031f088e5d955bab8657ede27ad4e3bc5b7c1ba281f05f245bcc304f327c987a
-# Fallback protoc. Librarian uses the protoc from a repository's
-# librarian.yaml when it sets one.
-ARG PROTOC_VERSION=29.3
-ARG PROTOC_CHECKSUM=f149c4a69910c8d241d27869d2cdf6791187a7a9434ad0f392b4a61e1697c3844e60bce634bd7147cb4cb7f2ad2530fc933be4976f67ac75d9ad78bb8b412f24
+# Matches tools.protoc in the librarian.yaml of google-cloud-rust,
+# google-cloud-ruby and google-cloud-swift. Librarian uses the protoc from a
+# repository's librarian.yaml when it sets one, so this is a fallback.
+ARG PROTOC_VERSION=33.2
+ARG PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
 
 # Rust dependency versions
-# Latest rustup release.
+# Latest rustup release when pinned.
 ARG RUSTUP_VERSION=1.29.3
 ARG RUSTUP_CHECKSUM=b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55
-# Matches the channel (1.100) in google-cloud-rust's rust-toolchain.toml.
+# google-cloud-rust needs Rust 1.99 or later for its CI formatting checks.
+# 1.100.0 matches the channel (1.100) in its rust-toolchain.toml.
 ARG RUST_VERSION=1.100.0
-# Tools from earlier images. `librarian install` installs the versions in
-# google-cloud-rust's librarian.yaml. cargo-minimal-versions and cargo-hack
-# were unpinned, so they are pinned to their latest release.
+# Match tools.cargo in google-cloud-rust's librarian.yaml.
 ARG TAPLO_CLI_VERSION=0.10.0
 ARG CARGO_WORKSPACES_VERSION=0.4.0
-ARG CARGO_SEMVER_CHECKS_VERSION=0.46.0
-ARG CARGO_MINIMAL_VERSIONS_VERSION=0.1.39
-ARG CARGO_HACK_VERSION=0.6.46
+ARG CARGO_SEMVER_CHECKS_VERSION=0.50.0
+ARG CARGO_MINIMAL_VERSIONS_VERSION=0.1.37
+ARG CARGO_HACK_VERSION=0.6.44
 
 # Python dependency versions
-# The Python generation docs need Python 3.10 or later. 3.10.12 is the
-# python3 in Ubuntu 22.04.
+# Generating google-cloud-python needs Python 3.10 or later. 3.10.12 is the
+# python3 in Ubuntu 22.04, which is not the latest 3.10 patch.
 ARG PYTHON_VERSION=3.10.12
 ARG PYTHON_CHECKSUM=afb74bf19130e7a47d10312c8f5e784f24e0527981eab68e20546cfb865830b8
 # Shared libraries the compiled Python needs at run time.
@@ -81,8 +81,9 @@ ARG PYTHON_RUNTIME_LIBRARIES="libbz2-1.0 libffi8 liblzma5 libncursesw6 libreadli
 # Matches tools.protoc in google-cloud-python's librarian.yaml.
 ARG PYTHON_PROTOC_VERSION=33.5
 ARG PYTHON_PROTOC_CHECKSUM=eb842a2259a90a402207cae3a9261dc9501f43a535b3b3d786ecc496e117f499cf373fe41181fd9047035f7ed6c2dee9a55f7f0a7afa1c5d7cb5be3e672bf527
-# Matches the pandoc in pypandoc-binary 1.16.2, which `librarian install`
-# installs. Newer pandoc versions reject multiline links in docs.
+# pypandoc-binary 1.16.2, which `librarian install` installs, bundles pandoc
+# 3.8.2.1. Newer pandoc releases (3.10 and later) reject multiline links in
+# the generated docs.
 ARG PANDOC_VERSION=3.8.2
 ARG PANDOC_CHECKSUM=f5e90628b44a801ecdf812236291871607db8fb2fba0e99911a6c497b406c64a8940fd2a776d482ece7a9dac10d0228378d78da61091262b69e7276456495f5c
 
@@ -101,15 +102,13 @@ ARG GO_GAPIC_VERSION=0.59.0
 ARG GO_GOIMPORTS_VERSION=0.44.0
 
 # NodeJS dependency versions
-# Latest Node 22 LTS release. google-cloud-node CI uses Node 22.
+# google-cloud-node needs Node 22, which its CI uses. 22.23.5 is the latest
+# Node 22 release when pinned.
 ARG NODEJS_NODE_VERSION=22.23.5
 ARG NODEJS_NODE_CHECKSUM=c54118104acc524633b5abe106bbf44a53126ec8b4e5fa105cb92b5d7de8a1a1
 # Matches google-cloud-node's packageManager (pnpm@10.0.0). Otherwise pnpm
 # downloads that version itself.
 ARG NODEJS_PNPM_VERSION=10.0.0
-# Matches tools.protoc in google-cloud-node's librarian.yaml.
-ARG NODEJS_PROTOC_VERSION=33.2
-ARG NODEJS_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
 # Generator tools from earlier images. `librarian install` installs the
 # versions in google-cloud-node's librarian.yaml.
 ARG NODEJS_GAPIC_GENERATOR_VERSION=gapic-generator-v4.12.1
@@ -120,11 +119,9 @@ ARG NODEJS_PROTOBUFJS_CLI_VERSION=1.2.0
 ARG NODEJS_PROTOBUFJS_VERSION=7.5.8
 
 # Java dependency versions
-# From earlier images. `librarian install` installs the protoc in
-# google-cloud-java's librarian.yaml.
-ARG JAVA_PROTOC_VERSION=33.2
-ARG JAVA_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
-# Temurin JDK and Maven versions from the Java generation docs.
+# Generating google-cloud-java needs JDK 17, which its CI uses, and Maven
+# 3.9.8. Temurin 17.0.7+7 is the JDK the SDK team generates it with, which is
+# not the latest 17 update.
 ARG JAVA_VERSION=17.0.7
 ARG JAVA_BUILD=7
 ARG JAVA_CHECKSUM=e9458b38e97358850902c2936a1bb5f35f6cffc59da9fcd28c63eab8dbbfbc3b
@@ -132,12 +129,13 @@ ARG JAVA_MAVEN_VERSION=3.9.8
 ARG JAVA_MAVEN_CHECKSUM=7d171def9b85846bf757a2cec94b7529371068a0670df14682447224e57983528e97a6d1b850327e4ca02b139abaab7fcb93c4315119e6f0ffb3f0cbc0d0b9a2
 
 # PHP dependency versions
-# Latest PHP 8.4 release when pinned. google-cloud-php needs PHP 8.2 or later.
+# google-cloud-php needs PHP 8.2 or later, as its composer.json says. 8.4.27
+# is not the latest 8.4 patch.
 ARG PHP_VERSION=8.4.27
 ARG PHP_CHECKSUM=dcf93923b0e38e0d5252b25b796520b5a47761a08b3488b6d0b5d1115764d3f0
 # Shared libraries the compiled PHP needs at run time.
 ARG PHP_RUNTIME_LIBRARIES="libcurl4 libicu72 libonig5 libsqlite3-0 libssl3 libxml2 libzip4 zlib1g"
-# Latest Composer 2.9 release.
+# The last Composer 2.9 release, which is older than the newest Composer.
 ARG PHP_COMPOSER_VERSION=2.9.8
 ARG PHP_COMPOSER_CHECKSUM=59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
 # Last pnpm 7 release. Librarian's PHP formatting finds @prettier/plugin-php
@@ -145,22 +143,24 @@ ARG PHP_COMPOSER_CHECKSUM=59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf04
 ARG PHP_PNPM_VERSION=7.33.7
 
 # Ruby dependency versions
-# Latest Ruby 3.4 release. google-cloud-ruby CI tests Ruby 3.2 to 4.0.
+# google-cloud-ruby needs Ruby 3.2 or later, and its CI tests Ruby 3.2 to
+# 4.0. 3.4.9 is the latest Ruby 3.4 release when pinned.
 ARG RUBY_VERSION=3.4.9
 ARG RUBY_CHECKSUM=4231c54072601a171faed1699f105985e9971c94cd382b78feb4eb44eec2dd1a
-# Shared libraries the compiled Ruby needs at run time.
-ARG RUBY_RUNTIME_LIBRARIES="libffi8 libssl3 libyaml-0-2 zlib1g"
+# Headers that Ruby and native gem extensions build against.
+ARG RUBY_DEV_LIBRARIES="libffi-dev libssl-dev libyaml-dev zlib1g-dev"
 
 # Swift dependency versions
-# Latest Swift 6.4 release when pinned. google-cloud-swift CI uses Swift 6.4.
+# google-cloud-swift needs Swift 6.2 or later, as its Package.swift says, and
+# its CI uses Swift 6.4. 6.4.2 is not the latest 6.4 patch.
 ARG SWIFT_VERSION=6.4.2
 # Swift 6.x Release Signing Key, from https://www.swift.org/keys/.
 ARG SWIFT_SIGNING_FINGERPRINT=52BB7E3DE28A71BE22EC05FFEF80A866B47A981F
 
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image, pinned by digest. This is the
-# 2025-11-18 build of the latest tag. It only compiles librarian, so its OS is
-# not in the language images.
+# 2025-11-18 build of the latest tag, which is not the newest build. It only
+# compiles librarian, so its OS is not in the language images.
 FROM --platform=linux/amd64 marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS build
 ARG GO_VERSION
 ARG GO_CHECKSUM
@@ -201,6 +201,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip curl git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Jobs run the images as any UID, often one with no home directory, on a
+# checkout owned by another user. Give every user a writable home, where
+# Librarian and the tools keep their caches, and let git use any checkout.
+# Stages that install tools as root at build time use HOME=/root for that.
+ENV HOME=/home/librarian
+RUN mkdir -m 777 -p ${HOME} && \
+    git config --system --add safe.directory '*'
+
 # Install protoc
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
         https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip && \
@@ -220,6 +228,9 @@ ARG CARGO_WORKSPACES_VERSION
 ARG CARGO_SEMVER_CHECKS_VERSION
 ARG CARGO_MINIMAL_VERSIONS_VERSION
 ARG CARGO_HACK_VERSION
+# The toolchain and Cargo tools stay in /root for every user and HOME.
+ENV RUSTUP_HOME=/root/.rustup
+ENV CARGO_HOME=/root/.cargo
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -249,11 +260,11 @@ RUN cargo install --locked taplo-cli@${TAPLO_CLI_VERSION} && \
 # Make sure the tools are executable by any user (not just root).
 # librarianops executes the docker image as the current user.
 RUN chmod a+wx /root && \
-    chmod -R a+w /root/.cargo
+    chmod -R a+rwX /root/.cargo && \
+    chmod -R a+rX /root/.rustup
 # rust-toolchain.toml files use the x.y channel name, which rustup treats as a
 # different toolchain than x.y.z. Link it so it resolves without a download.
 RUN ln -s ${RUST_VERSION}-x86_64-unknown-linux-gnu /root/.rustup/toolchains/${RUST_VERSION%.*}-x86_64-unknown-linux-gnu
-ENV HOME=/root
 
 # ============== Runtime Builder Stage ==============
 # Runtimes are downloaded or compiled in stages that do not depend on
@@ -327,9 +338,10 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/php.tar.xz \
 FROM runtime-builder AS ruby-runtime
 ARG RUBY_VERSION
 ARG RUBY_CHECKSUM
+ARG RUBY_DEV_LIBRARIES
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libffi-dev libssl-dev libyaml-dev zlib1g-dev \
+    ${RUBY_DEV_LIBRARIES} \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/ruby.tar.xz \
@@ -465,7 +477,7 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /usr/local/bin/composer \
     chmod 755 /usr/local/bin/composer
 
 # Install pnpm
-RUN npm install --global pnpm@${PHP_PNPM_VERSION}
+RUN HOME=/root npm install --global pnpm@${PHP_PNPM_VERSION}
 
 # Librarian keeps installed tools and downloads in its cache directory, and
 # Composer keeps its settings and cache in COMPOSER_HOME.
@@ -479,21 +491,23 @@ RUN mkdir -p ${LIBRARIAN_CACHE} ${COMPOSER_HOME} && \
 
 # ============== Ruby Stage ==============
 FROM base AS ruby
-ARG RUBY_RUNTIME_LIBRARIES
+ARG RUBY_DEV_LIBRARIES
 
 # build-essential lets gems build native extensions against the Ruby headers.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential ${RUBY_RUNTIME_LIBRARIES} \
+    build-essential ${RUBY_DEV_LIBRARIES} \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=ruby-runtime /opt/ruby /opt/ruby
 ENV PATH=/opt/ruby/bin:${PATH}
 
-# Librarian keeps installed tools and downloads in its cache directory.
+# Librarian keeps installed tools and downloads in its cache directory, and
+# Bundler installs gems in BUNDLE_PATH instead of the root-owned Ruby.
 ENV LIBRARIAN_CACHE=/usr/local/ruby_tools/cache
+ENV BUNDLE_PATH=/usr/local/ruby_tools/bundle
 
 # Grant broad write permissions, so any UID running the container (like
-# librarianops) can run `librarian install ruby`.
-RUN mkdir -p ${LIBRARIAN_CACHE} && \
+# librarianops) can run `librarian install ruby` and `bundle install`.
+RUN mkdir -p ${LIBRARIAN_CACHE} ${BUNDLE_PATH} && \
     chmod -R a+rwX /usr/local/ruby_tools
 
 # ============== Swift Stage ==============
@@ -502,10 +516,12 @@ FROM base AS swift
 # Libraries and tools the Swift toolchain needs to compile and link.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     binutils gcc libc6-dev libcurl4-openssl-dev libedit-dev libicu-dev \
-    libncurses-dev libsqlite3-dev libstdc++-12-dev libxml2-dev pkg-config \
-    tzdata uuid-dev \
+    libncurses-dev libsqlite3-dev libssl-dev libstdc++-12-dev libxml2-dev \
+    pkg-config tzdata uuid-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=swift-runtime /opt/swift /opt/swift
+# google-cloud-swift runs Librarian with `go run` at the version in its
+# librarian.yaml, so the image has Go.
 COPY --from=go-runtime /usr/local/go /usr/local/go
 # Swift Build finds the toolchain only in its usr layout, so the toolchain
 # keeps its usr directory.
@@ -535,7 +551,7 @@ COPY --from=go-runtime /usr/local/go /usr/local/go
 ENV PATH=/root/go/bin:/usr/local/go/bin:$PATH
 
 # Install required Go tools for protoc and the post-processor.
-RUN (export GOTOOLCHAIN='auto' && \
+RUN (export GOTOOLCHAIN='auto' HOME=/root && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v${GO_PROTOC_PLUGIN_VERSION} && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v${GO_PROTOC_GRPC_PLUGIN_VERSION} && \
     go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v${GO_GAPIC_VERSION} && \
@@ -556,8 +572,6 @@ RUN chmod a+rx /root/go/bin/* && \
 
 # ============== Node Stage ==============
 FROM base AS nodejs
-ARG NODEJS_PROTOC_VERSION
-ARG NODEJS_PROTOC_CHECKSUM
 ARG NODEJS_PNPM_VERSION
 ARG NODEJS_GAPIC_GENERATOR_VERSION
 ARG NODEJS_GAPIC_GENERATOR_CHECKSUM
@@ -575,13 +589,7 @@ COPY --from=nodejs-runtime /usr/local/node /usr/local/node
 ENV PATH=$PATH:/usr/local/node/bin
 
 # Install pnpm
-RUN npm install --global pnpm@${NODEJS_PNPM_VERSION}
-
-# Install Node-specific protoc version
-RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
-        https://github.com/protocolbuffers/protobuf/releases/download/v${NODEJS_PROTOC_VERSION}/protoc-${NODEJS_PROTOC_VERSION}-linux-x86_64.zip && \
-    echo "${NODEJS_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
-    cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
+RUN HOME=/root npm install --global pnpm@${NODEJS_PNPM_VERSION}
 
 # Allow normal users to read /root (as the generator is installed
 # in /root/.cache, for example)
@@ -594,7 +602,8 @@ ENV PATH=$PATH:$PNPM_HOME
 # Install Node generation tools. pnpm 10 skips dependency build scripts; none
 # of them are needed to generate code. The package store is only needed while
 # installing, so it is removed afterwards.
-RUN pnpm add -g --store-dir /tmp/pnpm-store \
+RUN export HOME=/root && \
+    pnpm add -g --store-dir /tmp/pnpm-store \
         gapic-node-processing@${NODEJS_GAPIC_NODE_PROCESSING_VERSION} \
         gapic-tools@${NODEJS_GAPIC_TOOLS_VERSION} \
         protobufjs-cli@${NODEJS_PROTOBUFJS_CLI_VERSION} \
@@ -618,8 +627,6 @@ RUN pnpm add -g --store-dir /tmp/pnpm-store \
 
 # ============== Java Stage ==============
 FROM base AS java
-ARG JAVA_PROTOC_VERSION
-ARG JAVA_PROTOC_CHECKSUM
 ARG JAVA_VERSION
 ARG JAVA_BUILD
 ARG JAVA_CHECKSUM
@@ -640,13 +647,13 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/maven.tar.gz \
     tar -xzf /tmp/maven.tar.gz -C /opt/maven --strip-components=1 && \
     rm /tmp/maven.tar.gz
 ENV JAVA_HOME=/opt/java
-ENV PATH=/opt/java/bin:/opt/maven/bin:$PATH
+ENV PATH=/opt/java/bin:$PATH
 
-# Install Java-specific protoc version
-RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
-        https://github.com/protocolbuffers/protobuf/releases/download/v${JAVA_PROTOC_VERSION}/protoc-${JAVA_PROTOC_VERSION}-linux-x86_64.zip && \
-    echo "${JAVA_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
-    cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
+# The JVM reads its home directory from /etc/passwd, which has no entry for
+# most UIDs that run the image. This mvn passes HOME instead, so Maven uses the
+# local repository that Librarian reads.
+RUN printf '#!/bin/sh\nexec /opt/maven/bin/mvn -Duser.home="$HOME" "$@"\n' > /usr/local/bin/mvn && \
+    chmod 755 /usr/local/bin/mvn
 
 # Setup dynamic target directories inside the persistent volume.
 ENV LIBRARIAN_INSTALL_DIR=/usr/local/java_tools/bin

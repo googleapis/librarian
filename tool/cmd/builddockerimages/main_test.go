@@ -15,11 +15,13 @@
 package main
 
 import (
+	"maps"
 	"os"
 	"regexp"
 	"slices"
 	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -60,10 +62,6 @@ var runtimeStages = map[string][]string{
 	"swift":  {"go", "swift"},
 }
 
-// signedRuntimes lists the runtimes that are verified with the publisher's GPG
-// signature.
-var signedRuntimes = []string{"swift"}
-
 // TestSupportedLanguages checks that every language image stage in the
 // Dockerfile is built. Helper stages, such as php-runtime, have a hyphen in
 // their name.
@@ -85,7 +83,9 @@ func TestSupportedLanguages(t *testing.T) {
 // TestDockerfileVersionsArePinned checks that every FOO_VERSION argument is an
 // exact x.y.z version, or x.y for protoc.
 func TestDockerfileVersionsArePinned(t *testing.T) {
-	for name, value := range dockerfileArgDefaults(t) {
+	defaults := dockerfileArgDefaults(t)
+	for _, name := range slices.Sorted(maps.Keys(defaults)) {
+		value := defaults[name]
 		if !strings.HasSuffix(name, "_VERSION") {
 			continue
 		}
@@ -136,7 +136,7 @@ func TestDockerfileDownloadsAreVerified(t *testing.T) {
 			}
 			match := downloadFilePattern.FindStringSubmatch(command)
 			if match == nil || !slices.ContainsFunc(commands, func(other string) bool {
-				return verifyPattern.MatchString(other) && strings.Contains(other, match[1])
+				return verifyPattern.MatchString(other) && slices.Contains(strings.FieldsFunc(other, isFileSeparator), match[1])
 			}) {
 				t.Errorf("unverified download: %s", strings.TrimSpace(command))
 			}
@@ -217,9 +217,9 @@ func TestDockerfileDoesNotRunLibrarianInstall(t *testing.T) {
 // runtime.
 func TestDockerfileRuntimeStages(t *testing.T) {
 	stages := dockerfileStages(t)
-	for language, runtimes := range runtimeStages {
+	for _, language := range slices.Sorted(maps.Keys(runtimeStages)) {
 		t.Run(language, func(t *testing.T) {
-			for _, runtime := range runtimes {
+			for _, runtime := range runtimeStages[language] {
 				runtimeStage := runtime + "-runtime"
 				if _, ok := stages[runtimeStage]; !ok {
 					t.Fatalf("missing stage %s", runtimeStage)
@@ -235,35 +235,29 @@ func TestDockerfileRuntimeStages(t *testing.T) {
 	}
 }
 
-// TestDockerfileSignedRuntimes checks that each signed runtime is verified with
-// gpg in its runtime stage, and that the keys come from a verified download or
-// are fetched by their full fingerprint.
-func TestDockerfileSignedRuntimes(t *testing.T) {
-	stages := dockerfileStages(t)
+// TestDockerfileSwiftIsSigned checks that the Swift runtime is verified with
+// gpg, using keys fetched by their full fingerprint.
+func TestDockerfileSwiftIsSigned(t *testing.T) {
+	instructions := dockerfileStages(t)["swift-runtime"].instructions
+	index := slices.IndexFunc(instructions, gpgVerifyPattern.MatchString)
+	if index < 0 {
+		t.Fatal("swift-runtime does not run gpg --verify")
+	}
 	defaults := dockerfileArgDefaults(t)
-	for _, runtime := range signedRuntimes {
-		t.Run(runtime, func(t *testing.T) {
-			stage := runtime + "-runtime"
-			index := slices.IndexFunc(stages[stage].instructions, gpgVerifyPattern.MatchString)
-			if index < 0 {
-				t.Fatalf("stage %s does not run gpg --verify", stage)
-			}
-			instruction := os.Expand(stages[stage].instructions[index], func(name string) string { return defaults[name] })
-			if !strings.Contains(instruction, "--import") && !strings.Contains(instruction, "--recv-keys") {
-				t.Errorf("stage %s does not import gpg keys", stage)
-			}
-			for command := range strings.SplitSeq(instruction, "&&") {
-				_, keys, found := strings.Cut(command, "--recv-keys")
-				if !found {
-					continue
-				}
-				for key := range strings.FieldsSeq(keys) {
-					if !fingerprintPattern.MatchString(key) {
-						t.Errorf("gpg key %s is not a full fingerprint", key)
-					}
-				}
-			}
-		})
+	instruction := os.Expand(instructions[index], func(name string) string { return defaults[name] })
+	var keys []string
+	for command := range strings.SplitSeq(instruction, "&&") {
+		if _, after, ok := strings.Cut(command, "--recv-keys"); ok {
+			keys = append(keys, strings.Fields(after)...)
+		}
+	}
+	if len(keys) == 0 {
+		t.Fatal("swift-runtime does not fetch gpg keys with --recv-keys")
+	}
+	for _, key := range keys {
+		if !fingerprintPattern.MatchString(key) {
+			t.Errorf("gpg key %s is not a full fingerprint", key)
+		}
 	}
 }
 
@@ -334,6 +328,11 @@ func dockerfileArgDefaults(t *testing.T) map[string]string {
 		defaults[match[1]] = strings.Trim(match[2], `"`)
 	}
 	return defaults
+}
+
+// isFileSeparator reports whether r separates file names in a shell command.
+func isFileSeparator(r rune) bool {
+	return unicode.IsSpace(r) || r == '"'
 }
 
 func readDockerfile(t *testing.T) string {
