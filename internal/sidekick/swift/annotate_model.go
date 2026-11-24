@@ -278,7 +278,7 @@ func (c *codec) annotateModel() error {
 			// Messages that are placeholders for services just get the same
 			// gating traits as the service.
 			annotation.GatedOp = " || "
-			annotation.GatedBy = []string{pascalCase(msg.Name())}
+			annotation.GatedBy = []string{pascalCase(c.placeholderServiceName(msg))}
 		} else {
 			annotation.GatedOp = " && "
 			annotation.GatedBy = allTraitNames

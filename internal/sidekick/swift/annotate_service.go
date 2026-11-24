@@ -24,6 +24,7 @@ import (
 
 type serviceAnnotations struct {
 	Name             string
+	ServiceName      string
 	ClientName       string
 	StubPrefix       string
 	HostnameShort    string
@@ -186,13 +187,15 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		}
 	}
 
-	desc := extractServiceDescription(service.Documentation(), service.Name())
+	serviceName := c.ServiceName(service)
+	desc := extractServiceDescription(service.Documentation(), serviceName)
 
 	name := c.traitName(service)
 	annotations := &serviceAnnotations{
 		Name:                  name,
-		ClientName:            pascalCase(service.Name() + "Client"),
-		StubPrefix:            pascalCaseNoMangling(service.Name()),
+		ServiceName:           serviceName,
+		ClientName:            pascalCase(serviceName + "Client"),
+		StubPrefix:            pascalCaseNoMangling(serviceName),
 		HostnameShort:         strings.TrimSuffix(service.DefaultHost(), ".googleapis.com"),
 		DocLines:              docLines,
 		Description:           desc,
@@ -478,7 +481,7 @@ func (c *codec) addFeatureAnnotations(
 }
 
 func (c *codec) traitName(service *api.Service) string {
-	return pascalCase(service.Name())
+	return pascalCase(c.ServiceName(service))
 }
 
 func insertGatingTrait(gatedBy []string, traitName string) []string {

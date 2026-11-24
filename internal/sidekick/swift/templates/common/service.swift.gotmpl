@@ -41,7 +41,7 @@ import Foundation
 /// {{ . }}
 {{- end }}
 ///
-/// @Snippet(path: "{{ .Name }}Quickstart")
+/// @Snippet(path: "{{ .Codec.ServiceName }}Quickstart")
 ///
 /// ## See Also
 ///
@@ -75,7 +75,7 @@ public final class {{ .Codec.ClientName }}: Clients.{{ .Codec.StubPrefix }}Proto
   /// {{ . }}
   {{- end }}
   ///
-  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  /// @Snippet(path: "{{ .Service.Codec.ServiceName }}_{{ .Name }}")
   {{- if .Codec.SeeAlsoLinks }}
   ///
   /// ## See Also
@@ -116,7 +116,7 @@ public final class {{ .Codec.ClientName }}: Clients.{{ .Codec.StubPrefix }}Proto
   /// {{ . }}
   {{- end }}
   ///
-  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  /// @Snippet(path: "{{ .Service.Codec.ServiceName }}_{{ .Name }}")
   {{- if .Codec.PollingSeeAlsoLinks }}
   ///
   /// ## See Also
@@ -171,7 +171,7 @@ public final class {{ .Codec.ClientName }}: Clients.{{ .Codec.StubPrefix }}Proto
   ///   status object. To obtain the created or modified resource, invoke the corresponding `get`
   ///   method once the operation completes.
   ///
-  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  /// @Snippet(path: "{{ .Service.Codec.ServiceName }}_{{ .Name }}")
   {{- if .Codec.PollingSeeAlsoLinks }}
   ///
   /// ## See Also

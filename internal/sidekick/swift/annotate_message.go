@@ -183,7 +183,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		ModulePath:        c.ModulePath,
 	}
 	if message.ServicePlaceholder() {
-		annotations.PlaceholderName = pascalCase(message.Name() + "Client")
+		annotations.PlaceholderName = c.messageSimpleName(message)
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.

@@ -51,7 +51,7 @@ Google Cloud packages. It does not contain client types to make RPCs.
 
 The following example demonstrates using ``{{ .Codec.ClientName }}``:
 
-@Snippet(path: "{{ .Name }}Quickstart")
+@Snippet(path: "{{ .Codec.ServiceName }}Quickstart")
 {{- end }}
 {{- if .Codec.HasTraits }}
 

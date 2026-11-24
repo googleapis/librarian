@@ -127,7 +127,7 @@ func (c *codec) generateMessages(outdir string, model *api.API) error {
 		output := c.swiftFilename(name)
 		tmpl := "templates/common/message_file.swift.gotmpl"
 		if m.ServicePlaceholder() {
-			output = c.swiftFilename(m.Name() + "+Requests")
+			output = c.swiftFilename(c.placeholderServiceName(m) + "+Requests")
 			tmpl = "templates/common/placeholder_file.swift.gotmpl"
 		}
 		generated := language.GeneratedFile{
@@ -162,7 +162,7 @@ func (c *codec) generateServices(outdir string, model *api.API) error {
 	for _, s := range model.Services {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/service.swift.gotmpl",
-			OutputPath:   c.swiftFilename(s.Name()),
+			OutputPath:   c.swiftFilename(c.ServiceName(s)),
 		}
 		if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 			return err
@@ -188,7 +188,7 @@ func (c *codec) generateStubs(outdir string, model *api.API) error {
 		} {
 			generated := language.GeneratedFile{
 				TemplatePath: stub.template,
-				OutputPath:   c.swiftFilename(s.Name() + stub.suffix),
+				OutputPath:   c.swiftFilename(c.ServiceName(s) + stub.suffix),
 			}
 			if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 				return err
@@ -240,7 +240,7 @@ func (c *codec) generateSnippets(outdir string, model *api.API) error {
 		// If I (coryan@) am wrong, we can fix the generator at that time.
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/client_snippet.swift.gotmpl",
-			OutputPath:   filepath.Join("Snippets", s.Name()+"Quickstart.swift"),
+			OutputPath:   filepath.Join("Snippets", c.ServiceName(s)+"Quickstart.swift"),
 		}
 		if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 			return err
@@ -251,7 +251,7 @@ func (c *codec) generateSnippets(outdir string, model *api.API) error {
 			}
 			mGenerated := language.GeneratedFile{
 				TemplatePath: "templates/common/method_snippet.swift.gotmpl",
-				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name(), m.Name())),
+				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", c.ServiceName(s), m.Name())),
 			}
 			if err := parsedTemplates.GenerateElement(outdir, m, mGenerated); err != nil {
 				return err
