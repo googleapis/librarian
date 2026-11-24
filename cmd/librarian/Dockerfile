@@ -39,17 +39,32 @@
 #   docker run --rm -v "$(pwd)":/workspace -w /workspace librarian:python generate
 #
 
+# Each *_CHECKSUM is the checksum the publisher lists for that download. For
+# downloads without one (protoc, pandoc, Python and the Node generator), it is
+# the checksum of the official download, matched against the GitHub release
+# asset digest or the release signature where one exists.
+
 # Base/Build dependency versions
+# Debian 12, pinned by digest so rebuilds are reproducible. This is the
+# bookworm-20261104-slim tag.
 ARG BASE_IMAGE=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
+# Compiles librarian. Matches the go directive in librarian's go.mod.
 ARG GO_VERSION=1.26.1
 ARG GO_CHECKSUM=031f088e5d955bab8657ede27ad4e3bc5b7c1ba281f05f245bcc304f327c987a
+# Fallback protoc. Librarian uses the protoc from a repository's
+# librarian.yaml when it sets one.
 ARG PROTOC_VERSION=29.3
 ARG PROTOC_CHECKSUM=f149c4a69910c8d241d27869d2cdf6791187a7a9434ad0f392b4a61e1697c3844e60bce634bd7147cb4cb7f2ad2530fc933be4976f67ac75d9ad78bb8b412f24
 
 # Rust dependency versions
+# Latest rustup release.
 ARG RUSTUP_VERSION=1.29.3
 ARG RUSTUP_CHECKSUM=b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55
+# Matches the channel (1.100) in google-cloud-rust's rust-toolchain.toml.
 ARG RUST_VERSION=1.100.0
+# Tools from earlier images. `librarian install` installs the versions in
+# google-cloud-rust's librarian.yaml. cargo-minimal-versions and cargo-hack
+# were unpinned, so they are pinned to their latest release.
 ARG TAPLO_CLI_VERSION=0.10.0
 ARG CARGO_WORKSPACES_VERSION=0.4.0
 ARG CARGO_SEMVER_CHECKS_VERSION=0.46.0
@@ -57,31 +72,46 @@ ARG CARGO_MINIMAL_VERSIONS_VERSION=0.1.39
 ARG CARGO_HACK_VERSION=0.6.46
 
 # Python dependency versions
+# The Python generation docs need Python 3.10 or later. 3.10.12 is the
+# python3 in Ubuntu 22.04.
 ARG PYTHON_VERSION=3.10.12
 ARG PYTHON_CHECKSUM=afb74bf19130e7a47d10312c8f5e784f24e0527981eab68e20546cfb865830b8
 # Shared libraries the compiled Python needs at run time.
 ARG PYTHON_RUNTIME_LIBRARIES="libbz2-1.0 libffi8 liblzma5 libncursesw6 libreadline8 libsqlite3-0 libssl3 libuuid1 zlib1g"
+# Matches tools.protoc in google-cloud-python's librarian.yaml.
 ARG PYTHON_PROTOC_VERSION=33.5
 ARG PYTHON_PROTOC_CHECKSUM=eb842a2259a90a402207cae3a9261dc9501f43a535b3b3d786ecc496e117f499cf373fe41181fd9047035f7ed6c2dee9a55f7f0a7afa1c5d7cb5be3e672bf527
+# Matches the pandoc in pypandoc-binary 1.16.2, which `librarian install`
+# installs. Newer pandoc versions reject multiline links in docs.
 ARG PANDOC_VERSION=3.8.2
 ARG PANDOC_CHECKSUM=f5e90628b44a801ecdf812236291871607db8fb2fba0e99911a6c497b406c64a8940fd2a776d482ece7a9dac10d0228378d78da61091262b69e7276456495f5c
 
 # Go dependency versions
+# Matches the go directive in google-cloud-go's go.mod.
 ARG GO_RUNTIME_VERSION=1.26.0
 ARG GO_RUNTIME_CHECKSUM=aac1b08a0fb0c4e0a7c1555beb7b59180b05dfc5a3d62e40e9de90cd42f88235
+# protoc and the generator plugins are from earlier images. `librarian
+# install` installs the versions in google-cloud-go's librarian.yaml.
 ARG GO_PROTOC_VERSION=25.7
 ARG GO_PROTOC_CHECKSUM=ac571249613458e4b9598a8f2a9b3ab9e56ed04d35f610f4181c65da4ee9bfd6fe44b5b0fd0a6d5b53ca4657d443c3bd457c3ef6164df8b8b4bc537012205aec
 ARG GO_PROTOC_PLUGIN_VERSION=1.35.2
 ARG GO_PROTOC_GRPC_PLUGIN_VERSION=1.3.0
 ARG GO_GAPIC_VERSION=0.59.0
+# Matches goimports in google-cloud-go's librarian.yaml.
 ARG GO_GOIMPORTS_VERSION=0.44.0
 
 # NodeJS dependency versions
+# Latest Node 22 LTS release. google-cloud-node CI uses Node 22.
 ARG NODEJS_NODE_VERSION=22.23.5
 ARG NODEJS_NODE_CHECKSUM=c54118104acc524633b5abe106bbf44a53126ec8b4e5fa105cb92b5d7de8a1a1
+# Matches google-cloud-node's packageManager (pnpm@10.0.0). Otherwise pnpm
+# downloads that version itself.
 ARG NODEJS_PNPM_VERSION=10.0.0
+# Matches tools.protoc in google-cloud-node's librarian.yaml.
 ARG NODEJS_PROTOC_VERSION=33.2
 ARG NODEJS_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
+# Generator tools from earlier images. `librarian install` installs the
+# versions in google-cloud-node's librarian.yaml.
 ARG NODEJS_GAPIC_GENERATOR_VERSION=gapic-generator-v4.12.1
 ARG NODEJS_GAPIC_GENERATOR_CHECKSUM=477e4a9b3442457667846bd5c629d1c059e7caf2d5a3ebce95da626a2d42ea80
 ARG NODEJS_GAPIC_NODE_PROCESSING_VERSION=0.1.8
@@ -90,8 +120,11 @@ ARG NODEJS_PROTOBUFJS_CLI_VERSION=1.2.0
 ARG NODEJS_PROTOBUFJS_VERSION=7.5.8
 
 # Java dependency versions
+# From earlier images. `librarian install` installs the protoc in
+# google-cloud-java's librarian.yaml.
 ARG JAVA_PROTOC_VERSION=33.2
 ARG JAVA_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
+# Temurin JDK and Maven versions from the Java generation docs.
 ARG JAVA_VERSION=17.0.7
 ARG JAVA_BUILD=7
 ARG JAVA_CHECKSUM=e9458b38e97358850902c2936a1bb5f35f6cffc59da9fcd28c63eab8dbbfbc3b
@@ -99,29 +132,35 @@ ARG JAVA_MAVEN_VERSION=3.9.8
 ARG JAVA_MAVEN_CHECKSUM=7d171def9b85846bf757a2cec94b7529371068a0670df14682447224e57983528e97a6d1b850327e4ca02b139abaab7fcb93c4315119e6f0ffb3f0cbc0d0b9a2
 
 # PHP dependency versions
+# Latest PHP 8.4 release when pinned. google-cloud-php needs PHP 8.2 or later.
 ARG PHP_VERSION=8.4.27
 ARG PHP_CHECKSUM=dcf93923b0e38e0d5252b25b796520b5a47761a08b3488b6d0b5d1115764d3f0
 # Shared libraries the compiled PHP needs at run time.
 ARG PHP_RUNTIME_LIBRARIES="libcurl4 libicu72 libonig5 libsqlite3-0 libssl3 libxml2 libzip4 zlib1g"
+# Latest Composer 2.9 release.
 ARG PHP_COMPOSER_VERSION=2.9.8
 ARG PHP_COMPOSER_CHECKSUM=59b2c50e10cafa0d8efc19ede9a326d782f096c674a26baf98cf042ce23de890
-# Librarian's PHP formatting finds @prettier/plugin-php in pnpm 7's global
-# directory layout.
+# Last pnpm 7 release. Librarian's PHP formatting finds @prettier/plugin-php
+# in pnpm 7's global directory layout, and google-cloud-php CI uses pnpm 7.
 ARG PHP_PNPM_VERSION=7.33.7
 
 # Ruby dependency versions
+# Latest Ruby 3.4 release. google-cloud-ruby CI tests Ruby 3.2 to 4.0.
 ARG RUBY_VERSION=3.4.9
 ARG RUBY_CHECKSUM=4231c54072601a171faed1699f105985e9971c94cd382b78feb4eb44eec2dd1a
 # Shared libraries the compiled Ruby needs at run time.
 ARG RUBY_RUNTIME_LIBRARIES="libffi8 libssl3 libyaml-0-2 zlib1g"
 
 # Swift dependency versions
+# Latest Swift 6.4 release when pinned. google-cloud-swift CI uses Swift 6.4.
 ARG SWIFT_VERSION=6.4.2
 # Swift 6.x Release Signing Key, from https://www.swift.org/keys/.
 ARG SWIFT_SIGNING_FINGERPRINT=52BB7E3DE28A71BE22EC05FFEF80A866B47A981F
 
 # ============== Build Stage ==============
-# Use the MOSS-compliant base image.
+# Use the MOSS-compliant base image, pinned by digest. This is the
+# 2025-11-18 build of the latest tag. It only compiles librarian, so its OS is
+# not in the language images.
 FROM --platform=linux/amd64 marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS build
 ARG GO_VERSION
 ARG GO_CHECKSUM
