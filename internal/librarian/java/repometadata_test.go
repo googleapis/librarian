@@ -82,6 +82,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 	wantNamePretty := "Secret Manager"
 	wantProductDoc := "https://cloud.google.com/secret-manager/"
 	wantAPIDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
+	wantIssueTracker := "https://issuetracker.google.com/issues/new?component=784854&template=1380926"
 	for _, test := range []struct {
 		name string
 		java *config.JavaModule
@@ -115,6 +116,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.custom:custom-artifact",
 				APIID:                "custom.googleapis.com",
 				LibraryType:          "OTHER",
+				IssueTracker:         wantIssueTracker,
 			},
 		},
 		{
@@ -137,8 +139,9 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				RepoShort:            "java-secretmanager",
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				// API ID is also override.
-				APIID:       "custom-shortname.googleapis.com",
-				LibraryType: "GAPIC_AUTO",
+				APIID:        "custom-shortname.googleapis.com",
+				LibraryType:  "GAPIC_AUTO",
+				IssueTracker: wantIssueTracker,
 			},
 		},
 		{
@@ -162,6 +165,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				APIID:                "secretmanager.googleapis.com",
 				LibraryType:          "GAPIC_AUTO",
+				IssueTracker:         wantIssueTracker,
 			},
 		},
 		{
@@ -185,7 +189,32 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				APIID:                "secretmanager.googleapis.com",
 				LibraryType:          "GAPIC_AUTO",
+				IssueTracker:         wantIssueTracker,
 				RecommendedPackage:   "com.google.cloud.secretmanager.v1",
+			},
+		},
+		{
+			name: "issue tracker override",
+			java: &config.JavaModule{
+				ArtifactID:           "google-cloud-secretmanager",
+				GroupID:              "com.google.cloud",
+				IssueTrackerOverride: "https://issuetracker.google.com/savedsearches/custom",
+			},
+			want: &repoMetadata{
+				APIShortname:         "secretmanager",
+				NamePretty:           wantNamePretty,
+				ProductDocumentation: wantProductDoc,
+				APIDescription:       wantAPIDescription,
+				ClientDocumentation:  "https://cloud.google.com/java/docs/reference/google-cloud-secretmanager/latest/overview",
+				ReleaseLevel:         "stable",
+				Transport:            "grpc+rest",
+				Language:             "java",
+				Repo:                 "googleapis/google-cloud-java",
+				RepoShort:            "java-secretmanager",
+				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
+				APIID:                "secretmanager.googleapis.com",
+				LibraryType:          "GAPIC_AUTO",
+				IssueTracker:         "https://issuetracker.google.com/savedsearches/custom",
 			},
 		},
 	} {

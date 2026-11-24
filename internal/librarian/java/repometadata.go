@@ -96,6 +96,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		DistributionName:     sharedMetadata.DistributionName,
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
+		IssueTracker:         sharedMetadata.IssueTracker,
 		RecommendedPackage:   sharedMetadata.RecommendedPackage,
 		RestDocumentation:    sharedMetadata.RestDocumentation,
 		RpcDocumentation:     sharedMetadata.RpcDocumentation,
