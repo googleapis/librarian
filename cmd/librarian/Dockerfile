@@ -250,18 +250,16 @@ RUN rustup install ${RUST_VERSION} && \
     rustup default ${RUST_VERSION} && \
     rustup component add clippy rustfmt
 
-# Install Rust tools
+# Install Rust tools. Make sure the tools are usable by any user (not just
+# root), because librarianops executes the docker image as the current user.
+# The chmod runs in the same layer, so the files are not copied again.
 RUN cargo install --locked taplo-cli@${TAPLO_CLI_VERSION} && \
     cargo install --locked cargo-workspaces@${CARGO_WORKSPACES_VERSION} && \
     cargo install --locked cargo-semver-checks@${CARGO_SEMVER_CHECKS_VERSION} && \
     cargo install --locked cargo-minimal-versions@${CARGO_MINIMAL_VERSIONS_VERSION} && \
-    cargo install --locked cargo-hack@${CARGO_HACK_VERSION}
-
-# Make sure the tools are executable by any user (not just root).
-# librarianops executes the docker image as the current user.
-RUN chmod a+wx /root && \
-    chmod -R a+rwX /root/.cargo && \
-    chmod -R a+rX /root/.rustup
+    cargo install --locked cargo-hack@${CARGO_HACK_VERSION} && \
+    chmod a+wx /root && \
+    chmod -R a+rwX /root/.cargo
 # rust-toolchain.toml files use the x.y channel name, which rustup treats as a
 # different toolchain than x.y.z. Link it so it resolves without a download.
 RUN ln -s ${RUST_VERSION}-x86_64-unknown-linux-gnu /root/.rustup/toolchains/${RUST_VERSION%.*}-x86_64-unknown-linux-gnu
