@@ -1206,7 +1206,15 @@ func TestAnnotateMethod_ExplicitEmptyRoutingSuppressesHTTPFallback(t *testing.T)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	codec := newTestCodec(t, model, nil)
+	codec, err := newCodec(
+		model,
+		&config.Library{Swift: swiftConfig(t, nil)},
+		&config.SwiftModule{ModuleType: "grpc-client", ModulePath: "TestProtos"},
+		t.TempDir(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
@@ -1281,7 +1289,15 @@ func TestAnnotateMethod_RoutingAdditionalBindings(t *testing.T) {
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	codec := newTestCodec(t, model, nil)
+	codec, err := newCodec(
+		model,
+		&config.Library{Swift: swiftConfig(t, nil)},
+		&config.SwiftModule{ModuleType: "grpc-client", ModulePath: "TestProtos"},
+		t.TempDir(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
@@ -1294,14 +1310,14 @@ func TestAnnotateMethod_RoutingAdditionalBindings(t *testing.T) {
 		{
 			name:   "literal primary with additional binding variable",
 			method: listAccounts,
-			want:   []*routingParam{newTestMultiWildcardRoutingParam("parent", "request.parent")},
+			want:   []*routingParam{newTestMultiWildcardRoutingParam("parent", []*routingFieldStep{{PropertyName: "parent"}}, false)},
 		},
 		{
 			name:   "overlapping and secondary variables preserve order",
 			method: moveAccount,
 			want: []*routingParam{
-				newTestMultiWildcardRoutingParam("name", "request.name"),
-				newTestMultiWildcardRoutingParam("destination_parent", "request.destinationParent"),
+				newTestMultiWildcardRoutingParam("name", []*routingFieldStep{{PropertyName: "name"}}, false),
+				newTestMultiWildcardRoutingParam("destination_parent", []*routingFieldStep{{PropertyName: "destinationParent"}}, false),
 			},
 		},
 		{
@@ -1312,8 +1328,8 @@ func TestAnnotateMethod_RoutingAdditionalBindings(t *testing.T) {
 					RoutingKey: "bucket",
 					Variants: []*routingParamVariant{
 						{
-							FieldAccessor: "request.destinationParent",
-							Last:          true,
+							FieldSteps: []*routingFieldStep{{PropertyName: "destinationParent"}},
+							Last:       true,
 						},
 					},
 				},

@@ -279,20 +279,32 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	// Extract routing parameters for gRPC per AIP-4222:
 	// - Prefer explicit google.api.routing annotations if present.
 	// - Fall back to extracting path parameters across all google.api.http bindings.
-	if method.HasRouting() {
-		routingParams = c.routingParamsFromRouting(method.Routing())
-	} else if len(bindings) > 0 {
-		routingParams = c.routingParamsFromBindings(bindings)
+	if c.isGrpc() {
+		if method.HasRouting() {
+			routingParams, err = c.routingParamsFromRouting(method.InputType(), method.Routing())
+			if err != nil {
+				return err
+			}
+		} else if len(bindings) > 0 {
+			routingParams, err = c.routingParamsFromBindings(method.InputType(), bindings)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	// In Protobuf APIs (such as Storage Control or pure gRPC services), some RPC
 	// methods do not define google.api.http annotations.
 	// - HTTP/REST methods: Extract httpMethod, pathExpressionStr, bodyField,
 	//   queryParams, and pathVariables as before.
-	// - Pure gRPC methods (without HTTP annotations): Safely bypass the HTTP
-	//   extraction without crashing, leaving those fields as their default zero values.
+	// - Pure gRPC methods (or gRPC clients): Safely bypass REST path binding
+	//   extraction, while preserving primary HTTPMethod for idempotency checks.
 	var pathBindings []*pathBindingAnnotations
-	if len(bindings) > 0 {
+	if len(bindings) > 0 && c.isGrpc() {
+		if bindings[0] != nil {
+			httpMethod = bindings[0].Verb()
+		}
+	} else if len(bindings) > 0 {
 		hasBody = method.PathInfo().BodyFieldPath() != ""
 		isBodyWildcard = method.PathInfo().BodyFieldPath() == "*"
 		if hasBody && !isBodyWildcard {

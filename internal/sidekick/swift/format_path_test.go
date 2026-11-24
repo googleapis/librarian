@@ -306,14 +306,23 @@ func TestNewPathVariable(t *testing.T) {
 }
 
 func TestRoutingParams(t *testing.T) {
+	tableMessage := api.NewTestMessage("Table").
+		WithPackage("google.storage.v2").
+		WithFields(
+			api.NewTestField("parent").WithType(api.TypezString),
+		)
 	requestMessage := api.NewTestMessage("GetBucketRequest").
 		WithPackage("google.storage.v2").
 		WithFields(
 			api.NewTestField("name").WithType(api.TypezString),
 			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("table").WithMessageType(tableMessage).WithOptional(),
 		)
 
-	model := api.NewTestAPI([]*api.Message{requestMessage}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{tableMessage, requestMessage}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
@@ -341,8 +350,8 @@ func TestRoutingParams(t *testing.T) {
 					RoutingKey: "bucket",
 					Variants: []*routingParamVariant{
 						{
-							FieldAccessor: "request.name",
-							Last:          true,
+							FieldSteps: []*routingFieldStep{{PropertyName: "name"}},
+							Last:       true,
 						},
 					},
 				},
@@ -365,8 +374,8 @@ func TestRoutingParams(t *testing.T) {
 					RoutingKey: "parent",
 					Variants: []*routingParamVariant{
 						{
-							FieldAccessor: "request.parent",
-							Last:          true,
+							FieldSteps: []*routingFieldStep{{PropertyName: "parent"}},
+							Last:       true,
 						},
 					},
 				},
@@ -391,7 +400,7 @@ func TestRoutingParams(t *testing.T) {
 					RoutingKey: "bucket",
 					Variants: []*routingParamVariant{
 						{
-							FieldAccessor:    "request.name",
+							FieldSteps:       []*routingFieldStep{{PropertyName: "name"}},
 							MatchingSegments: []string{`.literal("projects/")`, `.singleWildcard`, `.literal("/buckets/")`, `.singleWildcard`},
 							SuffixSegments:   []string{`.trailingMultiWildcard`},
 							Last:             true,
@@ -422,12 +431,12 @@ func TestRoutingParams(t *testing.T) {
 					RoutingKey: "routing_id",
 					Variants: []*routingParamVariant{
 						{
-							FieldAccessor:    "request.name",
+							FieldSteps:       []*routingFieldStep{{PropertyName: "name"}},
 							MatchingSegments: []string{`.literal("projects/")`, `.singleWildcard`},
 							Last:             false,
 						},
 						{
-							FieldAccessor:    "request.parent",
+							FieldSteps:       []*routingFieldStep{{PropertyName: "parent"}},
 							MatchingSegments: []string{`.multiWildcard`},
 							Last:             true,
 						},
@@ -455,7 +464,12 @@ func TestRoutingParams(t *testing.T) {
 					RoutingKey: "table",
 					Variants: []*routingParamVariant{
 						{
-							FieldAccessor:    "request.table?.parent",
+							FieldSteps: []*routingFieldStep{
+								{PropertyName: "table"},
+								{PropertyName: "parent", ChainOptional: true},
+							},
+							IsOptional:       true,
+							NeedsParens:      true,
 							PrefixSegments:   []string{`.literal("projects/")`},
 							MatchingSegments: []string{`.singleWildcard`},
 							SuffixSegments:   []string{`.literal("/tables/")`, `.singleWildcard`},
@@ -484,7 +498,7 @@ func TestRoutingParams(t *testing.T) {
 					RoutingKey: "location",
 					Variants: []*routingParamVariant{
 						{
-							FieldAccessor:    "request.name",
+							FieldSteps:       []*routingFieldStep{{PropertyName: "name"}},
 							PrefixSegments:   []string{`.literal("projects/")`, `.singleWildcard`, `.literal("/")`},
 							MatchingSegments: []string{`.literal("locations/")`, `.singleWildcard`},
 							Last:             true,
@@ -500,7 +514,10 @@ func TestRoutingParams(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := codec.routingParamsFromRouting(test.routingInfos)
+			got, err := codec.routingParamsFromRouting(requestMessage, test.routingInfos)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -536,11 +553,14 @@ func TestRoutingParamsFromPathTemplate(t *testing.T) {
 				WithLiteral("v2").
 				WithVariableNamed("name").
 				Build(),
-			want: []*routingParam{newTestMultiWildcardRoutingParam("name", "request.name")},
+			want: []*routingParam{newTestMultiWildcardRoutingParam("name", []*routingFieldStep{{PropertyName: "name"}}, false)},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := codec.routingParamsFromPathTemplate(test.template)
+			got, err := codec.routingParamsFromPathTemplate(requestMessage, test.template)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -549,7 +569,28 @@ func TestRoutingParamsFromPathTemplate(t *testing.T) {
 }
 
 func TestRoutingParamsFromBindings(t *testing.T) {
-	c := &codec{}
+	bookMessage := api.NewTestMessage("Book").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		)
+	requestMessage := api.NewTestMessage("RoutingBindingsRequest").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("destination_parent").WithType(api.TypezString),
+			api.NewTestField("shelf").WithType(api.TypezString),
+			api.NewTestField("book").WithMessageType(bookMessage).WithOptional(),
+		)
+	model := api.NewTestAPI([]*api.Message{bookMessage, requestMessage}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	c := newTestCodec(t, model, nil)
+	if err := c.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
 
 	for _, test := range []struct {
 		name     string
@@ -575,7 +616,7 @@ func TestRoutingParamsFromBindings(t *testing.T) {
 				api.NewPathBindingBuilder().WithVerb("GET").Build(),
 				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").Build()),
 			},
-			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", "request.parent")},
+			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", []*routingFieldStep{{PropertyName: "parent"}}, false)},
 		},
 		{
 			// CloudBilling.ListBillingAccounts: GET /v1/billingAccounts + GET /v1/{parent=organizations/*}/billingAccounts
@@ -584,7 +625,7 @@ func TestRoutingParamsFromBindings(t *testing.T) {
 				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("billingAccounts").Build()),
 				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("parent").WithLiteral("billingAccounts").Build()),
 			},
-			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", "request.parent")},
+			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", []*routingFieldStep{{PropertyName: "parent"}}, false)},
 		},
 		{
 			// CloudBilling.MoveBillingAccount: POST /v1/{name=billingAccounts/*}:move + GET /v1/{destination_parent=organizations/*}/{name=billingAccounts/*}:move
@@ -594,8 +635,8 @@ func TestRoutingParamsFromBindings(t *testing.T) {
 				newTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("destination_parent").WithVariableNamed("name").WithVerb("move").Build()),
 			},
 			want: []*routingParam{
-				newTestMultiWildcardRoutingParam("name", "request.name"),
-				newTestMultiWildcardRoutingParam("destination_parent", "request.destinationParent"),
+				newTestMultiWildcardRoutingParam("name", []*routingFieldStep{{PropertyName: "name"}}, false),
+				newTestMultiWildcardRoutingParam("destination_parent", []*routingFieldStep{{PropertyName: "destinationParent"}}, false),
 			},
 		},
 		{
@@ -618,7 +659,7 @@ func TestRoutingParamsFromBindings(t *testing.T) {
 					WithLiteral("intelligenceFindings").
 					WithVerb("summarize").Build()),
 			},
-			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", "request.parent")},
+			want: []*routingParam{newTestMultiWildcardRoutingParam("parent", []*routingFieldStep{{PropertyName: "parent"}}, false)},
 		},
 		{
 			name: "nested field path deduplication",
@@ -627,13 +668,23 @@ func TestRoutingParamsFromBindings(t *testing.T) {
 				newTestPathBinding("PATCH", api.NewPathTemplateBuilder().WithLiteral("v1").WithVariableNamed("shelf").WithVariableNamed("book", "name").Build()),
 			},
 			want: []*routingParam{
-				newTestMultiWildcardRoutingParam("book.name", "request.book?.name"),
-				newTestMultiWildcardRoutingParam("shelf", "request.shelf"),
+				newTestMultiWildcardRoutingParam(
+					"book.name",
+					[]*routingFieldStep{
+						{PropertyName: "book"},
+						{PropertyName: "name", ChainOptional: true},
+					},
+					true,
+				),
+				newTestMultiWildcardRoutingParam("shelf", []*routingFieldStep{{PropertyName: "shelf"}}, false),
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := c.routingParamsFromBindings(test.bindings)
+			got, err := c.routingParamsFromBindings(requestMessage, test.bindings)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -645,12 +696,14 @@ func newTestPathBinding(verb string, template *api.PathTemplate) *api.PathBindin
 	return api.NewPathBindingBuilder().WithVerb(verb).WithPathTemplate(template).Build()
 }
 
-func newTestMultiWildcardRoutingParam(key, accessor string) *routingParam {
+func newTestMultiWildcardRoutingParam(key string, steps []*routingFieldStep, isOptional bool) *routingParam {
 	return &routingParam{
 		RoutingKey: key,
 		Variants: []*routingParamVariant{
 			{
-				FieldAccessor:    accessor,
+				FieldSteps:       steps,
+				IsOptional:       isOptional,
+				NeedsParens:      isOptional && len(steps) > 1,
 				MatchingSegments: []string{".multiWildcard"},
 				Last:             true,
 			},
