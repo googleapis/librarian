@@ -37,8 +37,7 @@ func newTestDiscoveryMessage(fields ...*api.Field) *api.Message {
 }
 
 func TestMapFields(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -79,8 +78,7 @@ func TestMapFields(t *testing.T) {
 }
 
 func TestMapFieldWithObjectValues(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -122,8 +120,7 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 }
 
 func TestMapFieldWithEnumValues(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -216,7 +213,7 @@ func TestMapScalarTypes(t *testing.T) {
 		{"object", "google.protobuf.Struct", api.TypezMessage, ".google.protobuf.Struct"},
 		{"object", "google.protobuf.Any", api.TypezMessage, ".google.protobuf.Any"},
 	} {
-		model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+		model := api.NewAPIBuilder()
 		input := &schema{
 			Properties: []*property{
 				{
@@ -263,8 +260,7 @@ func TestMapScalarTypes(t *testing.T) {
 }
 
 func TestMapFieldEnumError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -287,8 +283,7 @@ func TestMapFieldEnumError(t *testing.T) {
 }
 
 func TestMapFieldScalarError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{

@@ -34,10 +34,10 @@ func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
 	if swiftCfg != nil && swiftCfg.LibraryNameOverride != "" {
 		return swiftCfg.LibraryNameOverride, nil
 	}
-	if api.PackageName == "" {
+	if api.PackageName() == "" {
 		return "", fmt.Errorf("API package name must not be empty")
 	}
-	parts := strings.Split(api.PackageName, ".")
+	parts := strings.Split(api.PackageName(), ".")
 	for i, p := range parts {
 		parts[i] = strcase.ToCamel(p)
 	}
@@ -46,9 +46,9 @@ func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
 		lang  string
 		value string
 	}{
-		{"C#", strings.ReplaceAll(api.CsharpNamespace, ".", "")},
-		{"PHP", strings.ReplaceAll(api.PhpNamespace, "\\", "")},
-		{"Ruby", strings.ReplaceAll(api.RubyPackage, "::", "")},
+		{"C#", strings.ReplaceAll(api.CsharpNamespace(), ".", "")},
+		{"PHP", strings.ReplaceAll(api.PhpNamespace(), "\\", "")},
+		{"Ruby", strings.ReplaceAll(api.RubyPackage(), "::", "")},
 	}
 	var messages []string
 	for _, alt := range alternatives {
@@ -60,7 +60,7 @@ func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
 		}
 	}
 	if len(messages) != 0 {
-		return "", fmt.Errorf(requiresLibraryNameOverrideFormat, api.PackageName, strings.Join(messages, "\n"))
+		return "", fmt.Errorf(requiresLibraryNameOverrideFormat, api.PackageName(), strings.Join(messages, "\n"))
 	}
 
 	return libraryName, nil

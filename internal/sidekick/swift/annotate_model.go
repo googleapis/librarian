@@ -67,6 +67,9 @@ type modelAnnotations struct {
 	// Markdown (`README.md`), resolving proto cross-reference links to Swift
 	// Package Index URLs and stripping unresolved links to their display text.
 	ReadmeDocLines []string
+
+	// QuickstartService is the service used to generate the package-level quickstart sample.
+	QuickstartService *api.Service
 }
 
 // traitDefinition provides information about each package trait.
@@ -177,20 +180,21 @@ func (c *codec) annotateModel() error {
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name
 	}
-	c.Model.Codec = annotations
-	for _, message := range c.Model.Messages {
+	c.Model.SetAnnotations(annotations)
+	for _, message := range c.Model.Messages() {
 		if err := c.annotateMessage(message, annotations); err != nil {
 			return err
 		}
 	}
-	for _, enum := range c.Model.Enums {
+	for _, enum := range c.Model.Enums() {
 		if err := c.annotateEnum(enum, annotations); err != nil {
 			return err
 		}
 	}
 	c.annotateLROAnyFields()
+	services := c.Model.Services()
 	if c.QuickstartServiceOverride != "" {
-		idx := slices.IndexFunc(c.Model.Services, func(s *api.Service) bool {
+		idx := slices.IndexFunc(services, func(s *api.Service) bool {
 			clientName := pascalCase(c.ServiceName(s) + "Client")
 			return strings.EqualFold(s.Name(), c.QuickstartServiceOverride) ||
 				strings.EqualFold(c.ServiceName(s), c.QuickstartServiceOverride) ||
@@ -199,15 +203,17 @@ func (c *codec) annotateModel() error {
 		if idx == -1 {
 			return fmt.Errorf("%w: %q not found in services for package %q", errQuickstartServiceNotFound, c.QuickstartServiceOverride, c.PackageName)
 		}
-		c.Model.QuickstartService = c.Model.Services[idx]
-	} else if c.Model.QuickstartService == nil && len(c.Model.Services) > 0 {
-		c.Model.QuickstartService = c.Model.Services[0]
+		annotations.QuickstartService = services[idx]
+	} else if c.Model.QuickstartService() != nil {
+		annotations.QuickstartService = c.Model.QuickstartService()
+	} else if len(services) > 0 {
+		annotations.QuickstartService = services[0]
 	}
 	// The services are annotated last because the annotation assumes messages
 	// and enums are already annotated.
-	allTraits := make([]*traitDefinition, 0, len(c.Model.Services))
+	allTraits := make([]*traitDefinition, 0, len(services))
 	var generatedMethods []*api.Method
-	for _, service := range c.Model.Services {
+	for _, service := range services {
 		ann, err := c.annotateService(service, annotations)
 		if err != nil {
 			return err
@@ -233,14 +239,14 @@ func (c *codec) annotateModel() error {
 	}
 	if !c.Module {
 		var modelScopes []string
-		if c.Model.PackageName != "" {
-			modelScopes = []string{c.Model.PackageName}
+		if c.Model.PackageName() != "" {
+			modelScopes = []string{c.Model.PackageName()}
 		}
-		docLines, err := c.formatDocumentation(c.Model.Description, modelScopes)
+		docLines, err := c.formatDocumentation(c.Model.Description(), modelScopes)
 		if err != nil {
 			return err
 		}
-		readmeDocLines, err := c.formatReadmeDocumentation(c.Model.Description, modelScopes)
+		readmeDocLines, err := c.formatReadmeDocumentation(c.Model.Description(), modelScopes)
 		if err != nil {
 			return err
 		}
@@ -250,8 +256,8 @@ func (c *codec) annotateModel() error {
 	if !c.PerServiceTraits {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At
 		// the time, only a handful of packages exceeded this number of services.
-		if len(c.Model.Services) > 15 {
-			slog.Warn("package has more than 15 services, consider enabling per-service features", "package", c.LibraryName, "count", len(c.Model.Services))
+		if len(services) > 15 {
+			slog.Warn("package has more than 15 services, consider enabling per-service features", "package", c.LibraryName, "count", len(services))
 		}
 		return nil
 	}

@@ -185,7 +185,7 @@ func (c *codec) messageFieldSerdeAs(field *api.Field) string {
 }
 
 func (c *codec) annotateField(field *api.Field, message *api.Message, model *api.API) (*fieldAnnotations, error) {
-	fqMessageName, err := c.fullyQualifiedMessageName(message, model.PackageName)
+	fqMessageName, err := c.fullyQualifiedMessageName(message, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
@@ -193,11 +193,11 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
-	fieldType, err := c.fieldType(field, model, false, model.PackageName)
+	fieldType, err := c.fieldType(field, model, false, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
-	primitiveFieldType, err := c.fieldType(field, model, true, model.PackageName)
+	primitiveFieldType, err := c.fieldType(field, model, true, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		}
 
 		if targetType != nil {
-			fieldFqName, err := c.fullyQualifiedMessageName(targetType, model.PackageName)
+			fieldFqName, err := c.fullyQualifiedMessageName(targetType, model.PackageName())
 			if err != nil {
 				return nil, err
 			}

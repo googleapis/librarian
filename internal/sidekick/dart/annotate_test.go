@@ -49,7 +49,7 @@ func TestAnnotateModel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 
 	if diff := cmp.Diff("google_cloud_test", codec.PackageName); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -76,7 +76,7 @@ func TestAnnotateModel_HasDocLines(t *testing.T) {
 	if err := annotate1.annotateModel(options); err != nil {
 		t.Fatal(err)
 	}
-	codec1 := modelWithDesc.Codec.(*modelAnnotations)
+	codec1 := modelWithDesc.Codec().(*modelAnnotations)
 	if !codec1.HasDocLines() {
 		t.Errorf("Expected HasDocLines() to be true when description is provided")
 	}
@@ -85,7 +85,7 @@ func TestAnnotateModel_HasDocLines(t *testing.T) {
 	if err := annotate2.annotateModel(options); err != nil {
 		t.Fatal(err)
 	}
-	codec2 := modelWithoutDesc.Codec.(*modelAnnotations)
+	codec2 := modelWithoutDesc.Codec().(*modelAnnotations)
 	if codec2.HasDocLines() {
 		t.Errorf("Expected HasDocLines() to be false when description is empty")
 	}
@@ -104,7 +104,7 @@ func TestAnnotateModel_FakeList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 
 	want := "FakeAccessApprovalService, FakeSecretManagerService"
 	if diff := cmp.Diff(want, codec.FakeList); diff != "" {
@@ -122,7 +122,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"library-path-override": "src/buffers.dart"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("src/buffers.dart", codec.MainFileNameWithExtension); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -131,7 +131,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"package-name-override": "google-cloud-type"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("google-cloud-type", codec.PackageName); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -140,7 +140,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"dev-dependencies": "test,mockito"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff([]string{"mockito", "test"}, codec.DevDependencies); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -152,7 +152,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 				"package:google_cloud_bar": "^1.2.3",
 				"package:google_cloud_foo": "^4.5.6"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if !slices.Contains(codec.PackageDependencies, packageDependency{Name: "google_cloud_foo", Constraint: "^4.5.6"}) {
 					t.Errorf("missing 'google_cloud_foo' in Codec.PackageDependencies, got %v", codec.PackageDependencies)
 				}
@@ -164,7 +164,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"extra-exports": "export 'package:google_cloud_gax/gax.dart' show Any; export 'package:google_cloud_gax/gax.dart' show Status;"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff([]string{
 					"export 'package:google_cloud_gax/gax.dart' show Any",
 					"export 'package:google_cloud_gax/gax.dart' show Status"}, codec.Exports); diff != "" {
@@ -175,7 +175,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"extra-imports": "dart:math; package:my_package/my_file.dart", "package:my_package": "^1.0.0"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if !slices.Contains(codec.Imports, "import 'dart:math';") {
 					t.Errorf("missing 'dart:math' in Codec.Imports, got %v", codec.Imports)
 				}
@@ -187,7 +187,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"version": "1.2.3"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("1.2.3", codec.PackageVersion); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -214,7 +214,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"part-file": "src/test.p.dart"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("src/test.p.dart", codec.PartFileReference); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -223,7 +223,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"readme-after-title-text": "> [!TIP] Still beta!"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("> [!TIP] Still beta!", codec.ReadMeAfterTitleText); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -232,7 +232,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"readme-quickstart-text": "## Getting Started\n..."},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("## Getting Started\n...", codec.ReadMeQuickstartText); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -241,7 +241,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"repository-url": "http://example.com/repo"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("http://example.com/repo", codec.RepositoryURL); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -250,7 +250,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		{
 			map[string]string{"issue-tracker-url": "http://example.com/issues"},
 			func(t *testing.T, am *annotateModel) {
-				codec := model.Codec.(*modelAnnotations)
+				codec := model.Codec().(*modelAnnotations)
 				if diff := cmp.Diff("http://example.com/issues", codec.IssueTrackerURL); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
@@ -365,7 +365,7 @@ func TestAnnotateModel_Examples_ValidMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 
 	if diff := cmp.Diff("ServiceWithMethods", codec.ExampleServiceName); diff != "" {
 		t.Errorf("mismatch ExampleServiceName (-want +got):\n%s", diff)
@@ -399,7 +399,7 @@ func TestAnnotateModel_Examples_NoMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := model.Codec.(*modelAnnotations)
+	codec := model.Codec().(*modelAnnotations)
 
 	if diff := cmp.Diff("", codec.ExampleServiceName); diff != "" {
 		t.Errorf("mismatch ExampleServiceName (-want +got):\n%s", diff)
@@ -1966,7 +1966,7 @@ func TestAnnotateField(t *testing.T) {
 
 			model := api.NewTestAPI([]*api.Message{message, empty}, []*api.Enum{enumState}, nil).WithMaps(mapEntry)
 			annotate := newAnnotateModel(model)
-			registerMissingWkt(annotate.model)
+			annotate.registerMissingWkt()
 
 			annotate.annotateField(field)
 			got := field.Codec().(*fieldAnnotation)

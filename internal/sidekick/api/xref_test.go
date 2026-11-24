@@ -135,7 +135,7 @@ func TestCrossReferenceService(t *testing.T) {
 	mixin := NewTestService("Mixin").WithID(".external.Mixin")
 
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{service})
-	model.AddService(mixin)
+	model.addService(mixin)
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

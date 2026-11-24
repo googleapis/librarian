@@ -91,32 +91,10 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	api.UpdateMethodPagination(cfg.PaginationOverrides, model)
-	api.LabelRecursiveFields(model)
-	if err := api.CrossReference(model); err != nil {
-		return nil, err
-	}
-	if err := api.IdentifyTargetResources(model, cfg.ResourceNameHeuristic); err != nil {
-		return nil, err
-	}
-	if err := api.SkipModelElements(model, cfg.Override); err != nil {
-		return nil, err
-	}
-	if err := api.PatchDocumentation(model, cfg.CommentOverrides); err != nil {
-		return nil, err
-	}
-	// Verify all the services, messages and enums are in the same package.
-	if err := api.Validate(model); err != nil {
-		return nil, err
-	}
-	if cfg.Override.Name != "" {
-		model.Name = cfg.Override.Name
-	}
-	if cfg.Override.Title != "" {
-		model.Title = cfg.Override.Title
-	}
-	if cfg.Override.Description != "" {
-		model.Description = cfg.Override.Description
-	}
-	return model, nil
+	return api.NewAPIBuilderFrom(model).
+		WithPaginationOverrides(cfg.PaginationOverrides).
+		WithResourceNameHeuristic(cfg.ResourceNameHeuristic).
+		WithOverride(cfg.Override).
+		WithCommentOverrides(cfg.CommentOverrides).
+		Build()
 }

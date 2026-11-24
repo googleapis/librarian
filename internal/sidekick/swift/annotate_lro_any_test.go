@@ -147,7 +147,7 @@ func TestLROAnyTypes_PayloadTypeNotGenerated(t *testing.T) {
 	// Stand in for a payload type another module owns.
 	model.Message(".google.storage.control.v2.Folder").SetAnnotations(nil)
 
-	types, err := c.lroAnyTypes(model.Services[0].Methods())
+	types, err := c.lroAnyTypes(model.Services()[0].Methods())
 	if err != nil {
 		t.Fatal(err)
 	}
