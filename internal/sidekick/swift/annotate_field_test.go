@@ -51,6 +51,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldType:            "Swift.String?",
 				BaseFieldType:        "Swift.String",
 				Decoding:             DecodingOptional,
+				Encoding:             EncodingOptional,
 				ProtoFieldName:       "secretPayload",
 				ProtoFieldNamePascal: "SecretPayload",
 				PrimitiveFieldType:   "Swift.String",
@@ -135,6 +136,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				BaseFieldType:        "Foundation.Data",
 				UrlSafeValue:         true,
 				Decoding:             DecodingOptional,
+				Encoding:             EncodingOptional,
 				ProtoFieldName:       "name",
 				ProtoFieldNamePascal: "Name",
 				PrimitiveFieldType:   "Foundation.Data",
@@ -278,6 +280,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				BaseFieldType:        "GoogleWKT.WKTRecursive<Node>",
 				Recursive:            true,
 				Decoding:             DecodingOptional,
+				Encoding:             EncodingOptional,
 				ProtoFieldName:       "childNode",
 				ProtoFieldNamePascal: "ChildNode",
 				PrimitiveFieldType:   "Node",
@@ -293,6 +296,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				BaseFieldType:        "GoogleWKT.WKTRecursive<Node>",
 				Recursive:            true,
 				Decoding:             DecodingOptional,
+				Encoding:             EncodingOptional,
 				ProtoFieldName:       "childNode",
 				ProtoFieldNamePascal: "ChildNode",
 				PrimitiveFieldType:   "Node",
@@ -397,6 +401,7 @@ func TestAnnotateField_ExplicitNull(t *testing.T) {
 				FieldType:            "GoogleWKT.WKTValue?",
 				BaseFieldType:        "GoogleWKT.WKTValue",
 				Decoding:             DecodingExplicitNull,
+				Encoding:             EncodingOptional,
 				ProtoFieldName:       "valueField",
 				ProtoFieldNamePascal: "ValueField",
 				PrimitiveFieldType:   "GoogleWKT.WKTValue",
@@ -468,6 +473,7 @@ func TestAnnotateField_ExplicitNull(t *testing.T) {
 				FieldType:            "GoogleWKT.WKTNullValue",
 				BaseFieldType:        "GoogleWKT.WKTNullValue",
 				Decoding:             DecodingExplicitNull,
+				Encoding:             EncodingSingularEnum,
 				ProtoFieldName:       "nullField",
 				ProtoFieldNamePascal: "NullField",
 				PrimitiveFieldType:   "GoogleWKT.WKTNullValue",
@@ -485,6 +491,7 @@ func TestAnnotateField_ExplicitNull(t *testing.T) {
 				FieldType:            "GoogleWKT.WKTNullValue?",
 				BaseFieldType:        "GoogleWKT.WKTNullValue",
 				Decoding:             DecodingExplicitNull,
+				Encoding:             EncodingOptional,
 				ProtoFieldName:       "nullField",
 				ProtoFieldNamePascal: "NullField",
 				PrimitiveFieldType:   "GoogleWKT.WKTNullValue",
@@ -557,6 +564,7 @@ func TestAnnotateField_ExplicitNull(t *testing.T) {
 				FieldType:            "GoogleWKT.WKTStruct?",
 				BaseFieldType:        "GoogleWKT.WKTStruct",
 				Decoding:             DecodingOptional,
+				Encoding:             EncodingOptional,
 				ProtoFieldName:       "structField",
 				ProtoFieldNamePascal: "StructField",
 				PrimitiveFieldType:   "GoogleWKT.WKTStruct",
@@ -598,6 +606,86 @@ func TestAnnotateField_ExplicitNull(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.want, field.Codec(), cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "PackageName", "Model", "ValueField")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateField_Encoding(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		makeField func(statusEnum *api.Enum, intMap *api.Map) *api.Field
+		isOneOf   bool
+		want      EncodingStyle
+	}{
+		{
+			name: "singular scalar",
+			makeField: func(_ *api.Enum, _ *api.Map) *api.Field {
+				return api.NewTestField("name").WithType(api.TypezString)
+			},
+			want: EncodingSimple,
+		},
+		{
+			name: "singular enum",
+			makeField: func(statusEnum *api.Enum, _ *api.Map) *api.Field {
+				return api.NewTestField("status").WithEnumType(statusEnum)
+			},
+			want: EncodingSingularEnum,
+		},
+		{
+			name: "optional enum",
+			makeField: func(statusEnum *api.Enum, _ *api.Map) *api.Field {
+				return api.NewTestField("status").WithEnumType(statusEnum).WithOptional()
+			},
+			want: EncodingOptional,
+		},
+		{
+			name: "repeated enum",
+			makeField: func(statusEnum *api.Enum, _ *api.Map) *api.Field {
+				return api.NewTestField("status").WithEnumType(statusEnum).WithRepeated()
+			},
+			want: EncodingSimple,
+		},
+		{
+			name: "oneof enum",
+			makeField: func(statusEnum *api.Enum, _ *api.Map) *api.Field {
+				return api.NewTestField("status").WithEnumType(statusEnum)
+			},
+			isOneOf: true,
+			want:    EncodingSimple,
+		},
+		{
+			name: "custom key map",
+			makeField: func(_ *api.Enum, intMap *api.Map) *api.Field {
+				return api.NewTestField("labels").WithMapType(intMap)
+			},
+			want: EncodingMapCustomKey,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			statusEnum := api.NewTestEnum("Status").WithValues(
+				api.NewTestEnumValue("STATUS_UNSPECIFIED", 0),
+				api.NewTestEnumValue("STATUS_ACTIVE", 1),
+			)
+			intMap := api.NewTestMap("map<int32, string>", api.TypezInt32, api.TypezString).
+				WithID("$map<int32, string>")
+			field := test.makeField(statusEnum, intMap)
+			msg := api.NewTestMessage("Message")
+			if test.isOneOf {
+				msg.WithOneOfs(api.NewTestOneOf("choice").WithFields(field))
+			} else {
+				msg.WithFields(field)
+			}
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{statusEnum}, nil).
+				WithMaps(intMap)
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			got := field.Codec().(*fieldAnnotations).Encoding
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

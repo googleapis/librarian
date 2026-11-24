@@ -16,7 +16,7 @@ limitations under the License.
 {{- if .Singular }}
 {{- if .Optional }}
 if let v = {{ .Codec.Name }} {
-  try container.encode(
+  try container.encodeIfPresent(
     {{ .Codec.Model.WktPackage }}._DiscoveryBase64.encode(v), forKey: .{{ .Codec.Name }}
   )
 }
