@@ -89,7 +89,7 @@ ARG PANDOC_VERSION=3.8.2
 ARG PANDOC_CHECKSUM=f5e90628b44a801ecdf812236291871607db8fb2fba0e99911a6c497b406c64a8940fd2a776d482ece7a9dac10d0228378d78da61091262b69e7276456495f5c
 
 # Go dependency versions
-# Matches the go directive in google-cloud-go's go.mod.
+# Matches the go directive in google-cloud-go's go.mod. Every image has Go.
 ARG GO_RUNTIME_VERSION=1.26.0
 ARG GO_RUNTIME_CHECKSUM=aac1b08a0fb0c4e0a7c1555beb7b59180b05dfc5a3d62e40e9de90cd42f88235
 # protoc and the generator plugins are from earlier images. `librarian
@@ -195,6 +195,28 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -buildvcs=false -o /go/bin/librarian ./cmd/librarian
 
+# ============== Runtime Builder Stage ==============
+# Runtimes are downloaded or compiled in stages that do not depend on
+# librarian, so changes to librarian or the language tools do not rebuild
+# them. The language stages copy the finished runtimes from these stages.
+FROM --platform=linux/amd64 ${BASE_IMAGE} AS runtime-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ca-certificates curl pkg-config xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# ============== Go Runtime Stage ==============
+FROM runtime-builder AS go-runtime
+ARG GO_RUNTIME_VERSION
+ARG GO_RUNTIME_CHECKSUM
+
+# Install Go from the official binaries.
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/go.tar.gz \
+        https://go.dev/dl/go${GO_RUNTIME_VERSION}.linux-amd64.tar.gz && \
+    echo "${GO_RUNTIME_CHECKSUM} /tmp/go.tar.gz" | sha256sum -c - && \
+    tar -C /usr/local -xzf /tmp/go.tar.gz && \
+    rm /tmp/go.tar.gz
+
 # ============== Base Stage ==============
 FROM --platform=linux/amd64 ${BASE_IMAGE} AS base
 ARG PROTOC_VERSION
@@ -219,6 +241,12 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
         https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip && \
     echo "${PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
+
+# Every image has Go, so CI can `go install` or `go run` the librarian
+# version that a repository pins in librarian.yaml.
+COPY --from=go-runtime /usr/local/go /usr/local/go
+ENV PATH=/usr/local/go/bin:$PATH
+RUN go version
 
 COPY --from=build /go/bin/librarian .
 ENTRYPOINT ["/app/librarian"]
@@ -272,16 +300,6 @@ RUN ln -s ${RUST_VERSION}-x86_64-unknown-linux-gnu /root/.rustup/toolchains/${RU
 # Fail the build if a runtime the image promises is missing.
 RUN --mount=type=tmpfs,target=/home/librarian \
     cargo --version && rustc --version
-
-# ============== Runtime Builder Stage ==============
-# Runtimes are downloaded or compiled in stages that do not depend on
-# librarian, so changes to librarian or the language tools do not rebuild
-# them. The language stages copy the finished runtimes from these stages.
-FROM --platform=linux/amd64 ${BASE_IMAGE} AS runtime-builder
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential ca-certificates curl pkg-config xz-utils \
-    && rm -rf /var/lib/apt/lists/*
 
 # ============== Python Runtime Stage ==============
 # Python has no official Linux binaries, so it is compiled from the official
@@ -363,18 +381,6 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/ruby.tar.xz \
     strip --strip-debug /opt/ruby/bin/ruby && \
     find /opt/ruby/lib -name '*.so*' -type f -exec strip --strip-debug {} + && \
     cd / && rm -rf /tmp/ruby /tmp/ruby.tar.xz
-
-# ============== Go Runtime Stage ==============
-FROM runtime-builder AS go-runtime
-ARG GO_RUNTIME_VERSION
-ARG GO_RUNTIME_CHECKSUM
-
-# Install Go from the official binaries.
-RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/go.tar.gz \
-        https://go.dev/dl/go${GO_RUNTIME_VERSION}.linux-amd64.tar.gz && \
-    echo "${GO_RUNTIME_CHECKSUM} /tmp/go.tar.gz" | sha256sum -c - && \
-    tar -C /usr/local -xzf /tmp/go.tar.gz && \
-    rm /tmp/go.tar.gz
 
 # ============== Swift Runtime Stage ==============
 # Swift publishes a toolchain per Linux distribution, signed with the Swift
@@ -543,12 +549,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config tzdata uuid-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=swift-runtime /opt/swift /opt/swift
-# google-cloud-swift runs Librarian with `go run` at the version in its
-# librarian.yaml, so the image has Go.
-COPY --from=go-runtime /usr/local/go /usr/local/go
 # Swift Build finds the toolchain only in its usr layout, so the toolchain
 # keeps its usr directory.
-ENV PATH=/opt/swift/usr/bin:/usr/local/go/bin:${PATH}
+ENV PATH=/opt/swift/usr/bin:${PATH}
 
 # Librarian keeps installed tools and downloads in its cache directory.
 ENV LIBRARIAN_CACHE=/usr/local/swift_tools/cache
@@ -560,7 +563,7 @@ RUN mkdir -p ${LIBRARIAN_CACHE} && \
 
 # Fail the build if a runtime the image promises is missing.
 RUN --mount=type=tmpfs,target=/home/librarian \
-    swift --version && swift-format --version && go version
+    swift --version && swift-format --version
 
 # ============== Go Stage ==============
 FROM base AS go
@@ -574,8 +577,7 @@ ARG GO_GOIMPORTS_VERSION
 
 ENV GO_VERSION=$GO_RUNTIME_VERSION
 
-COPY --from=go-runtime /usr/local/go /usr/local/go
-ENV PATH=/root/go/bin:/usr/local/go/bin:$PATH
+ENV PATH=/root/go/bin:$PATH
 
 # Install required Go tools for protoc and the post-processor.
 RUN (export GOTOOLCHAIN='auto' HOME=/root && \
