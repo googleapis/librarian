@@ -164,6 +164,9 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Dart.IssueTrackerURL == "" {
 		lib.Dart.IssueTrackerURL = d.Dart.IssueTrackerURL
 	}
+	if lib.Dart.SDKVersion == "" {
+		lib.Dart.SDKVersion = d.Dart.SDKVersion
+	}
 	lib.Dart.Packages = mergeMaps(lib.Dart.Packages, d.Dart.Packages)
 	lib.Dart.Prefixes = mergeMaps(lib.Dart.Prefixes, d.Dart.Prefixes)
 	lib.Dart.Protos = mergeMaps(lib.Dart.Protos, d.Dart.Protos)
@@ -564,6 +567,9 @@ func mergeDart(dst, src *config.DartPackage) *config.DartPackage {
 	}
 	if src.RepositoryURL != "" {
 		res.RepositoryURL = src.RepositoryURL
+	}
+	if src.SDKVersion != "" {
+		res.SDKVersion = src.SDKVersion
 	}
 	if src.TitleOverride != "" {
 		res.TitleOverride = src.TitleOverride

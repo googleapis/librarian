@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/iancoleman/strcase"
 )
 
@@ -92,6 +93,8 @@ type modelAnnotations struct {
 	PackageSkillName string
 	// The version of the generated package.
 	PackageVersion string
+	// The Dart SDK version constraint formatted as a YAML scalar, e.g. ^3.9.0 or '>=3.9.0 <4.0.0'.
+	SDKVersion string
 	// Name of the API in snake_format (e.g. secretmanager).
 	MainFileNameWithExtension string
 	SourcePackageName         string
@@ -274,7 +277,8 @@ type enumValueAnnotation struct {
 }
 
 type packageDependency struct {
-	Name       string
+	Name string
+	// The version constraint formatted as a YAML scalar, e.g. ^1.2.3 or '>=1.2.3 <2.0.0'.
 	Constraint string
 }
 
@@ -321,6 +325,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		generationYear             string
 		libraryPathOverride        string
 		packageVersion             string
+		sdkVersion                 string
 		partFileReference          string
 		doNotPublish               bool
 		useWorkspace               = true
@@ -360,6 +365,10 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			issueTrackerURL = definition
 		case key == "version":
 			packageVersion = definition
+		case key == "sdk-version":
+			// sdk-version = "^3.9.0"
+			// The Dart SDK version constraint for the generated package.
+			sdkVersion = definition
 		case key == "part-file":
 			partFileReference = definition
 		case key == "extra-exports":
@@ -500,6 +509,14 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return errors.New("all packages must define 'issue-tracker-url'")
 	}
 
+	if sdkVersion == "" {
+		return errors.New("all packages must define 'sdk-version'")
+	}
+	sdkVersion, err := yamlScalar(sdkVersion)
+	if err != nil {
+		return err
+	}
+
 	pkgName = packageName(model, packageNameOverride)
 	importedPackages := calculatePubPackages(annotate.imports)
 	for _, d := range dependencies {
@@ -543,6 +560,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		PackageName:               pkgName,
 		PackageSkillName:          strings.ReplaceAll(pkgName, "_", "-"),
 		PackageVersion:            packageVersion,
+		SDKVersion:                sdkVersion,
 		MainFileNameWithExtension: mainFileNameWithExtension,
 		CopyrightYear:             generationYear,
 		BoilerPlate: append(license.HeaderBulk(),
@@ -601,7 +619,11 @@ func calculateDependencies(packages map[string]bool, constraints map[string]stri
 			if len(constraint) == 0 {
 				return nil, fmt.Errorf("unknown version constraint for package %q (did you forget to add it to .sidekick.toml?)", name)
 			}
-			deps = append(deps, packageDependency{Name: name, Constraint: constraint})
+			scalar, err := yamlScalar(constraint)
+			if err != nil {
+				return nil, err
+			}
+			deps = append(deps, packageDependency{Name: name, Constraint: scalar})
 		}
 	}
 	sort.SliceStable(deps, func(i, j int) bool {
@@ -609,6 +631,16 @@ func calculateDependencies(packages map[string]bool, constraints map[string]stri
 	})
 
 	return deps, nil
+}
+
+// yamlScalar formats s as a YAML scalar, quoting it only when YAML requires it,
+// e.g. "^3.9.0" is returned as-is but ">=3.9.0 <4.0.0" is quoted.
+func yamlScalar(s string) (string, error) {
+	b, err := yaml.Marshal(s)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(string(b), "\n"), nil
 }
 
 // calculateImports generates Dart import statements given a set of imports.

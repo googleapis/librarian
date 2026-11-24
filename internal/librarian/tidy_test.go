@@ -666,6 +666,9 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 		Language: config.LanguageDart,
 		Default: &config.Default{
 			Output: "generated/",
+			Dart: &config.DartPackage{
+				SDKVersion: "^3.9.0",
+			},
 		},
 		Sources: &config.Sources{
 			Googleapis: &config.Source{

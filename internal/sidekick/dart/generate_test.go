@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 var (
@@ -55,6 +56,7 @@ func TestFromProtobuf(t *testing.T) {
 			"copyright-year":                 "2025",
 			"not-for-publication":            "true",
 			"version":                        "0.1.0",
+			"sdk-version":                    "^3.9.0",
 			"skip-format":                    "true",
 			"package:google_cloud_rpc":       "^1.2.3",
 			"package:http":                   "^4.5.6",
@@ -132,6 +134,7 @@ func TestFromProtobuf_NoServices(t *testing.T) {
 			"copyright-year":                "2025",
 			"not-for-publication":           "true",
 			"version":                       "0.1.0",
+			"sdk-version":                   "^3.9.0",
 			"skip-format":                   "true",
 			"package:google_cloud_protobuf": "^0.1.2",
 			"proto:google.protobuf":         "package:google_cloud_protobuf/protobuf.dart",
@@ -178,6 +181,55 @@ lib/src/version.dart linguist-generated=true
 `
 	if diff := cmp.Diff(wantGitattributes, string(gitattributesContent)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerate_SDKVersion(t *testing.T) {
+	type pubspec struct {
+		Environment struct {
+			SDK string `yaml:"sdk"`
+		} `yaml:"environment"`
+	}
+	for _, test := range []struct {
+		name       string
+		sdkVersion string
+		wantLine   string
+	}{
+		{
+			name:       "caret",
+			sdkVersion: "^3.10.0",
+			wantLine:   "  sdk: ^3.10.0\n",
+		},
+		{
+			name:       "range",
+			sdkVersion: ">=3.9.0 <5.0.0",
+			wantLine:   "  sdk: '>=3.9.0 <5.0.0'\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			options := maps.Clone(requiredConfig)
+			options["skip-format"] = "true"
+			options["sdk-version"] = test.sdkVersion
+			if err := Generate(t.Context(), api.NewTestAPI(nil, nil, nil), outDir, options); err != nil {
+				t.Fatal(err)
+			}
+			pubspecPath := filepath.Join(outDir, "pubspec.yaml")
+			raw, err := os.ReadFile(pubspecPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(raw), test.wantLine) {
+				t.Errorf("pubspec.yaml missing line %q:\n%s", test.wantLine, raw)
+			}
+			got, err := yaml.Read[pubspec](pubspecPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.sdkVersion, got.Environment.SDK); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

@@ -517,6 +517,11 @@ type DartPackage struct {
 	// RepositoryURL is the URL to the repository for this package.
 	RepositoryURL string `yaml:"repository_url,omitempty"`
 
+	// SDKVersion is the Dart SDK version constraint for the package
+	// (e.g., "^3.9.0" or ">=3.9.0 <5.0.0").
+	// This must be set in the default configuration.
+	SDKVersion string `yaml:"sdk_version,omitempty"`
+
 	// SkippedIds is a list of proto IDs to skip in generation.
 	SkippedIds []string `yaml:"skipped_ids,omitempty"`
 
