@@ -269,6 +269,10 @@ RUN cargo install --locked taplo-cli@${TAPLO_CLI_VERSION} && \
 # different toolchain than x.y.z. Link it so it resolves without a download.
 RUN ln -s ${RUST_VERSION}-x86_64-unknown-linux-gnu /root/.rustup/toolchains/${RUST_VERSION%.*}-x86_64-unknown-linux-gnu
 
+# Fail the build if a runtime the image promises is missing.
+RUN --mount=type=tmpfs,target=/home/librarian \
+    cargo --version && rustc --version
+
 # ============== Runtime Builder Stage ==============
 # Runtimes are downloaded or compiled in stages that do not depend on
 # librarian, so changes to librarian or the language tools do not rebuild
@@ -458,6 +462,10 @@ ENV LIBRARIAN_CACHE=/python-packages/librarian-cache
 RUN mkdir -p ${LIBRARIAN_CACHE} && \
     chmod a+rwX ${LIBRARIAN_CACHE}
 
+# Fail the build if a runtime the image promises is missing.
+RUN --mount=type=tmpfs,target=/home/librarian \
+    python3 --version && pip --version && pandoc --version
+
 # ============== PHP Stage ==============
 FROM python-base AS php
 ARG PHP_RUNTIME_LIBRARIES
@@ -492,6 +500,10 @@ ENV COMPOSER_HOME=/usr/local/php_tools/composer
 RUN mkdir -p ${LIBRARIAN_CACHE} ${COMPOSER_HOME} && \
     chmod -R a+rwX /usr/local/php_tools
 
+# Fail the build if a runtime the image promises is missing.
+RUN --mount=type=tmpfs,target=/home/librarian --mount=type=tmpfs,target=/usr/local/php_tools/composer \
+    php --version && composer --version && python3 --version && node --version && pnpm --version
+
 # ============== Ruby Stage ==============
 FROM base AS ruby
 ARG RUBY_VERSION
@@ -517,6 +529,10 @@ ENV PATH=${GEM_HOME}/bin:${PATH}
 RUN mkdir -p ${LIBRARIAN_CACHE} ${GEM_HOME} && \
     chmod -R a+rwX /usr/local/ruby_tools
 
+# Fail the build if a runtime the image promises is missing.
+RUN --mount=type=tmpfs,target=/home/librarian \
+    ruby --version && gem --version && bundle --version
+
 # ============== Swift Stage ==============
 FROM base AS swift
 
@@ -541,6 +557,10 @@ ENV LIBRARIAN_CACHE=/usr/local/swift_tools/cache
 # librarianops) can run `librarian install swift`.
 RUN mkdir -p ${LIBRARIAN_CACHE} && \
     chmod -R a+rwX /usr/local/swift_tools
+
+# Fail the build if a runtime the image promises is missing.
+RUN --mount=type=tmpfs,target=/home/librarian \
+    swift --version && swift-format --version && go version
 
 # ============== Go Stage ==============
 FROM base AS go
@@ -576,6 +596,10 @@ RUN chmod a+rx /root/go/bin/* && \
     chmod a+x /root && \
     chmod a+x /root/go && \
     chmod a+x /root/go/bin
+
+# Fail the build if a runtime the image promises is missing.
+RUN --mount=type=tmpfs,target=/home/librarian \
+    go version
 
 # ============== Node Stage ==============
 FROM base AS nodejs
@@ -633,6 +657,10 @@ RUN export HOME=/root PNPM_HOME=/usr/local/pnpm && \
     pnpm add -g --store-dir /tmp/pnpm-store "$PWD" && \
     rm -rf /tmp/pnpm-store
 
+# Fail the build if a runtime the image promises is missing.
+RUN --mount=type=tmpfs,target=/home/librarian \
+    node --version && pnpm --version
+
 # ============== Java Stage ==============
 FROM base AS java
 ARG JAVA_VERSION
@@ -676,3 +704,6 @@ ENV LIBRARIAN_CACHE=/usr/local/java_tools/cache
 RUN mkdir -p /usr/local/java_tools && \
     chmod -R a+rwx /usr/local/java_tools
 
+# Fail the build if a runtime the image promises is missing.
+RUN --mount=type=tmpfs,target=/home/librarian \
+    java -version && mvn -version
