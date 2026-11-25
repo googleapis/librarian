@@ -40,7 +40,7 @@ func TestModelAnnotations(t *testing.T) {
 		MonorepoRoot:    ".",
 		WktPackage:      "GoogleWKT",
 	}
-	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn", "QuickstartService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -288,8 +288,26 @@ func TestQuickstartServiceOverride(t *testing.T) {
 		if err := codec.annotateModel(); err != nil {
 			t.Fatal(err)
 		}
-		if m.QuickstartService != service1 {
-			t.Errorf("expected QuickstartService to default to service1, got %v", m.QuickstartService)
+		ann := m.Codec.(*modelAnnotations)
+		if ann.QuickstartService != service1 {
+			t.Errorf("expected QuickstartService to default to service1, got %v", ann.QuickstartService)
+		}
+		if m.QuickstartService != nil {
+			t.Errorf("expected model.QuickstartService not to be mutated, got %v", m.QuickstartService)
+		}
+	})
+
+	t.Run("uses model.QuickstartService when set", func(t *testing.T) {
+		m := *model
+		m.Services = []*api.Service{service1, service2}
+		m.QuickstartService = service2
+		codec := newTestCodec(t, &m, nil)
+		if err := codec.annotateModel(); err != nil {
+			t.Fatal(err)
+		}
+		ann := m.Codec.(*modelAnnotations)
+		if ann.QuickstartService != service2 {
+			t.Errorf("expected QuickstartService to be service2, got %v", ann.QuickstartService)
 		}
 	})
 
@@ -304,8 +322,12 @@ func TestQuickstartServiceOverride(t *testing.T) {
 		if err := codec.annotateModel(); err != nil {
 			t.Fatal(err)
 		}
-		if m.QuickstartService != service2 {
-			t.Errorf("expected QuickstartService to be service2, got %v", m.QuickstartService)
+		ann := m.Codec.(*modelAnnotations)
+		if ann.QuickstartService != service2 {
+			t.Errorf("expected QuickstartService to be service2, got %v", ann.QuickstartService)
+		}
+		if m.QuickstartService != nil {
+			t.Errorf("expected model.QuickstartService not to be mutated, got %v", m.QuickstartService)
 		}
 	})
 
@@ -320,8 +342,12 @@ func TestQuickstartServiceOverride(t *testing.T) {
 		if err := codec.annotateModel(); err != nil {
 			t.Fatal(err)
 		}
-		if m.QuickstartService != service2 {
-			t.Errorf("expected QuickstartService to be service2, got %v", m.QuickstartService)
+		ann := m.Codec.(*modelAnnotations)
+		if ann.QuickstartService != service2 {
+			t.Errorf("expected QuickstartService to be service2, got %v", ann.QuickstartService)
+		}
+		if m.QuickstartService != nil {
+			t.Errorf("expected model.QuickstartService not to be mutated, got %v", m.QuickstartService)
 		}
 	})
 
