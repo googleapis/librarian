@@ -204,8 +204,11 @@ ARG PROTOC_CHECKSUM
 
 WORKDIR /app
 
+# python3 (stdlib only) and procps are for the CI scripts that run in every
+# image, not a language runtime; the python and php images put their compiled
+# Python first on PATH.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    unzip curl git ca-certificates \
+    unzip curl git ca-certificates python3 procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Jobs run the images as any UID, often one with no home directory, on a
@@ -227,6 +230,10 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
 COPY --from=go-runtime /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:$PATH
 RUN go version
+
+# CI scripts run in every image: stdlib-only python3 scripts, and pgrep to
+# check for a running git-cookie-authdaemon.
+RUN python3 -c 'import json, re, sys' && pgrep --version
 
 COPY --from=build /go/bin/librarian .
 ENTRYPOINT ["/app/librarian"]
@@ -425,6 +432,7 @@ RUN python3 -m venv ${VIRTUAL_ENV} && \
 
 # ============== Python Stage ==============
 FROM python-base AS python
+ARG PYTHON_VERSION
 ARG PYTHON_PROTOC_VERSION
 ARG PYTHON_PROTOC_CHECKSUM
 ARG PANDOC_VERSION
@@ -450,10 +458,12 @@ RUN mkdir -p ${LIBRARIAN_CACHE} && \
 
 # Fail the build if a runtime the image promises is missing.
 RUN --mount=type=tmpfs,target=/home/librarian \
-    python3 --version && pip --version && pandoc --version
+    test "$(python3 --version)" = "Python ${PYTHON_VERSION}" && \
+    pip --version && pandoc --version
 
 # ============== PHP Stage ==============
 FROM python-base AS php
+ARG PYTHON_VERSION
 ARG PHP_RUNTIME_LIBRARIES
 ARG PHP_COMPOSER_VERSION
 ARG PHP_COMPOSER_CHECKSUM
@@ -488,7 +498,9 @@ RUN mkdir -p ${LIBRARIAN_CACHE} ${COMPOSER_HOME} && \
 
 # Fail the build if a runtime the image promises is missing.
 RUN --mount=type=tmpfs,target=/home/librarian --mount=type=tmpfs,target=/usr/local/php_tools/composer \
-    php --version && composer --version && python3 --version && node --version && pnpm --version
+    php --version && composer --version && \
+    test "$(python3 --version)" = "Python ${PYTHON_VERSION}" && \
+    node --version && pnpm --version
 
 # ============== Ruby Stage ==============
 FROM base AS ruby
