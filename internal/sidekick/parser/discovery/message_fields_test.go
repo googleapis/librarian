@@ -24,8 +24,7 @@ import (
 )
 
 func TestMakeMessageFields(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "package"
+	model := api.NewAPIBuilder().WithPackageName("package")
 	input := &schema{
 		Properties: []*property{
 			{
@@ -123,7 +122,7 @@ func TestMakeMessageFields(t *testing.T) {
 }
 
 func TestMakeMessageFieldsError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewAPIBuilder()
 	input := &schema{
 		Properties: []*property{
 			{
@@ -144,7 +143,7 @@ func TestMakeMessageFieldsError(t *testing.T) {
 }
 
 func TestMakeArrayFieldError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewAPIBuilder()
 	input := &property{
 		Name: "field",
 		Schema: &schema{
@@ -164,7 +163,7 @@ func TestMakeArrayFieldError(t *testing.T) {
 }
 
 func TestMakeScalarFieldError(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewAPIBuilder()
 	input := &property{
 		Name: "field",
 		Schema: &schema{
@@ -207,7 +206,7 @@ func TestScalarTypes(t *testing.T) {
 		{"object", "google.protobuf.Struct", api.TypezMessage, ".google.protobuf.Struct"},
 		{"object", "google.protobuf.Any", api.TypezMessage, ".google.protobuf.Any"},
 	} {
-		model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+		model := api.NewAPIBuilder()
 		input := &schema{
 			ID:          ".package.Message.field",
 			Description: "The field description.",
@@ -230,7 +229,7 @@ func TestScalarTypes(t *testing.T) {
 }
 
 func TestScalarUnknownType(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewAPIBuilder()
 	input := &schema{
 		ID:          ".package.Message.field",
 		Description: "The field description.",
@@ -243,7 +242,7 @@ func TestScalarUnknownType(t *testing.T) {
 }
 
 func TestScalarUnknownFormats(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewAPIBuilder()
 	for _, test := range []struct {
 		Type string
 	}{

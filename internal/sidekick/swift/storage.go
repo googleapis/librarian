@@ -104,17 +104,15 @@ func GenerateStorage(
 		packageVersion = library.Version
 	}
 
-	mergedModel := &api.API{
-		Codec: &storageAnnotations{
-			Storage:        storageModel,
-			Control:        controlModel,
-			DefaultHost:    defaultHost,
-			ServiceImports: serviceImports,
-			CopyrightYear:  copyrightYear,
-			PackageVersion: packageVersion,
-			BoilerPlate:    boilerPlate,
-		},
-	}
+	mergedModel := api.NewAnnotatedAPI(&storageAnnotations{
+		Storage:        storageModel,
+		Control:        controlModel,
+		DefaultHost:    defaultHost,
+		ServiceImports: serviceImports,
+		CopyrightYear:  copyrightYear,
+		PackageVersion: packageVersion,
+		BoilerPlate:    boilerPlate,
+	})
 
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/storage")
 	generatedFiles = append(generatedFiles, language.GeneratedFile{

@@ -21,7 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func addServiceRecursive(model *api.API, doc *document, resource *resource) error {
+func addServiceRecursive(model *api.APIBuilder, doc *document, resource *resource) error {
 	if len(resource.Methods) != 0 {
 		if err := addService(model, doc, resource); err != nil {
 			return err
@@ -35,12 +35,12 @@ func addServiceRecursive(model *api.API, doc *document, resource *resource) erro
 	return nil
 }
 
-func addService(model *api.API, doc *document, resource *resource) error {
-	id := fmt.Sprintf(".%s.%s", model.PackageName, resource.Name)
+func addService(model *api.APIBuilder, doc *document, resource *resource) error {
+	id := fmt.Sprintf(".%s.%s", model.PackageName(), resource.Name)
 	sb := api.NewServiceBuilder().
 		WithID(id).
 		WithName(resource.Name).
-		WithPackage(model.PackageName).
+		WithPackage(model.PackageName()).
 		WithDocumentation(fmt.Sprintf("Service for the `%s` resource.", resource.Name)).
 		WithDefaultHost(strings.TrimSuffix(strings.TrimPrefix(doc.RootURL, "https://"), "/")).
 		WithDeprecated(resource.Deprecated)
@@ -48,7 +48,7 @@ func addService(model *api.API, doc *document, resource *resource) error {
 		return err
 	}
 	service := sb.Build()
-	model.Services = append(model.Services, service)
+	model.AppendService(service)
 	model.AddService(service)
 	return nil
 }
