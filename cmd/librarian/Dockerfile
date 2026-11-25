@@ -204,11 +204,11 @@ ARG PROTOC_CHECKSUM
 
 WORKDIR /app
 
-# python3 (stdlib only) and procps are for the CI scripts that run in every
-# image, not a language runtime; the python and php images put their compiled
-# Python first on PATH.
+# CI scripts that run in every image need python3 3.10 or later (standard
+# library only), /usr/bin/python for scripts with that shebang, and pgrep from
+# procps. The python and php images keep their compiled Python first on PATH.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    unzip curl git ca-certificates python3 procps \
+    ca-certificates curl git procps python-is-python3 python3 unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Jobs run the images as any UID, often one with no home directory, on a
@@ -229,11 +229,8 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
 # version that a repository pins in librarian.yaml.
 COPY --from=go-runtime /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:$PATH
-RUN go version
-
-# CI scripts run in every image: stdlib-only python3 scripts, and pgrep to
-# check for a running git-cookie-authdaemon.
-RUN python3 -c 'import json, re, sys' && pgrep --version
+RUN --mount=type=tmpfs,target=/home/librarian \
+    go version && python3 --version && python --version && pgrep --version
 
 COPY --from=build /go/bin/librarian .
 ENTRYPOINT ["/app/librarian"]
