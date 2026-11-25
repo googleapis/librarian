@@ -30,12 +30,8 @@ file changes, update the `ARG` to match.
 | `ARG` | Repository | File | What to look for |
 | ----- | ---------- | ---- | ---------------- |
 | `GO_RUNTIME_VERSION` | google-cloud-go | [go.mod](https://github.com/googleapis/google-cloud-go/blob/main/go.mod) | `go` directive |
-| `GO_GOIMPORTS_VERSION` | google-cloud-go | [librarian.yaml](https://github.com/googleapis/google-cloud-go/blob/main/librarian.yaml) | `version` of `golang.org/x/tools/cmd/goimports` in `tools.go`, without the leading `v` |
 | `RUST_VERSION` | google-cloud-rust | [rust-toolchain.toml](https://github.com/googleapis/google-cloud-rust/blob/main/rust-toolchain.toml) | `channel` (minor version) |
-| `TAPLO_CLI_VERSION`, `CARGO_*_VERSION` | google-cloud-rust | [librarian.yaml](https://github.com/googleapis/google-cloud-rust/blob/main/librarian.yaml) | `version` of each tool in `tools.cargo` |
-| `PROTOC_VERSION` | google-cloud-rust | [librarian.yaml](https://github.com/googleapis/google-cloud-rust/blob/main/librarian.yaml) | `tools.protoc.version` |
 | `PYTHON_VERSION` | google-cloud-python | [packages/gapic-generator/setup.py](https://github.com/googleapis/google-cloud-python/blob/main/packages/gapic-generator/setup.py) | `python_requires` (minimum) |
-| `PYTHON_PROTOC_VERSION` | google-cloud-python | [librarian.yaml](https://github.com/googleapis/google-cloud-python/blob/main/librarian.yaml) | `tools.protoc.version` |
 | `JAVA_VERSION` | google-cloud-java | [librarian_generation_check.yaml](https://github.com/googleapis/google-cloud-java/blob/main/.github/workflows/librarian_generation_check.yaml) | `java-version` of the `actions/setup-java` step (major version) |
 | `NODEJS_NODE_VERSION` | google-cloud-node | [package.json](https://github.com/googleapis/google-cloud-node/blob/main/package.json) | `engines.node` (minimum) |
 | `NODEJS_PNPM_VERSION` | google-cloud-node | [package.json](https://github.com/googleapis/google-cloud-node/blob/main/package.json) | version after `pnpm@` in `packageManager` |
