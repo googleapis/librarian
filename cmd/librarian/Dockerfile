@@ -16,28 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Prerequisites:
-#   To build this image, you must have access to marketplace.gcr.io. Run the
-#   following commands to authenticate and configure Docker to use your gcloud
-#   credentials:
-#
-#   gcloud auth login
-#   gcloud auth configure-docker marketplace.gcr.io
-#
-# Build:
-#   docker build --target go -t librarian:go -f cmd/librarian/Dockerfile .
-#   docker build --target java -t librarian:java -f cmd/librarian/Dockerfile .
-#   docker build --target nodejs -t librarian:nodejs -f cmd/librarian/Dockerfile .
-#   docker build --target php -t librarian:php -f cmd/librarian/Dockerfile .
-#   docker build --target python -t librarian:python -f cmd/librarian/Dockerfile .
-#   docker build --target ruby -t librarian:ruby -f cmd/librarian/Dockerfile .
-#   docker build --target rust -t librarian:rust -f cmd/librarian/Dockerfile .
-#   docker build --target swift -t librarian:swift -f cmd/librarian/Dockerfile .
-#
-# Usage:
-#   docker run --rm -v "$(pwd)":/workspace -w /workspace librarian:rust generate
-#   docker run --rm -v "$(pwd)":/workspace -w /workspace librarian:python generate
-#
+# How to build these images, and when to update the versions below:
+# doc/language-images.md.
 
 # Each *_CHECKSUM is the checksum the publisher lists for that download. For
 # downloads without one (protoc, pandoc, Python and the Node generator), it is
