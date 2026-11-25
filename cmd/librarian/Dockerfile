@@ -116,7 +116,7 @@ ARG JAVA_MAVEN_CHECKSUM=7d171def9b85846bf757a2cec94b7529371068a0670df14682447224
 ARG PHP_VERSION=8.4.27
 ARG PHP_CHECKSUM=dcf93923b0e38e0d5252b25b796520b5a47761a08b3488b6d0b5d1115764d3f0
 # Shared libraries the compiled PHP needs at run time.
-ARG PHP_RUNTIME_LIBRARIES="libcurl4 libicu72 libonig5 libsqlite3-0 libssl3 libxml2 libzip4 zlib1g"
+ARG PHP_RUNTIME_LIBRARIES="libcurl4 libgmp10 libicu72 libonig5 libsqlite3-0 libssl3 libxml2 libzip4 zlib1g"
 # The last Composer 2.9 release. It comes from the initial runtime list for
 # these images and is kept without a bump, so it is older than the newest
 # Composer.
@@ -323,8 +323,8 @@ ARG PHP_VERSION
 ARG PHP_CHECKSUM
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcurl4-openssl-dev libicu-dev libonig-dev libsqlite3-dev libssl-dev \
-    libxml2-dev libzip-dev zlib1g-dev \
+    libcurl4-openssl-dev libgmp-dev libicu-dev libonig-dev libsqlite3-dev \
+    libssl-dev libxml2-dev libzip-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/php.tar.xz \
@@ -334,8 +334,8 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/php.tar.xz \
     tar -xJf /tmp/php.tar.xz -C /tmp/php --strip-components=1 && \
     cd /tmp/php && \
     ./configure --prefix=/opt/php --with-openssl --with-curl --with-zlib \
-        --with-zip --enable-bcmath --enable-intl --enable-mbstring \
-        --disable-cgi --disable-phpdbg && \
+        --with-zip --with-gmp --enable-bcmath --enable-intl --enable-mbstring \
+        --enable-sysvshm --disable-cgi --disable-phpdbg && \
     make -j"$(nproc)" && \
     make install && \
     strip --strip-debug /opt/php/bin/php && \
@@ -496,6 +496,7 @@ RUN mkdir -p ${LIBRARIAN_CACHE} ${COMPOSER_HOME} && \
 # Fail the build if a runtime the image promises is missing.
 RUN --mount=type=tmpfs,target=/home/librarian --mount=type=tmpfs,target=/usr/local/php_tools/composer \
     php --version && composer --version && \
+    php -r 'exit(extension_loaded("gmp") && extension_loaded("sysvshm") ? 0 : 1);' && \
     test "$(python3 --version)" = "Python ${PYTHON_VERSION}" && \
     node --version && pnpm --version
 
