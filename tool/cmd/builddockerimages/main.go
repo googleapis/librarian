@@ -30,8 +30,12 @@ import (
 var supportedLanguages = []string{
 	"go",
 	"java",
+	"nodejs",
+	"php",
 	"python",
+	"ruby",
 	"rust",
+	"swift",
 }
 
 func main() {
