@@ -16,6 +16,7 @@ package rust
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -180,6 +181,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.GrpcClient != "" {
 		codec["grpc-client"] = rust.GrpcClient
 	}
+	if len(rust.RedactedDebugFields) > 0 {
+		codec["redacted-debug-fields"] = strings.Join(rust.RedactedDebugFields, ",")
+	}
 	return codec
 }
 
@@ -203,6 +207,9 @@ func newLibraryCodec(library *config.Library) map[string]string {
 		}
 		if len(library.Rust.ExtensibleBuilders) > 0 {
 			codec["extensible-builders"] = strings.Join(library.Rust.ExtensibleBuilders, ",")
+		}
+		if library.Rust.TracingTarget != "" {
+			codec["tracing-target"] = library.Rust.TracingTarget
 		}
 	}
 	return codec
@@ -380,6 +387,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if len(module.ExtensibleBuilders) > 0 {
 		codec["extensible-builders"] = strings.Join(module.ExtensibleBuilders, ",")
 	}
+	if module.TracingTarget != "" {
+		codec["tracing-target"] = module.TracingTarget
+	}
 	grpcClient := ""
 	if library.Rust != nil {
 		grpcClient = library.Rust.GrpcClient
@@ -401,4 +411,19 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 		codec["default-transport"] = defaultTransport
 	}
 	return codec
+}
+
+func mergeUniqueStrings(a, b []string) []string {
+	merged := make([]string, 0, len(a)+len(b))
+	for _, s := range a {
+		if !slices.Contains(merged, s) {
+			merged = append(merged, s)
+		}
+	}
+	for _, s := range b {
+		if !slices.Contains(merged, s) {
+			merged = append(merged, s)
+		}
+	}
+	return merged
 }

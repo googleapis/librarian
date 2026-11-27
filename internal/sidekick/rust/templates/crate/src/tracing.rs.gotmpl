@@ -85,7 +85,11 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
         self.inner.{{ .Codec.Name }}(req, options).await
     }
     {{- else }}
+    {{- if .Codec.TracingTarget }}
+    #[tracing::instrument(target = "{{ .Codec.TracingTarget }}", level = tracing::Level::DEBUG, ret)]
+    {{- else }}
     #[tracing::instrument(level = tracing::Level::DEBUG, ret)]
+    {{- end }}
     async fn {{ .Codec.Name }}(
         &self,
         req: {{ .InputType.Codec.QualifiedName }},

@@ -30,6 +30,10 @@ import (
 // errQuickstartServiceNotFound is returned when the requested quickstart service override is not found.
 var errQuickstartServiceNotFound = errors.New("quickstart_service_override not found")
 
+// ErrRedactedDebugFieldNotFound is returned when a configured
+// redacted_debug_fields ID matches no generated field or oneof.
+var ErrRedactedDebugFieldNotFound = errors.New("redacted_debug_fields target not found")
+
 const (
 	gaxiPackageName = "gaxi"
 	// An internal-only feature to enable the discovery-based LRO code, which is
@@ -297,6 +301,10 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		return before
 	}()
 
+	if err := validateRedactedDebugFields(model, codec); err != nil {
+		return nil, err
+	}
+
 	var quickstartService *api.Service
 	if codec.quickstartServiceOverride != "" {
 		idx := slices.IndexFunc(servicesSubset, func(s *api.Service) bool {
@@ -468,4 +476,42 @@ func packageToModuleName(p string) string {
 		components[i] = toSnake(c)
 	}
 	return strings.Join(components, "::")
+}
+
+func validateRedactedDebugFields(model *api.API, codec *codec) error {
+	if len(codec.redactedDebugFields) == 0 {
+		return nil
+	}
+	switch codec.templateOverride {
+	case "templates/convert-prost", "templates/grpc-mock":
+		return nil
+	case "templates/bigquery":
+		return fmt.Errorf("redacted_debug_fields is not supported for template %q", codec.templateOverride)
+	}
+	known := make(map[string]bool)
+	var collect func(m *api.Message)
+	collect = func(m *api.Message) {
+		if !m.ServicePlaceholder() {
+			for _, f := range m.Fields() {
+				known[f.ID()] = true
+			}
+			for _, o := range m.OneOfs() {
+				known[o.ID()] = true
+			}
+		}
+		if language.HasNestedTypes(m) {
+			for _, child := range m.Messages() {
+				collect(child)
+			}
+		}
+	}
+	for _, m := range model.Messages {
+		collect(m)
+	}
+	for _, id := range codec.redactedDebugFields {
+		if !known[id] {
+			return fmt.Errorf("%w: %q not found in package %q", ErrRedactedDebugFieldNotFound, id, model.PackageName)
+		}
+	}
+	return nil
 }

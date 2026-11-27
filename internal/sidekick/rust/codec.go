@@ -53,6 +53,8 @@ var commentUrlRegex = regexp.MustCompile(
 		`[a-zA-Z]{2,63}` + // The root domain is far more strict
 		`(/[-a-zA-Z0-9@:%_\+.~#?&/={}\$]*)?`) // Accept just about anything on the query and URL fragments
 
+var rustTracingTargetRegex = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*$`)
+
 func newCodec(specificationFormat string, options map[string]string) (*codec, error) {
 	var sysParams []systemParameter
 	if specificationFormat == libconfig.SpecProtobuf {
@@ -183,6 +185,19 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.internalBuilders = value
 		case key == "extensible-builders":
 			codec.extensibleBuilders = splitOption(definition)
+		case key == "redacted-debug-fields":
+			fields := splitOption(definition)
+			for _, id := range fields {
+				if !strings.HasPrefix(id, ".") || len(strings.Split(strings.TrimPrefix(id, "."), ".")) < 2 {
+					return nil, fmt.Errorf("invalid `redacted-debug-fields` entry %q, expected fully qualified proto field or oneof ID starting with '.'", id)
+				}
+			}
+			codec.redactedDebugFields = fields
+		case key == "tracing-target":
+			if !rustTracingTargetRegex.MatchString(definition) {
+				return nil, fmt.Errorf("invalid `tracing-target` value %q, expected a valid Rust path", definition)
+			}
+			codec.tracingTarget = definition
 		case key == "quickstart-service-override":
 			codec.quickstartServiceOverride = definition
 		case key == "include-rpc-status-conversion":
@@ -212,6 +227,14 @@ func splitOption(definition string) []string {
 		return []string{}
 	}
 	return strings.Split(definition, ",")
+}
+
+func (c *codec) redactsDebug(id string) bool {
+	return slices.Contains(c.redactedDebugFields, id)
+}
+
+func (c *codec) fieldRedactsDebug(f *api.Field) bool {
+	return c.redactsDebug(f.ID()) || (f.Group() != nil && c.redactsDebug(f.Group().ID()))
 }
 
 type packageOption struct {
@@ -351,6 +374,10 @@ type codec struct {
 	internalBuilders bool
 	// A list of method IDs whose generated request builders expose `pub(crate)` internals.
 	extensibleBuilders []string
+	// A list of proto field or oneof IDs whose values are redacted in generated `std::fmt::Debug` implementations.
+	redactedDebugFields []string
+	// Overrides the `target` attribute on `#[tracing::instrument]` spans in generated `tracing.rs` files.
+	tracingTarget string
 	// Overrides the default heuristically selected service for the package-level quickstart.
 	quickstartServiceOverride string
 	// The Rust type used for the inner gRPC client in generated transports.

@@ -218,6 +218,12 @@ type RustModule struct {
 	// ExtensibleBuilders is a list of method IDs whose generated request builders expose pub(crate) internals.
 	ExtensibleBuilders []string `yaml:"extensible_builders,omitempty"`
 
+	// RedactedDebugFields is a list of proto field or oneof IDs whose values are redacted in generated Debug implementations.
+	RedactedDebugFields []string `yaml:"redacted_debug_fields,omitempty"`
+
+	// TracingTarget overrides the target attribute on #[tracing::instrument] spans in generated tracing stubs.
+	TracingTarget string `yaml:"tracing_target,omitempty"`
+
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
 	ModulePath string `yaml:"module_path,omitempty"`
@@ -310,6 +316,12 @@ type RustCrate struct {
 
 	// ExtensibleBuilders is a list of method IDs whose generated request builders expose pub(crate) internals.
 	ExtensibleBuilders []string `yaml:"extensible_builders,omitempty"`
+
+	// RedactedDebugFields is a list of proto field or oneof IDs whose values are redacted in generated Debug implementations.
+	RedactedDebugFields []string `yaml:"redacted_debug_fields,omitempty"`
+
+	// TracingTarget overrides the target attribute on #[tracing::instrument] spans in generated tracing stubs.
+	TracingTarget string `yaml:"tracing_target,omitempty"`
 
 	// HasVeneer indicates whether the crate has a veneer.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`

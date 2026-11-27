@@ -815,6 +815,12 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.ExtensibleBuilders != nil {
 		res.ExtensibleBuilders = src.ExtensibleBuilders
 	}
+	if src.RedactedDebugFields != nil {
+		res.RedactedDebugFields = src.RedactedDebugFields
+	}
+	if src.TracingTarget != "" {
+		res.TracingTarget = src.TracingTarget
+	}
 	if src.HasVeneer {
 		res.HasVeneer = src.HasVeneer
 	}

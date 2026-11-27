@@ -20,7 +20,11 @@ limitations under the License.
 #[allow(missing_docs)]
 {{- end }}
 {{- include "templates/common/feature_gate" . }}
+{{- if .Codec.HasCustomDebug }}
+#[derive(Clone, PartialEq)]
+{{- else }}
 #[derive(Clone, Debug, PartialEq)]
+{{- end }}
 #[non_exhaustive]
 pub enum {{ .Codec.EnumName }} {
     {{- range .Fields }}

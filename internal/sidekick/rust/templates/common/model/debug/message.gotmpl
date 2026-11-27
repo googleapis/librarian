@@ -21,10 +21,18 @@ impl std::fmt::Debug for super::{{ .Codec.RelativeName }} {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug_struct = f.debug_struct("{{ .Codec.Name }}");
         {{- range .Codec.BasicFields }}
+        {{- if .Codec.RedactDebug }}
+        debug_struct.field("{{ .Codec.FieldName }}", &"[censored]");
+        {{- else }}
         debug_struct.field("{{ .Codec.FieldName }}", &self.{{ .Codec.FieldName }});
         {{- end }}
+        {{- end }}
         {{- range .OneOfs }}
+        {{- if .Codec.RedactDebug }}
+        debug_struct.field("{{ .Codec.FieldName }}", &"[censored]");
+        {{- else }}
         debug_struct.field("{{ .Codec.FieldName }}", &self.{{ .Codec.FieldName }});
+        {{- end }}
         {{- end }}
         if !self._unknown_fields.is_empty() {
             debug_struct.field("_unknown_fields", &self._unknown_fields);
@@ -32,6 +40,28 @@ impl std::fmt::Debug for super::{{ .Codec.RelativeName }} {
         debug_struct.finish()
     }
 }
+{{- range .OneOfs }}
+{{- if .Codec.HasCustomDebug }}
+{{- "\n" }}
+{{ include "templates/common/feature_gate" $ }}
+impl std::fmt::Debug for super::{{ .Codec.RelativeName }} {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            {{- range .Fields }}
+            {{- if .Deprecated }}
+            #[allow(deprecated)]
+            {{- end }}
+            {{- if .Codec.RedactDebug }}
+            Self::{{ .Codec.BranchName }}(_) => f.debug_tuple("{{ .Codec.BranchName }}").field(&"[censored]").finish(),
+            {{- else }}
+            Self::{{ .Codec.BranchName }}(v) => f.debug_tuple("{{ .Codec.BranchName }}").field(v).finish(),
+            {{- end }}
+            {{- end }}
+        }
+    }
+}
+{{- end }}
+{{- end }}
 {{- end }}
 {{- if .Codec.HasNestedTypes }}
 {{- range .Messages }}

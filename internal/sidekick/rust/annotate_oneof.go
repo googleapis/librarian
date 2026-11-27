@@ -16,6 +16,7 @@ package rust
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -56,6 +57,9 @@ type oneOfAnnotation struct {
 	FeatureGatesOp             string
 	GenerateSetterSamples      bool
 	GenerateBranchConstructors bool
+	RedactDebug                bool
+	// True when this oneof or any of its branches is redacted in Debug output.
+	HasCustomDebug bool
 }
 
 // MultiFeatureGates returns true if there are multiple feature gates.
@@ -86,6 +90,8 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		return nil, err
 	}
 
+	redactDebug := c.redactsDebug(oneof.ID())
+	hasCustomDebug := redactDebug || slices.ContainsFunc(oneof.Fields(), c.fieldRedactsDebug)
 	ann := &oneOfAnnotation{
 		FieldName:                  toSnake(oneof.Name()),
 		SetterName:                 toSnakeNoMangling(oneof.Name()),
@@ -99,6 +105,8 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		DocLines:                   docLines,
 		GenerateSetterSamples:      c.generateSetterSamples,
 		GenerateBranchConstructors: c.templateOverride == "templates/grpc-client",
+		RedactDebug:                redactDebug,
+		HasCustomDebug:             hasCustomDebug,
 	}
 	// Note that this is different from OneOf name-overrides
 	// as those solve for fully qualified name clashes where a oneof
